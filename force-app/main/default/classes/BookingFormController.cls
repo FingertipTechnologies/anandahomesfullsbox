@@ -26,6 +26,10 @@ public with sharing class BookingFormController {
     private static final String DATE_FORMAT = 'dd/MM/yyyy';
     private static final String AREA_SUFFIX = ' Sft';
     private static final String CURRENCY_PREFIX = 'Rs. ';
+    private static final Decimal ONE_LAKH = 100000;
+    /** Amount in a Plot__c.Booking_Amount__c label, e.g. "3" in "3bhk – 3 lakhs". */
+    private static final Pattern LAKH_AMOUNT = Pattern.compile('(?i)(\\d+(?:\\.\\d+)?)\\s*(?:lakh|lac)');
+    private static final Pattern PLAIN_AMOUNT = Pattern.compile('^\\d+(?:\\.\\d+)?$');
 
     private static final Set<String> SALUTATIONS = new Set<String>{ 'mr', 'mrs', 'ms', 'dr' };
     private static final Set<String> SELF_FUNDING_TYPES = new Set<String>{ 'self', 'self-funded' };
@@ -219,7 +223,8 @@ public with sharing class BookingFormController {
             SELECT Id, Name, Booking_Date__c, Date_of_Booking__c, CreatedDate,
                    Facing__c, BHK_Type__c,
                    Block__r.Name,
-                   Plot__r.Name, Plot__r.Saleable_Area_Sft__c, Plot__r.Super_built_up_area__c,
+                   Plot__r.Name, Plot__r.Booking_Amount__c,
+                   Plot__r.Saleable_Area_Sft__c, Plot__r.Super_built_up_area__c,
                    Plot__r.Built_up_area__c, Plot__r.Facing__c,
                    Plot__r.BHK_Type__c, Plot__r.Tower__c, Plot__r.Block1__r.Name,
 
@@ -368,16 +373,20 @@ public with sharing class BookingFormController {
     }
 
     /**
-     * @description Price details are read straight from the Booking record
-     *              (Financial Summary and New Stage sections). Only the two
-     *              lines that have no Booking field are derived:
-     *                - Balance Booking Amount = Booking Amount - Advance Paid
-     *                - GST On Booking Amount  = Booking Amount x GST %
+     * @description Price details are read straight from the records:
+     *                - Booking Amount Payable : Plot__c.Booking_Amount__c (picklist,
+     *                                           e.g. "3bhk – 3 lakhs" = Rs. 3,00,000)
+     *                - Everything else        : Booking__c Financial Summary /
+     *                                           New Stage fields
+     *              Only the two lines that have no field are derived:
+     *                - Balance Booking Amount = Booking Amount Payable - Advance Paid
+     *                - GST On Booking Amount  = Booking Amount Payable x GST %
      */
     private void mapPriceDetails(Booking__c booking) {
         Decimal flatCost = decimalOf(booking, 'Total_Flat_Cost__c');
         Decimal gstAmount = decimalOf(booking, 'GST_Amount__c');
-        Decimal bookingAmount = decimalOf(booking, 'Booking_Amount__c');
+        String plotBookingAmount = textOf(parentOf(booking, 'Plot__r'), 'Booking_Amount__c');
+        Decimal bookingAmount = parseLakhAmount(plotBookingAmount);
         Decimal advance = decimalOf(booking, 'Booking_Amount__c');
 
         Decimal balance = null;
@@ -387,7 +396,10 @@ public with sharing class BookingFormController {
         }
 
         finalPrice = formatAmount(flatCost);
-        bookingAmountPayable = formatAmount(bookingAmount);
+        // Shows the picklist label as-is if it holds no recognisable amount.
+        bookingAmountPayable = bookingAmount != null
+            ? formatAmount(bookingAmount)
+            : plotBookingAmount;
         advancePaid = formatAmount(advance);
         balanceBookingAmount = formatAmount(balance);
         tdsPayable = formatAmount(decimalOf(booking, 'TDS__c'));
@@ -567,6 +579,24 @@ public with sharing class BookingFormController {
         return String.valueOf(value.day()).leftPad(2, '0') + '/'
             + String.valueOf(value.month()).leftPad(2, '0') + '/'
             + String.valueOf(value.year());
+    }
+
+    /**
+     * @description Converts a Plot__c.Booking_Amount__c picklist label to rupees:
+     *              "3bhk – 3 lakhs" -> 300000, "2.5 lakh" -> 250000,
+     *              "300000" -> 300000. Returns null when no amount is found.
+     */
+    @TestVisible
+    private static Decimal parseLakhAmount(String label) {
+        if (String.isBlank(label)) {
+            return null;
+        }
+        Matcher lakhMatch = LAKH_AMOUNT.matcher(label);
+        if (lakhMatch.find()) {
+            return Decimal.valueOf(lakhMatch.group(1)) * ONE_LAKH;
+        }
+        String digits = label.replaceAll('[,\\s]', '');
+        return PLAIN_AMOUNT.matcher(digits).matches() ? Decimal.valueOf(digits) : null;
     }
 
     @TestVisible

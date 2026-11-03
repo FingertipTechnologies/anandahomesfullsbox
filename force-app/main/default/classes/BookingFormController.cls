@@ -118,7 +118,8 @@ public with sharing class BookingFormController {
         try {
             loadForm(bookingId);
         } catch (Exception ex) {
-            errorMessage = MSG_UNEXPECTED + ' (' + ex.getTypeName() + ': ' + ex.getMessage() + ')';
+            errorMessage = MSG_UNEXPECTED + ' (' + ex.getTypeName() + ': ' + ex.getMessage()
+                + ', line ' + ex.getLineNumber() + ')';
             System.debug(LoggingLevel.ERROR,
                 'BookingFormController failed for ' + bookingId + ': '
                 + ex.getMessage() + '\n' + ex.getStackTraceString());
@@ -224,7 +225,8 @@ public with sharing class BookingFormController {
             SELECT Id, Name, Booking_Date__c, Date_of_Booking__c, CreatedDate,
                    Facing__c, BHK_Type__c,
                    Block__r.Name,
-                   Plot__r.Name, Plot__r.Saleable_Area_Sft__c, Plot__r.Facing__c,
+                   Plot__r.Name, Plot__r.Saleable_Area_Sft__c, Plot__r.Super_built_up_area__c,
+                   Plot__r.Built_up_area__c, Plot__r.Facing__c,
                    Plot__r.BHK_Type__c, Plot__r.Tower__c, Plot__r.Block1__r.Name,
 
                    salutation_Applicant1__c, First_Applicant_Name__c,
@@ -293,7 +295,11 @@ public with sharing class BookingFormController {
             textOf(unit, 'Tower__c')
         });
         flatNo = textOf(unit, 'Name');
-        flatArea = formatArea(decimalOf(unit, 'Saleable_Area_Sft__c'));
+        flatArea = formatArea(firstPositive(new List<Decimal>{
+            decimalOf(unit, 'Saleable_Area_Sft__c'),
+            decimalOf(unit, 'Super_built_up_area__c'),
+            decimalOf(unit, 'Built_up_area__c')
+        }));
         facing = firstNonBlank(new List<String>{
             textOf(unit, 'Facing__c'),
             textOf(booking, 'Facing__c')
@@ -511,6 +517,15 @@ public with sharing class BookingFormController {
     private static Decimal firstDecimal(List<Decimal> values) {
         for (Decimal value : values) {
             if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private static Decimal firstPositive(List<Decimal> values) {
+        for (Decimal value : values) {
+            if (value != null && value > 0) {
                 return value;
             }
         }

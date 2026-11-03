@@ -599,17 +599,18 @@ public with sharing class BookingFormController {
         String digits = String.valueOf(wholePart);
         String grouped = digits;
         if (digits.length() > 3) {
-            String head = digits.substring(0, digits.length() - 3);
-            String tail = digits.substring(digits.length() - 3);
-            List<String> pairs = new List<String>();
-            while (head.length() > 2) {
-                pairs.add(0, head.substring(head.length() - 2));
-                head = head.substring(0, head.length() - 2);
+            // Indian grouping: last 3 digits, then groups of 2 (12,34,567).
+            // Built left to right with add() only; Apex List.add(0, x) on an
+            // empty list throws "List index out of bounds: 0".
+            String head = digits.left(digits.length() - 3);
+            Integer firstGroupLength = Math.mod(head.length(), 2) == 0 ? 2 : 1;
+
+            List<String> groups = new List<String>{ head.left(firstGroupLength) };
+            for (Integer i = firstGroupLength; i < head.length(); i += 2) {
+                groups.add(head.substring(i, i + 2));
             }
-            if (head.length() > 0) {
-                pairs.add(0, head);
-            }
-            grouped = String.join(pairs, ',') + ',' + tail;
+            groups.add(digits.right(3));
+            grouped = String.join(groups, ',');
         }
 
         String result = paise > 0

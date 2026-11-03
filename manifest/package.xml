@@ -1,6 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+    FULL ORG MANIFEST
+    Retrieves every retrievable metadata type from a sandbox/org.
+
+    Usage (Salesforce CLI):
+        sf project retrieve start -x manifest/package.xml -o <sandbox-alias>
+
+    Notes:
+    - Wildcard (*) on CustomObject returns CUSTOM objects only. Standard objects
+      must be named explicitly (see the "Standard Objects" block below).
+    - Folder-based types (Report, Dashboard, Document, EmailTemplate) return
+      unfiled/public items with *. Folder contents also require the folder names,
+      so the *Folder types are included and common folders can be added by name.
+    - StandardValueSet does not support *; the common ones are listed explicitly.
+    - For a smaller day-to-day manifest use manifest/package-core.xml.
+-->
 <Package xmlns="http://soap.sforce.com/2006/04/metadata">
-    <!-- ===== Code ===== -->
+
+    <!-- ===================== Apex / Code ===================== -->
     <types>
         <members>*</members>
         <name>ApexClass</name>
@@ -17,8 +34,20 @@
         <members>*</members>
         <name>ApexComponent</name>
     </types>
+    <types>
+        <members>*</members>
+        <name>ApexTestSuite</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ApexEmailNotifications</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Scontrol</name>
+    </types>
 
-    <!-- ===== Components ===== -->
+    <!-- ===================== Lightning Components ===================== -->
     <types>
         <members>*</members>
         <name>LightningComponentBundle</name>
@@ -27,16 +56,167 @@
         <members>*</members>
         <name>AuraDefinitionBundle</name>
     </types>
-
-    <!-- ===== Configuration ===== -->
     <types>
         <members>*</members>
+        <name>LightningMessageChannel</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>LightningExperienceTheme</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>LightningBolt</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>LightningOnboardingConfig</name>
+    </types>
+
+    <!-- ===================== Objects & Fields ===================== -->
+    <types>
+        <members>*</members>
+        <!-- Standard Objects (wildcard returns custom objects only) -->
+        <members>Account</members>
+        <members>Asset</members>
+        <members>Campaign</members>
+        <members>CampaignMember</members>
+        <members>Case</members>
+        <members>Contact</members>
+        <members>ContentVersion</members>
+        <members>Contract</members>
+        <members>Event</members>
+        <members>Lead</members>
+        <members>Opportunity</members>
+        <members>OpportunityLineItem</members>
+        <members>Order</members>
+        <members>OrderItem</members>
+        <members>Pricebook2</members>
+        <members>PricebookEntry</members>
+        <members>Product2</members>
+        <members>Quote</members>
+        <members>QuoteLineItem</members>
+        <members>Task</members>
+        <members>User</members>
         <name>CustomObject</name>
     </types>
     <types>
         <members>*</members>
         <name>CustomField</name>
     </types>
+    <types>
+        <members>*</members>
+        <name>ValidationRule</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>RecordType</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>BusinessProcess</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CompactLayout</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>FieldSet</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ListView</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>SharingReason</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>WebLink</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Index</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CustomObjectTranslation</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>GlobalValueSet</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>GlobalValueSetTranslation</name>
+    </types>
+    <types>
+        <members>AccountContactMultiRoles</members>
+        <members>AccountContactRole</members>
+        <members>AccountOwnership</members>
+        <members>AccountRating</members>
+        <members>AccountType</members>
+        <members>AssetStatus</members>
+        <members>CampaignMemberStatus</members>
+        <members>CampaignStatus</members>
+        <members>CampaignType</members>
+        <members>CaseContactRole</members>
+        <members>CaseOrigin</members>
+        <members>CasePriority</members>
+        <members>CaseReason</members>
+        <members>CaseStatus</members>
+        <members>CaseType</members>
+        <members>ContactRole</members>
+        <members>ContractContactRole</members>
+        <members>ContractStatus</members>
+        <members>EntitlementType</members>
+        <members>EventSubject</members>
+        <members>EventType</members>
+        <members>FiscalYearPeriodName</members>
+        <members>FiscalYearPeriodPrefix</members>
+        <members>FiscalYearQuarterName</members>
+        <members>FiscalYearQuarterPrefix</members>
+        <members>IdeaCategory</members>
+        <members>IdeaMultiCategory</members>
+        <members>IdeaStatus</members>
+        <members>IdeaThemeStatus</members>
+        <members>Industry</members>
+        <members>LeadSource</members>
+        <members>LeadStatus</members>
+        <members>OpportunityCompetitor</members>
+        <members>OpportunityStage</members>
+        <members>OpportunityType</members>
+        <members>OrderStatus</members>
+        <members>OrderType</members>
+        <members>PartnerRole</members>
+        <members>Product2Family</members>
+        <members>QuickTextCategory</members>
+        <members>QuickTextChannel</members>
+        <members>QuoteStatus</members>
+        <members>SalesTeamRole</members>
+        <members>Salutation</members>
+        <members>ServiceContractApprovalStatus</members>
+        <members>SocialPostClassification</members>
+        <members>SocialPostEngagementLevel</members>
+        <members>SocialPostReviewedStatus</members>
+        <members>SolutionStatus</members>
+        <members>TaskPriority</members>
+        <members>TaskStatus</members>
+        <members>TaskSubject</members>
+        <members>TaskType</members>
+        <members>WorkOrderLineItemStatus</members>
+        <members>WorkOrderPriority</members>
+        <members>WorkOrderStatus</members>
+        <name>StandardValueSet</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>StandardValueSetTranslation</name>
+    </types>
+
+    <!-- ===================== UI / Layouts / Apps ===================== -->
     <types>
         <members>*</members>
         <name>Layout</name>
@@ -47,15 +227,357 @@
     </types>
     <types>
         <members>*</members>
+        <name>CustomTab</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CustomApplication</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CustomApplicationComponent</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>AppMenu</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CustomPageWebLink</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>HomePageComponent</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>HomePageLayout</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>QuickAction</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>PathAssistant</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CustomHelpMenuSection</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ActionLinkGroupTemplate</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>RecordActionDeployment</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Prompt</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CustomNotificationType</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>NotificationTypeConfig</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>UserCriteria</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>MobileApplicationDetail</name>
+    </types>
+
+    <!-- ===================== Automation ===================== -->
+    <types>
+        <members>*</members>
         <name>Flow</name>
     </types>
     <types>
         <members>*</members>
-        <name>ValidationRule</name>
+        <name>FlowDefinition</name>
     </types>
     <types>
         <members>*</members>
-        <name>CustomTab</name>
+        <name>FlowCategory</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>FlowTest</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Workflow</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>WorkflowAlert</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>WorkflowFieldUpdate</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>WorkflowOutboundMessage</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>WorkflowRule</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>WorkflowTask</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>WorkflowKnowledgePublish</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>WorkflowSend</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ApprovalProcess</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>AssignmentRules</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>AssignmentRule</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>AutoResponseRules</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>AutoResponseRule</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>EscalationRules</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>EscalationRule</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>MatchingRules</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>MatchingRule</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>DuplicateRule</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>PostTemplate</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>PlatformEventChannel</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>PlatformEventChannelMember</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>PlatformEventSubscriberConfig</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>EventRelayConfig</name>
+    </types>
+
+    <!-- ===================== Sharing ===================== -->
+    <types>
+        <members>*</members>
+        <name>SharingRules</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>SharingCriteriaRule</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>SharingOwnerRule</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>SharingGuestRule</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>SharingTerritoryRule</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>SharingSet</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Territory2</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Territory2Model</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Territory2Rule</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Territory2Type</name>
+    </types>
+
+    <!-- ===================== Security & Access ===================== -->
+    <types>
+        <members>*</members>
+        <name>Profile</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>PermissionSet</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>PermissionSetGroup</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>MutingPermissionSet</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CustomPermission</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Role</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Group</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Queue</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>DelegateGroup</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ProfilePasswordPolicy</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ProfileSessionSetting</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>TransactionSecurityPolicy</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>RestrictionRule</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Certificate</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>SamlSsoConfig</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>AuthProvider</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ConnectedApp</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>OauthCustomScope</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>MyDomainDiscoverableLogin</name>
+    </types>
+
+    <!-- ===================== Integration ===================== -->
+    <types>
+        <members>*</members>
+        <name>NamedCredential</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ExternalCredential</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ExternalDataSource</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ExternalServiceRegistration</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>RemoteSiteSetting</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CspTrustedSite</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CorsWhitelistOrigin</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>EmailServicesFunction</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>InboundNetworkConnection</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>OutboundNetworkConnection</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CallCenter</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>InstalledPackage</name>
+    </types>
+
+    <!-- ===================== Labels, Metadata & Translations ===================== -->
+    <types>
+        <members>*</members>
+        <name>CustomLabels</name>
     </types>
     <types>
         <members>*</members>
@@ -65,37 +587,322 @@
         <members>*</members>
         <name>CustomMetadata</name>
     </types>
-
-    <!-- ===== Security ===== -->
     <types>
         <members>*</members>
-        <name>PermissionSet</name>
+        <name>Translations</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Settings</name>
     </types>
 
-    <!-- ===== Assets ===== -->
+    <!-- ===================== Assets, Email & Documents ===================== -->
     <types>
         <members>*</members>
         <name>StaticResource</name>
     </types>
     <types>
         <members>*</members>
+        <name>ContentAsset</name>
+    </types>
+    <types>
+        <members>*</members>
         <name>EmailTemplate</name>
     </types>
+    <types>
+        <members>*</members>
+        <name>EmailFolder</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Letterhead</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Document</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>DocumentFolder</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>BrandingSet</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>QuickText</name>
+    </types>
 
-    <!--
-        NOTE: The following are intentionally EXCLUDED:
-        - Profile:*        → Too large, causes deploy failures
-        - Report:*         → Too many, causes timeouts
-        - Dashboard:*      → Too many, causes timeouts
-        - Queue:*          → Org-specific, rarely needed in source
-        - WorkflowRule:*   → Deprecated (use Flows instead)
+    <!-- ===================== Reports & Dashboards ===================== -->
+    <types>
+        <members>*</members>
+        <name>Report</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ReportFolder</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Dashboard</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>DashboardFolder</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ReportType</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>AnalyticSnapshot</name>
+    </types>
 
-        To retrieve specific ones, add them individually:
-        <types>
-            <members>MySpecificProfile</members>
-            <name>Profile</name>
-        </types>
-    -->
+    <!-- ===================== Experience Cloud / Sites ===================== -->
+    <types>
+        <members>*</members>
+        <name>Network</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>NetworkBranding</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CustomSite</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>SiteDotCom</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ExperienceBundle</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>DigitalExperienceBundle</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>DigitalExperienceConfig</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>NavigationMenu</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Audience</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CommunityThemeDefinition</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CommunityTemplateDefinition</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ManagedContentType</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ManagedTopics</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>TopicsForObjects</name>
+    </types>
+
+    <!-- ===================== Service Cloud ===================== -->
+    <types>
+        <members>*</members>
+        <name>EntitlementProcess</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>EntitlementTemplate</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>MilestoneType</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CaseSubjectParticle</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ServiceChannel</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ServicePresenceStatus</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>PresenceDeclineReason</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>PresenceUserConfig</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>QueueRoutingConfig</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>OmniSupervisorConfig</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Skill</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>LiveChatAgentConfig</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>LiveChatButton</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>LiveChatDeployment</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>LiveChatSensitiveDataRule</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>EmbeddedServiceConfig</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>EmbeddedServiceBranding</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>EmbeddedServiceFlowConfig</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>EmbeddedServiceLiveAgent</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>EmbeddedServiceMenuSettings</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>DataCategoryGroup</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>ChatterExtension</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CustomFeedFilter</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>SynonymDictionary</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CleanDataService</name>
+    </types>
+
+    <!-- ===================== Bots / Einstein ===================== -->
+    <types>
+        <members>*</members>
+        <name>Bot</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>BotVersion</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>GenAiFunction</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>GenAiPlanner</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>GenAiPlugin</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>GenAiPromptTemplate</name>
+    </types>
+
+    <!-- ===================== CRM Analytics (Tableau CRM) ===================== -->
+    <types>
+        <members>*</members>
+        <name>WaveApplication</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>WaveDashboard</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>WaveDataflow</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>WaveDataset</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>WaveLens</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>WaveRecipe</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>WaveTemplateBundle</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>WaveXmd</name>
+    </types>
+
+    <!-- ===================== Scheduling / Field Service ===================== -->
+    <types>
+        <members>*</members>
+        <name>AppointmentSchedulingPolicy</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>AppointmentAssignmentPolicy</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>TimeSheetTemplate</name>
+    </types>
+
+    <!-- ===================== Payments ===================== -->
+    <types>
+        <members>*</members>
+        <name>PaymentGatewayProvider</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>GatewayProviderPaymentMethodType</name>
+    </types>
 
     <version>62.0</version>
 </Package>

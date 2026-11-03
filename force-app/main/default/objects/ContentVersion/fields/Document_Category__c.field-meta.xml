@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Document_Category__c</fullName>
+    <description>Document category - dependent on Object_API_Name__c. Configure dependencies in Salesforce Setup to control which categories appear per object.</description>
+    <label>Document Category</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <type>Picklist</type>
+    <valueSet>
+        <controllingField>Object_API_Name__c</controllingField>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Agreement</fullName>
+                <default>false</default>
+                <label>Agreement</label>
+            </value>
+            <value>
+                <fullName>Bank Documents</fullName>
+                <default>false</default>
+                <label>Bank Documents</label>
+            </value>
+            <value>
+                <fullName>KYC Documents</fullName>
+                <default>false</default>
+                <label>KYC Documents</label>
+            </value>
+            <value>
+                <fullName>Other</fullName>
+                <default>false</default>
+                <label>Other</label>
+            </value>
+            <value>
+                <fullName>Payment Proof</fullName>
+                <default>false</default>
+                <label>Payment Proof</label>
+            </value>
+            <value>
+                <fullName>Cancellation</fullName>
+                <default>false</default>
+                <label>Cancellation</label>
+            </value>
+        </valueSetDefinition>
+        <valueSettings>
+            <controllingFieldValue>Booking__c</controllingFieldValue>
+            <valueName>Agreement</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Booking__c</controllingFieldValue>
+            <valueName>Bank Documents</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Booking__c</controllingFieldValue>
+            <controllingFieldValue>Co_Applicant__c</controllingFieldValue>
+            <valueName>KYC Documents</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Booking__c</controllingFieldValue>
+            <valueName>Other</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Booking__c</controllingFieldValue>
+            <valueName>Payment Proof</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Booking__c</controllingFieldValue>
+            <valueName>Cancellation</valueName>
+        </valueSettings>
+    </valueSet>
+</CustomField>

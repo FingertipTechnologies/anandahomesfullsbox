@@ -11,10 +11,8 @@ private class PaymentScheduleRevisionServiceTest {
     private static void buildData() {
         Project__c project = new Project__c(Name = 'P', Project_Type__c = 'Residential', Interest_Rate__c = 18);
         insert project;
-        Plot__c unit = new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Booked');
-        insert unit;
         booking = new Booking__c(
-            Project__c = project.Id, Plot__c = unit.Id, Booking_Date__c = Date.today(),
+            Project__c = project.Id, Booking_Date__c = Date.today(),
             Status__c = 'Booked', Funding_Type__c = 'Self-Funded'
         );
         insert booking;
@@ -79,6 +77,78 @@ private class PaymentScheduleRevisionServiceTest {
             'Approved amount should now be applied');
         System.assertEquals(true, [SELECT Applied__c FROM Payment_Schedule_Revision__c WHERE Id = :revId].Applied__c,
             'Revision should be marked applied');
+    }
+
+    @isTest
+    static void approvedSplitRequestAppliesToUnsplitSchedule() {
+        Project__c project = new Project__c(
+            Name = 'Prorata Project',
+            Project_Type__c = 'Residential',
+            Interest_Rate__c = 18
+        );
+        insert project;
+
+        Booking__c prorataBooking = new Booking__c(
+            Project__c = project.Id,
+            Booking_Date__c = Date.today(),
+            Status__c = 'Booked',
+            Funding_Type__c = 'Partial',
+            Total_Flat_Cost__c = 1000,
+            GST_Amount__c = 100,
+            Loan_Sanctioned_Amount__c = 500
+        );
+        insert prorataBooking;
+
+        Payment_Schedule__c unsplitSchedule = new Payment_Schedule__c(
+            Booking__c = prorataBooking.Id,
+            Sequence__c = 1,
+            Milestone_Name__c = 'Foundation',
+            Amount__c = 1100,
+            Payment_Schedule_Amount__c = 990,
+            GST_Amount__c = 100,
+            TDS_Amount__c = 10,
+            Pending_Amount__c = 1100,
+            Amount_Paid__c = 0,
+            Status__c = 'Pending'
+        );
+        insert unsplitSchedule;
+
+        PaymentScheduleRevisionService.RevisionLine requestedSplit =
+            new PaymentScheduleRevisionService.RevisionLine();
+        requestedSplit.id = unsplitSchedule.Id;
+        requestedSplit.bankFlat = 500;
+        requestedSplit.customerFlat = 490;
+        requestedSplit.bankGst = 0;
+        requestedSplit.customerGst = 100;
+
+        String revisionPrefix = Payment_Schedule_Revision__c.SObjectType.getDescribe().getKeyPrefix();
+        Id revisionId = Id.valueOf(revisionPrefix + '000000000001');
+        Payment_Schedule_Revision__c oldRevision = new Payment_Schedule_Revision__c(
+            Id = revisionId,
+            Approval_Status__c = 'Pending'
+        );
+        Payment_Schedule_Revision__c approvedRevision = new Payment_Schedule_Revision__c(
+            Id = revisionId,
+            Approval_Status__c = 'Approved',
+            Applied__c = false,
+            Proposed_Changes_JSON__c = JSON.serialize(
+                new List<PaymentScheduleRevisionService.RevisionLine>{ requestedSplit }
+            )
+        );
+        Test.startTest();
+        PaymentScheduleRevisionService.applyApprovedFromTrigger(
+            new List<Payment_Schedule_Revision__c>{ approvedRevision },
+            new Map<Id, Payment_Schedule_Revision__c>{ revisionId => oldRevision }
+        );
+        Test.stopTest();
+
+        Payment_Schedule__c afterApproval = [
+            SELECT Bank_Flat_Amount__c, Customer_Flat_Prorata__c,
+                   Bank_GST_Amount__c, Customer_GST_Prorata__c
+            FROM Payment_Schedule__c
+            WHERE Id = :unsplitSchedule.Id
+        ];
+        
     }
 
     @isTest

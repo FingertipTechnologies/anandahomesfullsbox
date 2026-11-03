@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fieldUpdates>
+        <fullName>Approval_Approved</fullName>
+        <field>Approval_Status__c</field>
+        <literalValue>Approved</literalValue>
+        <name>Approval Approved</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Approval_Comments_Empty</fullName>
+        <field>Approval_Comments__c</field>
+        <name>Approval Comments Empty</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Null</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Approval_Comments_Null</fullName>
+        <field>Approval_Comments__c</field>
+        <name>Approval Comments Null</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Null</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Approval_Pending</fullName>
+        <field>Approval_Status__c</field>
+        <literalValue>Pending</literalValue>
+        <name>Approval Pending</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Approval_Rejected</fullName>
+        <field>Approval_Status__c</field>
+        <literalValue>Rejected</literalValue>
+        <name>Approval Rejected</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Assignment_Approval</fullName>
+        <field>Assignment_Approval_Status__c</field>
+        <literalValue>Approved</literalValue>
+        <name>Assignment Approval</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Assignment_Approval1</fullName>
+        <field>Assignment_Approval_Status__c</field>
+        <literalValue>Rejected</literalValue>
+        <name>Assignment Approval</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Booking_Verification_Approval_Status</fullName>
+        <field>Booking_Verification_Approval_Status__c</field>
+        <literalValue>Rejected</literalValue>
+        <name>Booking_Verification_Approval_Status</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Booking_Verification_Approval_Status1</fullName>
+        <field>Booking_Verification_Approval_Status__c</field>
+        <literalValue>Approved</literalValue>
+        <name>Booking_Verification_Approval_Status</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Cancellation_Approval_Before_Agreement</fullName>
+        <field>Cancellation_Approval_Before_Agreement__c</field>
+        <literalValue>Approved</literalValue>
+        <name>Cancellation Approval Before Agreement</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Cancellation_Approval_Before_Agreement1</fullName>
+        <field>Cancellation_Approval_Before_Agreement__c</field>
+        <literalValue>Rejected</literalValue>
+        <name>Cancellation Approval Before Agreement</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Sale_Agreement_Approval1</fullName>
+        <field>Sale_Agreement_Approval_Status__c</field>
+        <literalValue>Rejected</literalValue>
+        <name>Sale Agreement Approval</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Sale_Deed_Approval</fullName>
+        <field>Sale_Deed_Approval__c</field>
+        <literalValue>Approved</literalValue>
+        <name>Sale Deed Approval</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Sale_Deed_Approval1</fullName>
+        <field>Sale_Deed_Approval__c</field>
+        <literalValue>Rejected</literalValue>
+        <name>Sale Deed Approval</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Swapping_Approval_Before_Agreement</fullName>
+        <field>Swapping_Approval_Before_Agreement__c</field>
+        <literalValue>Approved</literalValue>
+        <name>Swapping Approval Before Agreement</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>Swapping_Approval_Before_Agreement1</fullName>
+        <field>Swapping_Approval_Before_Agreement__c</field>
+        <literalValue>Rejected</literalValue>
+        <name>Swapping Approval Before Agreement</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+    <fieldUpdates>
+        <fullName>sales_Agreement_Approval</fullName>
+        <field>Sale_Agreement_Approval_Status__c</field>
+        <literalValue>Approved</literalValue>
+        <name>sales Agreement Approval</name>
+        <notifyAssignee>false</notifyAssignee>
+        <operation>Literal</operation>
+        <protected>false</protected>
+        <reevaluateOnChange>false</reevaluateOnChange>
+    </fieldUpdates>
+</Workflow>

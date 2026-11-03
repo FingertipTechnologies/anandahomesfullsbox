@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Not_Interested_Reason_is_mandatory</fullName>
+    <active>false</active>
+    <description>when the lead status is not interested, record type is presales and not interested reason is blank error should be thrown</description>
+    <errorConditionFormula>AND(
+     Lead_Record_Type__c= &apos;Pre Sales&apos;,
+    ISPICKVAL(Lead_Status__c, &apos;Not Interested&apos;),
+    ISBLANK(TEXT( Unqualified_Reason__c ))
+)</errorConditionFormula>
+    <errorMessage>Please Fill Unqualified Reason</errorMessage>
+</ValidationRule>

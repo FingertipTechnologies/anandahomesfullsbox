@@ -325,6 +325,36 @@
                 <identifier>RecordOffice_Address_cField</identifier>
             </fieldInstance>
         </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.Do_Not_Calculate_Interest__c</fieldItem>
+                <identifier>RecordDo_Not_Calculate_Interest__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.Interest_Calculation_Resume_Date__c</fieldItem>
+                <identifier>RecordInterest_Calculation_Resume_Date__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.Total_Refunded_Amount__c</fieldItem>
+                <identifier>RecordTotal_Refunded_Amount__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.Capri_Email__c</fieldItem>
+                <identifier>RecordCapri_Email__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.No_of_car_parking__c</fieldItem>
+                <identifier>RecordNo_of_car_parking__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
         <name>Facet-9aab23cb-bcdb-46d0-9933-b28d3e66a8f8</name>
         <type>Facet</type>
     </flexiPageRegions>

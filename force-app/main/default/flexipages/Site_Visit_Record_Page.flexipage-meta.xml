@@ -122,6 +122,12 @@
                 <identifier>RecordChannel_Partner_cField</identifier>
             </fieldInstance>
         </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.GRE_User__c</fieldItem>
+                <identifier>RecordGRE_User__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
         <name>Facet-2a2fd991-1e9c-43ff-9771-a20339d8b4c2</name>
         <type>Facet</type>
     </flexiPageRegions>

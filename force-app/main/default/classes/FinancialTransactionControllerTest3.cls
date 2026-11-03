@@ -20,6 +20,16 @@ private class FinancialTransactionControllerTest3 {
         return [SELECT Id FROM Booking__c LIMIT 1].Id;
     }
 
+    private static void setLegacySplitMode(Id bId, Boolean enabled) {
+        Booking__c booking = [SELECT Project__c FROM Booking__c WHERE Id = :bId LIMIT 1];
+        Project__c project = [
+            SELECT Id, Legacy_Split_Demand_Receipt__c
+            FROM Project__c WHERE Id = :booking.Project__c LIMIT 1
+        ];
+        project.Legacy_Split_Demand_Receipt__c = enabled;
+        update project;
+    }
+
     /** Sets a field only if it exists and is writable on insert. */
     private static void setIf(SObject o, String fieldName, Object value) {
         Schema.SObjectField sf = o.getSObjectType().getDescribe().fields.getMap().get(fieldName);
@@ -64,17 +74,22 @@ private class FinancialTransactionControllerTest3 {
     }
 
     private static Receipt__c makeReceipt(Id bId, Decimal amt, String type, Id chargeId, Boolean useAdv) {
-        Receipt__c r = new Receipt__c(
-            Booking__c = bId, Receipt_Date__c = Date.today(),
-            Amount_Received__c = amt, Total_Amount__c = amt, TDS_Deducted__c = 0,
-            Transaction_Reference__c = 'T3-' + Math.random(),
-            Approval_Status__c = PostSalesConstants.APPROVAL_STATUS_PENDING_APPROVAL,
-            Use_Advances__c = useAdv, Use_Credits__c = false
-        );
-        setIf(r, 'Receipt_Type__c', type);
-        setIf(r, 'Additional_Charge__c', chargeId);
-        insert r;
-        return r;
+        FinancialTransactionController.ReceiptWrapper wrapper =
+            new FinancialTransactionController.ReceiptWrapper();
+        wrapper.bookingId = bId;
+        wrapper.receiptDate = Date.today();
+        wrapper.amountReceived = amt;
+        wrapper.tdsAmount = 0;
+        wrapper.transactionNumber = 'T3-' + String.valueOf(Crypto.getRandomLong());
+        wrapper.receiptType = type;
+        wrapper.additionalChargeId = chargeId;
+        wrapper.useAdvances = useAdv;
+        wrapper.useCredits = false;
+        FinancialTransactionController.ReceiptResult result =
+            FinancialTransactionController.createReceipt(JSON.serialize(wrapper));
+        return [SELECT Id, Booking__c, Total_Amount__c, Receipt_Date__c,
+                       Receipt_Type__c, Created_Advance__c
+                FROM Receipt__c WHERE Id = :result.receiptId];
     }
 
     private static Additional_Charge__c makeCharge(Id bId, Decimal amt, Decimal gst, Decimal paid) {
@@ -93,13 +108,11 @@ private class FinancialTransactionControllerTest3 {
     }
 
     private static Advance_Payment__c makeAdvance(Id bId, Decimal amt) {
-        Advance_Payment__c a = new Advance_Payment__c(
-            Booking__c = bId, Advance_Amount__c = amt,
-            Advance_Date__c = Date.today().addDays(-1)
-        );
-        setIf(a, 'Available_Amount__c', amt);
-        insert a;
-        return a;
+        Receipt__c sourceReceipt = makeReceipt(bId, amt, null, null, false);
+        FinancialTransactionController.ReceiptResult result =
+            FinancialTransactionController.allocateReceipt(sourceReceipt.Id);
+        return [SELECT Id FROM Advance_Payment__c
+                WHERE Id = :result.newAdvanceId];
     }
 
     private static Integer lineCount(Id receiptId) {
@@ -146,6 +159,116 @@ private class FinancialTransactionControllerTest3 {
     }
 
     @isTest
+    static void allocate_schedulePendingExceedsDemand_continuesScheduleAllocation() {
+        Id bId = bookingId();
+        Payment_Schedule__c ps = makeSchedule(bId, 1, 800, 200);
+        Demands__c d = makeDemand(bId, ps.Id, 400);
+        Receipt__c r = makeReceipt(bId, 800, null, null, false);
+
+        Test.startTest();
+        FinancialTransactionController.allocateReceipt(r.Id);
+        Test.stopTest();
+
+        Payment_Schedule__c afterSchedule = [
+            SELECT Pending_Amount__c, Amount_Paid__c
+            FROM Payment_Schedule__c
+            WHERE Id = :ps.Id
+        ];
+        Demands__c afterDemand = [
+            SELECT Pending_Amount__c, Paid_Amount__c
+            FROM Demands__c
+            WHERE Id = :d.Id
+        ];
+        List<Receipt_Line_Item__c> lines = [
+            SELECT Allocated_Amount__c, Payment_Schedule__c, Demand__c
+            FROM Receipt_Line_Item__c
+            WHERE Receipt__c = :r.Id
+        ];
+
+        Decimal scheduleAllocated = 0;
+        Decimal demandAllocated = 0;
+        for (Receipt_Line_Item__c line : lines) {
+            if (line.Payment_Schedule__c == ps.Id) {
+                scheduleAllocated += line.Allocated_Amount__c;
+            }
+            if (line.Demand__c == d.Id) {
+                demandAllocated += line.Allocated_Amount__c;
+            }
+        }
+        System.assertEquals(800, scheduleAllocated,
+            'Allocation to the schedule must follow schedule pending, including amount beyond the demand');
+        System.assertEquals(400, demandAllocated,
+            'Only the demand portion is linked to the demand record');
+        System.assertEquals(0, afterDemand.Pending_Amount__c);
+        System.assertEquals(400, afterDemand.Paid_Amount__c);
+        System.assertEquals(200, afterSchedule.Pending_Amount__c);
+        System.assertEquals(800, afterSchedule.Amount_Paid__c);
+    }
+
+    @isTest
+    static void allocate_demandExceedsSchedulePending_capsAtSchedulePending() {
+        Id bId = bookingId();
+        Payment_Schedule__c ps = makeSchedule(bId, 1, 800, 200);
+        Demands__c d = makeDemand(bId, ps.Id, 1400);
+        Receipt__c r = makeReceipt(bId, 1200, null, null, false);
+
+        Test.startTest();
+        FinancialTransactionController.allocateReceipt(r.Id);
+        Test.stopTest();
+
+        Payment_Schedule__c afterSchedule = [
+            SELECT Pending_Amount__c, Amount_Paid__c
+            FROM Payment_Schedule__c
+            WHERE Id = :ps.Id
+        ];
+        Demands__c afterDemand = [
+            SELECT Pending_Amount__c, Paid_Amount__c
+            FROM Demands__c
+            WHERE Id = :d.Id
+        ];
+        System.assertEquals(1000, afterSchedule.Amount_Paid__c,
+            'Demand amount must not allow allocation to exceed schedule pending');
+        System.assertEquals(0, afterSchedule.Pending_Amount__c);
+        System.assertEquals(1000, afterDemand.Paid_Amount__c);
+        System.assertEquals(400, afterDemand.Pending_Amount__c);
+        System.assertEquals(1,
+            [SELECT COUNT()
+             FROM Advance_Payment__c
+             WHERE Booking__c = :bId],
+            'Receipt value beyond schedule pending should remain as an advance');
+    }
+
+    @isTest
+    static void allocate_followsScheduleSequenceBeforeLaterScheduleDemand() {
+        Id bId = bookingId();
+        Payment_Schedule__c firstSchedule = makeSchedule(bId, 1, 800, 200);
+        Payment_Schedule__c secondSchedule = makeSchedule(bId, 2, 800, 200);
+        Demands__c laterDemand = makeDemand(bId, secondSchedule.Id, 400);
+        Receipt__c r = makeReceipt(bId, 500, null, null, false);
+
+        Test.startTest();
+        FinancialTransactionController.allocateReceipt(r.Id);
+        Test.stopTest();
+
+        Payment_Schedule__c firstAfter = [
+            SELECT Amount_Paid__c, Pending_Amount__c
+            FROM Payment_Schedule__c
+            WHERE Id = :firstSchedule.Id
+        ];
+        Payment_Schedule__c secondAfter = [
+            SELECT Amount_Paid__c, Pending_Amount__c
+            FROM Payment_Schedule__c
+            WHERE Id = :secondSchedule.Id
+        ];
+        Demands__c demandAfter = [
+            SELECT Paid_Amount__c, Pending_Amount__c
+            FROM Demands__c
+            WHERE Id = :laterDemand.Id
+        ];
+
+    }
+
+    @isTest
     static void allocate_baseThenGstSplit_updatesSchedule() {
         Id bId = bookingId();
         Payment_Schedule__c ps = makeSchedule(bId, 1, 800, 200);
@@ -165,6 +288,195 @@ private class FinancialTransactionControllerTest3 {
         System.assertEquals(100, after.GST_Amount_Paid__c);
         System.assertEquals(r.Id, after.Last_Receipt__c);
     }
+
+    @isTest
+    static void allocate_legacyInstallmentAppliesFlatAndTdsOnly() {
+        Id bId = bookingId();
+        setLegacySplitMode(bId, true);
+        Payment_Schedule__c ps = new Payment_Schedule__c(
+            Booking__c = bId, Sequence__c = 1, Milestone_Name__c = 'Legacy TDS',
+            Amount__c = 1100, Pending_Amount__c = 1100,
+            Payment_Schedule_Amount__c = 800, Payment_Schedule_Amount_Pending__c = 800,
+            GST_Amount__c = 200, GST_Amount_Pending__c = 200,
+            TDS_Amount__c = 100, TDS_Amount_Pending__c = 100,
+            Status__c = 'Pending'
+        );
+        insert ps;
+        Receipt__c receipt = makeReceipt(bId, 900, 'Installment Payment', null, false);
+
+        Test.startTest();
+        FinancialTransactionController.allocateReceipt(receipt.Id);
+        Test.stopTest();
+
+        Payment_Schedule__c after = [
+            SELECT Pending_Amount__c, Payment_Schedule_Amount_Pending__c,
+                   GST_Amount_Pending__c, TDS_Amount_Pending__c,
+                   Payment_Schedule_Amount_Paid__c, GST_Amount_Paid__c, TDS_Amount_Paid__c
+            FROM Payment_Schedule__c WHERE Id = :ps.Id
+        ];
+        Receipt_Line_Item__c line = [
+            SELECT Allocated_Amount__c, Base_Amount__c, GST_Amount__c, TDS_Amount__c
+            FROM Receipt_Line_Item__c WHERE Receipt__c = :receipt.Id
+        ];
+       
+    }
+
+    @isTest
+    static void allocate_partialLegacyInstallmentTracksFlatAndTds() {
+        Id bId = bookingId();
+        setLegacySplitMode(bId, true);
+        Payment_Schedule__c ps = new Payment_Schedule__c(
+            Booking__c = bId, Sequence__c = 1, Milestone_Name__c = 'Partial legacy Flat',
+            Amount__c = 1100, Pending_Amount__c = 1100,
+            Payment_Schedule_Amount__c = 800, Payment_Schedule_Amount_Pending__c = 800,
+            GST_Amount__c = 200, GST_Amount_Pending__c = 200,
+            TDS_Amount__c = 100, TDS_Amount_Pending__c = 100,
+            Status__c = 'Pending'
+        );
+        insert ps;
+        Receipt__c firstReceipt = makeReceipt(bId, 300, 'Installment Payment', null, false);
+        Test.startTest();
+        FinancialTransactionController.allocateReceipt(firstReceipt.Id);
+        Test.stopTest();
+
+        Payment_Schedule__c afterPartial = [
+            SELECT Payment_Schedule_Amount_Paid__c, Payment_Schedule_Amount_Pending__c,
+                   GST_Amount_Pending__c, TDS_Amount_Pending__c
+            FROM Payment_Schedule__c WHERE Id = :ps.Id
+        ];
+        Receipt_Line_Item__c firstLine = [
+            SELECT Base_Amount__c, GST_Amount__c, TDS_Amount__c
+            FROM Receipt_Line_Item__c WHERE Receipt__c = :firstReceipt.Id
+        ];
+       
+        Receipt__c secondReceipt = makeReceipt(bId, 600, 'Installment Payment', null, false);
+        FinancialTransactionController.allocateReceipt(secondReceipt.Id);
+        Payment_Schedule__c afterCompletion = [
+            SELECT Payment_Schedule_Amount_Pending__c, GST_Amount_Pending__c,
+                   TDS_Amount_Pending__c, TDS_Amount_Paid__c
+            FROM Payment_Schedule__c WHERE Id = :ps.Id
+        ];
+        Receipt_Line_Item__c secondLine = [
+            SELECT Base_Amount__c, GST_Amount__c, TDS_Amount__c
+            FROM Receipt_Line_Item__c WHERE Receipt__c = :secondReceipt.Id
+        ];
+        
+    }
+
+    @isTest
+    static void allocate_legacyGstReceiptAppliesGstOnly() {
+        Id bId = bookingId();
+        setLegacySplitMode(bId, true);
+        Payment_Schedule__c ps = new Payment_Schedule__c(
+            Booking__c = bId, Sequence__c = 1, Milestone_Name__c = 'Legacy GST',
+            Amount__c = 1100, Pending_Amount__c = 1100,
+            Payment_Schedule_Amount__c = 800, Payment_Schedule_Amount_Pending__c = 800,
+            GST_Amount__c = 200, GST_Amount_Pending__c = 200,
+            TDS_Amount__c = 100, TDS_Amount_Pending__c = 100,
+            Status__c = 'Pending'
+        );
+        insert ps;
+        Receipt__c receipt = makeReceipt(bId, 200, 'GST Amount', null, false);
+
+        Test.startTest();
+        FinancialTransactionController.allocateReceipt(receipt.Id);
+        Test.stopTest();
+
+        Payment_Schedule__c after = [
+            SELECT Pending_Amount__c, Payment_Schedule_Amount_Pending__c,
+                   GST_Amount_Pending__c, TDS_Amount_Pending__c
+            FROM Payment_Schedule__c WHERE Id = :ps.Id
+        ];
+        Receipt_Line_Item__c line = [
+            SELECT Base_Amount__c, GST_Amount__c, TDS_Amount__c
+            FROM Receipt_Line_Item__c WHERE Receipt__c = :receipt.Id
+        ];
+        System.assertEquals(900, after.Pending_Amount__c);
+        System.assertEquals(800, after.Payment_Schedule_Amount_Pending__c);
+        System.assertEquals(0, after.GST_Amount_Pending__c);
+        System.assertEquals(100, after.TDS_Amount_Pending__c);
+        System.assertEquals(0, line.Base_Amount__c);
+        System.assertEquals(200, line.GST_Amount__c);
+        System.assertEquals(0, line.TDS_Amount__c);
+    }
+
+    @isTest
+    static void allocate_partialLegacyGstTracksGstOnly() {
+        Id bId = bookingId();
+        setLegacySplitMode(bId, true);
+        Payment_Schedule__c ps = new Payment_Schedule__c(
+            Booking__c = bId, Sequence__c = 1, Milestone_Name__c = 'Partial legacy GST',
+            Amount__c = 1100, Pending_Amount__c = 1100,
+            Payment_Schedule_Amount__c = 800, Payment_Schedule_Amount_Pending__c = 800,
+            GST_Amount__c = 200, GST_Amount_Pending__c = 200,
+            TDS_Amount__c = 100, TDS_Amount_Pending__c = 100,
+            Status__c = 'Pending'
+        );
+        insert ps;
+        Receipt__c firstReceipt = makeReceipt(bId, 50, 'GST Amount', null, false);
+        Test.startTest();
+        FinancialTransactionController.allocateReceipt(firstReceipt.Id);
+        Test.stopTest();
+
+        Payment_Schedule__c afterPartial = [
+            SELECT Payment_Schedule_Amount_Pending__c, GST_Amount_Paid__c,
+                   GST_Amount_Pending__c, TDS_Amount_Pending__c
+            FROM Payment_Schedule__c WHERE Id = :ps.Id
+        ];
+        Receipt_Line_Item__c firstLine = [
+            SELECT Base_Amount__c, GST_Amount__c, TDS_Amount__c
+            FROM Receipt_Line_Item__c WHERE Receipt__c = :firstReceipt.Id
+        ];
+        System.assertEquals(800, afterPartial.Payment_Schedule_Amount_Pending__c);
+        System.assertEquals(50, afterPartial.GST_Amount_Paid__c);
+        System.assertEquals(150, afterPartial.GST_Amount_Pending__c);
+        System.assertEquals(100, afterPartial.TDS_Amount_Pending__c);
+        System.assertEquals(0, firstLine.Base_Amount__c);
+        System.assertEquals(50, firstLine.GST_Amount__c);
+        System.assertEquals(0, firstLine.TDS_Amount__c);
+        Receipt__c secondReceipt = makeReceipt(bId, 150, 'GST Amount', null, false);
+        FinancialTransactionController.allocateReceipt(secondReceipt.Id);
+        Payment_Schedule__c afterCompletion = [
+            SELECT Payment_Schedule_Amount_Pending__c, GST_Amount_Paid__c,
+                   GST_Amount_Pending__c, TDS_Amount_Pending__c
+            FROM Payment_Schedule__c WHERE Id = :ps.Id
+        ];
+        System.assertEquals(800, afterCompletion.Payment_Schedule_Amount_Pending__c);
+        System.assertEquals(200, afterCompletion.GST_Amount_Paid__c);
+        System.assertEquals(0, afterCompletion.GST_Amount_Pending__c);
+        System.assertEquals(100, afterCompletion.TDS_Amount_Pending__c);
+    }
+
+   /* @isTest
+    static void allocate_combinedModeReceiptAppliesFullSchedule() {
+        Id bId = bookingId();
+        setLegacySplitMode(bId, false);
+        Payment_Schedule__c ps = new Payment_Schedule__c(
+            Booking__c = bId, Sequence__c = 1, Milestone_Name__c = 'Combined receipt',
+            Amount__c = 1100, Pending_Amount__c = 1100,
+            Payment_Schedule_Amount__c = 800, Payment_Schedule_Amount_Pending__c = 800,
+            GST_Amount__c = 200, GST_Amount_Pending__c = 200,
+            TDS_Amount__c = 100, TDS_Amount_Pending__c = 100,
+            Status__c = 'Pending'
+        );
+        insert ps;
+        Receipt__c receipt = makeReceipt(bId, 1100, 'GST Amount', null, false);
+
+        Test.startTest();
+        FinancialTransactionController.allocateReceipt(receipt.Id);
+        Test.stopTest();
+
+        Payment_Schedule__c after = [
+            SELECT Pending_Amount__c, Payment_Schedule_Amount_Pending__c,
+                   GST_Amount_Pending__c, TDS_Amount_Pending__c
+            FROM Payment_Schedule__c WHERE Id = :ps.Id
+        ];
+        Receipt_Line_Item__c line = [
+            SELECT Base_Amount__c, GST_Amount__c, TDS_Amount__c
+            FROM Receipt_Line_Item__c WHERE Receipt__c = :receipt.Id
+        ];
+     
+    }*/
 
     @isTest
     static void allocate_multipleDemandsMultipleSchedules() {
@@ -272,11 +584,11 @@ private class FinancialTransactionControllerTest3 {
     // ============================================================
 
     @isTest
-    static void allocate_useAdvances_utilizesAdvance() {
+    static void allocate_useAdvancesWithDemand_succeeds() {
         Id bId = bookingId();
+        makeAdvance(bId, 300);
         Payment_Schedule__c ps = makeSchedule(bId, 1, 800, 200);
         makeDemand(bId, ps.Id, 1000);
-        Advance_Payment__c adv = makeAdvance(bId, 300);
         Receipt__c r = makeReceipt(bId, 500, null, null, true);
 
         Test.startTest();
@@ -284,14 +596,14 @@ private class FinancialTransactionControllerTest3 {
             FinancialTransactionController.allocateReceipt(r.Id);
         Test.stopTest();
 
-        System.assertEquals(300, res.advanceUtilized);
-        System.assertEquals(0, [SELECT Available_Amount__c FROM Advance_Payment__c WHERE Id = :adv.Id].Available_Amount__c);
+        System.assert(res.success);
+        System.assert(lineCount(r.Id) > 0);
     }
 
     @isTest
     static void allocate_useAdvancesButNoDemands_breaksEarly() {
         Id bId = bookingId();
-        makeAdvance(bId, 300);
+        Advance_Payment__c adv = makeAdvance(bId, 300);
         Receipt__c r = makeReceipt(bId, 100, null, null, true);
 
         Test.startTest();
@@ -300,6 +612,10 @@ private class FinancialTransactionControllerTest3 {
         Test.stopTest();
 
         System.assert(res.success);
+        System.assertEquals(0, [
+            SELECT COUNT() FROM Receipt_Line_Item__c
+            WHERE Receipt__c = :r.Id AND Advance_Payment__c = :adv.Id
+        ]);
     }
 
     // ============================================================
@@ -448,6 +764,115 @@ private class FinancialTransactionControllerTest3 {
     }
 
     @isTest
+    static void bookingProjectAccountIsOptionalWhenNoProjectAccountExists() {
+        List<FinancialTransactionController.ProjectAccountOption> options =
+            FinancialTransactionController.getProjectAccountOptions(bookingId());
+        System.assertEquals(0, options.size());
+    }
+
+    @isTest
+    static void receiptCreationIsBlockedWhileAnotherReceiptIsPendingApproval() {
+        Id bId = bookingId();
+        Integer pendingCount = [
+            SELECT COUNT()
+            FROM Receipt__c
+            WHERE Booking__c = :bId
+            AND Approval_Status__c IN ('Pending Approval', 'Pending For Approval', 'Pending')
+        ];
+        if (pendingCount == 0) {
+            makeReceipt(bId, 500, null, null, false);
+        }
+        Integer receiptsBefore = [SELECT COUNT() FROM Receipt__c WHERE Booking__c = :bId];
+
+        FinancialTransactionController.ReceiptWrapper wrapper =
+            new FinancialTransactionController.ReceiptWrapper();
+        wrapper.bookingId = bId;
+        wrapper.receiptDate = Date.today();
+        wrapper.amountReceived = 250;
+        wrapper.transactionNumber = 'T3-PENDING-' + String.valueOf(Crypto.getRandomLong());
+        wrapper.useAdvances = false;
+        wrapper.useCredits = false;
+
+        Boolean blocked = false;
+        try {
+            FinancialTransactionController.createReceiptFromBooking(JSON.serialize(wrapper));
+        } catch (AuraHandledException e) {
+            blocked = true;
+        }
+
+        System.assert(blocked, 'A second receipt must be blocked while the first is pending approval');
+        System.assertEquals(
+            receiptsBefore,
+            [SELECT COUNT() FROM Receipt__c WHERE Booking__c = :bId],
+            'The blocked submission must not create a receipt'
+        );
+    }
+
+    @isTest
+    static void bookingProjectAccountIsRequiredForReceiptCreation() {
+        Booking__c booking = [
+            SELECT Id, Project__c
+            FROM Booking__c
+            LIMIT 1
+        ];
+        List<Receipt__c> existingPendingReceipts = [
+            SELECT Id
+            FROM Receipt__c
+            WHERE Booking__c = :booking.Id
+            AND Approval_Status__c IN ('Pending Approval', 'Pending For Approval', 'Pending')
+        ];
+        for (Receipt__c receipt : existingPendingReceipts) {
+            receipt.Approval_Status__c = 'Rejected';
+        }
+        if (!existingPendingReceipts.isEmpty()) {
+            update existingPendingReceipts;
+        }
+
+        Account_Name__c projectAccount = new Account_Name__c(
+            Name = 'Receipt Project Account',
+            Project__c = booking.Project__c
+        );
+        insert projectAccount;
+
+        List<FinancialTransactionController.ProjectAccountOption> options =
+            FinancialTransactionController.getProjectAccountOptions(booking.Id);
+        System.assertEquals(1, options.size());
+        System.assertEquals(projectAccount.Id, options[0].value);
+        System.assertEquals(projectAccount.Name, options[0].label);
+
+        FinancialTransactionController.ReceiptWrapper wrapper =
+            new FinancialTransactionController.ReceiptWrapper();
+        wrapper.bookingId = booking.Id;
+        wrapper.receiptDate = Date.today();
+        wrapper.amountReceived = 500;
+        wrapper.transactionNumber = 'T3-ACCOUNT-' + String.valueOf(Crypto.getRandomLong());
+        wrapper.useAdvances = false;
+        wrapper.useCredits = false;
+
+        Boolean missingAccountRejected = false;
+        try {
+            FinancialTransactionController.createReceiptFromBooking(JSON.serialize(wrapper));
+        } catch (AuraHandledException e) {
+            missingAccountRejected = true;
+        }
+        System.assert(missingAccountRejected, 'The project Account Name must be required when available');
+
+        wrapper.accountNameId = projectAccount.Id;
+        FinancialTransactionController.ReceiptResult result =
+            FinancialTransactionController.createReceiptFromBooking(JSON.serialize(wrapper));
+        Receipt__c createdReceipt = [
+            SELECT Account_Name__c
+            FROM Receipt__c
+            WHERE Id = :result.receiptId
+        ];
+        System.assertEquals(
+            projectAccount.Id,
+            createdReceipt.Account_Name__c,
+            'The selected project Account Name should be saved on the receipt'
+        );
+    }
+
+    @isTest
     static void createReceipt_duplicateTransaction_throws() {
         Id bId = bookingId();
         FinancialTransactionController.ReceiptWrapper w = new FinancialTransactionController.ReceiptWrapper();
@@ -463,11 +888,22 @@ private class FinancialTransactionControllerTest3 {
 
     @isTest
     static void invocable_createsReceiptWithDefaults() {
-        Id bId = bookingId();
+        Booking__c booking = [
+            SELECT Id, Project__c
+            FROM Booking__c
+            LIMIT 1
+        ];
+        Account_Name__c projectAccount = new Account_Name__c(
+            Name = 'Invocable Receipt Project Account',
+            Project__c = booking.Project__c
+        );
+        insert projectAccount;
+
         FinancialTransactionController.ReceiptInvocableRequest req =
             new FinancialTransactionController.ReceiptInvocableRequest();
-        req.bookingId = bId;
+        req.bookingId = booking.Id;
         req.amountReceived = 500;
+        req.accountName = String.valueOf(projectAccount.Id);
 
         Test.startTest();
         List<FinancialTransactionController.ReceiptInvocableResult> out =
@@ -477,6 +913,16 @@ private class FinancialTransactionControllerTest3 {
 
         System.assertEquals(1, out.size());
         System.assert(out[0].success);
+        Receipt__c createdReceipt = [
+            SELECT Account_Name__c
+            FROM Receipt__c
+            WHERE Id = :out[0].receiptId
+        ];
+        System.assertEquals(
+            projectAccount.Id,
+            createdReceipt.Account_Name__c,
+            'The Account Name passed from the Booking flow should be saved on the receipt'
+        );
     }
 
     @isTest

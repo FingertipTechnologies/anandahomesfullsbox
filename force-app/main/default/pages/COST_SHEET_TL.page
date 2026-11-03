@@ -216,7 +216,7 @@
                 </tr>
                 <!-- GST -->
                 <tr class="total-row bg-gray">
-                    <td colspan="3" class="text-right"><em>GST (5% ON FLAT COST)</em></td>
+                    <td colspan="3" class="text-right"><em>GST (<apex:outputText value="{0, number, 0.##}"><apex:param value="{!NULLVALUE(Quote__c.GST1__c, 0)}" /></apex:outputText>% ON FLAT COST)</em></td>
                     <td class="text-right">&#8377; <apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.GST_Amount__c, 0)}" /></apex:outputText></td>
                 </tr>
                 <!-- Sale Consideration -->
@@ -240,7 +240,7 @@
                     <td class="schedule-header" style="width:37%">MILESTONES</td>
                     <td class="schedule-header" style="width:9%">STAGE<br/>(% OUT<br/>OF 100 )</td>
                     <td class="schedule-header" style="width:15%">FLAT COST</td>
-                    <td class="schedule-header" style="width:13%">GST (5%)</td>
+                    <td class="schedule-header" style="width:13%">GST (<apex:outputText value="{0, number, 0.##}"><apex:param value="{!NULLVALUE(Quote__c.GST1__c, 0)}" /></apex:outputText>%)</td>
                     <td class="schedule-header" style="width:16%">NET<br/>AMOUNT</td>
                 </tr>
                 <apex:repeat value="{!lineItems}" var="item">
@@ -315,7 +315,7 @@
             <apex:variable var="bookingAmountPayable" value="{!NULLVALUE(Quote__c.Sub_total__c, 0) * 0.20}" />
             <apex:variable var="tdsAmount" value="{!bookingAmountPayable * 0.01}" />
             <apex:variable var="escrowAmount" value="{!bookingAmountPayable - tdsAmount}" />
-            <apex:variable var="gstOnBooking" value="{!bookingAmountPayable * 0.05}" />
+            <apex:variable var="gstOnBooking" value="{!bookingAmountPayable * NULLVALUE(Quote__c.GST1__c, 0)}" />
 
             <table style="margin-top:15px">
                 <tr>
@@ -327,7 +327,7 @@
                 <tr>
                     <td class="text-center">1% TDS on Booking Amount</td>
                     <td class="text-right">&#8377; <apex:outputText value="{0, number, ###,###}"><apex:param value="{!tdsAmount}" /></apex:outputText></td>
-                    <td class="text-bold">5% GST On Booking Amount</td>
+                    <td class="text-bold"><apex:outputText value="{0, number, 0.##}"><apex:param value="{!NULLVALUE(Quote__c.GST1__c, 0)}" /></apex:outputText>% GST On Booking Amount</td>
                 </tr>
                 <tr>
                     <td class="text-center">Flat Booking Amount(Pay to Escrow A/c)</td>

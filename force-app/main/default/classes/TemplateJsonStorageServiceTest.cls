@@ -40,6 +40,7 @@ private class TemplateJsonStorageServiceTest {
 
         Test.startTest();
         String json = TemplateJsonStorageService.loadTemplateJson(queried);
+        Map<Id,String> mapDe = TemplateJsonStorageService.loadTemplateJsonMap(new List<Document_Template__c> {queried});
         Test.stopTest();
 
         System.assertEquals(null, json, 'Empty template should return null');

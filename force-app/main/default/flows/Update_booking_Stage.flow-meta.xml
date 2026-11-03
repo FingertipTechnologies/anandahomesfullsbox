@@ -24,10 +24,26 @@
     </processMetadataValues>
     <processType>AutoLaunchedFlow</processType>
     <recordUpdates>
+        <name>Update_Lead</name>
+        <label>Update Lead</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <inputAssignments>
+            <field>Lead_Status__c</field>
+            <value>
+                <stringValue>Booked</stringValue>
+            </value>
+        </inputAssignments>
+        <inputReference>$Record.CLead__r</inputReference>
+    </recordUpdates>
+    <recordUpdates>
         <name>Update_Quote_Record</name>
         <label>Update Quote Record</label>
         <locationX>0</locationX>
         <locationY>0</locationY>
+        <connector>
+            <targetReference>Update_Lead</targetReference>
+        </connector>
         <inputAssignments>
             <field>Quote_status__c</field>
             <value>

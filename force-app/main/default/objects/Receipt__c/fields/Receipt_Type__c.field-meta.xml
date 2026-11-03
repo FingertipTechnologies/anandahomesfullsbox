@@ -40,6 +40,11 @@
                 <default>false</default>
                 <label>Bank Disbursement</label>
             </value>
+            <value>
+                <fullName>GST Amount</fullName>
+                <default>false</default>
+                <label>GST Amount</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

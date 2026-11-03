@@ -173,6 +173,42 @@ private class DynamicDocumentRendererTest {
     }
 
     @isTest
+    static void renderDocument_tableSection_filtersChildrenByBoundValue() {
+        Account a = [SELECT Id FROM Account LIMIT 1];
+        insert new List<Contact>{
+            new Contact(LastName = 'Included', AccountId = a.Id, Title = 'Approved'),
+            new Contact(LastName = 'Excluded', AccountId = a.Id, Title = 'Pending')
+        };
+
+        String tmplJson = JSON.serialize(new Map<String, Object>{
+            'sections' => new List<Object>{
+                new Map<String, Object>{
+                    'type' => 'table',
+                    'childObject' => 'Contact',
+                    'relationshipField' => 'AccountId',
+                    'columns' => new List<Object>{
+                        new Map<String, Object>{ 'label' => 'Name', 'field' => 'LastName' }
+                    },
+                    'filters' => new List<Object>{
+                        new Map<String, Object>{ 'field' => 'Title', 'value' => 'Approved' }
+                    }
+                }
+            }
+        });
+
+        String html = DynamicDocumentRenderer.renderDocument(tmplJson, a.Id, 'Account');
+        System.assert(html.contains('Included'), 'Matching child rows should render');
+        System.assert(!html.contains('Excluded'), 'Non-matching child rows should not render');
+    }
+
+    @isTest
+    static void calculateNocBalance_clampsAtZero() {
+        System.assertEquals(700, DynamicDocumentRenderer.calculateNocBalance(1000, 300));
+        System.assertEquals(0, DynamicDocumentRenderer.calculateNocBalance(100, 300));
+        System.assertEquals(100, DynamicDocumentRenderer.calculateNocBalance(100, null));
+    }
+
+    @isTest
     static void renderDocument_tableSection_noRecords_rendersEmpty() {
         Account a = [SELECT Id FROM Account LIMIT 1];
         String tmplJson = JSON.serialize(new Map<String, Object>{

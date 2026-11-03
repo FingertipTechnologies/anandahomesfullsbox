@@ -385,7 +385,13 @@ public with sharing class DynamicDocumentRenderer {
             children = (record != null) ? new List<SObject>{ record } : new List<SObject>();
         } else {
             children = queryChildRecords(
-                childObject, relationshipField, recordId, fieldNames, orderBy, maxRows
+                childObject,
+                relationshipField,
+                recordId,
+                fieldNames,
+                orderBy,
+                maxRows,
+                (List<Object>) section.get('filters')
             );
         }
 
@@ -492,6 +498,18 @@ public with sharing class DynamicDocumentRenderer {
     private static String resolveMergeFields(String content, SObject record, String objectApiName) {
         if (record == null || String.isBlank(content)) return content;
 
+        content = content.replace('{!TODAY}', formatFieldValue(Date.today()));
+        content = content.replace('{!NOW}', Datetime.now().format('dd/MM/yyyy HH:mm'));
+        if (objectApiName == 'Booking__c') {
+            content = content.replace(
+                '{!NOC_BALANCE_RECEIVABLE}',
+                formatFieldValue(calculateNocBalance(
+                    (Decimal) getFieldValue(record, 'Total_Flat_Cost__c'),
+                    (Decimal) getFieldValue(record, 'Total_Receipt_Amount__c')
+                ))
+            );
+        }
+
         // ---- Function: {!INWORDS(Field__c)} -> the field's numeric value in words ----
         // (parentheses keep this from matching the plain {!Field} pattern below)
         Pattern fnP = Pattern.compile('(?i)\\{!\\s*INWORDS\\s*\\(\\s*([A-Za-z0-9_.]+)\\s*\\)\\s*\\}');
@@ -542,11 +560,13 @@ public with sharing class DynamicDocumentRenderer {
             content = content.replace(key, replacements.get(key));
         }
 
-        // Resolve TODAY
-        content = content.replace('{!TODAY}', String.valueOf(Date.today()));
-        content = content.replace('{!NOW}', String.valueOf(Datetime.now()));
-
         return content;
+    }
+
+    @TestVisible
+    private static Decimal calculateNocBalance(Decimal totalConsideration, Decimal receivedAmount) {
+        return Math.max(0, (totalConsideration == null ? 0 : totalConsideration)
+            - (receivedAmount == null ? 0 : receivedAmount));
     }
 
     // ============================== QUERY HELPERS ==============================
@@ -627,7 +647,8 @@ public with sharing class DynamicDocumentRenderer {
 
     private static List<SObject> queryChildRecords(String childObject, String relationshipField,
                                                      String parentRecordId, List<String> fieldNames,
-                                                     String orderBy, Integer maxRows) {
+                                                     String orderBy, Integer maxRows,
+                                                     List<Object> filters) {
         if (String.isBlank(childObject) || String.isBlank(relationshipField)) {
             return new List<SObject>();
         }
@@ -655,6 +676,21 @@ public with sharing class DynamicDocumentRenderer {
                         ' FROM ' + String.escapeSingleQuotes(childObject) +
                         ' WHERE ' + String.escapeSingleQuotes(relationshipField) + ' = :parentRecordId';
 
+        Map<String, Object> bindValues = new Map<String, Object>{ 'parentRecordId' => parentRecordId };
+        if (filters != null) {
+            Integer filterIndex = 0;
+            for (Object filterObj : filters) {
+                Map<String, Object> filter = (Map<String, Object>) filterObj;
+                String fieldPath = getStr(filter, 'field', '');
+                if (!isValidChildFieldPath(childObject, fieldPath)) {
+                    throw new IllegalArgumentException('Invalid child table filter field: ' + fieldPath);
+                }
+                String bindName = 'filterValue' + filterIndex++;
+                query += ' AND ' + fieldPath + ' = :' + bindName;
+                bindValues.put(bindName, filter.get('value'));
+            }
+        }
+
         if (String.isNotBlank(orderBy)) {
             query += ' ORDER BY ' + String.escapeSingleQuotes(orderBy);
         }
@@ -662,11 +698,43 @@ public with sharing class DynamicDocumentRenderer {
         query += ' LIMIT ' + maxRows;
 
         try {
-            return Database.query(query);
+            return Database.queryWithBinds(query, bindValues, AccessLevel.SYSTEM_MODE);
         } catch (Exception e) {
             System.debug('Error querying child records: ' + e.getMessage() + ' | Query: ' + query);
             return new List<SObject>();
         }
+    }
+
+    private static Boolean isValidChildFieldPath(String objectApiName, String fieldPath) {
+        if (String.isBlank(objectApiName) || String.isBlank(fieldPath)) return false;
+        Schema.SObjectType currentType = Schema.getGlobalDescribe().get(objectApiName);
+        if (currentType == null) return false;
+
+        List<String> parts = fieldPath.split('\\.');
+        for (Integer i = 0; i < parts.size(); i++) {
+            Map<String, Schema.SObjectField> fields =
+                currentType.getDescribe().fields.getMap();
+            if (i == parts.size() - 1) {
+                return fields.containsKey(parts[i])
+                    && fields.get(parts[i]).getDescribe().isAccessible();
+            }
+
+            Schema.SObjectField relationshipField;
+            for (Schema.SObjectField field : fields.values()) {
+                Schema.DescribeFieldResult description = field.getDescribe();
+                if (description.getType() == Schema.DisplayType.REFERENCE
+                    && description.getRelationshipName() != null
+                    && description.getRelationshipName().equalsIgnoreCase(parts[i])) {
+                    relationshipField = field;
+                    break;
+                }
+            }
+            if (relationshipField == null || relationshipField.getDescribe().getReferenceTo().isEmpty()) {
+                return false;
+            }
+            currentType = relationshipField.getDescribe().getReferenceTo()[0];
+        }
+        return false;
     }
 
     // ============================== FIELD VALUE TRAVERSAL ==============================
@@ -708,35 +776,50 @@ public with sharing class DynamicDocumentRenderer {
      */
     private static void addReferencedParentFields(String templateJson, Set<String> fieldSet,
                                                     Map<String, Schema.SObjectField> fieldMap) {
-        // 1. Scan for {!Relationship.Relationship....Field} patterns (any depth) in content
-        Pattern p = Pattern.compile('\\{!([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)\\}');
-        Matcher m = p.matcher(templateJson);
-        while (m.find()) {
-            addValidatedPath(m.group(1), fieldSet, fieldMap);
-        }
-
-        // 1b. Scan inside {!INWORDS(...)} calls too — e.g. {!INWORDS(Booking__r.Unit__r.Cost__c)}
-        Pattern fnP = Pattern.compile('(?i)\\{!\\s*INWORDS\\s*\\(\\s*([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)\\s*\\)\\s*\\}');
-        Matcher fnM = fnP.matcher(templateJson);
-        while (fnM.find()) {
-            addValidatedPath(fnM.group(1), fieldSet, fieldMap);
-        }
-
-        // 2. Scan for fieldGrid / table-column fields with dot notation (any depth)
+        // Each pattern is scanned over overlapping slices of the (potentially very large) template
+        // JSON. Running a matcher across a ~300 KB string in one pass can exceed Apex's regex step
+        // limit ("Regex too complicated") once the template is merge-field dense, so every scan is
+        // windowed; the overlap (larger than any real token) keeps a token that straddles a slice
+        // boundary from being missed, and duplicate hits are harmless because fieldSet is a Set.
+        //
+        // 1. {!Relationship.Relationship....Field} patterns (any depth) in content
+        scanReferencedPaths('\\{!([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)\\}', templateJson, fieldSet, fieldMap);
+        // 1b. {!INWORDS(...)} calls too — e.g. {!INWORDS(Booking__r.Unit__r.Cost__c)}
+        scanReferencedPaths('(?i)\\{!\\s*INWORDS\\s*\\(\\s*([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)\\s*\\)\\s*\\}', templateJson, fieldSet, fieldMap);
+        // 2. fieldGrid / table-column fields with dot notation (any depth)
         //    (e.g., "field":"Account__r.Phone" or "field":"Booking__r.Unit__r.Name")
-        Pattern fieldPattern = Pattern.compile('"field"\\s*:\\s*"([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)"');
-        Matcher fm = fieldPattern.matcher(templateJson);
-        while (fm.find()) {
-            addValidatedPath(fm.group(1), fieldSet, fieldMap);
-        }
+        scanReferencedPaths('"field"\\s*:\\s*"([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)"', templateJson, fieldSet, fieldMap);
+        // 3. table-column parent-field totals with dot notation (any depth)
+        //    (e.g., "totalParentField":"Booking__r.Unit__r.Total_Flat_Cost__c")
+        scanReferencedPaths('"totalParentField"\\s*:\\s*"([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)"', templateJson, fieldSet, fieldMap);
+    }
 
-        // 3. Scan for table-column parent-field totals with dot notation (any depth)
-        //    (e.g., "totalParentField":"Booking__r.Unit__r.Total_Flat_Cost__c") so the value
-        //    the totals row pulls from a related parent record is actually queried.
-        Pattern totalPattern = Pattern.compile('"totalParentField"\\s*:\\s*"([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)"');
-        Matcher tm = totalPattern.matcher(templateJson);
-        while (tm.find()) {
-            addValidatedPath(tm.group(1), fieldSet, fieldMap);
+    // Window/overlap for scanReferencedPaths. Overlap must exceed the longest possible merge token
+    // so no token is split across a boundary and lost.
+    private static final Integer SCAN_WINDOW = 20000;
+    private static final Integer SCAN_OVERLAP = 400;
+
+    /**
+     * @description Run one capture-group-1 pattern over `text` in overlapping windows and validate +
+     * add each captured dotted path. Windowing keeps any single matcher pass well under Apex's regex
+     * step limit even when the template JSON is very large and merge-field dense; the overlap ensures
+     * a token spanning a window boundary is still matched in the next window (the Set dedupes).
+     */
+    private static void scanReferencedPaths(String regex, String text,
+                                            Set<String> fieldSet,
+                                            Map<String, Schema.SObjectField> fieldMap) {
+        if (String.isBlank(text)) return;
+        Pattern p = Pattern.compile(regex);
+        Integer len = text.length();
+        Integer start = 0;
+        while (start < len) {
+            Integer endPos = Math.min(len, start + SCAN_WINDOW);
+            Matcher m = p.matcher(text.substring(start, endPos));
+            while (m.find()) {
+                addValidatedPath(m.group(1), fieldSet, fieldMap);
+            }
+            if (endPos >= len) break;
+            start = endPos - SCAN_OVERLAP;
         }
     }
 
@@ -882,15 +965,20 @@ public with sharing class DynamicDocumentRenderer {
     }
 
     /**
-     * @description Renders a field value for display in a document. DateTime fields show the
-     *              calendar date only (no "00:00:00" time component) — documents display dates,
-     *              not timestamps. Everything else is unchanged: a Date already renders as
-     *              yyyy-MM-dd, and numbers/text/booleans pass through String.valueOf.
+     * @description Renders date values in day/month/year format. DateTime fields show the
+     *              calendar date only; non-date values pass through String.valueOf.
      */
     private static String formatFieldValue(Object val) {
         if (val == null) return '';
         if (val instanceof DateTime) {
-            return ((DateTime) val).format('yyyy-MM-dd');
+            return ((DateTime) val).format('dd/MM/yyyy');
+        }
+        if (val instanceof Date) {
+            Date dateValue = (Date) val;
+            return DateTime.newInstance(
+                dateValue,
+                Time.newInstance(0, 0, 0, 0)
+            ).format('dd/MM/yyyy');
         }
         return String.valueOf(val);
     }

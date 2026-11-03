@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Lead_Status__c</fullName>
+    <label>Lead status</label>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackHistory>true</trackHistory>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>New Enquiry</fullName>
+                <default>true</default>
+                <label>New Enquiry</label>
+            </value>
+            <value>
+                <fullName>New sales enquiry</fullName>
+                <default>false</default>
+                <label>New sales enquiry</label>
+            </value>
+            <value>
+                <fullName>RNR</fullName>
+                <default>false</default>
+                <label>RNR</label>
+            </value>
+            <value>
+                <fullName>Pre Sales Follow Up</fullName>
+                <default>false</default>
+                <label>Pre Sales Follow Up</label>
+            </value>
+            <value>
+                <fullName>Interested</fullName>
+                <default>false</default>
+                <label>Interested</label>
+            </value>
+            <value>
+                <fullName>Potential Site Visit</fullName>
+                <default>false</default>
+                <label>Potential Site Visit</label>
+            </value>
+            <value>
+                <fullName>Site Visit Schedule</fullName>
+                <default>false</default>
+                <label>Site Visit Schedule</label>
+            </value>
+            <value>
+                <fullName>Unqualified</fullName>
+                <default>false</default>
+                <label>Unqualified</label>
+            </value>
+            <value>
+                <fullName>Sv Completed</fullName>
+                <default>false</default>
+                <label>SV Completed</label>
+            </value>
+            <value>
+                <fullName>Sales Follow up</fullName>
+                <default>false</default>
+                <label>Sales Follow up</label>
+            </value>
+            <value>
+                <fullName>Negotiation</fullName>
+                <default>false</default>
+                <label>Negotiation</label>
+            </value>
+            <value>
+                <fullName>Potential Booking</fullName>
+                <default>false</default>
+                <label>Potential Booking</label>
+            </value>
+            <value>
+                <fullName>Booked</fullName>
+                <default>false</default>
+                <label>Booked</label>
+            </value>
+            <value>
+                <fullName>Closed Lost</fullName>
+                <default>false</default>
+                <label>Closed Lost</label>
+            </value>
+            <value>
+                <fullName>Call Back</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>Call Back</label>
+            </value>
+            <value>
+                <fullName>Follow Up</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>Follow Up</label>
+            </value>
+            <value>
+                <fullName>Incoming</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>Incoming</label>
+            </value>
+            <value>
+                <fullName>Not Interested</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>Not Interested</label>
+            </value>
+            <value>
+                <fullName>Post Site Visit Follow-Up</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>Post Site Visit Follow-Up</label>
+            </value>
+            <value>
+                <fullName>Qualified</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>Qualified</label>
+            </value>
+            <value>
+                <fullName>Quotation</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>Quotation</label>
+            </value>
+            <value>
+                <fullName>Sales -New Enquiry</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>Sales -New Enquiry</label>
+            </value>
+            <value>
+                <fullName>Site Visit Completed</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>Site Visit Completed</label>
+            </value>
+            <value>
+                <fullName>Unable to connect</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>Unable to connect</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

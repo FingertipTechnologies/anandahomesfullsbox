@@ -10,6 +10,10 @@ private class PaymentScheduleEditorControllerTest {
     @testSetup
     static void setup() {
         Booking__c b = postSalesTestDataFactory.createFullBooking('PSE Project');
+        update new Project__c(
+            Id = b.Project__c,
+            Legacy_Split_Demand_Receipt__c = true
+        );
         b.Total_Payable_Amount__c = 1000;
         b.Funding_Type__c = 'Prorata';
         b.Loan_Sanctioned_Amount__c = 600;

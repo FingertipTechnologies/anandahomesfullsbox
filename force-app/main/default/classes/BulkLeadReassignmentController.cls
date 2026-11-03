@@ -50,7 +50,7 @@ public without sharing class BulkLeadReassignmentController {
             }
         }
 
-        // Active users (only Pre-Sales Executive and Associate Manager profiles)
+        // Active users eligible for Pre-Sales and Sales lead assignment
         data.activeUsers = new List<UserOption>();
         for (User u : [
             SELECT Id, Name, Profile.Name
@@ -79,7 +79,7 @@ public without sharing class BulkLeadReassignmentController {
             return new List<Lead__c>();
         }
 
-        String query = 'SELECT Id, Name, Phone__c, Lead_Status__c, Allocated_Project__c, '
+        String query = 'SELECT Id, Name, Name__c, Phone__c, Lead_Status__c, Allocated_Project__c, '
             + 'Lead_Owner_Full_Name__c, Created_Dates__c, Temp_Owner__c, Temp_Expiry__c, OwnerId '
             + 'FROM Lead__c WHERE OwnerId = :ownerId';
 
@@ -133,8 +133,22 @@ public without sharing class BulkLeadReassignmentController {
             WHERE Id IN :leadIds
         ];
 
+        Id newOwnerIdValue = Id.valueOf(newOwnerId);
+        Set<Id> ownerIds = new Set<Id>{ newOwnerIdValue };
+        for (Lead__c ld : leads) {
+            if (ld.OwnerId != null) {
+                ownerIds.add(ld.OwnerId);
+            }
+        }
+        Map<Id, User> usersById = new Map<Id, User>([
+            SELECT Id, Profile.Name
+            FROM User
+            WHERE Id IN :ownerIds
+        ]);
+
         List<Lead__c> leadsToUpdate = new List<Lead__c>();
         List<Reassignment_History__c> histories = new List<Reassignment_History__c>();
+        Id salesRecordTypeId;
 
         for (Lead__c ld : leads) {
             Reassignment_History__c rh = new Reassignment_History__c();
@@ -152,7 +166,22 @@ public without sharing class BulkLeadReassignmentController {
 
             if (reassignmentType == 'Permanent') {
                 // Change actual owner; ownership dates are not applicable for Permanent
-                upd.OwnerId = newOwnerId;
+                upd.OwnerId = newOwnerIdValue;
+                User previousOwner = usersById.get(ld.OwnerId);
+                User newOwner = usersById.get(newOwnerIdValue);
+                if (previousOwner != null && newOwner != null
+                    && previousOwner.Profile.Name == 'Pre-Sales Executive'
+                    && newOwner.Profile.Name == 'Associate Manager') {
+                    if (salesRecordTypeId == null) {
+                        Schema.RecordTypeInfo salesRecordTypeInfo =
+                            Schema.SObjectType.Lead__c.getRecordTypeInfosByDeveloperName().get('Sales');
+                        if (salesRecordTypeInfo == null) {
+                            throw new AuraHandledException('The Sales Lead record type is not available.');
+                        }
+                        salesRecordTypeId = salesRecordTypeInfo.getRecordTypeId();
+                    }
+                    upd.RecordTypeId = salesRecordTypeId;
+                }
                 rh.Status__c = 'Completed';
                 rh.Exit_Status__c = 'Permanent Transfer';
             } else {

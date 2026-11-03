@@ -1,0 +1,1186 @@
+<apex:page controller="BookingFormController"
+    renderAs="pdf"
+    showHeader="false"
+    sidebar="false"
+    standardStylesheets="false"
+    applyHtmlTag="false"
+    applyBodyTag="false"
+    contentType="application/pdf#LegaceyBookingForm.pdf">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<style type="text/css">
+
+@page {
+    size: A4 portrait;
+    margin: 8mm 9mm 8mm 9mm;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+    font-size: 9.1pt;
+    color: #87464F;
+}
+
+.page {
+    position: relative;
+    width: 190mm;
+    height: 280mm;
+    page-break-after: always;
+}
+
+.page-last {
+    page-break-after: auto;
+}
+
+/* HEADER / FOOTER */
+
+.header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 190mm;
+}
+
+.header-image {
+    width: 190mm;
+    display: block;
+    border: none;
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 190mm;
+}
+
+.footer-image {
+    width: 190mm;
+    display: block;
+    border: none;
+}
+
+/* FORM CONTENT */
+
+.content {
+    position: absolute;
+    left: 3mm;
+    width: 184mm;
+}
+
+.section {
+    text-align: center;
+}
+
+.section-heading {
+    display: inline-block;
+    background-color: #EABB43;
+    color: #FFFFFF;
+    font-family: sans-serif;
+    font-size: 10.5pt;
+    font-weight: bold;
+    line-height: 14pt;
+    padding: 1.3mm 6mm;
+    text-align: center;
+    white-space: nowrap;
+    border-radius: 20mm;
+}
+
+.form-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.form-table td {
+    padding: 0;
+    vertical-align: bottom;
+    font-size: 9.1pt;
+}
+
+.form-row {
+    height: 15mm;
+}
+
+.form-row-small {
+    height: 11mm;
+}
+
+.label-bold {
+    font-weight: bold;
+    font-size: 9.3pt;
+}
+
+/*
+ * DYNAMIC FIELD LINE
+ * Value centered above gold line.
+ */
+
+.value-line {
+    display: inline-block;
+    position: relative;
+    vertical-align: bottom;
+    height: 5.3mm;
+    border-bottom: 0.5pt solid #DDD0A6;
+    text-align: center;
+    overflow: hidden;
+}
+
+.field-value {
+    display: block;
+    width: 100%;
+    font-family: sans-serif;
+    font-size: 9pt;
+    font-weight: normal;
+    color: #333333;
+    line-height: 4.7mm;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.field-value-long {
+    font-size: 8pt;
+}
+
+.line {
+    display: inline-block;
+    height: 3mm;
+    vertical-align: bottom;
+    border-bottom: 0.5pt solid #DDD0A6;
+}
+
+/* SIGNATURES */
+
+.signature-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.signature-table td {
+    width: 50%;
+    height: 10mm;
+    font-size: 8.9pt;
+    vertical-align: bottom;
+}
+
+/* TERMS */
+
+.terms-heading {
+    text-align: center;
+    font-size: 11.4pt;
+    font-weight: bold;
+    color: #D8AF38;
+    margin-bottom: 5mm;
+}
+
+.terms-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.terms-table td {
+    font-size: 8pt;
+    color: #87464F;
+    vertical-align: top;
+    line-height: 1.35;
+    padding-bottom: 3.5mm;
+}
+
+.term-num {
+    width: 7mm;
+}
+
+.term-description {
+    text-align: left;
+}
+
+.bank-table {
+    width: 175mm;
+    margin-left: 7mm;
+    border-collapse: collapse;
+}
+
+.bank-table td {
+    font-size: 7.8pt;
+    color: #87464F;
+    vertical-align: top;
+    padding-bottom: 1mm;
+}
+
+.gold-heading {
+    color: #D8AF38;
+    font-size: 12.2pt;
+    font-weight: bold;
+    text-align: center;
+}
+
+.checkbox {
+    display: inline-block;
+    width: 3mm;
+    height: 3mm;
+    vertical-align: middle;
+    border: 0.5pt solid #DDD0A6;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- ===================================== -->
+<!-- PAGE 1 - BOOKING AND FIRST APPLICANT -->
+<!-- ===================================== -->
+
+<div class="page">
+
+    <div class="header">
+        <img class="header-image"
+             src="{!$Resource.LegaecyBookiingFormHeader}"
+             alt="Booking Form Header"/>
+    </div>
+
+    <div class="content" style="top:29mm;">
+
+        <div class="section"
+             style="margin-top:4mm;margin-bottom:5mm;">
+            <span class="section-heading">
+                FLAT DETAILS
+            </span>
+        </div>
+
+        <table class="form-table">
+
+            <tr class="form-row">
+                <td width="50%">
+                    <span class="label-bold">
+                        Date of Booking
+                    </span>
+                    <span class="value-line" style="width:48mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!bookingDate}"/>
+                        </span>
+                    </span>
+                </td>
+
+                <td width="50%">
+                    <span class="label-bold">Tower</span>
+                    <span class="value-line" style="width:70mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!towerName}"/>
+                        </span>
+                    </span>
+                </td>
+            </tr>
+
+            <tr class="form-row">
+                <td>
+                    <span class="label-bold">Flat No</span>
+                    <span class="value-line" style="width:66mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!flatNo}"/>
+                        </span>
+                    </span>
+                </td>
+
+                <td>
+                    <span class="label-bold">Flat Area</span>
+                    <span class="value-line" style="width:64mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!flatArea}"/>
+                        </span>
+                    </span>
+                </td>
+            </tr>
+
+            <tr class="form-row">
+                <td>
+                    <span class="label-bold">Facing</span>
+                    <span class="value-line" style="width:67mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!facing}"/>
+                        </span>
+                    </span>
+                </td>
+
+                <td>
+                    <span class="label-bold">
+                        Flat Configuration
+                    </span>
+                    <span class="value-line" style="width:42mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!flatConfiguration}"/>
+                        </span>
+                    </span>
+                </td>
+            </tr>
+
+        </table>
+
+        <div class="section"
+             style="margin-top:13mm;margin-bottom:4mm;">
+            <span class="section-heading">
+                DETAILS OF APPLICANT
+            </span>
+        </div>
+
+        <table class="form-table">
+
+            <tr class="form-row-small">
+                <td>
+                    Name
+                    <span class="value-line" style="width:171mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!applicantName}"/>
+                        </span>
+                    </span>
+                </td>
+            </tr>
+
+            <tr class="form-row-small">
+                <td>
+                    Father's / Husband's Name
+                    <span class="value-line" style="width:141mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!applicantFatherName}"/>
+                        </span>
+                    </span>
+                </td>
+            </tr>
+
+        </table>
+
+        <table class="form-table">
+
+            <tr class="form-row-small">
+
+                <td width="55%">
+                    Contact Number
+                    <span class="value-line" style="width:65mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!applicantPhone}"/>
+                        </span>
+                    </span>
+                </td>
+
+                <td width="45%">
+                    E-Mail Id
+                    <span class="value-line" style="width:58mm;">
+                        <span class="field-value field-value-long">
+                            <apex:outputText value="{!applicantEmail}"/>
+                        </span>
+                    </span>
+                </td>
+
+            </tr>
+
+            <tr class="form-row-small">
+
+                <td>
+                    Date of Birth
+                    <span class="value-line" style="width:70mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!applicantDOB}"/>
+                        </span>
+                    </span>
+                </td>
+
+                <td>
+                    Occupation
+                    <span class="value-line" style="width:54mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!applicantOccupation}"/>
+                        </span>
+                    </span>
+                </td>
+
+            </tr>
+
+            <tr class="form-row-small">
+
+                <td>
+                    Aadhar Card Number
+                    <span class="value-line" style="width:54mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!applicantAadhar}"/>
+                        </span>
+                    </span>
+                </td>
+
+                <td>
+                    PAN Card Number
+                    <span class="value-line" style="width:42mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!applicantPAN}"/>
+                        </span>
+                    </span>
+                </td>
+
+            </tr>
+
+        </table>
+
+        <table class="form-table">
+            <tr class="form-row-small">
+                <td>
+                    Complete Address
+                    <span class="value-line" style="width:151mm;">
+                        <span class="field-value field-value-long">
+                            <apex:outputText value="{!applicantAddress}"/>
+                        </span>
+                    </span>
+                </td>
+            </tr>
+        </table>
+
+        <div style="
+            margin-top:9mm;
+            border-bottom:0.5pt solid #DDD0A6;">
+        </div>
+
+        <table class="signature-table"
+               style="margin-top:14mm;">
+
+            <tr>
+                <td>Signature Of Purchaser</td>
+                <td>Signature (For Ananda Homes)</td>
+            </tr>
+
+            <tr>
+                <td>
+                    Name
+                    <span class="value-line" style="width:64mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!applicantName}"/>
+                        </span>
+                    </span>
+                </td>
+
+                <td>
+                    Name
+                    <span class="line" style="width:64mm;"></span>
+                </td>
+            </tr>
+
+        </table>
+
+    </div>
+
+    <div class="footer">
+        <img class="footer-image"
+             src="{!$Resource.LegaecyBookiingFormFooter}"
+             alt="Footer"/>
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- PAGE 2 - CO APPLICANT AND PRICE       -->
+<!-- ===================================== -->
+
+<div class="page">
+
+    <div class="header">
+        <img class="header-image"
+             src="{!$Resource.LegaecyBookiingFormHeader1}"
+             alt="Standard Header"/>
+    </div>
+
+    <div class="content" style="top:29mm;">
+
+        <div class="section" style="margin-bottom:4mm;">
+            <span class="section-heading">
+                DETAILS OF CO-APPLICANT
+            </span>
+        </div>
+
+        <table class="form-table">
+
+            <tr class="form-row-small">
+                <td>
+                    Name
+                    <span class="value-line" style="width:170mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!coName}"/>
+                        </span>
+                    </span>
+                </td>
+            </tr>
+
+            <tr class="form-row-small">
+                <td>
+                    Father's / Husband's Name
+                    <span class="value-line" style="width:141mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!coFatherName}"/>
+                        </span>
+                    </span>
+                </td>
+            </tr>
+
+        </table>
+
+        <table class="form-table">
+
+            <tr class="form-row-small">
+
+                <td width="55%">
+                    Contact Number
+                    <span class="value-line" style="width:65mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!coPhone}"/>
+                        </span>
+                    </span>
+                </td>
+
+                <td width="45%">
+                    E-Mail Id
+                    <span class="value-line" style="width:58mm;">
+                        <span class="field-value field-value-long">
+                            <apex:outputText value="{!coEmail}"/>
+                        </span>
+                    </span>
+                </td>
+
+            </tr>
+
+            <tr class="form-row-small">
+
+                <td>
+                    Date Of Birth
+                    <span class="value-line" style="width:70mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!coDOB}"/>
+                        </span>
+                    </span>
+                </td>
+
+                <td>
+                    Occupation
+                    <span class="value-line" style="width:54mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!coOccupation}"/>
+                        </span>
+                    </span>
+                </td>
+
+            </tr>
+
+            <tr class="form-row-small">
+
+                <td>
+                    Aadhar Card Number
+                    <span class="value-line" style="width:54mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!coAadhar}"/>
+                        </span>
+                    </span>
+                </td>
+
+                <td>
+                    Pan Card Number
+                    <span class="value-line" style="width:43mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!coPAN}"/>
+                        </span>
+                    </span>
+                </td>
+
+            </tr>
+
+            <tr class="form-row-small">
+                <td colspan="2">
+                    Complete Address
+                    <span class="value-line" style="width:151mm;">
+                        <span class="field-value field-value-long">
+                            <apex:outputText value="{!coAddress}"/>
+                        </span>
+                    </span>
+                </td>
+            </tr>
+
+        </table>
+
+        <div class="section"
+             style="margin-top:4mm;margin-bottom:4mm;">
+            <span class="section-heading">
+                PRICE DETAILS
+            </span>
+        </div>
+
+        <table class="form-table">
+
+            <tr class="form-row-small">
+                <td>
+                    Final Price
+                    <span class="line" style="width:167mm;"></span>
+                </td>
+            </tr>
+
+            <tr class="form-row-small">
+                <td>
+                    Booking Amount Payable For The Flat
+                    <span class="line" style="width:120mm;"></span>
+                </td>
+            </tr>
+
+            <tr class="form-row-small">
+                <td>
+                    Advance Paid At The Time Of Booking
+                    <span class="line" style="width:119mm;"></span>
+                </td>
+            </tr>
+
+            <tr class="form-row-small">
+                <td>
+                    Balance Booking Amount Payable
+                    <span class="line" style="width:125mm;"></span>
+                </td>
+            </tr>
+
+            <tr class="form-row-small">
+                <td>
+                    TDS Payable
+                    <span class="line" style="width:163mm;"></span>
+                </td>
+            </tr>
+
+            <tr class="form-row-small">
+                <td>
+                    GST Payable
+                    <span class="line" style="width:163mm;"></span>
+                </td>
+            </tr>
+
+            <tr class="form-row-small">
+                <td>
+                    GST Payable On Booking Amount
+                    <span class="line" style="width:130mm;"></span>
+                </td>
+            </tr>
+
+        </table>
+
+        <div style="margin-top:4mm;">
+            GST Payment Mode
+        </div>
+
+        <div style="margin-top:6mm;">
+            Self:
+            <span class="checkbox"></span>
+
+            <span style="margin-left:18mm;">
+                Bank Loan:
+                <span class="checkbox"></span>
+            </span>
+        </div>
+
+        <table class="form-table" style="margin-top:3mm;">
+            <tr class="form-row-small">
+                <td>
+                    Loan Amount
+                    <span class="line" style="width:160mm;"></span>
+                </td>
+            </tr>
+        </table>
+
+        <table class="signature-table"
+               style="margin-top:5mm;">
+
+            <tr>
+                <td>Signature Of Purchaser</td>
+                <td>Signature (For Ananda Homes)</td>
+            </tr>
+
+            <tr>
+                <td>
+                    Name
+                    <span class="value-line" style="width:64mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!applicantName}"/>
+                        </span>
+                    </span>
+                </td>
+
+                <td>
+                    Name
+                    <span class="line" style="width:64mm;"></span>
+                </td>
+            </tr>
+
+        </table>
+
+    </div>
+
+    <div class="footer">
+        <img class="footer-image"
+             src="{!$Resource.LegaecyBookiingFormFooter}"
+             alt="Footer"/>
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- PAGE 3 - TERMS 1 TO 14               -->
+<!-- ===================================== -->
+
+<div class="page">
+
+    <div class="header">
+        <img class="header-image"
+             src="{!$Resource.LegaecyBookiingFormHeader1}"
+             alt="Standard Header"/>
+    </div>
+
+    <div class="content" style="top:35mm;">
+
+        <div class="terms-heading">
+            TERMS &amp; CONDITIONS
+        </div>
+
+        <table class="terms-table">
+
+            <tr>
+                <td class="term-num">1.</td>
+                <td class="term-description">
+                    This booking is for the flat in the project,
+                    THE LEGACEY by Ananda Homes. The booking
+                    does not convey in favour of purchaser any
+                    right, title or interest of whatsoever nature
+                    unless and until required documents such as
+                    sale Agreement / Sale Deed etc., are executed.
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">2.</td>
+                <td class="term-description">
+                    The Purchaser shall execute the required
+                    documents within a period of 21 days from the
+                    date of booking along with the payment of
+                    the booking amount.
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">3.</td>
+                <td class="term-description">
+                    Applicable GST should be paid against every payment.
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">4.</td>
+                <td class="term-description">
+                    TDS @1% of the Sale Consideration shall be
+                    deducted &amp; paid directly to the government
+                    through online process on builders PAN
+                    against every payment by the buyer.
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">5.</td>
+                <td class="term-description">
+                    Registration charges, Stamp duty and
+                    incidental expenses thereto as applicable
+                    at the time of registration shall be extra
+                    and is to be borne by the purchaser;
+                    30 days ahead of registration date.
+                    GST &amp; TDS as applicable from time to time
+                    shall be extra and are to be borne by
+                    the purchaser.
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">6.</td>
+                <td class="term-description">
+                    The GST, Stamp duty etc., is subject to
+                    change from time to time based on government
+                    norms without any prior notifications
+                    and it has to be borne by the buyer as
+                    per prevailing dates.
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">7.</td>
+                <td class="term-description">
+                    Any Statutory charges imposed by the
+                    authorities / government by time to time
+                    will also be payable by the buyers.
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">8.</td>
+                <td class="term-description">
+                    Documentation charges @ 25000 + 18% GST
+                    to be paid 30 days ahead of Registration date.
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">9.</td>
+                <td class="term-description">
+                    Advance Maintenance charges @ Rs.4/sft
+                    per month for 24 months + 18% GST on
+                    Saleable area to be paid 30 days ahead
+                    of Registration date.
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">10.</td>
+                <td class="term-description">
+                    Corpus fund of Rs.50/sft on Saleable area
+                    to be paid 30 days ahead of Registration date.
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">11.</td>
+                <td class="term-description">
+                    Move in charges @ 25000 + 18% GST
+                    to be paid 30 days ahead of Registration date.
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">12.</td>
+                <td class="term-description">
+                    Charges for HMWSSB Water connection
+                    has to be borne by the buyer.
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">13.</td>
+                <td class="term-description">
+                    Registration after receipt of 100% amount
+                    including amenities, taxes and all other
+                    charges as applicable.
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">14.</td>
+                <td class="term-description">
+                    All Cheques/Electronic transfers should
+                    be in favour of "ANANDA HOMES THE LEGACEY
+                    MASTER COLLECTION ESCROW ACCOUNT -
+                    57500001468756".
+                </td>
+            </tr>
+
+        </table>
+
+        <div style="
+            font-size:7.8pt;
+            margin-left:7mm;
+            line-height:1.5;">
+
+            For Online Transfers,
+            <div>Account Details: -</div>
+
+        </div>
+
+        <table class="bank-table" style="margin-top:2mm;">
+
+            <tr>
+                <td width="22%">A/c Name</td>
+                <td width="3%">-</td>
+                <td width="75%">
+                    ANANDA HOMES THE LEGACEY MASTER
+                    COLLECTION ESCROW ACCOUNT
+                </td>
+            </tr>
+
+            <tr>
+                <td>A/c Number</td>
+                <td>-</td>
+                <td>57500001468756</td>
+            </tr>
+
+            <tr>
+                <td>IFSC</td>
+                <td>-</td>
+                <td>HDFC0003611</td>
+            </tr>
+
+            <tr>
+                <td>Branch</td>
+                <td>-</td>
+                <td>Manikonda</td>
+            </tr>
+
+        </table>
+
+    </div>
+
+    <div class="footer">
+        <img class="footer-image"
+             src="{!$Resource.LegaecyBookiingFormFooter}"
+             alt="Footer"/>
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- PAGE 4 - TERMS 15 TO 19              -->
+<!-- ===================================== -->
+
+<div class="page">
+
+    <div class="header">
+        <img class="header-image"
+             src="{!$Resource.LegaecyBookiingFormHeader1}"
+             alt="Standard Header"/>
+    </div>
+
+    <div class="content" style="top:43mm;">
+
+        <table class="terms-table">
+
+            <tr>
+                <td class="term-num">15.</td>
+                <td class="term-description">
+                    The Purchaser shall avail housing loan from
+                    approved list of Banks / Financial Institutions
+                    for the Project provided by the Builder and
+                    shall obtain necessary loan sanctions within
+                    15 days from the date of Booking.
+                    For whatsoever reason the Builder shall
+                    not be held responsible for non-sanction
+                    of the loan.
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">16.</td>
+                <td class="term-description">
+                    The Purchaser(s) are requested to share
+                    online transaction details for immediate
+                    credit to his/her respective property
+                    account. The receipts for all the online
+                    transactions made will be issued within
+                    3-4 days from the date of confirmation
+                    of such transaction made by the
+                    purchaser(s).
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">17.</td>
+                <td class="term-description">
+                    The purchaser shall enter into Agreement
+                    of sale within 21 days from the date of
+                    Booking, if not the same price is not
+                    applicable and subject to change.
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">18.</td>
+                <td class="term-description">
+                    Cancellation charges are applicable.
+                    If the purchaser fails to obtain housing
+                    loan within 15 days of the booking,
+                    the cancellation charges will be NIL,
+                    provided the purchaser intimates the
+                    builder with the proof of non-sanction
+                    of the loan. In all other cases of
+                    cancellation before agreement of sale
+                    the cancellation charges shall be 2%
+                    of the agreed sale consideration.
+                </td>
+            </tr>
+
+            <tr>
+                <td class="term-num">19.</td>
+                <td class="term-description">
+                    Other Terms &amp; Conditions mentioned
+                    in Sale Agreement / Sale Deed shall apply.
+                </td>
+            </tr>
+
+        </table>
+
+        <table class="signature-table"
+               style="margin-top:18mm;">
+
+            <tr>
+                <td>SIGNATURE OF PURCHASER</td>
+                <td>SIGNATURE (For Ananda Homes)</td>
+            </tr>
+
+            <tr>
+                <td>
+                    Name
+                    <span class="value-line" style="width:60mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!applicantName}"/>
+                        </span>
+                    </span>
+                </td>
+
+                <td>
+                    Name
+                    <span class="line" style="width:60mm;"></span>
+                </td>
+            </tr>
+
+        </table>
+
+    </div>
+
+    <div class="footer">
+        <img class="footer-image"
+             src="{!$Resource.LegaecyBookiingFormFooter}"
+             alt="Footer"/>
+    </div>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- PAGE 5 - KYC AND ACKNOWLEDGEMENT     -->
+<!-- ===================================== -->
+
+<div class="page page-last">
+
+    <div class="header">
+        <img class="header-image"
+             src="{!$Resource.LegaecyBookiingFormHeader1}"
+             alt="Standard Header"/>
+    </div>
+
+    <div class="content" style="top:51mm;">
+
+        <div class="gold-heading">
+            Required KYC Documents
+        </div>
+
+        <div style="
+            text-align:center;
+            margin-top:12mm;
+            font-size:8.9pt;
+            line-height:2.1;">
+
+            <div>
+                Photo ID Proof
+                (pan Card/Aadhar/Voter ID/Driving License/passport)
+            </div>
+
+            <div>
+                Address Proof
+                (Aadhar/ Voter ID/Driving License/passport)
+            </div>
+
+        </div>
+
+        <div style="
+            text-align:center;
+            margin-top:8mm;
+            font-size:8.9pt;">
+
+            Note: The above mentioned documents
+            need to be submitted.
+
+        </div>
+
+        <div style="
+            margin-top:26mm;
+            width:100%;
+            border-bottom:0.6pt dashed #D8C784;">
+        </div>
+
+        <div class="gold-heading" style="margin-top:23mm;">
+            Acknowledgement
+        </div>
+
+        <table class="form-table" style="margin-top:10mm;">
+
+            <tr class="form-row">
+                <td>
+                    Name:
+                    <span class="value-line" style="width:170mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!applicantName}"/>
+                        </span>
+                    </span>
+                </td>
+            </tr>
+
+        </table>
+
+        <table class="form-table">
+
+            <tr class="form-row">
+
+                <td width="55%">
+                    Unit No.:
+                    <span class="value-line" style="width:75mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!flatNo}"/>
+                        </span>
+                    </span>
+                </td>
+
+                <td width="45%">
+                    Date:
+                    <span class="value-line" style="width:65mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!bookingDate}"/>
+                        </span>
+                    </span>
+                </td>
+
+            </tr>
+
+        </table>
+
+        <table class="form-table">
+
+            <tr class="form-row">
+                <td>
+                    Cheque No.:
+                    <span class="line" style="width:160mm;"></span>
+                </td>
+            </tr>
+
+            <tr class="form-row">
+                <td>
+                    Bank:
+                    <span class="line" style="width:171mm;"></span>
+                </td>
+            </tr>
+
+        </table>
+
+        <div style="margin-top:17mm;">
+            Signature
+            <span class="line" style="width:65mm;"></span>
+        </div>
+
+    </div>
+
+    <div class="footer">
+        <img class="footer-image"
+             src="{!$Resource.LegaecyBookiingFormFooter}"
+             alt="Footer"/>
+    </div>
+
+</div>
+
+</body>
+</html>
+</apex:page>

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Document_Type__c</fullName>
+    <description>Specific document type - dependent on Document_Category__c. Configure dependencies in Salesforce Setup to control which types appear per category.</description>
+    <label>Document Type</label>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <type>Picklist</type>
+    <valueSet>
+        <controllingField>Document_Category__c</controllingField>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Aadhaar Card</fullName>
+                <default>false</default>
+                <label>Aadhaar Card</label>
+            </value>
+            <value>
+                <fullName>Allotment Letter</fullName>
+                <default>false</default>
+                <label>Allotment Letter</label>
+            </value>
+            <value>
+                <fullName>Bank Statement</fullName>
+                <default>false</default>
+                <label>Bank Statement</label>
+            </value>
+            <value>
+                <fullName>Cancelled Cheque</fullName>
+                <default>false</default>
+                <label>Cancelled Cheque</label>
+            </value>
+            <value>
+                <fullName>Other Document</fullName>
+                <default>false</default>
+                <label>Other Document</label>
+            </value>
+            <value>
+                <fullName>PAN Card</fullName>
+                <default>false</default>
+                <label>PAN Card</label>
+            </value>
+            <value>
+                <fullName>Passport</fullName>
+                <default>false</default>
+                <label>Passport</label>
+            </value>
+            <value>
+                <fullName>Receipt Copy</fullName>
+                <default>false</default>
+                <label>Receipt Copy</label>
+            </value>
+            <value>
+                <fullName>Sale Agreement</fullName>
+                <default>false</default>
+                <label>Sale Agreement</label>
+            </value>
+            <value>
+                <fullName>Signed Booking Form</fullName>
+                <default>false</default>
+                <label>Signed Booking Form</label>
+            </value>
+            <value>
+                <fullName>Cacellation Mail</fullName>
+                <default>false</default>
+                <label>Cacellation Mail</label>
+            </value>
+        </valueSetDefinition>
+        <valueSettings>
+            <controllingFieldValue>Agreement</controllingFieldValue>
+            <valueName>Sale Agreement</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Bank Documents</controllingFieldValue>
+            <controllingFieldValue>Payment Proof</controllingFieldValue>
+            <valueName>Bank Statement</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Bank Documents</controllingFieldValue>
+            <controllingFieldValue>Payment Proof</controllingFieldValue>
+            <valueName>Cancelled Cheque</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>KYC Documents</controllingFieldValue>
+            <valueName>Aadhaar Card</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>KYC Documents</controllingFieldValue>
+            <valueName>PAN Card</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>KYC Documents</controllingFieldValue>
+            <valueName>Passport</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Other</controllingFieldValue>
+            <valueName>Allotment Letter</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Other</controllingFieldValue>
+            <valueName>Other Document</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Other</controllingFieldValue>
+            <valueName>Signed Booking Form</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Payment Proof</controllingFieldValue>
+            <valueName>Receipt Copy</valueName>
+        </valueSettings>
+        <valueSettings>
+            <controllingFieldValue>Cancellation</controllingFieldValue>
+            <valueName>Cacellation Mail</valueName>
+        </valueSettings>
+    </valueSet>
+</CustomField>

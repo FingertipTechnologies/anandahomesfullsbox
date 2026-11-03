@@ -1,0 +1,80 @@
+<apex:page standardController="NOC__c" extensions="CapriNocPdfController"
+           renderAs="pdf" showHeader="false" sidebar="false"
+           standardStylesheets="false" applyHtmlTag="false" applyBodyTag="false">
+    <html>
+    <head>
+        <style type="text/css">
+            @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
+            body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #222; }
+            p { margin: 0 0 10px 0; line-height: 1.4; }
+            .date { text-align: right; }
+        </style>
+    </head>
+    <body>
+        <apex:outputPanel rendered="{!NOT(ISBLANK(errorMessage))}"><p>{!errorMessage}</p></apex:outputPanel>
+        <apex:outputPanel rendered="{!ISBLANK(errorMessage)}">
+            <p class="date"><b>Date:</b> {!TODAY()}</p>
+            <p>
+                Capri Global Capital Limited<br/>
+                502, Tower A,<br/>
+                Peninsula Business Park,<br/>
+                Senapati Bapat Marg,<br/>
+                Lower Parel, Mumbai 400 013.
+            </p>
+            <p>
+                <b>Subject: Swap of Flat No:
+                    <apex:outputText value="{!swapHistory.Old_Plot__r.Name}"/>
+                    for Flat No:
+                    <apex:outputText value="{!swapHistory.New_Plot__r.Name}"/>
+                </b>
+            </p>
+            <p>Dear Sir,</p>
+            <p>
+                With reference to the inventory list provided along with the Loan Agreement /
+                Supplemental and Amendatory Loan Agreement between M/s. Capri Global Capital Limited
+                and M/s. Ananda Homes dated 28-June-2024, Flat No.
+                <b><apex:outputText value="{!swapHistory.Old_Plot__r.Name}"/></b> was an unsold unit
+                having area <apex:outputText value="{!swapHistory.Old_Plot__r.Saleable_Area_Sft__c}"/> sq. ft.
+            </p>
+            <p>
+                The said unit was sold to
+                <b><apex:outputText value="{!swapHistory.Old_Booking__r.First_Applicant_Name__c}"/></b>.
+                We have received a request from the customer to swap Flat No.
+                <b><apex:outputText value="{!swapHistory.Old_Plot__r.Name}"/></b>, forming part of
+                unsold inventory under the aforementioned loan agreement and having area
+                <apex:outputText value="{!swapHistory.Old_Plot__r.Saleable_Area_Sft__c}"/> sq. ft.,
+                for Flat No. <b><apex:outputText value="{!swapHistory.New_Plot__r.Name}"/></b>,
+                also forming part of the unsold inventory and having area
+                <apex:outputText value="{!swapHistory.New_Plot__r.Saleable_Area_Sft__c}"/> sq. ft.,
+                on account of <apex:outputText value="{!swapHistory.Swap_Reason__c}"/>.
+            </p>
+            <p>
+                Flat No. <b><apex:outputText value="{!swapHistory.New_Plot__r.Name}"/></b> was
+                tentatively allotted to
+                <b><apex:outputText value="{!swapHistory.New_Booking__r.First_Applicant_Name__c}"/></b>.
+                We have neither entered into an Agreement for Sale nor completed registration, and
+                no NOC was obtained for that flat.
+            </p>
+            <p>
+                On account of the above swap arrangement, we confirm that Flat No.
+                <b><apex:outputText value="{!swapHistory.Old_Plot__r.Name}"/></b> shall form part of
+                unsold inventory and shall be subject to the terms applicable to unsold inventory
+                under the loan agreement.
+            </p>
+            <p>
+                <b>Note:</b> Flat No. <apex:outputText value="{!swapHistory.Old_Plot__r.Name}"/>
+                has been released from
+                <apex:outputText value="{!swapHistory.Old_Booking__r.First_Applicant_Name__c}"/>
+                and is allotted as a new booking to
+                <apex:outputText value="{!swapHistory.New_Booking__r.First_Applicant_Name__c}"/>
+                <apex:outputPanel rendered="{!NOT(ISBLANK(swapHistory.New_Booking__r.Mobile_Primary__c))}">
+                    (Mobile: <apex:outputText value="{!swapHistory.New_Booking__r.Mobile_Primary__c}"/>)
+                </apex:outputPanel>.
+            </p>
+            <p>For M/s. Ananda Homes,</p>
+            <br/><br/>
+            <p>Authorised Signatory</p>
+        </apex:outputPanel>
+    </body>
+    </html>
+</apex:page>

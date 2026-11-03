@@ -448,7 +448,7 @@ public without sharing class BookingController {
     @AuraEnabled(cacheable=true)
     public static BookingUserWrapper getRecordData(Id recordId) {
         // Fetch the booking record
-        Booking__c booking = [SELECT Id, Name, First_Applicant_Name__c,Tower__c,Tower_Name__c, salutation_Applicant1__c, salutation_Applicant2__c, 
+        Booking__c booking = [SELECT Id, Name, First_Applicant_Name__c,Tower__c, salutation_Applicant1__c, salutation_Applicant2__c, 
                               Second_Applicant_Name__c, Swap_Unit_Status__c, Booking_Amount1__c, 
                               Unit_NumberFor__c, Email1__c 
                               FROM Booking__c WHERE Id = :recordId LIMIT 1];

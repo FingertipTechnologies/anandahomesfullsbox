@@ -1,0 +1,1472 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GlobalValueSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customValue>
+        <fullName>INDIA</fullName>
+        <default>false</default>
+        <label>INDIA</label>
+    </customValue>
+    <customValue>
+        <fullName>USA</fullName>
+        <default>false</default>
+        <label>USA</label>
+    </customValue>
+    <customValue>
+        <fullName>UAE</fullName>
+        <default>false</default>
+        <label>UAE</label>
+    </customValue>
+    <customValue>
+        <fullName>American Samoa</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>American Samoa</label>
+    </customValue>
+    <customValue>
+        <fullName>Andorra</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Andorra</label>
+    </customValue>
+    <customValue>
+        <fullName>Angola</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Angola</label>
+    </customValue>
+    <customValue>
+        <fullName>Anguilla</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Anguilla</label>
+    </customValue>
+    <customValue>
+        <fullName>Antarctica</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Antarctica</label>
+    </customValue>
+    <customValue>
+        <fullName>Antigua and Barbuda</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Antigua and Barbuda</label>
+    </customValue>
+    <customValue>
+        <fullName>Argentina</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Argentina</label>
+    </customValue>
+    <customValue>
+        <fullName>Armenia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Armenia</label>
+    </customValue>
+    <customValue>
+        <fullName>Aruba</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Aruba</label>
+    </customValue>
+    <customValue>
+        <fullName>Australia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Australia</label>
+    </customValue>
+    <customValue>
+        <fullName>Austria</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Austria</label>
+    </customValue>
+    <customValue>
+        <fullName>Azerbaijan</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Azerbaijan</label>
+    </customValue>
+    <customValue>
+        <fullName>Azerbaijani Republic</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Azerbaijani Republic</label>
+    </customValue>
+    <customValue>
+        <fullName>Bahamas</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Bahamas</label>
+    </customValue>
+    <customValue>
+        <fullName>Bahrain</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Bahrain</label>
+    </customValue>
+    <customValue>
+        <fullName>Bangladesh</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Bangladesh</label>
+    </customValue>
+    <customValue>
+        <fullName>Barbados</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Barbados</label>
+    </customValue>
+    <customValue>
+        <fullName>Belarus</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Belarus</label>
+    </customValue>
+    <customValue>
+        <fullName>Belgium</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Belgium</label>
+    </customValue>
+    <customValue>
+        <fullName>Belize</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Belize</label>
+    </customValue>
+    <customValue>
+        <fullName>Benin</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Benin</label>
+    </customValue>
+    <customValue>
+        <fullName>Bermuda</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Bermuda</label>
+    </customValue>
+    <customValue>
+        <fullName>Bhutan</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Bhutan</label>
+    </customValue>
+    <customValue>
+        <fullName>Bolivia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Bolivia</label>
+    </customValue>
+    <customValue>
+        <fullName>Bosnia and Herzegovina</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Bosnia and Herzegovina</label>
+    </customValue>
+    <customValue>
+        <fullName>Botswana</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Botswana</label>
+    </customValue>
+    <customValue>
+        <fullName>Brazil</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Brazil</label>
+    </customValue>
+    <customValue>
+        <fullName>British Indian Ocean Territory</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>British Indian Ocean Territory</label>
+    </customValue>
+    <customValue>
+        <fullName>British Virgin Islands</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>British Virgin Islands</label>
+    </customValue>
+    <customValue>
+        <fullName>Brunei</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Brunei</label>
+    </customValue>
+    <customValue>
+        <fullName>Brunei Darussalam</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Brunei Darussalam</label>
+    </customValue>
+    <customValue>
+        <fullName>Bulgaria</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Bulgaria</label>
+    </customValue>
+    <customValue>
+        <fullName>Burkina Faso</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Burkina Faso</label>
+    </customValue>
+    <customValue>
+        <fullName>Burundi</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Burundi</label>
+    </customValue>
+    <customValue>
+        <fullName>CÃ´te D&apos;ivoire</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>CÃ´te D&apos;ivoire</label>
+    </customValue>
+    <customValue>
+        <fullName>Cambodia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Cambodia</label>
+    </customValue>
+    <customValue>
+        <fullName>Cameroon</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Cameroon</label>
+    </customValue>
+    <customValue>
+        <fullName>Canada</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Canada</label>
+    </customValue>
+    <customValue>
+        <fullName>Cape Verde</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Cape Verde</label>
+    </customValue>
+    <customValue>
+        <fullName>Cayman Islands</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Cayman Islands</label>
+    </customValue>
+    <customValue>
+        <fullName>Central African Republic</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Central African Republic</label>
+    </customValue>
+    <customValue>
+        <fullName>Chad</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Chad</label>
+    </customValue>
+    <customValue>
+        <fullName>Chile</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Chile</label>
+    </customValue>
+    <customValue>
+        <fullName>China</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>China</label>
+    </customValue>
+    <customValue>
+        <fullName>Christmas Island</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Christmas Island</label>
+    </customValue>
+    <customValue>
+        <fullName>Colombia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Colombia</label>
+    </customValue>
+    <customValue>
+        <fullName>Comoros</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Comoros</label>
+    </customValue>
+    <customValue>
+        <fullName>Cook Islands</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Cook Islands</label>
+    </customValue>
+    <customValue>
+        <fullName>Costa Rica</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Costa Rica</label>
+    </customValue>
+    <customValue>
+        <fullName>Croatia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Croatia</label>
+    </customValue>
+    <customValue>
+        <fullName>Cuba</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Cuba</label>
+    </customValue>
+    <customValue>
+        <fullName>Curacao</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Curacao</label>
+    </customValue>
+    <customValue>
+        <fullName>Cyprus</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Cyprus</label>
+    </customValue>
+    <customValue>
+        <fullName>Czech Republic</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Czech Republic</label>
+    </customValue>
+    <customValue>
+        <fullName>Democratic Republic of the Congo</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Democratic Republic of the Congo</label>
+    </customValue>
+    <customValue>
+        <fullName>Denmark</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Denmark</label>
+    </customValue>
+    <customValue>
+        <fullName>Djibouti</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Djibouti</label>
+    </customValue>
+    <customValue>
+        <fullName>Dominica</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Dominica</label>
+    </customValue>
+    <customValue>
+        <fullName>Dominican Republic</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Dominican Republic</label>
+    </customValue>
+    <customValue>
+        <fullName>East Timor</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>East Timor</label>
+    </customValue>
+    <customValue>
+        <fullName>Ecuador</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Ecuador</label>
+    </customValue>
+    <customValue>
+        <fullName>Egypt</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Egypt</label>
+    </customValue>
+    <customValue>
+        <fullName>El Salvador</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>El Salvador</label>
+    </customValue>
+    <customValue>
+        <fullName>Equatorial Guinea</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Equatorial Guinea</label>
+    </customValue>
+    <customValue>
+        <fullName>Eritrea</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Eritrea</label>
+    </customValue>
+    <customValue>
+        <fullName>Estonia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Estonia</label>
+    </customValue>
+    <customValue>
+        <fullName>Ethiopia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Ethiopia</label>
+    </customValue>
+    <customValue>
+        <fullName>Falkland Islands</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Falkland Islands</label>
+    </customValue>
+    <customValue>
+        <fullName>Faroe Islands</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Faroe Islands</label>
+    </customValue>
+    <customValue>
+        <fullName>Fiji</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Fiji</label>
+    </customValue>
+    <customValue>
+        <fullName>Finland</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Finland</label>
+    </customValue>
+    <customValue>
+        <fullName>France</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>France</label>
+    </customValue>
+    <customValue>
+        <fullName>French Departments And Territories In The Indian Ocean</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>French Departments And Territories In The Indian Ocean</label>
+    </customValue>
+    <customValue>
+        <fullName>French Polynesia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>French Polynesia</label>
+    </customValue>
+    <customValue>
+        <fullName>Gabon</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Gabon</label>
+    </customValue>
+    <customValue>
+        <fullName>Gambia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Gambia</label>
+    </customValue>
+    <customValue>
+        <fullName>Georgia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Georgia</label>
+    </customValue>
+    <customValue>
+        <fullName>Germany</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Germany</label>
+    </customValue>
+    <customValue>
+        <fullName>Ghana</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Ghana</label>
+    </customValue>
+    <customValue>
+        <fullName>Gibraltar</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Gibraltar</label>
+    </customValue>
+    <customValue>
+        <fullName>Greece</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Greece</label>
+    </customValue>
+    <customValue>
+        <fullName>Greenland</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Greenland</label>
+    </customValue>
+    <customValue>
+        <fullName>Grenada</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Grenada</label>
+    </customValue>
+    <customValue>
+        <fullName>Guam</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Guam</label>
+    </customValue>
+    <customValue>
+        <fullName>Guatemala</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Guatemala</label>
+    </customValue>
+    <customValue>
+        <fullName>Guernsey</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Guernsey</label>
+    </customValue>
+    <customValue>
+        <fullName>Guinea</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Guinea</label>
+    </customValue>
+    <customValue>
+        <fullName>Guinea Bissau</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Guinea Bissau</label>
+    </customValue>
+    <customValue>
+        <fullName>Guinea-Bissau</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Guinea-Bissau</label>
+    </customValue>
+    <customValue>
+        <fullName>Guyana</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Guyana</label>
+    </customValue>
+    <customValue>
+        <fullName>Haiti</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Haiti</label>
+    </customValue>
+    <customValue>
+        <fullName>Honduras</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Honduras</label>
+    </customValue>
+    <customValue>
+        <fullName>Hong Kong</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Hong Kong</label>
+    </customValue>
+    <customValue>
+        <fullName>Hungary</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Hungary</label>
+    </customValue>
+    <customValue>
+        <fullName>Iceland</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Iceland</label>
+    </customValue>
+    <customValue>
+        <fullName>Indonesia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Indonesia</label>
+    </customValue>
+    <customValue>
+        <fullName>International Networks, Shared Code</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>International Networks, Shared Code</label>
+    </customValue>
+    <customValue>
+        <fullName>International Premium Rate Service</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>International Premium Rate Service</label>
+    </customValue>
+    <customValue>
+        <fullName>Iran</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Iran</label>
+    </customValue>
+    <customValue>
+        <fullName>Iraq</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Iraq</label>
+    </customValue>
+    <customValue>
+        <fullName>Ireland</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Ireland</label>
+    </customValue>
+    <customValue>
+        <fullName>Isle of Man</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Isle of Man</label>
+    </customValue>
+    <customValue>
+        <fullName>Israel</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Israel</label>
+    </customValue>
+    <customValue>
+        <fullName>Italy</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Italy</label>
+    </customValue>
+    <customValue>
+        <fullName>Ivory Coast</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Ivory Coast</label>
+    </customValue>
+    <customValue>
+        <fullName>Jamaica</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Jamaica</label>
+    </customValue>
+    <customValue>
+        <fullName>Japan</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Japan</label>
+    </customValue>
+    <customValue>
+        <fullName>Jersey</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Jersey</label>
+    </customValue>
+    <customValue>
+        <fullName>Jordan</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Jordan</label>
+    </customValue>
+    <customValue>
+        <fullName>Kazakhstan</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Kazakhstan</label>
+    </customValue>
+    <customValue>
+        <fullName>Kenya</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Kenya</label>
+    </customValue>
+    <customValue>
+        <fullName>Kiribati</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Kiribati</label>
+    </customValue>
+    <customValue>
+        <fullName>Korea</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Korea</label>
+    </customValue>
+    <customValue>
+        <fullName>Kosovo</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Kosovo</label>
+    </customValue>
+    <customValue>
+        <fullName>Kuwait</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Kuwait</label>
+    </customValue>
+    <customValue>
+        <fullName>Kyrgyz Republic</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Kyrgyz Republic</label>
+    </customValue>
+    <customValue>
+        <fullName>Kyrgyzstan</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Kyrgyzstan</label>
+    </customValue>
+    <customValue>
+        <fullName>Laos</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Laos</label>
+    </customValue>
+    <customValue>
+        <fullName>Latvia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Latvia</label>
+    </customValue>
+    <customValue>
+        <fullName>Lebanon</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Lebanon</label>
+    </customValue>
+    <customValue>
+        <fullName>Lesotho</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Lesotho</label>
+    </customValue>
+    <customValue>
+        <fullName>Liberia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Liberia</label>
+    </customValue>
+    <customValue>
+        <fullName>Libya</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Libya</label>
+    </customValue>
+    <customValue>
+        <fullName>Liechtenstein</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Liechtenstein</label>
+    </customValue>
+    <customValue>
+        <fullName>Lithuania</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Lithuania</label>
+    </customValue>
+    <customValue>
+        <fullName>Luxembourg</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Luxembourg</label>
+    </customValue>
+    <customValue>
+        <fullName>Macao</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Macao</label>
+    </customValue>
+    <customValue>
+        <fullName>Macedonia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Macedonia</label>
+    </customValue>
+    <customValue>
+        <fullName>Madagascar</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Madagascar</label>
+    </customValue>
+    <customValue>
+        <fullName>Malawi</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Malawi</label>
+    </customValue>
+    <customValue>
+        <fullName>Malaysia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Malaysia</label>
+    </customValue>
+    <customValue>
+        <fullName>Maldives</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Maldives</label>
+    </customValue>
+    <customValue>
+        <fullName>Mali</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Mali</label>
+    </customValue>
+    <customValue>
+        <fullName>Malta</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Malta</label>
+    </customValue>
+    <customValue>
+        <fullName>Marshall Islands</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Marshall Islands</label>
+    </customValue>
+    <customValue>
+        <fullName>Mauritania</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Mauritania</label>
+    </customValue>
+    <customValue>
+        <fullName>Mauritius</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Mauritius</label>
+    </customValue>
+    <customValue>
+        <fullName>Mexico</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Mexico</label>
+    </customValue>
+    <customValue>
+        <fullName>Micronesia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Micronesia</label>
+    </customValue>
+    <customValue>
+        <fullName>Moldova</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Moldova</label>
+    </customValue>
+    <customValue>
+        <fullName>Monaco</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Monaco</label>
+    </customValue>
+    <customValue>
+        <fullName>Mongolia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Mongolia</label>
+    </customValue>
+    <customValue>
+        <fullName>Montenegro</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Montenegro</label>
+    </customValue>
+    <customValue>
+        <fullName>Montserrat</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Montserrat</label>
+    </customValue>
+    <customValue>
+        <fullName>Morocco</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Morocco</label>
+    </customValue>
+    <customValue>
+        <fullName>Mozambique</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Mozambique</label>
+    </customValue>
+    <customValue>
+        <fullName>Myanmar</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Myanmar</label>
+    </customValue>
+    <customValue>
+        <fullName>Namibia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Namibia</label>
+    </customValue>
+    <customValue>
+        <fullName>Nauru</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Nauru</label>
+    </customValue>
+    <customValue>
+        <fullName>Nepal</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Nepal</label>
+    </customValue>
+    <customValue>
+        <fullName>Netherlands</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Netherlands</label>
+    </customValue>
+    <customValue>
+        <fullName>Netherlands Antilles</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Netherlands Antilles</label>
+    </customValue>
+    <customValue>
+        <fullName>New Caledonia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>New Caledonia</label>
+    </customValue>
+    <customValue>
+        <fullName>New Zealand</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>New Zealand</label>
+    </customValue>
+    <customValue>
+        <fullName>Nicaragua</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Nicaragua</label>
+    </customValue>
+    <customValue>
+        <fullName>Niger</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Niger</label>
+    </customValue>
+    <customValue>
+        <fullName>Nigeria</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Nigeria</label>
+    </customValue>
+    <customValue>
+        <fullName>Niue</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Niue</label>
+    </customValue>
+    <customValue>
+        <fullName>Northern Mariana Islands</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Northern Mariana Islands</label>
+    </customValue>
+    <customValue>
+        <fullName>North Korea</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>North Korea</label>
+    </customValue>
+    <customValue>
+        <fullName>Norway</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Norway</label>
+    </customValue>
+    <customValue>
+        <fullName>Oman</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Oman</label>
+    </customValue>
+    <customValue>
+        <fullName>Pakistan</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Pakistan</label>
+    </customValue>
+    <customValue>
+        <fullName>Palau</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Palau</label>
+    </customValue>
+    <customValue>
+        <fullName>Palestine</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Palestine</label>
+    </customValue>
+    <customValue>
+        <fullName>Panama</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Panama</label>
+    </customValue>
+    <customValue>
+        <fullName>Papua New Guinea</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Papua New Guinea</label>
+    </customValue>
+    <customValue>
+        <fullName>Paraguay</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Paraguay</label>
+    </customValue>
+    <customValue>
+        <fullName>Peru</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Peru</label>
+    </customValue>
+    <customValue>
+        <fullName>Philippines</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Philippines</label>
+    </customValue>
+    <customValue>
+        <fullName>Poland</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Poland</label>
+    </customValue>
+    <customValue>
+        <fullName>Portugal</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Portugal</label>
+    </customValue>
+    <customValue>
+        <fullName>Puerto Rico</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Puerto Rico</label>
+    </customValue>
+    <customValue>
+        <fullName>Qatar</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Qatar</label>
+    </customValue>
+    <customValue>
+        <fullName>Republic of the Congo</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Republic of the Congo</label>
+    </customValue>
+    <customValue>
+        <fullName>Reserved</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Reserved</label>
+    </customValue>
+    <customValue>
+        <fullName>Reunion</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Reunion</label>
+    </customValue>
+    <customValue>
+        <fullName>Romania</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Romania</label>
+    </customValue>
+    <customValue>
+        <fullName>Russia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Russia</label>
+    </customValue>
+    <customValue>
+        <fullName>Rwanda</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Rwanda</label>
+    </customValue>
+    <customValue>
+        <fullName>Saint Helena</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Saint Helena</label>
+    </customValue>
+    <customValue>
+        <fullName>Saint Helena, Ascension And Tristan Da Cunha</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Saint Helena, Ascension And Tristan Da Cunha</label>
+    </customValue>
+    <customValue>
+        <fullName>Saint Kitts and Nevis</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Saint Kitts and Nevis</label>
+    </customValue>
+    <customValue>
+        <fullName>Saint Lucia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Saint Lucia</label>
+    </customValue>
+    <customValue>
+        <fullName>Saint Martin</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Saint Martin</label>
+    </customValue>
+    <customValue>
+        <fullName>Saint Pierre and Miquelon</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Saint Pierre and Miquelon</label>
+    </customValue>
+    <customValue>
+        <fullName>Saint Vincent and the Grenadines</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Saint Vincent and the Grenadines</label>
+    </customValue>
+    <customValue>
+        <fullName>Samoa</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Samoa</label>
+    </customValue>
+    <customValue>
+        <fullName>San Marino</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>San Marino</label>
+    </customValue>
+    <customValue>
+        <fullName>Sao Tome and Principe</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Sao Tome and Principe</label>
+    </customValue>
+    <customValue>
+        <fullName>Saudi Arabia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Saudi Arabia</label>
+    </customValue>
+    <customValue>
+        <fullName>Senegal</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Senegal</label>
+    </customValue>
+    <customValue>
+        <fullName>Serbia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Serbia</label>
+    </customValue>
+    <customValue>
+        <fullName>Seychelles</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Seychelles</label>
+    </customValue>
+    <customValue>
+        <fullName>Sierra Leone</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Sierra Leone</label>
+    </customValue>
+    <customValue>
+        <fullName>Singapore</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Singapore</label>
+    </customValue>
+    <customValue>
+        <fullName>Sint Maarten</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Sint Maarten</label>
+    </customValue>
+    <customValue>
+        <fullName>Slovakia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Slovakia</label>
+    </customValue>
+    <customValue>
+        <fullName>Slovak Republic</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Slovak Republic</label>
+    </customValue>
+    <customValue>
+        <fullName>Slovenia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Slovenia</label>
+    </customValue>
+    <customValue>
+        <fullName>Solomon Islands</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Solomon Islands</label>
+    </customValue>
+    <customValue>
+        <fullName>Somalia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Somalia</label>
+    </customValue>
+    <customValue>
+        <fullName>Somali Democratic Republic</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Somali Democratic Republic</label>
+    </customValue>
+    <customValue>
+        <fullName>South Africa</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>South Africa</label>
+    </customValue>
+    <customValue>
+        <fullName>South Korea</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>South Korea</label>
+    </customValue>
+    <customValue>
+        <fullName>Spain</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Spain</label>
+    </customValue>
+    <customValue>
+        <fullName>Spare Code</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Spare Code</label>
+    </customValue>
+    <customValue>
+        <fullName>Sri Lanka</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Sri Lanka</label>
+    </customValue>
+    <customValue>
+        <fullName>Sudan</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Sudan</label>
+    </customValue>
+    <customValue>
+        <fullName>Sweden</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Sweden</label>
+    </customValue>
+    <customValue>
+        <fullName>Switzerland</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Switzerland</label>
+    </customValue>
+    <customValue>
+        <fullName>Afghanistan</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Afghanistan</label>
+    </customValue>
+    <customValue>
+        <fullName>Tanzania</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Tanzania</label>
+    </customValue>
+    <customValue>
+        <fullName>Thailand</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Thailand</label>
+    </customValue>
+    <customValue>
+        <fullName>The Former Yugoslav Republic Of Macedonia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>The Former Yugoslav Republic Of Macedonia</label>
+    </customValue>
+    <customValue>
+        <fullName>Togolese Republic</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Togolese Republic</label>
+    </customValue>
+    <customValue>
+        <fullName>Tokelau</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Tokelau</label>
+    </customValue>
+    <customValue>
+        <fullName>Turkey</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Turkey</label>
+    </customValue>
+    <customValue>
+        <fullName>Turkmenistan</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Turkmenistan</label>
+    </customValue>
+    <customValue>
+        <fullName>Turks And Caicos Islands</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Turks And Caicos Islands</label>
+    </customValue>
+    <customValue>
+        <fullName>Uganda</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Uganda</label>
+    </customValue>
+    <customValue>
+        <fullName>Ukraine</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Ukraine</label>
+    </customValue>
+    <customValue>
+        <fullName>United Arab Emirates</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>United Arab Emirates</label>
+    </customValue>
+    <customValue>
+        <fullName>United Kingdom Of Great Britain And Northern Ireland</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>United Kingdom Of Great Britain And Northern Ireland</label>
+    </customValue>
+    <customValue>
+        <fullName>United States Of America</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>United States Of America</label>
+    </customValue>
+    <customValue>
+        <fullName>Venezuela</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Venezuela</label>
+    </customValue>
+    <customValue>
+        <fullName>Vietnam</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Vietnam</label>
+    </customValue>
+    <customValue>
+        <fullName>Viet Nam</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Viet Nam</label>
+    </customValue>
+    <customValue>
+        <fullName>Yemen</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Yemen</label>
+    </customValue>
+    <customValue>
+        <fullName>Zambia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Zambia</label>
+    </customValue>
+    <customValue>
+        <fullName>International Shared Cost Service</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>International Shared Cost Service</label>
+    </customValue>
+    <customValue>
+        <fullName>Reserved For Future Global Service</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Reserved For Future Global Service</label>
+    </customValue>
+    <customValue>
+        <fullName>Taiwan</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Taiwan</label>
+    </customValue>
+    <customValue>
+        <fullName>Tajikistan</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Tajikistan</label>
+    </customValue>
+    <customValue>
+        <fullName>Tonga</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Tonga</label>
+    </customValue>
+    <customValue>
+        <fullName>New International Telecommunication</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>New International Telecommunication</label>
+    </customValue>
+    <customValue>
+        <fullName>Trinidad And Tobago</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Trinidad And Tobago</label>
+    </customValue>
+    <customValue>
+        <fullName>Tunisia</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Tunisia</label>
+    </customValue>
+    <customValue>
+        <fullName>Uzbekistan</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Uzbekistan</label>
+    </customValue>
+    <customValue>
+        <fullName>Syrian Arab Republic</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Syrian Arab Republic</label>
+    </customValue>
+    <customValue>
+        <fullName>Albania</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Albania</label>
+    </customValue>
+    <customValue>
+        <fullName>Algeria</fullName>
+        <default>false</default>
+        <isActive>false</isActive>
+        <label>Algeria</label>
+    </customValue>
+    <masterLabel>Country</masterLabel>
+    <sorted>false</sorted>
+</GlobalValueSet>

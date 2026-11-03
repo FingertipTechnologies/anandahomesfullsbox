@@ -24,7 +24,7 @@ import getSchedulesForEditing from '@salesforce/apex/PaymentScheduleEditorContro
 import saveEditedSchedules from '@salesforce/apex/PaymentScheduleEditorController.saveEditedSchedules';
 
 /** Currency tolerance. Matches ProrataInvariantService.TOLERANCE. */
-const TOLERANCE = 1;
+const TOLERANCE = 0.01;
 
 const FLAT = { bank: 'bankFlat', customer: 'customerFlat', target: 'baseAmount' };
 const GST = { bank: 'bankGst', customer: 'customerGst', target: 'gstAmount' };

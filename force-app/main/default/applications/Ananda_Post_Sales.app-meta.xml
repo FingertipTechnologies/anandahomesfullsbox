@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <brand>
+        <headerColor>#0070D2</headerColor>
+        <shouldOverrideOrgTheme>true</shouldOverrideOrgTheme>
+    </brand>
+    <formFactors>Small</formFactors>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
+    <isOmniPinnedViewEnabled>false</isOmniPinnedViewEnabled>
+    <label>Ananda Post Sales</label>
+    <navType>Standard</navType>
+    <tabs>standard-report</tabs>
+    <tabs>standard-Dashboard</tabs>
+    <tabs>Project__c</tabs>
+    <tabs>Quote__c</tabs>
+    <tabs>Plot__c</tabs>
+    <tabs>Booking__c</tabs>
+    <tabs>Car_Parking__c</tabs>
+    <tabs>Master_Payment_Schedule__c</tabs>
+    <tabs>Refund__c</tabs>
+    <tabs>Receipt__c</tabs>
+    <tabs>Demands__c</tabs>
+    <tabs>Bulk_Raise_Demand</tabs>
+    <tabs>Post_Sales_Admin</tabs>
+    <tabs>Document_Template__c</tabs>
+    <tabs>Email_Template_Config__c</tabs>
+    <tabs>Payment_Schedule_Revision__c</tabs>
+    <tabs>First_Applicant_Change__c</tabs>
+    <uiType>Lightning</uiType>
+    <utilityBar>Ananda_Post_Sales_UtilityBar</utilityBar>
+</CustomApplication>

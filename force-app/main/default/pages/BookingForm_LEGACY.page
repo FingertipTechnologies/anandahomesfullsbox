@@ -640,7 +640,7 @@ body {
             <apex:outputPanel layout="none" rendered="{!pg.showPriceDetails}">
 
                 <div class="section"
-                     style="margin-top:4mm;margin-bottom:4mm;">
+                     style="margin-top:{!IF(pg.hasCoApplicants, '4mm', '0')};margin-bottom:4mm;">
                     <span class="section-heading">
                         PRICE DETAILS
                     </span>

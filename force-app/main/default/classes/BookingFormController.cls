@@ -72,8 +72,9 @@ public with sharing class BookingFormController {
     public List<CoApplicant> coApplicants { get; private set; }
     /**
      * Pages printed after the first applicant. Co-applicants fill pages of
-     * CO_APPLICANTS_PER_PAGE; the last co-applicant shares the final page with
-     * the price details, so 0 or 1 co-applicant keeps the original 2nd page.
+     * CO_APPLICANTS_PER_PAGE; the price details share the last page when it
+     * holds a single co-applicant, otherwise they get a page of their own.
+     * 0 or 1 co-applicant keeps the original 2nd page.
      */
     public List<CoApplicantPage> coApplicantPages { get; private set; }
 
@@ -387,34 +388,44 @@ public with sharing class BookingFormController {
     }
 
     /**
-     * @description Splits co-applicants into printed pages. All but the last
-     *              co-applicant go CO_APPLICANTS_PER_PAGE to a page; the last one
-     *              (or an empty section when there is none) shares the final page
-     *              with the price details.
+     * @description Splits co-applicants into printed pages, filling each page
+     *              with CO_APPLICANTS_PER_PAGE so no co-applicant page is half
+     *              empty. The price details go on the last co-applicant page
+     *              when it holds only one co-applicant (room left), otherwise
+     *              on a page of their own. With no co-applicant, an empty
+     *              section is printed above the price details for handwriting.
+     *                1 -> [Co1 + Price]       2 -> [Co1, Co2] [Price]
+     *                3 -> [Co1, Co2] [Co3 + Price]
      */
     @TestVisible
     private static List<CoApplicantPage> buildCoApplicantPages(List<CoApplicant> people) {
         List<CoApplicantPage> pages = new List<CoApplicantPage>();
         Integer total = people == null ? 0 : people.size();
 
-        CoApplicantPage current = null;
-        for (Integer i = 0; i < total - 1; i++) {
-            if (current == null || current.coApplicants.size() == CO_APPLICANTS_PER_PAGE) {
-                current = new CoApplicantPage(false);
-                pages.add(current);
-            }
-            current.add(people[i]);
-        }
-
-        CoApplicantPage pricePage = new CoApplicantPage(true);
-        if (total > 0) {
-            pricePage.add(people[total - 1]);
-        } else {
+        if (total == 0) {
             CoApplicant blank = new CoApplicant();
             blank.heading = CO_APPLICANT_HEADING;
+            CoApplicantPage pricePage = new CoApplicantPage(true);
             pricePage.add(blank);
+            pages.add(pricePage);
+            return pages;
         }
-        pages.add(pricePage);
+
+        Boolean priceFitsOnLastPage = Math.mod(total, CO_APPLICANTS_PER_PAGE) == 1;
+
+        for (Integer first = 0; first < total; first += CO_APPLICANTS_PER_PAGE) {
+            Boolean isLastPage = first + CO_APPLICANTS_PER_PAGE >= total;
+            CoApplicantPage page = new CoApplicantPage(isLastPage && priceFitsOnLastPage);
+            Integer last = Math.min(first + CO_APPLICANTS_PER_PAGE, total);
+            for (Integer i = first; i < last; i++) {
+                page.add(people[i]);
+            }
+            pages.add(page);
+        }
+
+        if (!priceFitsOnLastPage) {
+            pages.add(new CoApplicantPage(true));
+        }
         return pages;
     }
 
@@ -738,8 +749,12 @@ public with sharing class BookingFormController {
     /** One printed page of co-applicant sections. */
     public class CoApplicantPage {
         public List<CoApplicant> coApplicants { get; private set; }
-        /** True for the last page, which also shows the price details. */
+        /** True for the page that shows the price details (always the last). */
         public Boolean showPriceDetails { get; private set; }
+        /** False for a page that holds only the price details. */
+        public Boolean hasCoApplicants {
+            get { return !coApplicants.isEmpty(); }
+        }
 
         public CoApplicantPage(Boolean showPriceDetails) {
             this.coApplicants = new List<CoApplicant>();

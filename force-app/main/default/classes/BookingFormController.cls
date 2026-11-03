@@ -9,8 +9,7 @@
  *                - First applicant  : Booking__c "Primary Applicant" fields
  *                - Co-applicant     : Booking__c "Second Applicant" fields, otherwise
  *                                     the first Co_Applicant__c record of the booking
- *                - Price details    : Booking__c financial fields, with the linked
- *                                     Quote__c as fallback
+ *                - Price details    : Booking__c Financial Summary / New Stage fields
  *
  *              All reads are null safe and respect field-level security
  *              (Security.stripInaccessible), so a blank, missing or hidden field
@@ -23,11 +22,6 @@ public with sharing class BookingFormController {
     @TestVisible private static final String MSG_INVALID_ID = 'Booking record ID is invalid.';
     @TestVisible private static final String MSG_NOT_FOUND = 'Booking record was not found or is not accessible.';
     @TestVisible private static final String MSG_UNEXPECTED = 'Unable to load the booking form. Please contact your administrator.';
-
-    /** Booking amount payable is 20% of the flat cost (same rule as COST_SHEET_TL). */
-    @TestVisible private static final Decimal BOOKING_AMOUNT_RATE = 0.20;
-    /** TDS @1% of the sale consideration (Terms & Conditions point 4, Booking__c.TDS__c). */
-    @TestVisible private static final Decimal TDS_RATE = 0.01;
 
     private static final String DATE_FORMAT = 'dd/MM/yyyy';
     private static final String AREA_SUFFIX = ' Sft';
@@ -244,11 +238,10 @@ public with sharing class BookingFormController {
                    Permanent_Address1__c, Communication_address1__c,
 
                    Total_Flat_Cost__c, GST_Amount__c, GST__c,
-                   Booking_Amount__c, Booking_Amount1__c,
+                   Booking_Amount__c, TDS__c,
                    Funding_Type__c, Loan_Sanctioned_Amount__c,
                    Cheque_Transaction_No__c, Cheque_DD_NEFT_RTGS_No__c,
-                   Bank_Name__c,
-                   Quote__r.Sub_total__c, Quote__r.GST_Amount__c, Quote__r.GST1__c
+                   Bank_Name__c
             FROM Booking__c
             WHERE Id = :bookingId
             LIMIT 1
@@ -374,32 +367,22 @@ public with sharing class BookingFormController {
         coAddress = firstText(coApplicant, new List<String>{ 'Permenent_Address__c', 'Address__c' });
     }
 
+    /**
+     * @description Price details are read straight from the Booking record
+     *              (Financial Summary and New Stage sections). Only the two
+     *              lines that have no Booking field are derived:
+     *                - Balance Booking Amount = Booking Amount - Advance Paid
+     *                - GST On Booking Amount  = Booking Amount x GST %
+     */
     private void mapPriceDetails(Booking__c booking) {
-        SObject quote = parentOf(booking, 'Quote__r');
+        Decimal flatCost = decimalOf(booking, 'Total_Flat_Cost__c');
+        Decimal gstAmount = decimalOf(booking, 'GST_Amount__c');
+        Decimal bookingAmount = decimalOf(booking, 'Booking_Amount__c');
+        Decimal advance = decimalOf(booking, 'Booking_Amount__c');
 
-        Decimal flatCost = firstDecimal(new List<Decimal>{
-            decimalOf(booking, 'Total_Flat_Cost__c'),
-            decimalOf(quote, 'Sub_total__c')
-        });
-        Decimal gstPercent = firstDecimal(new List<Decimal>{
-            decimalOf(quote, 'GST1__c'),
-            decimalOf(booking, 'GST__c')
-        });
-        Decimal gstAmount = firstDecimal(new List<Decimal>{
-            decimalOf(booking, 'GST_Amount__c'),
-            decimalOf(quote, 'GST_Amount__c'),
-            percentOf(flatCost, gstPercent)
-        });
-        Decimal advance = firstDecimal(new List<Decimal>{
-            decimalOf(booking, 'Booking_Amount__c'),
-            decimalOf(booking, 'Booking_Amount1__c')
-        });
-
-        Decimal bookingAmount = flatCost == null ? null : flatCost * BOOKING_AMOUNT_RATE;
         Decimal balance = null;
         if (bookingAmount != null) {
-            Decimal paid = advance == null ? 0 : advance;
-            Decimal remaining = bookingAmount - paid;
+            Decimal remaining = bookingAmount - (advance == null ? 0 : advance);
             balance = remaining > 0 ? remaining : 0;
         }
 
@@ -407,14 +390,31 @@ public with sharing class BookingFormController {
         bookingAmountPayable = formatAmount(bookingAmount);
         advancePaid = formatAmount(advance);
         balanceBookingAmount = formatAmount(balance);
-        tdsPayable = formatAmount(flatCost == null ? null : flatCost * TDS_RATE);
+        tdsPayable = formatAmount(decimalOf(booking, 'TDS__c'));
         gstPayable = formatAmount(gstAmount);
-        gstOnBookingAmount = formatAmount(percentOf(bookingAmount, gstPercent));
+        gstOnBookingAmount = formatAmount(
+            percentOf(bookingAmount, gstPercentOf(booking, flatCost, gstAmount))
+        );
         loanAmount = formatAmount(decimalOf(booking, 'Loan_Sanctioned_Amount__c'));
 
         String fundingType = textOf(booking, 'Funding_Type__c').toLowerCase();
         isSelfFunded = SELF_FUNDING_TYPES.contains(fundingType);
         isBankLoan = LOAN_FUNDING_TYPES.contains(fundingType);
+    }
+
+    /**
+     * @description GST % from Booking__c.GST__c; when blank, the booking's own
+     *              rate GST_Amount__c / Total_Flat_Cost__c x 100.
+     */
+    private static Decimal gstPercentOf(Booking__c booking, Decimal flatCost, Decimal gstAmount) {
+        Decimal gstPercent = decimalOf(booking, 'GST__c');
+        if (gstPercent != null) {
+            return gstPercent;
+        }
+        if (flatCost == null || flatCost == 0 || gstAmount == null) {
+            return null;
+        }
+        return gstAmount * 100 / flatCost;
     }
 
     private void mapAcknowledgement(Booking__c booking) {
@@ -512,15 +512,6 @@ public with sharing class BookingFormController {
             }
         }
         return '';
-    }
-
-    private static Decimal firstDecimal(List<Decimal> values) {
-        for (Decimal value : values) {
-            if (value != null) {
-                return value;
-            }
-        }
-        return null;
     }
 
     private static Decimal firstPositive(List<Decimal> values) {

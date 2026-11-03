@@ -629,11 +629,7 @@
         <members>*</members>
         <name>BrandingSet</name>
     </types>
-    <types>
-        <members>*</members>
-        <name>QuickText</name>
-    </types>
-
+    
     <!-- ===================== Reports & Dashboards ===================== -->
     <types>
         <members>*</members>
@@ -899,10 +895,7 @@
         <members>*</members>
         <name>PaymentGatewayProvider</name>
     </types>
-    <types>
-       <members>*</members>
-       <name>QuickText</name>
-   </types>
+    
     <types>
         <members>*</members>
         <name>GatewayProviderPaymentMethodType</name>

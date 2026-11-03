@@ -7,8 +7,8 @@
  *              is where these fields are captured:
  *                - Flat details     : Booking__c.Plot__c (Unit) and Booking__c.Block__c (Tower)
  *                - First applicant  : Booking__c "Primary Applicant" fields
- *                - Co-applicant     : Booking__c "Second Applicant" fields, otherwise
- *                                     the first Co_Applicant__c record of the booking
+ *                - Co-applicants    : Booking__c "Second Applicant" fields (when filled),
+ *                                     then every Co_Applicant__c record, oldest first
  *                - Price details    : Booking__c Financial Summary / New Stage fields
  *
  *              All reads are null safe and respect field-level security
@@ -30,6 +30,10 @@ public with sharing class BookingFormController {
     /** Amount in a Plot__c.Booking_Amount__c label, e.g. "3" in "3bhk – 3 lakhs". */
     private static final Pattern LAKH_AMOUNT = Pattern.compile('(?i)(\\d+(?:\\.\\d+)?)\\s*(?:lakh|lac)');
     private static final Pattern PLAIN_AMOUNT = Pattern.compile('^\\d+(?:\\.\\d+)?$');
+
+    private static final String CO_APPLICANT_HEADING = 'DETAILS OF CO-APPLICANT';
+    /** Co-applicant sections that fit on one page, above the price details. */
+    private static final Integer CO_APPLICANTS_PER_PAGE = 2;
 
     private static final Set<String> SALUTATIONS = new Set<String>{ 'mr', 'mrs', 'ms', 'dr' };
     private static final Set<String> SELF_FUNDING_TYPES = new Set<String>{ 'self', 'self-funded' };
@@ -62,17 +66,16 @@ public with sharing class BookingFormController {
     public String applicantAddress { get; private set; }
 
     // ---------------------------------------------------------------------
-    // Co-applicant
+    // Co-applicants
     // ---------------------------------------------------------------------
-    public String coName { get; private set; }
-    public String coFatherName { get; private set; }
-    public String coPhone { get; private set; }
-    public String coEmail { get; private set; }
-    public String coDOB { get; private set; }
-    public String coOccupation { get; private set; }
-    public String coAadhar { get; private set; }
-    public String coPAN { get; private set; }
-    public String coAddress { get; private set; }
+    /** Every co-applicant of the booking, in print order. */
+    public List<CoApplicant> coApplicants { get; private set; }
+    /**
+     * Pages printed after the first applicant. Co-applicants fill pages of
+     * CO_APPLICANTS_PER_PAGE; the last co-applicant shares the final page with
+     * the price details, so 0 or 1 co-applicant keeps the original 2nd page.
+     */
+    public List<CoApplicantPage> coApplicantPages { get; private set; }
 
     // ---------------------------------------------------------------------
     // Price details
@@ -147,15 +150,8 @@ public with sharing class BookingFormController {
         applicantPAN = '';
         applicantAddress = '';
 
-        coName = '';
-        coFatherName = '';
-        coPhone = '';
-        coEmail = '';
-        coDOB = '';
-        coOccupation = '';
-        coAadhar = '';
-        coPAN = '';
-        coAddress = '';
+        coApplicants = new List<CoApplicant>();
+        coApplicantPages = buildCoApplicantPages(coApplicants);
 
         finalPrice = '';
         bookingAmountPayable = '';
@@ -213,7 +209,7 @@ public with sharing class BookingFormController {
 
         mapFlatDetails(booking);
         mapApplicant(booking);
-        mapCoApplicant(booking);
+        mapCoApplicants(booking);
         mapPriceDetails(booking);
         mapAcknowledgement(booking);
     }
@@ -256,7 +252,7 @@ public with sharing class BookingFormController {
         return readable.isEmpty() ? null : (Booking__c) readable[0];
     }
 
-    private static Co_Applicant__c queryFirstCoApplicant(Id bookingId) {
+    private static List<SObject> queryCoApplicants(Id bookingId) {
         List<Co_Applicant__c> coApplicants = [
             SELECT Id, Salutation__c, Full_Name__c, First_Name__c, Last_Name__c,
                    W_o_S_o_C_o_c__c, Contact_Number__c, Mobile__c, Email__c,
@@ -264,12 +260,10 @@ public with sharing class BookingFormController {
                    PAN_Number__c, Permenent_Address__c, Address__c
             FROM Co_Applicant__c
             WHERE Booking__c = :bookingId
-            ORDER BY CreatedDate ASC
-            LIMIT 1
+            ORDER BY CreatedDate ASC, Name ASC
         ];
 
-        List<SObject> readable = stripInaccessible(coApplicants);
-        return readable.isEmpty() ? null : (Co_Applicant__c) readable[0];
+        return stripInaccessible(coApplicants);
     }
 
     // =====================================================================
@@ -327,49 +321,101 @@ public with sharing class BookingFormController {
     }
 
     /**
-     * @description Uses the Second Applicant captured on the booking; when it
-     *              is blank, falls back to the first Co_Applicant__c record.
+     * @description Collects every co-applicant: the Second Applicant captured
+     *              on the booking (when filled) first, then each Co_Applicant__c
+     *              record oldest first, and lays them out into pages.
      */
-    private void mapCoApplicant(Booking__c booking) {
-        String secondApplicantName = textOf(booking, 'Second_Applicant_Name__c');
+    private void mapCoApplicants(Booking__c booking) {
+        coApplicants = new List<CoApplicant>();
 
-        if (String.isNotBlank(secondApplicantName)) {
-            coName = withSalutation(textOf(booking, 'salutation_Applicant2__c'), secondApplicantName);
-            coFatherName = textOf(booking, 'Son_Daughter_Wife_of1__c');
-            coPhone = textOf(booking, 'Mobile_Primary1__c');
-            coEmail = textOf(booking, 'Email2__c');
-            coDOB = textOf(booking, 'Date_of_birth_Applicant2__c');
-            coOccupation = textOf(booking, 'Occupation1__c');
-            coAadhar = textOf(booking, 'Aadhaar_Number1__c');
-            coPAN = textOf(booking, 'Pan_Number_Applicant2__c');
-            coAddress = firstText(booking, new List<String>{
-                'Permanent_Address1__c', 'Communication_address1__c'
-            });
-            return;
+        if (String.isNotBlank(textOf(booking, 'Second_Applicant_Name__c'))) {
+            coApplicants.add(fromSecondApplicant(booking));
+        }
+        for (SObject record : queryCoApplicants(booking.Id)) {
+            coApplicants.add(fromCoApplicantRecord((Co_Applicant__c) record));
         }
 
-        Co_Applicant__c coApplicant = queryFirstCoApplicant(booking.Id);
-        if (coApplicant == null) {
-            return;
+        Boolean numbered = coApplicants.size() > 1;
+        for (Integer i = 0; i < coApplicants.size(); i++) {
+            coApplicants[i].heading = numbered
+                ? CO_APPLICANT_HEADING + ' ' + (i + 1)
+                : CO_APPLICANT_HEADING;
         }
 
+        coApplicantPages = buildCoApplicantPages(coApplicants);
+    }
+
+    private static CoApplicant fromSecondApplicant(Booking__c booking) {
+        CoApplicant co = new CoApplicant();
+        co.name = withSalutation(
+            textOf(booking, 'salutation_Applicant2__c'),
+            textOf(booking, 'Second_Applicant_Name__c')
+        );
+        co.fatherName = textOf(booking, 'Son_Daughter_Wife_of1__c');
+        co.phone = textOf(booking, 'Mobile_Primary1__c');
+        co.email = textOf(booking, 'Email2__c');
+        co.dob = textOf(booking, 'Date_of_birth_Applicant2__c');
+        co.occupation = textOf(booking, 'Occupation1__c');
+        co.aadhar = textOf(booking, 'Aadhaar_Number1__c');
+        co.pan = textOf(booking, 'Pan_Number_Applicant2__c');
+        co.address = firstText(booking, new List<String>{
+            'Permanent_Address1__c', 'Communication_address1__c'
+        });
+        return co;
+    }
+
+    private static CoApplicant fromCoApplicantRecord(Co_Applicant__c record) {
         String fullName = firstNonBlank(new List<String>{
-            textOf(coApplicant, 'Full_Name__c'),
+            textOf(record, 'Full_Name__c'),
             joinNonBlank(new List<String>{
-                textOf(coApplicant, 'First_Name__c'),
-                textOf(coApplicant, 'Last_Name__c')
+                textOf(record, 'First_Name__c'),
+                textOf(record, 'Last_Name__c')
             })
         });
 
-        coName = withSalutation(textOf(coApplicant, 'Salutation__c'), fullName);
-        coFatherName = textOf(coApplicant, 'W_o_S_o_C_o_c__c');
-        coPhone = firstText(coApplicant, new List<String>{ 'Contact_Number__c', 'Mobile__c' });
-        coEmail = textOf(coApplicant, 'Email__c');
-        coDOB = textOf(coApplicant, 'Date_of_Birth__c');
-        coOccupation = textOf(coApplicant, 'Occupation__c');
-        coAadhar = textOf(coApplicant, 'Aadhar_Number__c');
-        coPAN = textOf(coApplicant, 'PAN_Number__c');
-        coAddress = firstText(coApplicant, new List<String>{ 'Permenent_Address__c', 'Address__c' });
+        CoApplicant co = new CoApplicant();
+        co.name = withSalutation(textOf(record, 'Salutation__c'), fullName);
+        co.fatherName = textOf(record, 'W_o_S_o_C_o_c__c');
+        co.phone = firstText(record, new List<String>{ 'Contact_Number__c', 'Mobile__c' });
+        co.email = textOf(record, 'Email__c');
+        co.dob = textOf(record, 'Date_of_Birth__c');
+        co.occupation = textOf(record, 'Occupation__c');
+        co.aadhar = textOf(record, 'Aadhar_Number__c');
+        co.pan = textOf(record, 'PAN_Number__c');
+        co.address = firstText(record, new List<String>{ 'Permenent_Address__c', 'Address__c' });
+        return co;
+    }
+
+    /**
+     * @description Splits co-applicants into printed pages. All but the last
+     *              co-applicant go CO_APPLICANTS_PER_PAGE to a page; the last one
+     *              (or an empty section when there is none) shares the final page
+     *              with the price details.
+     */
+    @TestVisible
+    private static List<CoApplicantPage> buildCoApplicantPages(List<CoApplicant> people) {
+        List<CoApplicantPage> pages = new List<CoApplicantPage>();
+        Integer total = people == null ? 0 : people.size();
+
+        CoApplicantPage current = null;
+        for (Integer i = 0; i < total - 1; i++) {
+            if (current == null || current.coApplicants.size() == CO_APPLICANTS_PER_PAGE) {
+                current = new CoApplicantPage(false);
+                pages.add(current);
+            }
+            current.add(people[i]);
+        }
+
+        CoApplicantPage pricePage = new CoApplicantPage(true);
+        if (total > 0) {
+            pricePage.add(people[total - 1]);
+        } else {
+            CoApplicant blank = new CoApplicant();
+            blank.heading = CO_APPLICANT_HEADING;
+            pricePage.add(blank);
+        }
+        pages.add(pricePage);
+        return pages;
     }
 
     /**
@@ -653,5 +699,56 @@ public with sharing class BookingFormController {
             ? grouped + '.' + String.valueOf(paise).leftPad(2, '0')
             : grouped;
         return isNegative ? '-' + result : result;
+    }
+
+    // =====================================================================
+    // View models
+    // =====================================================================
+
+    /** One co-applicant section on the form. Every value is '' when blank. */
+    public class CoApplicant {
+        public String heading { get; set; }
+        public String name { get; set; }
+        public String fatherName { get; set; }
+        public String phone { get; set; }
+        public String email { get; set; }
+        public String dob { get; set; }
+        public String occupation { get; set; }
+        public String aadhar { get; set; }
+        public String pan { get; set; }
+        public String address { get; set; }
+        /** True for the first section on a page (no top gap). */
+        public Boolean isFirstOnPage { get; set; }
+
+        public CoApplicant() {
+            heading = '';
+            name = '';
+            fatherName = '';
+            phone = '';
+            email = '';
+            dob = '';
+            occupation = '';
+            aadhar = '';
+            pan = '';
+            address = '';
+            isFirstOnPage = false;
+        }
+    }
+
+    /** One printed page of co-applicant sections. */
+    public class CoApplicantPage {
+        public List<CoApplicant> coApplicants { get; private set; }
+        /** True for the last page, which also shows the price details. */
+        public Boolean showPriceDetails { get; private set; }
+
+        public CoApplicantPage(Boolean showPriceDetails) {
+            this.coApplicants = new List<CoApplicant>();
+            this.showPriceDetails = showPriceDetails;
+        }
+
+        public void add(CoApplicant co) {
+            co.isFirstOnPage = coApplicants.isEmpty();
+            coApplicants.add(co);
+        }
     }
 }

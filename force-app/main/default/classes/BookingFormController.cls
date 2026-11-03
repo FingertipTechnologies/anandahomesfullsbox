@@ -118,7 +118,7 @@ public with sharing class BookingFormController {
         try {
             loadForm(bookingId);
         } catch (Exception ex) {
-            errorMessage = MSG_UNEXPECTED;
+            errorMessage = MSG_UNEXPECTED + ' (' + ex.getTypeName() + ': ' + ex.getMessage() + ')';
             System.debug(LoggingLevel.ERROR,
                 'BookingFormController failed for ' + bookingId + ': '
                 + ex.getMessage() + '\n' + ex.getStackTraceString());
@@ -458,13 +458,30 @@ public with sharing class BookingFormController {
             return '';
         }
         // Apex treats Date and Datetime as instanceof each other, so the
-        // string form (yyyy-MM-dd for a Date) is used to tell them apart.
+        // field's schema type decides how the value is formatted.
         if (rawValue instanceof Date || rawValue instanceof Datetime) {
-            return String.valueOf(rawValue).length() == 10
-                ? formatDate((Date) rawValue)
-                : ((Datetime) rawValue).format(DATE_FORMAT);
+            Schema.DisplayType fieldType = fieldTypeOf(record, fieldName);
+            if (fieldType == Schema.DisplayType.DATE) {
+                return formatDate((Date) rawValue);
+            }
+            if (fieldType == Schema.DisplayType.DATETIME) {
+                return ((Datetime) rawValue).format(DATE_FORMAT);
+            }
         }
         return String.valueOf(rawValue).trim();
+    }
+
+    /** Field maps per object, so each object is described only once per request. */
+    private static final Map<Schema.SObjectType, Map<String, Schema.SObjectField>> FIELD_MAP_CACHE =
+        new Map<Schema.SObjectType, Map<String, Schema.SObjectField>>();
+
+    private static Schema.DisplayType fieldTypeOf(SObject record, String fieldName) {
+        Schema.SObjectType objectType = record.getSObjectType();
+        if (!FIELD_MAP_CACHE.containsKey(objectType)) {
+            FIELD_MAP_CACHE.put(objectType, objectType.getDescribe().fields.getMap());
+        }
+        Schema.SObjectField field = FIELD_MAP_CACHE.get(objectType).get(fieldName);
+        return field == null ? null : field.getDescribe().getType();
     }
 
     private static Decimal decimalOf(SObject record, String fieldName) {

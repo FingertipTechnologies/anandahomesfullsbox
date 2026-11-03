@@ -900,6 +900,10 @@
         <name>PaymentGatewayProvider</name>
     </types>
     <types>
+       <members>*</members>
+       <name>QuickText</name>
+   </types>
+    <types>
         <members>*</members>
         <name>GatewayProviderPaymentMethodType</name>
     </types>

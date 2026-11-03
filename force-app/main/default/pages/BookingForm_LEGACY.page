@@ -225,6 +225,20 @@ body {
     height: 3mm;
     vertical-align: middle;
     border: 0.5pt solid #DDD0A6;
+    font-size: 6.5pt;
+    font-weight: bold;
+    line-height: 3mm;
+    text-align: center;
+    color: #333333;
+}
+
+.error-banner {
+    margin-bottom: 3mm;
+    padding: 1.5mm 3mm;
+    border: 0.5pt solid #C23934;
+    color: #C23934;
+    font-size: 8.5pt;
+    text-align: center;
 }
 
 </style>
@@ -245,6 +259,12 @@ body {
     </div>
 
     <div class="content" style="top:29mm;">
+
+        <apex:outputPanel layout="block"
+                          styleClass="error-banner"
+                          rendered="{!hasError}">
+            <apex:outputText value="{!errorMessage}"/>
+        </apex:outputPanel>
 
         <div class="section"
              style="margin-top:4mm;margin-bottom:5mm;">
@@ -618,49 +638,77 @@ body {
             <tr class="form-row-small">
                 <td>
                     Final Price
-                    <span class="line" style="width:167mm;"></span>
+                    <span class="value-line" style="width:167mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!finalPrice}"/>
+                        </span>
+                    </span>
                 </td>
             </tr>
 
             <tr class="form-row-small">
                 <td>
                     Booking Amount Payable For The Flat
-                    <span class="line" style="width:120mm;"></span>
+                    <span class="value-line" style="width:120mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!bookingAmountPayable}"/>
+                        </span>
+                    </span>
                 </td>
             </tr>
 
             <tr class="form-row-small">
                 <td>
                     Advance Paid At The Time Of Booking
-                    <span class="line" style="width:119mm;"></span>
+                    <span class="value-line" style="width:119mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!advancePaid}"/>
+                        </span>
+                    </span>
                 </td>
             </tr>
 
             <tr class="form-row-small">
                 <td>
                     Balance Booking Amount Payable
-                    <span class="line" style="width:125mm;"></span>
+                    <span class="value-line" style="width:125mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!balanceBookingAmount}"/>
+                        </span>
+                    </span>
                 </td>
             </tr>
 
             <tr class="form-row-small">
                 <td>
                     TDS Payable
-                    <span class="line" style="width:163mm;"></span>
+                    <span class="value-line" style="width:163mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!tdsPayable}"/>
+                        </span>
+                    </span>
                 </td>
             </tr>
 
             <tr class="form-row-small">
                 <td>
                     GST Payable
-                    <span class="line" style="width:163mm;"></span>
+                    <span class="value-line" style="width:163mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!gstPayable}"/>
+                        </span>
+                    </span>
                 </td>
             </tr>
 
             <tr class="form-row-small">
                 <td>
                     GST Payable On Booking Amount
-                    <span class="line" style="width:130mm;"></span>
+                    <span class="value-line" style="width:130mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!gstOnBookingAmount}"/>
+                        </span>
+                    </span>
                 </td>
             </tr>
 
@@ -672,11 +720,15 @@ body {
 
         <div style="margin-top:6mm;">
             Self:
-            <span class="checkbox"></span>
+            <span class="checkbox">
+                <apex:outputText value="X" rendered="{!isSelfFunded}"/>
+            </span>
 
             <span style="margin-left:18mm;">
                 Bank Loan:
-                <span class="checkbox"></span>
+                <span class="checkbox">
+                    <apex:outputText value="X" rendered="{!isBankLoan}"/>
+                </span>
             </span>
         </div>
 
@@ -684,7 +736,11 @@ body {
             <tr class="form-row-small">
                 <td>
                     Loan Amount
-                    <span class="line" style="width:160mm;"></span>
+                    <span class="value-line" style="width:160mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!loanAmount}"/>
+                        </span>
+                    </span>
                 </td>
             </tr>
         </table>
@@ -1153,14 +1209,22 @@ body {
             <tr class="form-row">
                 <td>
                     Cheque No.:
-                    <span class="line" style="width:160mm;"></span>
+                    <span class="value-line" style="width:160mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!chequeNumber}"/>
+                        </span>
+                    </span>
                 </td>
             </tr>
 
             <tr class="form-row">
                 <td>
                     Bank:
-                    <span class="line" style="width:171mm;"></span>
+                    <span class="value-line" style="width:171mm;">
+                        <span class="field-value">
+                            <apex:outputText value="{!bankName}"/>
+                        </span>
+                    </span>
                 </td>
             </tr>
 

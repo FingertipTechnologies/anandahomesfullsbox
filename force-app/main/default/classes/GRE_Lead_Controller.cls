@@ -1,5 +1,20 @@
 public without sharing class GRE_Lead_Controller {
-    
+
+    // Project values offered to users. "No Project" is a system placeholder used by the
+    // LeadCheck API only and must not be selectable by hand.
+    public static final String NO_PROJECT = 'No Project';
+
+    @AuraEnabled(cacheable=true)
+    public static List<String> getProjectOptions(){
+        List<String> options = new List<String>();
+        for(Schema.PicklistEntry pe : Lead__c.Allocated_Project__c.getDescribe().getPicklistValues()){
+            if(pe.isActive() && pe.getValue() != NO_PROJECT){
+                options.add(pe.getValue());
+            }
+        }
+        return options;
+    }
+
     public class InitDataWrapper {
         @AuraEnabled public List<Lead__c> leadRecords { get; set; }
         @AuraEnabled public List<String> ProjLst { get; set; }
@@ -44,14 +59,8 @@ public without sharing class GRE_Lead_Controller {
         String salesRTId = [SELECT Id FROM RecordType WHERE SObjectType = 'Lead__c' AND Name = 'Sales' LIMIT 1].Id;
         intWrp.salesRecordTypeId = salesRTId;
         
-        List<String> pickListValuesList= new List<String>();
-        Schema.DescribeFieldResult fieldResult = Lead.Allocated_Project__c.getDescribe();
-        List<Schema.PicklistEntry> ple = fieldResult.getPicklistValues();
-        for( Schema.PicklistEntry pickListVal : ple){
-            pickListValuesList.add(pickListVal.getLabel());
-        }
-        system.debug('pickListValuesList '+pickListValuesList);
-        intWrp.ProjLst = pickListValuesList;
+        intWrp.ProjLst = getProjectOptions();
+        system.debug('pickListValuesList '+intWrp.ProjLst);
         
         
         
@@ -267,13 +276,25 @@ public without sharing class GRE_Lead_Controller {
     }
     
     @AuraEnabled
-    public static void saveChanges(Lead__c ldRec, Site_Visit__c svRec, Related_Source__c rsRec, String LeadOwner, String SVOwner, String actionType, Boolean useRoundRobin){
+    // updated by claude 29-09-26 - return the assigned Sales user's name so the GRE toast can confirm the reassignment
+    public static String saveChanges(Lead__c ldRec, Site_Visit__c svRec, Related_Source__c rsRec, String LeadOwner, String SVOwner, String actionType, Boolean useRoundRobin){
         system.debug('ldRec > '+ldRec);
         system.debug('svRec > '+svRec);
         system.debug('rsRec > '+rsRec);
         system.debug('LeadOwner > '+LeadOwner);
         system.debug('SVOwner > '+SVOwner);
         system.debug('actionType > '+actionType);
+
+        Lead__c existingLead = [
+            SELECT OwnerId, RecordTypeId, RecordType.Name
+            FROM Lead__c
+            WHERE Id = :ldRec.Id
+            LIMIT 1
+        ];
+        Boolean shouldReassignLeadOwner =
+            existingLead.RecordTypeId != null &&
+            existingLead.RecordType.Name == 'Pre Sales';
+
         if(String.isNotBlank(ldRec.Lead_source__c)){
             ldRec.Primary_Source__c = ldRec.Lead_source__c;
         }
@@ -287,8 +308,9 @@ public without sharing class GRE_Lead_Controller {
             if(assignedUserId != null){
                 svRec.Handled_By__c = assignedUserId;
                 SVOwner = assignedUserId;
-                ldRec.OwnerId = assignedUserId;
-                LeadOwner = assignedUserId;
+                if (shouldReassignLeadOwner) {
+                    ldRec.OwnerId = assignedUserId;
+                }
                 
                 // Update actionType if needed
                 if(actionType == 'NoAction' && ldRec.OwnerId != assignedUserId){
@@ -298,6 +320,11 @@ public without sharing class GRE_Lead_Controller {
                 throw new AuraHandledException('No users available in Round Robin for this project.');
             }
         }
+
+        if (!shouldReassignLeadOwner) {
+            ldRec.OwnerId = existingLead.OwnerId;
+        }
+        LeadOwner = ldRec.OwnerId;
         
         update ldRec;
         
@@ -309,6 +336,9 @@ public without sharing class GRE_Lead_Controller {
         sv.SV_Completed_Date_Time__c = svRec.SV_Completed_Date_Time__c;
         sv.Remark__c = svRec.Remark__c;
         sv.Status__c = svRec.Status__c;
+        if (svRec.Status__c == 'Completed') {
+            sv.GRE_User__c = UserInfo.getUserId();
+        }
         // sv.Feedback__c = 'NULL';
         sv.Site_Visit_rating__c = 'Warm';
         sv.Visit_Type__c = svRec.Visit_Type__c;
@@ -321,6 +351,18 @@ public without sharing class GRE_Lead_Controller {
             sv.Id = svRec.Id;
         }
         upsert sv;
+            
+
+        //added by ankita 27-10-26
+        // Automatically syncs the Site Visit GRE Remark into the parent Lead's 'All Remarks'
+        // history (Lead__c.Last_Note__c) and updates Lead__c.Remark__c.
+        if (String.isNotBlank(sv.Remark__c)) {
+            // 1. Appends the remark to "All Remarks" (Lead__c.Last_Note__c) with Date/Time & User
+            AddNoteController.updateLastNote(ldRec.Id, sv.Remark__c);
+            
+         
+        }
+        
  
         if(actionType == 'insertRelatedSource'){
             if(rsRec != null ){
@@ -384,6 +426,17 @@ public without sharing class GRE_Lead_Controller {
                 System.debug('Lead shared with Pre-Sales user: ' + ldRec.Pre_Sales_User__c);
             }
         }
+
+        // added by claude 29-09-26 - return the assigned Sales user's name when the lead was reassigned (Round Robin or manual GRE push); null when the owner was unchanged
+        String assignedUserName = null;
+        Boolean wasReassigned = (useRoundRobin == true) || actionType == 'insertRelatedSource' || actionType == 'CancelFollowups';
+        if (wasReassigned && ldRec.OwnerId != null) {
+            List<User> assignedUsers = [SELECT Name FROM User WHERE Id = :ldRec.OwnerId LIMIT 1];
+            if (!assignedUsers.isEmpty()) {
+                assignedUserName = assignedUsers[0].Name;
+            }
+        }
+        return assignedUserName;
     }
 
     //added by karthik 18-11-25
@@ -430,6 +483,7 @@ public without sharing class GRE_Lead_Controller {
             sv.Status__c = 'Completed';
             sv.Handled_By__c = assignedUserId;
             sv.OwnerId = assignedUserId;
+            sv.GRE_User__c = UserInfo.getUserId();
             sv.Check_In__c = System.now();
             sv.SV_Completed_Date_Time__c = System.now();
             sv.Project__c = ld.Allocated_Project__c;
@@ -442,12 +496,31 @@ public without sharing class GRE_Lead_Controller {
             throw new AuraHandledException('No sales users available in Round Robin for this project.');
         }
     }
+       
+        //updated by ankita 27-10-2026
+        //Updates Site Visit Check-Out time and saves Checkout Remark, 
+        //syncing the remark into the parent Lead's 'All Remarks' history (Lead__c.Last_Note__c).
+        // Overload for Apex callers (pushToSalesController, RoundRobinHandler, etc.)
+        public static void updateSVCheckoutTime(Id svId, Datetime checkoutTime) {
+            updateSVCheckoutTime(svId, checkoutTime, null);
+        }
 
-    @AuraEnabled
-    public static void updateSVCheckoutTime(Id svId, Datetime checkoutTime) {
-        Site_Visit__c sv = [SELECT Id FROM Site_Visit__c WHERE Id = :svId LIMIT 1];
-        sv.Check_Out__c = checkoutTime;
+       @AuraEnabled
+        public static void updateSVCheckoutTime(Id svId, Datetime checkoutTime, String checkoutRemark) {
+            // 1. Query Site Visit along with parent Lead Id
+            Site_Visit__c sv = [SELECT Id, CLead__c FROM Site_Visit__c WHERE Id = :svId LIMIT 1];
+            sv.Check_Out__c = checkoutTime;
+
+            // 2. Save Checkout Remark on Site Visit (if populated)
+            if (String.isNotBlank(checkoutRemark)) {
+                sv.Checkout_Remarks__c = checkoutRemark;
+        }
         update sv;
+
+        // 3. Automatically push to "All Remarks" on the Lead record page
+        if (sv.CLead__c != null && String.isNotBlank(checkoutRemark)) {
+            AddNoteController.updateLastNote(sv.CLead__c, '[Checkout Remark]: ' + checkoutRemark);
+        }
     }
 
 }

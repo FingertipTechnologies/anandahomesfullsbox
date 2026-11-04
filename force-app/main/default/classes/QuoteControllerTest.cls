@@ -19,6 +19,7 @@ public class QuoteControllerTest {
 
         // Create SLead__c
         Lead lead = new Lead(
+            Phone = '7877888800',
             Phone__c = '7877888800',
             Secondary_Email__c = 'secondary@test.com',
             LastName = 'Lead',
@@ -36,6 +37,7 @@ public class QuoteControllerTest {
             LastName = 'Lead',
             Company = 'Test Company',
             Email = 'test@gmail.com',
+            Phone = '9876543210',
             Phone__c = '9876543210'
         );
         insert testLead;
@@ -88,6 +90,7 @@ public class QuoteControllerTest {
             FirstName = 'Test1',
             LastName = 'Lead1',
             Company = 'Test Company NoEmail',
+            Phone = '9876543211',
             Phone__c = '9876543211'
         );
         insert testLead;
@@ -124,6 +127,7 @@ public class QuoteControllerTest {
         Lead leadRec = new Lead(
             LastName = 'Legacey Lead',
             Company = 'Legacey Co',
+            Phone = '9988776655',
             Phone__c = '9988776655',
             Email = 'legacey@example.com'
         );
@@ -160,6 +164,7 @@ public class QuoteControllerTest {
         Lead leadRec = new Lead(
             LastName = 'NoEmail Lead',
             Company = 'NoEmail Co',
+            Phone = '9977665544',
             Phone__c = '9977665544'
             // no Email field
         );
@@ -187,6 +192,7 @@ public class QuoteControllerTest {
         Lead leadRec = new Lead(
             LastName = 'Pending Lead',
             Company = 'Pending Co',
+            Phone = '9112233445',
             Phone__c = '9112233445'
         );
         insert leadRec;
@@ -218,6 +224,7 @@ public class QuoteControllerTest {
         Lead leadRec = new Lead(
             LastName = 'Drafted Lead',
             Company = 'Drafted Co',
+            Phone = '9112233500',
             Phone__c = '9112233500',
             Email = 'drafted@example.com'
         );
@@ -251,6 +258,7 @@ public class QuoteControllerTest {
         Lead leadRec = new Lead(
             LastName = 'Secondary Lead',
             Company = 'Secondary Co',
+            Phone = '9112233600',
             Phone__c = '9112233600',
             Email = 'primary@example.com',
             Secondary_Email__c = 'secondary@example.com'
@@ -271,6 +279,38 @@ public class QuoteControllerTest {
         Test.stopTest();
 
         System.assertEquals('Quotation sent to customer', ret);
+    }
+
+    /** Covers Project1__r.Name == 'The Drizzle' branch (pref = Page.COST_SHEET_TD). */
+    @isTest
+    static void testSendEmailtoCustomer_TheDrizzle_WithCLead() {
+        Project__c drizzleProj = new Project__c(
+            Name = 'The Drizzle',
+            Project_Type__c = 'Residential'
+        );
+        insert drizzleProj;
+
+        Lead__c cLeadRec = new Lead__c(
+            Name__c = 'Drizzle Customer',
+            Phone__c = '9112233800',
+            Email__c = 'drizzle@example.com'
+        );
+        insert cLeadRec;
+
+        Quote__c q = new Quote__c(
+            Quote_status__c = 'Approved',
+            Approval_status__c = 'Approved',
+            CLead__c = cLeadRec.Id,
+            Project1__c = drizzleProj.Id,
+            payment_type__c = 'Standard'
+        );
+        insert q;
+
+        Test.startTest();
+        String ret = QuoteController.sendEmailtoCustomer(q.Id, '<p>Hello Drizzle</p>', null);
+        Test.stopTest();
+
+        System.assertEquals('Quotation sent to customer', ret, 'Drizzle quotes must use the COST_SHEET_TD page and send');
     }
 
     /** Covers CLead__r.Email__c branch (line 45-47) — uses custom Lead__c instead of standard Lead. */

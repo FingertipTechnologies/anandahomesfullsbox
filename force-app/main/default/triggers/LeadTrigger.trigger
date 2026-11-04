@@ -18,7 +18,7 @@ trigger LeadTrigger on Lead__c (before insert, after insert, before update, afte
                     // if leads are creating by admin then it will go to roundrobin, if lead is creating by other user it will assign same user.
                     if(u.Profile.Name =='System Administrator' || u.Profile.Name =='Lead Capture Profile' || u.Profile.Name == 'Routecall API Profile'
                        ||u.Profile.Name == 'Minimum Access - API Only Integrations'||u.Profile.Name == 'LeadInsert Profile' ||u.Profile.Name == 'Front Office' 
-                       ||u.Profile.Name == 'pulse Profile' || u.Profile.Name == 'Call Profile' || u.Profile.Name == 'LeadPush Profile')
+                       ||u.Profile.Name == 'pulse Profile' || u.Profile.Name == 'Call Profile' || u.Profile.Name == 'LeadPush Profile' || u.Profile.Name == 'LogPushAPI Profile' || u.Profile.Name == 'Lead Check API Profile') 
                     {
                         for(Lead__c ld : trigger.new){
                             if(ld.Lead_source__c =='Walk-in'){
@@ -30,7 +30,7 @@ trigger LeadTrigger on Lead__c (before insert, after insert, before update, afte
                                 }
                             }
                             else{
-                                ld.RecordTypeId=Schema.SObjectType.Lead__c.getRecordTypeInfosByName().get('Pre Sales').getRecordTypeId();
+                                //ld.RecordTypeId=Schema.SObjectType.Lead__c.getRecordTypeInfosByName().get('Pre Sales').getRecordTypeId();
                                 PreSalesLeads.add(ld);
                             }
                         }
@@ -133,7 +133,9 @@ trigger LeadTrigger on Lead__c (before insert, after insert, before update, afte
                 } */
                 if (Trigger.isUpdate) {
                     system.debug('on update');
-                    
+                    // Stamp Status_Change_Date__c when Lead_Status__c changes (home page "Lead's For The Day")
+                    LeadStatusDateHandler.stampStatusChange(Trigger.new, Trigger.oldMap);
+
                     List<Lead__c> preSalesLdList = new List<Lead__c>();
                     List<Lead__c> salesLdList = new List<Lead__c>();
                     Set<String> keySet = new Set<String>();
@@ -149,7 +151,10 @@ trigger LeadTrigger on Lead__c (before insert, after insert, before update, afte
 
                         if (ld.Lead_status__c != Trigger.oldmap.get(ld.Id).Lead_status__c && ld.Lead_status__c=='New' && !ld.Lead_Assigned__c && !ld.Lead_Transfered__c){
                             preSalesLdList.add(ld);
-                        } else if(ld.Lead_status__c=='New sales enquiry' && pushToSalesController.pushToSales && !ld.Lead_Assigned__c && !ld.Round_Robin_Off__c){
+                        } else if((ld.Lead_status__c == 'New sales enquiry'
+                            || (ld.Lead_status__c == 'Sales Prospect'
+                                && ld.RecordTypeId == Schema.SObjectType.Lead__c.getRecordTypeInfosByName().get('Sales').getRecordTypeId()))
+                            && pushToSalesController.pushToSales && !ld.Lead_Assigned__c && !ld.Round_Robin_Off__c){
                             salesLdList.add(ld);
                         }
                     }
@@ -253,6 +258,111 @@ trigger LeadTrigger on Lead__c (before insert, after insert, before update, afte
                     RelatedSourceHandler.afterinsertLogic2(trigger.new);
                 } 
                 if (Trigger.isUpdate) {
+                    Set<Id> leadsWithOwnerChanges = new Set<Id>();
+                    Map<Id, Id> leadOwnerByLeadId = new Map<Id, Id>();
+
+                    for (Lead__c newLead : Trigger.new) {
+                        Lead__c oldLead = Trigger.oldMap.get(newLead.Id);
+                        if (newLead.OwnerId != oldLead.OwnerId
+                            && newLead.OwnerId != null
+                            && newLead.OwnerId.getSObjectType() == User.SObjectType) {
+                            leadsWithOwnerChanges.add(newLead.Id);
+                            leadOwnerByLeadId.put(newLead.Id, newLead.OwnerId);
+                        }
+                    }
+
+                    if (!leadsWithOwnerChanges.isEmpty()) {
+                        Set<Id> leadOwnerIds = new Set<Id>(leadOwnerByLeadId.values());
+                        Set<Id> activeLeadOwnerIds = new Map<Id, User>([
+                            SELECT Id
+                            FROM User
+                            WHERE Id IN :leadOwnerIds AND IsActive = true
+                        ]).keySet();
+
+                        Map<Id, Id> followupOwnerById = new Map<Id, Id>();
+                        for (Follow_up__c followup : [
+                            SELECT Id, CLead__c, OwnerId
+                            FROM Follow_up__c
+                            WHERE CLead__c IN :leadsWithOwnerChanges
+                            AND (Status__c = 'Scheduled' or Status__c = 'Pending')
+                        ]) {
+                            Id leadOwnerId = leadOwnerByLeadId.get(followup.CLead__c);
+                            if (activeLeadOwnerIds.contains(leadOwnerId) && followup.OwnerId != leadOwnerId) {
+                                followupOwnerById.put(followup.Id, leadOwnerId);
+                            }
+                        }
+
+                        if (!followupOwnerById.isEmpty()) {
+                            Set<Id> followupIds = followupOwnerById.keySet();
+                            Set<Id> shareUserIds = new Set<Id>(followupOwnerById.values());
+                            Map<String, Follow_up__Share> existingFollowupShares = new Map<String, Follow_up__Share>();
+                            for (Follow_up__Share existingShare : [
+                                SELECT Id, ParentId, UserOrGroupId, AccessLevel
+                                FROM Follow_up__Share
+                                WHERE ParentId IN :followupIds
+                                AND UserOrGroupId IN :shareUserIds
+                                AND RowCause = 'Manual'
+                            ]) {
+                                existingFollowupShares.put(
+                                    existingShare.ParentId + '-' + existingShare.UserOrGroupId,
+                                    existingShare
+                                );
+                            }
+
+                            List<Follow_up__Share> followupSharesToInsert = new List<Follow_up__Share>();
+                            List<Follow_up__Share> followupSharesToUpdate = new List<Follow_up__Share>();
+                            for (Id followupId : followupOwnerById.keySet()) {
+                                Id shareUserId = followupOwnerById.get(followupId);
+                                String shareKey = followupId + '-' + shareUserId;
+                                Follow_up__Share existingShare = existingFollowupShares.get(shareKey);
+                                if (existingShare == null) {
+                                    followupSharesToInsert.add(new Follow_up__Share(
+                                        ParentId = followupId,
+                                        UserOrGroupId = shareUserId,
+                                        AccessLevel = 'Edit',
+                                        RowCause = Schema.Follow_up__Share.RowCause.Manual
+                                    ));
+                                } else if (existingShare.AccessLevel == 'Read') {
+                                    existingShare.AccessLevel = 'Edit';
+                                    followupSharesToUpdate.add(existingShare);
+                                }
+                            }
+
+                            if (!followupSharesToInsert.isEmpty()) {
+                                Database.SaveResult[] insertResults = Database.insert(followupSharesToInsert, false);
+                                for (Integer i = 0; i < insertResults.size(); i++) {
+                                    if (!insertResults[i].isSuccess()) {
+                                        for (Database.Error shareError : insertResults[i].getErrors()) {
+                                            System.debug(
+                                                LoggingLevel.ERROR,
+                                                'Failed to share scheduled follow-up ' +
+                                                followupSharesToInsert[i].ParentId +
+                                                ' with lead owner ' +
+                                                followupSharesToInsert[i].UserOrGroupId +
+                                                ': ' + shareError.getMessage()
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                            if (!followupSharesToUpdate.isEmpty()) {
+                                Database.SaveResult[] updateResults = Database.update(followupSharesToUpdate, false);
+                                for (Integer i = 0; i < updateResults.size(); i++) {
+                                    if (!updateResults[i].isSuccess()) {
+                                        for (Database.Error shareError : updateResults[i].getErrors()) {
+                                            System.debug(
+                                                LoggingLevel.ERROR,
+                                                'Failed to upgrade scheduled follow-up share ' +
+                                                followupSharesToUpdate[i].Id +
+                                                ' to Edit: ' + shareError.getMessage()
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     /* 
 List<Lead__c> nonRespondedLeads = new List<Lead__c>();
 for (Lead__c newLead : Trigger.new) {

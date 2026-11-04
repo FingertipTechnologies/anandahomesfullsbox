@@ -36,6 +36,21 @@ public class transferLeadController {
         return selectOpt;
     }
     
+    // Project values offered to users on the New Lead form. "No Project" is a system
+    // placeholder used by the LeadCheck API only and must not be selectable by hand.
+    public static final String NO_PROJECT = 'No Project';
+
+    @AuraEnabled(cacheable=true)
+    public static List<String> getProjectOptions(){
+        List<String> options = new List<String>();
+        for(Schema.PicklistEntry pe : Lead__c.Allocated_Project__c.getDescribe().getPicklistValues()){
+            if(pe.isActive() && pe.getValue() != NO_PROJECT){
+                options.add(pe.getValue());
+            }
+        }
+        return options;
+    }
+
     @auraEnabled
     public static List<String> getPickListValues(){
         List<String> pickListValuesList= new List<String>();

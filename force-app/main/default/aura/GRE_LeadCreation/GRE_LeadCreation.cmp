@@ -4,8 +4,8 @@
     <aura:attribute name="searchValue" type="String" default="sales" />
     <aura:attribute name="newLeadForm" type="boolean" default="false"/>
     <aura:attribute name="sectionLabels" type="Map" default=""/>
-    <aura:attribute name="selectedCountry" type="string" />
-    <aura:attribute name="selectedCountryCode" type="string" />
+    <aura:attribute name="selectedCountry" type="string" default="India" />
+    <aura:attribute name="selectedCountryCode" type="string" default="91" />
     <aura:attribute name="recordId" type="string"/>
     <aura:attribute name="newNote" type="string"/>
     <aura:attribute name="selectedLead" type="Lead__c"/>
@@ -49,6 +49,9 @@
     <aura:attribute name="newSiteVisit" type="Object" default="{'sobjectType':'Site_Visit__c'}"/>
     <aura:attribute name="handledByOptions" type="List"/>
     <aura:attribute name="projectOptions" type="List"/>
+    <!-- New Lead form project picklist: active values minus the "No Project" system placeholder -->
+    <aura:attribute name="newLeadProjectOptions" type="List" default="[]"/>
+    <aura:attribute name="selectedNewLeadProject" type="String"/>
     <aura:attribute name="salesRecordTypeId" type="String" />
     <aura:attribute name="newRelatedSource" type="Object" default="{'sobjectType':'Related_Source__c'}"/>
     
@@ -60,6 +63,9 @@
     <aura:attribute name="isCheckoutModalOpen" type="Boolean" default="false"/>
     <aura:attribute name="checkoutSVId" type="String"/>
     <aura:attribute name="checkoutTime" type="Datetime"/>
+    <!--added by ankita 27-10-2026-->
+    <aura:attribute name="checkoutRemark" type="String"/>
+
     <aura:attribute name="svVisitType" type="String" default=""/>
     <aura:attribute name="svVisitSourceType" type="String" default=""/>
     <aura:attribute name="svChannelPartnerId" type="String" default=""/>
@@ -581,6 +587,15 @@
                                                  required="true"
                                                  messageWhenValueMissing="Checkout Date and Time is required."
                                                  />
+                                 <!-- added by ankita 27-10-2026 -->
+                                <lightning:textarea
+                                    aura:id="checkoutRemarkInput"
+                                    label="Checkout Remark"
+                                    value="{!v.checkoutRemark}"
+                                    class="slds-m-top_small"
+                                    required="true"
+                                    messageWhenValueMissing="Checkout Remark is required."
+                                />
 
                             </div>
                         </div>
@@ -633,7 +648,8 @@
                                                 <aura:if isTrue="{!v.isGREUser}">
                                                     <lightning:inputField fieldName="Allocated_Project__c" required="true" value="{!v.currentUserProject}" disabled="true"/>
                                                     <aura:set attribute="else">
-                                                        <lightning:inputField fieldName="Allocated_Project__c" required="true"/>
+                                                        <lightning:combobox aura:id="projectPick" name="projectPick" label="Project Name" required="true"
+                                                                            placeholder="--None--" options="{!v.newLeadProjectOptions}" value="{!v.selectedNewLeadProject}"/>
                                                     </aura:set>
                                                 </aura:if>
                                             </div>
@@ -649,7 +665,7 @@
                                             <div class="slds-size_1-of-2 slds-max-small-size_1-of-1">
                                                 
                                                 <div class="slds-form-element__control">
-                                                    <lightning:inputField fieldName="Country__c" aura:id="CountryLookupField" onchange="{!c.handleCountryChange}" />
+                                                    <lightning:inputField fieldName="Country__c" value="{!v.selectedCountry}" aura:id="CountryLookupField" onchange="{!c.handleCountryChange}" />
                                                 </div>
                                                 
                                             </div>
@@ -710,7 +726,7 @@
                                     <div class="slds-scope">
                                         <div class="slds-grid slds-wrap slds-text-align_left">
                                             <div class="slds-size_1-of-2 slds-max-small-size_1-of-1">
-                                                <lightning:inputField fieldName="Primary_Source__c"  required='true' disabled="true" value="Walk-in" onchange="{!c.isChannelPartner}"/>
+                                                <lightning:inputField fieldName="Primary_Source__c"  required='true' disabled="true" value="Walk-In" onchange="{!c.isChannelPartner}"/>
                                             </div>
                                             <div class="slds-size_1-of-2 slds-max-small-size_1-of-1">
                                                 <lightning:inputField fieldName="Primary_Sub_Source__c" required="true" onchange="{!c.handleSubSourceChange}"/>

@@ -72,21 +72,38 @@
         let phoneValue = phoneField.get("v.value");
         let secondaryPhoneValue = secondaryPhoneField.get("v.value");
 
-        // Validate phone numbers client-side (mirrors Lead__c Mobile_Number_Validation rule)
+        // Validate phone numbers client-side (mirrors Lead__c Mobile_Number_Validation rule).
+        // India (or no country chosen, which the trigger defaults to India) must be exactly
+        // 10 digits. Any other country only has to be digits, with no length requirement.
+        var selectedCountry = component.find("CountryLookupField").get("v.value");
+        var isIndia = !selectedCountry || selectedCountry === 'India';
         var TEN_DIGITS = /^[0-9]{10}$/;
-        var badPhone = phoneValue && !TEN_DIGITS.test(String(phoneValue));
-        var badSecondary = secondaryPhoneValue && !TEN_DIGITS.test(String(secondaryPhoneValue));
+        var DIGITS_ONLY = /^[0-9]+$/;
+        var rule = isIndia ? TEN_DIGITS : DIGITS_ONLY;
+        var badPhone = phoneValue && !rule.test(String(phoneValue));
+        var badSecondary = secondaryPhoneValue && !rule.test(String(secondaryPhoneValue));
         if (badPhone || badSecondary) {
             component.set("v.isSubmitting", false);
             component.set('v.spinner', false);
-            helper.toastMsg('error', 'Invalid Phone Number',
-                'Phone Number and Secondary Phone Number must contain exactly 10 digits and only numbers.');
+            helper.toastMsg('error', 'Invalid Phone Number', isIndia
+                ? 'Phone Number and Secondary Phone Number must contain exactly 10 digits and only numbers.'
+                : 'Phone Number and Secondary Phone Number must contain only numbers.');
             return;
         }
 
         // Get the event fields and add additional values
         var eventFields = event.getParam("fields");
         //eventFields["Lead_source__c"] = component.get('v.leadSource');
+
+        // Project comes from the filtered combobox, not from a record field on the form.
+        var selectedProject = component.get('v.selectedProject');
+        if (!selectedProject) {
+            component.set("v.isSubmitting", false);
+            component.set('v.spinner', false);
+            helper.toastMsg('error', 'Error', 'Please select a Project Name.');
+            return;
+        }
+        eventFields["Allocated_Project__c"] = selectedProject;
         let countryCode = component.get('v.selectedCountryCode');
         if (countryCode) {
             eventFields["Country_Code__c"] = countryCode;

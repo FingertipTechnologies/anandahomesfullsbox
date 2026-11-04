@@ -7,31 +7,75 @@ public without sharing class RelatedSourceHandler {
     public static datetime startTime;
     public static datetime endTime;
     
-    // this method will segrate phone number and country code 
+    // Active values of the Country picklist (Country__c and Secondary_Country__c share the
+    // "Country" global value set). Built once per transaction.
+    private static Set<String> activeCountryValues;
+
+    /**
+     * Returns the label if it is an active Country picklist value, otherwise null.
+     * Country__c is a restricted picklist: writing a label the picklist does not carry
+     * (a typo in Country_Code_Mapping__mdt, or a value missing in this org) would fail
+     * the whole insert with INVALID_OR_NULL_FOR_RESTRICTED_PICKLIST. Leaving Country
+     * blank keeps the lead, the normalised phone and the country code.
+     */
+    public static String validCountryValue(String label) {
+        if (String.isBlank(label)) {
+            return null;
+        }
+        if (activeCountryValues == null) {
+            activeCountryValues = new Set<String>();
+            for (Schema.PicklistEntry pe : Lead__c.Country__c.getDescribe().getPicklistValues()) {
+                if (pe.isActive()) {
+                    activeCountryValues.add(pe.getValue());
+                }
+            }
+        }
+        if (activeCountryValues.contains(label)) {
+            return label;
+        }
+        System.debug(LoggingLevel.WARN, 'RelatedSourceHandler: country "' + label
+            + '" from Country_Code_Mapping__mdt is not an active Country picklist value; leaving Country blank.');
+        return null;
+    }
+
+    // this method will segrate phone number and country code
     public static void checkMobileNumber(List<Lead__c> newRecordsList) {
-        
-        Map<String, String> countryCodeMap = Utility.getAllCountryCodeMappings(true); 
+        checkMobileNumber(newRecordsList, Trigger.isExecuting && Trigger.isInsert == true);
+    }
+
+    /**
+     * @param isInsert true on before-insert. On insert the secondary country / code may hold
+     *        the org defaults (India / 91) rather than a user's choice, because the lead forms
+     *        have no Secondary Country picker and the fields default on their own. In that case
+     *        the secondary number inherits the primary country. On update a non-blank secondary
+     *        country is respected as entered.
+     */
+    public static void checkMobileNumber(List<Lead__c> newRecordsList, Boolean isInsert) {
+
+        Map<String, String> countryCodeMap = Utility.getAllCountryCodeMappings(true);
+        String indiaLabel = countryCodeMap.get('91');
         List<Lead__c> contactItems = newRecordsList;
-        for( Lead__c contact : contactItems ) { 
-            boolean phone=true; 
+        for( Lead__c contact : contactItems ) {
+            boolean phone=true;
             boolean secondaryPhone=true;
+            Boolean secondaryHadCountryCode = contact.Secondary_Phone__c != null && contact.Secondary_Phone__c.startsWith('+');
             if(contact.Phone__c != null){
                 contact.Phone__c = contactFormatter.getformated(contact.Phone__c);
             }
-            
+
             if(contact.Phone__c != null && contact.Phone__c.startsWith('+')){
                 contact.Phone__c = contact.Phone__c.removeStart('+');
                 if(contact.Phone__c != null && contact.Phone__c.startsWith('91')){
                     contact.Country_Code__c = '91';
-                    contact.Country__c = countryCodeMap.get('91');
+                    contact.Country__c = validCountryValue(countryCodeMap.get('91'));
                     contact.Phone__c = contact.Phone__c.removeStart('91');
                 }
                 else{
-                    
+
                     for(String countryCode : countryCodeMap.keySet()){
                         if(contact.Phone__c != null && contact.Phone__c.startsWith(countryCode) && phone){
                             contact.Country_Code__c = countryCode;
-                            contact.Country__c = countryCodeMap.get(countryCode);
+                            contact.Country__c = validCountryValue(countryCodeMap.get(countryCode));
                             contact.Phone__c = contact.Phone__c.removeStart(countryCode);
                             phone = false;
                         }
@@ -42,26 +86,40 @@ public without sharing class RelatedSourceHandler {
                 contact.Secondary_Phone__c = contact.Secondary_Phone__c.removeStart('+');
                 if(contact.Secondary_Phone__c  != null && contact.Secondary_Phone__c .startsWith('91')){
                     contact.Secondary_Country_Code__c = '91';
-                    contact.Secondary_Country__c = countryCodeMap.get('91');
+                    contact.Secondary_Country__c = validCountryValue(countryCodeMap.get('91'));
                     contact.Secondary_Phone__c = contact.Secondary_Phone__c.removeStart('91');
                 }else{
                     for(String countryCode : countryCodeMap.keySet()){
                         if(contact.Secondary_Phone__c != null && contact.Secondary_Phone__c.startsWith(countryCode) && secondaryPhone){
                             contact.Secondary_Country_Code__c = countryCode;
-                            contact.Secondary_Country__c = countryCodeMap.get(countryCode);
+                            contact.Secondary_Country__c = validCountryValue(countryCodeMap.get(countryCode));
                             contact.Secondary_Phone__c = contact.Secondary_Phone__c.removeStart(countryCode);
                             secondaryPhone = false;
                         }
-                    }  
+                    }
                 }
             }
             if(contact.Phone__c != null && contact.Country__c == null &&   contact.Country_Code__c  == null){
                 contact.Country_Code__c = '91';
-                contact.Country__c = countryCodeMap.get('91');
+                contact.Country__c = validCountryValue(countryCodeMap.get('91'));
             }
-            if(contact.Secondary_Phone__c != null && contact.Secondary_Country__c == null){
-                contact.Secondary_Country_Code__c = '91';
-                contact.Secondary_Country__c = countryCodeMap.get('91');
+            // A secondary number that did not carry its own "+code" belongs to the same country
+            // as the primary number (the lead forms only offer one Country picker). Treat blank
+            // secondary fields, and on insert the org defaults (India / 91), as "not chosen".
+            // Fall back to India only when the primary has no country either.
+            if(contact.Secondary_Phone__c != null && !secondaryHadCountryCode){
+                Boolean secondaryBlank = contact.Secondary_Country__c == null && contact.Secondary_Country_Code__c == null;
+                Boolean secondaryIsDefault = isInsert == true
+                    && (contact.Secondary_Country_Code__c == null || contact.Secondary_Country_Code__c == '91')
+                    && (contact.Secondary_Country__c == null || contact.Secondary_Country__c == indiaLabel);
+                Boolean primaryHasCountry = contact.Country_Code__c != null || contact.Country__c != null;
+                if(primaryHasCountry && (secondaryBlank || secondaryIsDefault)){
+                    contact.Secondary_Country_Code__c = contact.Country_Code__c;
+                    contact.Secondary_Country__c = contact.Country__c;
+                }else if(secondaryBlank){
+                    contact.Secondary_Country_Code__c = '91';
+                    contact.Secondary_Country__c = validCountryValue(indiaLabel);
+                }
             }
         }
     }
@@ -148,74 +206,88 @@ public without sharing class RelatedSourceHandler {
     }
 */
     
-    // Duplication check based on phone, secondary phone, email, secondary email and project
+    // Duplication check based on phone and secondary phone.
+    // Keys come from Phone__c / Secondary_Phone__c as they are NOW, after checkMobileNumber
+    // has stripped "+91" etc. In a before-insert trigger the PhoneProject__c /
+    // Secondary_Phone_Project__c formulas still hold the number as submitted, so a
+    // "+91xxxxxxxxxx" lead never matched the stored "xxxxxxxxxx" and was kept as a duplicate.
     public static void duplicateCheck2(List<Lead__c> ldList){
         Set<String> keySet = new Set<String>();
-        
+        Set<Id> incomingIds = new Set<Id>();
+
         for(Lead__c ld : ldList){
-            if(ld.PhoneProject__c != null){
-                keySet.add(ld.PhoneProject__c);
+            if(String.isNotBlank(ld.Phone__c)){
+                keySet.add(ld.Phone__c);
             }
-            if(ld.Secondary_Phone_Project__c != null){
-                keySet.add(ld.Secondary_Phone_Project__c);
+            if(String.isNotBlank(ld.Secondary_Phone__c)){
+                keySet.add(ld.Secondary_Phone__c);
+            }
+            if(ld.Id != null){
+                incomingIds.add(ld.Id);
             }
         }
-        
+
         system.debug('---keySet: ' + keySet);
-        
+
         if(keySet.isEmpty()) return;
-        
-        List<Lead__c> oldLeadList = [SELECT Id, PhoneProject__c, Secondary_Phone_Project__c, Phone__c, Secondary_Phone__c
-                                     FROM Lead__c WHERE (PhoneProject__c IN :keySet OR Secondary_Phone_Project__c IN :keySet) ORDER BY CreatedDate ASC];
-        
+
+        List<Lead__c> oldLeadList = [SELECT Id, Phone__c, Secondary_Phone__c
+                                     FROM Lead__c
+                                     WHERE (Phone__c IN :keySet OR Secondary_Phone__c IN :keySet)
+                                       AND Id NOT IN :incomingIds
+                                     ORDER BY CreatedDate ASC];
+
         system.debug(oldLeadList.size());
-        
+
         if(oldLeadList.size() > 0){
             Map<String, Lead__c> keyMap = new Map<String, Lead__c>();
-            
+
             for(Lead__c old : oldLeadList){
-                if(old.PhoneProject__c != null){
-                    keyMap.put(old.PhoneProject__c, old);
+                if(String.isNotBlank(old.Phone__c)){
+                    keyMap.put(old.Phone__c, old);
                 }
-                if(old.Secondary_Phone_Project__c != null){
-                    keyMap.put(old.Secondary_Phone_Project__c, old);
+                if(String.isNotBlank(old.Secondary_Phone__c)){
+                    keyMap.put(old.Secondary_Phone__c, old);
                 }
             }
 
             for(Lead__c nld : ldList){
-                if(nld.PhoneProject__c != null && keyMap.containsKey(nld.PhoneProject__c)){
+                if(String.isNotBlank(nld.Phone__c) && keyMap.containsKey(nld.Phone__c)){
                     nld.Delete_Lead__c = true;
-                    nld.Main_Lead__c = keyMap.get(nld.PhoneProject__c).Id;
-                } else if(nld.Secondary_Phone_Project__c != null && keyMap.containsKey(nld.Secondary_Phone_Project__c)){
+                    nld.Main_Lead__c = keyMap.get(nld.Phone__c).Id;
+                } else if(String.isNotBlank(nld.Secondary_Phone__c) && keyMap.containsKey(nld.Secondary_Phone__c)){
                     nld.Delete_Lead__c = true;
-                    nld.Main_Lead__c = keyMap.get(nld.Secondary_Phone_Project__c).Id;
+                    nld.Main_Lead__c = keyMap.get(nld.Secondary_Phone__c).Id;
                 }
             }
         } else {
-            List<Related_Source__c> oldList = [SELECT Id, Name, PhoneProject__c, SecondaryPhoneProject__c, CLead__c
-                                               FROM Related_Source__c  WHERE (PhoneProject__c IN :keySet OR SecondaryPhoneProject__c IN :keySet) AND CLead__c != null ORDER BY CreatedDate ASC];
-            
+            List<Related_Source__c> oldList = [SELECT Id, Name, Phone__c, Secondary_Phone__c, CLead__c
+                                               FROM Related_Source__c
+                                               WHERE (Phone__c IN :keySet OR Secondary_Phone__c IN :keySet)
+                                                 AND CLead__c != null
+                                               ORDER BY CreatedDate ASC];
+
             system.debug(oldList);
-            
+
             Map<String, Related_Source__c> keyMap = new Map<String, Related_Source__c>();
-            
+
             if(oldList.size() > 0){
                 for(Related_Source__c old : oldList){
-                    if(old.PhoneProject__c != null){
-                        keyMap.put(old.PhoneProject__c, old);
+                    if(String.isNotBlank(old.Phone__c)){
+                        keyMap.put(old.Phone__c, old);
                     }
-                    if(old.SecondaryPhoneProject__c != null){
-                        keyMap.put(old.SecondaryPhoneProject__c, old);
+                    if(String.isNotBlank(old.Secondary_Phone__c)){
+                        keyMap.put(old.Secondary_Phone__c, old);
                     }
                 }
 
                 for(Lead__c nld : ldList){
-                    if(nld.PhoneProject__c != null && keyMap.containsKey(nld.PhoneProject__c)){
+                    if(String.isNotBlank(nld.Phone__c) && keyMap.containsKey(nld.Phone__c)){
                         nld.Delete_Lead__c = true;
-                        nld.Main_Lead__c = keyMap.get(nld.PhoneProject__c).CLead__c;
-                    } else if(nld.Secondary_Phone_Project__c != null && keyMap.containsKey(nld.Secondary_Phone_Project__c)){
+                        nld.Main_Lead__c = keyMap.get(nld.Phone__c).CLead__c;
+                    } else if(String.isNotBlank(nld.Secondary_Phone__c) && keyMap.containsKey(nld.Secondary_Phone__c)){
                         nld.Delete_Lead__c = true;
-                        nld.Main_Lead__c = keyMap.get(nld.Secondary_Phone_Project__c).CLead__c;
+                        nld.Main_Lead__c = keyMap.get(nld.Secondary_Phone__c).CLead__c;
                     }
                 }
             }
@@ -449,9 +521,11 @@ addRelatedSource2(nld,NewPhoneMap.get(nld.Spouse_Phone__c));
         //if( nld.Main_lead_status__c == 'Booked'|| nld.Main_lead_status__c =='Unqualified' || nld.Main_lead_status__c == 'Closed Lost'){
         if(nld.Main_lead_status__c =='Unqualified' || nld.Main_lead_status__c == 'Closed Lost'){
             string RecTypeId;
+            // A lead that was Unqualified or Closed Lost and enquires again re-opens in the
+            // Sales record type at the first sales stage, so it follows the sales stages.
             if(nld.Main_lead_status__c == 'Unqualified'){
-                RecTypeId = Schema.SObjectType.Lead__c.getRecordTypeInfosByName().get('Pre Sales').getRecordTypeId();
-                ld.Lead_status__c = 'New Enquiry';
+                RecTypeId = Schema.SObjectType.Lead__c.getRecordTypeInfosByName().get('Sales').getRecordTypeId();
+                ld.Lead_status__c = 'New Sales Enquiry';
             } else if(nld.Main_lead_status__c == 'Closed Lost'){
                 RecTypeId = Schema.SObjectType.Lead__c.getRecordTypeInfosByName().get('Sales').getRecordTypeId();
                 ld.Lead_status__c = 'New Sales Enquiry';
@@ -497,6 +571,10 @@ addRelatedSource2(nld,NewPhoneMap.get(nld.Spouse_Phone__c));
             ld.Next_Site_visit_Date__c=null;
             ld.Closed_Lost_Reason__c=null;
             ld.Remark_for_Closed_Lost__c=null;
+            // The Sales record type carries only a subset of the Unqualified reasons, so the
+            // old reason must be cleared or the switch to Sales fails on the restricted picklist.
+            ld.Unqualified_Reason__c=null;
+            ld.Unqualified_Closed_Lost_Remarks__c=null;
             system.debug('=='+nld.Main_Pre_Sales_User__c);
             system.debug('=='+nld.Sales_User__c);
             //ld.OwnerId=nld.Main_Pre_Sales_User__c;

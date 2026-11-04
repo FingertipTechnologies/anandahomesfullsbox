@@ -39,4 +39,19 @@ public class transferLeadControllerTest
         //.moveToSales(testLead.id,'ATMOS Silverwoods','tReason',false,testUser.id);
 
     }
+
+    /** Project options for the New Lead form never include the "No Project" placeholder. */
+    @isTest
+    static void testGetProjectOptions_ExcludesNoProject() {
+        Test.startTest();
+        List<String> options = transferLeadController.getProjectOptions();
+        Test.stopTest();
+
+        System.assert(!options.contains(transferLeadController.NO_PROJECT), 'No Project must not be offered to users');
+        Integer activeCount = 0;
+        for (Schema.PicklistEntry pe : Lead__c.Allocated_Project__c.getDescribe().getPicklistValues()) {
+            if (pe.isActive() && pe.getValue() != transferLeadController.NO_PROJECT) activeCount++;
+        }
+        System.assertEquals(activeCount, options.size(), 'Every other active project should be offered');
+    }
 }

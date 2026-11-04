@@ -1,0 +1,274 @@
+<!--
+    Cost sheet for THE DRIZZLE, modelled on the Drizzle price sheet (logo banner, "COST ESTIMATION"
+    title, price break-up, payment schedule, expenditure at registration, notes).
+    Data comes from the Quote__c record exactly like COST_SHEET_TL: the price break-up rows are the
+    components of Quote__c.Sub_total__c, the payment schedule comes from Cost_Sheet_Line_Item__c.
+    Opened by the "Generate Cost Sheet" quick action (GenerateQuotePDF) and attached to the e-mail by
+    QuoteController.sendEmailtoCustomer when Project = The Drizzle.
+    Add ?format=html to preview the page in the browser instead of as PDF.
+-->
+<apex:page standardController="Quote__c" extensions="CostSheetController"
+           showHeader="false" sidebar="false" applyHtmlTag="false" applyBodyTag="false"
+           standardStylesheets="false" title="Cost Estimation"
+           renderAs="{!IF($CurrentPage.parameters.format == 'html', '', 'pdf')}">
+    <html>
+        <head>
+            <style type="text/css">
+                @page {
+                    size: A4 portrait;
+                    margin: 0.5in 0.5in 0.7in 0.5in;
+                    @bottom-center {
+                        content: "Page " counter(page) " of " counter(pages);
+                        font-size: 9px;
+                        color: #333333;
+                    }
+                }
+                body { font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #000000; margin: 0; padding: 0; }
+
+                .logo-table { width: 100%; border-collapse: collapse; margin-bottom: 0; page-break-inside: avoid; }
+                .logo-table td { border: none; text-align: center; padding: 6px; }
+                .logo-table img { width: 100%; height: auto; }
+
+                .doc-title {
+                    text-align: center; font-size: 15px; font-weight: bold; font-style: italic;
+                    text-decoration: underline; border: 1px solid #000000;
+                    padding: 6px; margin: 0 0 10px 0;
+                }
+                .section-title { font-size: 11px; font-weight: bold; text-decoration: underline; margin: 12px 0 4px 0; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 10px; page-break-inside: avoid; }
+                th, td { border: 1px solid #000000; padding: 4px 6px; vertical-align: top; }
+                th { background-color: #e6e6e6; text-align: left; }
+                .amt { text-align: right; white-space: nowrap; }
+                .pct { text-align: center; white-space: nowrap; }
+                .label { font-weight: bold; background-color: #f2f2f2; width: 17%; }
+                .value { width: 33%; }
+                .total-row td { font-weight: bold; background-color: #f2f2f2; }
+                .notes-table td { border: 1px solid #000000; }
+                .notes { font-size: 9px; }
+                .sign-table td { border: none; padding-top: 25px; }
+                .customer-row td { font-size: 11px; }
+            </style>
+        </head>
+        <body>
+
+            <!-- Rates used in "Expenditure at registration" (from the Drizzle price sheet) -->
+            <apex:variable var="area" value="{!NULLVALUE(Quote__c.Saleable_Area_Sft__c, 0)}" />
+            <apex:variable var="flatCost" value="{!NULLVALUE(Quote__c.Sub_total__c, 0)}" />
+            <apex:variable var="gstPct" value="{!NULLVALUE(Quote__c.GST1__c, 0)}" />
+            <apex:variable var="grandTotal" value="{!NULLVALUE(Quote__c.Total__c, 0)}" />
+            <apex:variable var="stampDutyPct" value="{!7.6}" />
+            <apex:variable var="corpusPerSft" value="{!50}" />
+            <apex:variable var="maintPerSftPerMonth" value="{!3.5}" />
+            <apex:variable var="maintMonths" value="{!24}" />
+            <apex:variable var="docCharges" value="{!25000}" />
+            <apex:variable var="advMaint" value="{!area * maintPerSftPerMonth * maintMonths}" />
+
+            <!-- ===== Logo banner ===== -->
+            <table class="logo-table">
+                <tr>
+                    <td><apex:image url="{!$Resource.LOGO_PRICE_SHEET}" alt="The Drizzle - Ananda Homes - Prosper"/></td>
+                </tr>
+            </table>
+
+            <div class="doc-title">COST ESTIMATION</div>
+
+            <!-- ===== Unit / Header details ===== -->
+            <table>
+                <tr>
+                    <td class="label">Tower</td><td class="value">{!Quote__c.Tower__c}</td>
+                    <td class="label">Unit No.</td><td class="value">{!Quote__c.Unit__r.Name}</td>
+                </tr>
+                <tr>
+                    <td class="label">Floor No.</td><td class="value">{!Quote__c.Floor__c}</td>
+                    <td class="label">Flat Size (Sft)</td>
+                    <td class="value"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!area}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td class="label">Flat No.</td><td class="value">{!Quote__c.Flat_Number__c}</td>
+                    <td class="label">BHK</td><td class="value">{!Quote__c.BHK_Type__c}</td>
+                </tr>
+                <tr>
+                    <td class="label">Extra Car Parking</td><td class="value">{!IF(Quote__c.Additional_Car_Parking_Required__c, 'YES', 'NO')}</td>
+                    <td class="label">Facing</td><td class="value">{!Quote__c.Facing__c}</td>
+                </tr>
+                <tr class="customer-row">
+                    <td class="label">Customer Name</td>
+                    <td class="value">{!IF(ISBLANK(Quote__c.CLead__r.Salutation__c), '', Quote__c.CLead__r.Salutation__c & ' ') & Quote__c.CLead__r.Name__c}</td>
+                    <td class="label">Date</td>
+                    <td class="value">
+                        <apex:outputText value="{0,date,dd/MM/yyyy}"><apex:param value="{!Quote__c.Quote_Date__c}" /></apex:outputText>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- ===== Price break-up (the components of Quote__c.Sub_total__c) ===== -->
+            <div class="section-title">Price Break-up</div>
+            <table>
+                <tr>
+                    <th style="width:50%">Particulars</th>
+                    <th class="amt" style="width:20%">Rate (&#8377;)</th>
+                    <th class="amt" style="width:30%">Amount (&#8377;)</th>
+                </tr>
+                <tr>
+                    <td>Base Price (per Sft)</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Price_Per_Sq_Ft__c, 0)}" /></apex:outputText></td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Price_Per_Sq_Ft__c, 0) * area}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td>East/North Facing (per Sft)</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.East_Facing_Charges__c, 0)}" /></apex:outputText></td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.East_Facing_Charges__c, 0) * area}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td>Corner (per Sft)</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Corner_Charges__c, 0)}" /></apex:outputText></td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Corner_Charges__c, 0) * area}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td>Floor Rise (per Sft)</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Hi_Rise_Charges__c, 0)}" /></apex:outputText></td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Hi_Rise_Charges__c, 0) * area}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td>Road Premium (per Sft)</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Roadside_Premium__c, 0)}" /></apex:outputText></td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Roadside_Premium__c, 0) * area}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td>Central Courtyard Premium (per Sft)</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Central_Court_Yard_Premium__c, 0)}" /></apex:outputText></td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Central_Court_Yard_Premium__c, 0) * area}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td>Meadow Premium (per Sft)</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Meadow_Premium__c, 0)}" /></apex:outputText></td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Meadow_Premium__c, 0) * area}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td>Court Yard Premium (per Sft)</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Court_Yard_Premium__c, 0)}" /></apex:outputText></td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Court_Yard_Premium__c, 0) * area}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td>Outer Premium (per Sft)</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Outer_Premium__c, 0)}" /></apex:outputText></td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Outer_Premium__c, 0) * area}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td>Club House + Amenities with Car Parking</td>
+                    <td class="amt">-</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Amenities_Car_Parking__c, 0)}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td>Infrastructure Charges</td>
+                    <td class="amt">-</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.Infrastructure_Charges__c, 0)}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td class="label" colspan="2">Cost</td>
+                    <td class="amt label"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!flatCost}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td class="label" colspan="2">GST @ <apex:outputText value="{0, number, 0.##}"><apex:param value="{!gstPct}" /></apex:outputText>%</td>
+                    <td class="amt label"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!NULLVALUE(Quote__c.GST_Amount__c, 0)}" /></apex:outputText></td>
+                </tr>
+                <tr class="total-row">
+                    <td colspan="2">Total Cost</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!grandTotal}" /></apex:outputText></td>
+                </tr>
+            </table>
+
+            <!-- ===== Payment Schedule (Cost_Sheet_Line_Item__c, % of Total Cost) ===== -->
+            <div class="section-title">Payment Schedule</div>
+            <apex:variable var="sumPct" value="{!0}" />
+            <apex:variable var="sumAmt" value="{!0}" />
+            <table>
+                <tr>
+                    <th class="pct" style="width:6%">S.No</th>
+                    <th style="width:62%">Milestone</th>
+                    <th class="pct" style="width:10%">%</th>
+                    <th class="amt" style="width:22%">Amount (&#8377;)</th>
+                </tr>
+                <apex:repeat value="{!lineItems}" var="item">
+                    <tr>
+                        <td class="pct"><apex:outputText value="{0, number, #}"><apex:param value="{!item.S_No__c}" /></apex:outputText></td>
+                        <td>{!item.Payment_Schedule_Name__c}</td>
+                        <td class="pct"><apex:outputText value="{0, number, 0.##}"><apex:param value="{!NULLVALUE(item.Payment_percent__c, 0)}" /></apex:outputText>%</td>
+                        <td class="amt">
+                            <apex:outputText value="{0, number, ###,###}"><apex:param value="{!grandTotal * NULLVALUE(item.Payment_percent__c, 0) / 100}" /></apex:outputText>
+                            <apex:variable var="sumPct" value="{!sumPct + NULLVALUE(item.Payment_percent__c, 0)}" />
+                            <apex:variable var="sumAmt" value="{!sumAmt + (grandTotal * NULLVALUE(item.Payment_percent__c, 0) / 100)}" />
+                        </td>
+                    </tr>
+                </apex:repeat>
+                <tr class="total-row">
+                    <td colspan="2">Total</td>
+                    <td class="pct"><apex:outputText value="{0, number, 0.##}"><apex:param value="{!sumPct}" /></apex:outputText>%</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!sumAmt}" /></apex:outputText></td>
+                </tr>
+            </table>
+
+            <!-- ===== Expenditure at registration ===== -->
+            <div class="section-title">EXPENDITURE TO BE INCURRED AT THE TIME OF REGISTRATION</div>
+            <table>
+                <tr><th style="width:70%">Particulars</th><th class="amt" style="width:30%">Amount (&#8377;)</th></tr>
+                <tr>
+                    <td>Registration/Stamp Duty &amp; Mutation charges @ <apex:outputText value="{0, number, 0.##}"><apex:param value="{!stampDutyPct}" /></apex:outputText>%</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!flatCost * stampDutyPct / 100}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td>Corpus Fund @ Rs.<apex:outputText value="{0, number, #}"><apex:param value="{!corpusPerSft}" /></apex:outputText>/- SFT</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!area * corpusPerSft}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td>Advance Maintenance @ <apex:outputText value="{0, number, 0.##}"><apex:param value="{!maintPerSftPerMonth}" /></apex:outputText> per SFT for 2 Years</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!advMaint}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td>18% GST on Advance Maintenance</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!advMaint * 0.18}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td>Documentation Charges &amp; 18% GST</td>
+                    <td class="amt"><apex:outputText value="{0, number, ###,###}"><apex:param value="{!docCharges * 1.18}" /></apex:outputText></td>
+                </tr>
+            </table>
+
+            <!-- ===== Notes ===== -->
+            <table class="notes-table">
+                <tr><td class="notes">
+                    <b>NOTE:</b> The above Payment schedule is Tentative &amp; subject to change based on Bank Approvals/Requirement.
+                    <ol style="margin:4px 0 0 14px; padding:0;">
+                        <li>Applicable GST to be paid along every installment payments.</li>
+                        <li>Corpus fund to be paid 15 days ahead of registration date.</li>
+                        <li>Advance Maintenance Charges to be paid 15 days ahead of registration date.</li>
+                        <li>Stamp Duty &amp; Other Statutory Fees/Taxes to be paid as applicable; 15 days ahead of registration date.</li>
+                        <li>T.D.S @1% of the sale Consideration shall be deducted &amp; paid directly to the Govt. through online process on builders PAN.</li>
+                        <li>The G.S.T, Stamp Duty etc., is subject to change from time to time based on government norms without any prior notifications.</li>
+                        <li>Prices are subject to change without any prior notice.</li>
+                        <li>All Cheques/Electronic transfers should be in favour of "THE DRIZZLE JV".</li>
+                        <li>Bank charges for realization of out station cheques &amp; cheque return charges will be covered from the customers account.</li>
+                        <li>Documentation charges to be paid at the time of Registration.</li>
+                        <li>Errors &amp; Omissions Expected.</li>
+                        <li>Add this number for future update on Drizzle Project Construction status +91 9281447996.</li>
+                    </ol>
+                </td></tr>
+            </table>
+
+            <!-- ===== Signatures ===== -->
+            <table class="sign-table">
+                <tr>
+                    <td>Customer Signature:</td>
+                    <td style="text-align:center;">Sales Person Signature:</td>
+                    <td style="text-align:right;">Authorized Signature:</td>
+                </tr>
+                <tr>
+                    <td>Date:</td>
+                    <td style="text-align:center;">Date:</td>
+                    <td style="text-align:right;">Date:</td>
+                </tr>
+            </table>
+
+        </body>
+    </html>
+</apex:page>

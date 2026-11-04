@@ -12330,6 +12330,11 @@
         <readable>false</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>true</editable>
+        <field>Project__c.Booking_Amount__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>false</editable>
         <field>Project__c.Booking_fake__c</field>
         <readable>false</readable>
@@ -12375,6 +12380,11 @@
         <readable>false</readable>
     </fieldPermissions>
     <fieldPermissions>
+        <editable>true</editable>
+        <field>Project__c.Corpus_Charge_Per_Sq_ft__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
         <editable>false</editable>
         <field>Project__c.Country__c</field>
         <readable>false</readable>
@@ -12413,6 +12423,11 @@
         <editable>false</editable>
         <field>Project__c.Director__c</field>
         <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Project__c.Document_Charges__c</field>
+        <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
@@ -12538,6 +12553,16 @@
         <editable>false</editable>
         <field>Project__c.Location__c</field>
         <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Project__c.Maintenance_Month__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Project__c.Maintenance_Per_sq_ft_per_month__c</field>
+        <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
@@ -12708,6 +12733,11 @@
         <editable>false</editable>
         <field>Project__c.Sales_Manager__c</field>
         <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Project__c.Stamp_Duty_Percentage__c</field>
+        <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
@@ -15644,6 +15674,10 @@
         <enabled>false</enabled>
     </pageAccesses>
     <pageAccesses>
+        <apexPage>BookingForm_DJV</apexPage>
+        <enabled>false</enabled>
+    </pageAccesses>
+    <pageAccesses>
         <apexPage>BookingForm_LEGACY</apexPage>
         <enabled>false</enabled>
     </pageAccesses>
@@ -15657,6 +15691,10 @@
     </pageAccesses>
     <pageAccesses>
         <apexPage>CAPRI_NOC_FORMAT_SWAP</apexPage>
+        <enabled>false</enabled>
+    </pageAccesses>
+    <pageAccesses>
+        <apexPage>COST_SHEET_TD</apexPage>
         <enabled>false</enabled>
     </pageAccesses>
     <pageAccesses>

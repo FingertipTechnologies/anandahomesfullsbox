@@ -267,13 +267,31 @@ public without sharing class GRE_Lead_Controller {
     }
     
     @AuraEnabled
-    public static void saveChanges(Lead__c ldRec, Site_Visit__c svRec, Related_Source__c rsRec, String LeadOwner, String SVOwner, String actionType, Boolean useRoundRobin){
+    // updated by claude 29-09-26 - return the assigned Sales user's name so the GRE toast can confirm the reassignment
+    public static String saveChanges(Lead__c ldRec, Site_Visit__c svRec, Related_Source__c rsRec, String LeadOwner, String SVOwner, String actionType, Boolean useRoundRobin){
         system.debug('ldRec > '+ldRec);
         system.debug('svRec > '+svRec);
         system.debug('rsRec > '+rsRec);
         system.debug('LeadOwner > '+LeadOwner);
         system.debug('SVOwner > '+SVOwner);
         system.debug('actionType > '+actionType);
+
+        Lead__c existingLead = [
+            SELECT OwnerId, RecordType.Name
+            FROM Lead__c
+            WHERE Id = :ldRec.Id
+            LIMIT 1
+        ];
+        Boolean existingOwnerIsInactive = false;
+        if (existingLead.OwnerId != null && existingLead.OwnerId.getSObjectType() == User.SObjectType) {
+            User existingOwner = [SELECT IsActive FROM User WHERE Id = :existingLead.OwnerId LIMIT 1];
+            existingOwnerIsInactive = !existingOwner.IsActive;
+        }
+        Boolean shouldReassignLeadOwner =
+            existingLead.RecordTypeId != null &&
+            existingLead.RecordType.Name == 'Pre Sales' &&
+            existingOwnerIsInactive;
+
         if(String.isNotBlank(ldRec.Lead_source__c)){
             ldRec.Primary_Source__c = ldRec.Lead_source__c;
         }
@@ -287,8 +305,9 @@ public without sharing class GRE_Lead_Controller {
             if(assignedUserId != null){
                 svRec.Handled_By__c = assignedUserId;
                 SVOwner = assignedUserId;
-                ldRec.OwnerId = assignedUserId;
-                LeadOwner = assignedUserId;
+                if (shouldReassignLeadOwner) {
+                    ldRec.OwnerId = assignedUserId;
+                }
                 
                 // Update actionType if needed
                 if(actionType == 'NoAction' && ldRec.OwnerId != assignedUserId){
@@ -298,6 +317,11 @@ public without sharing class GRE_Lead_Controller {
                 throw new AuraHandledException('No users available in Round Robin for this project.');
             }
         }
+
+        if (!shouldReassignLeadOwner) {
+            ldRec.OwnerId = existingLead.OwnerId;
+        }
+        LeadOwner = ldRec.OwnerId;
         
         update ldRec;
         
@@ -309,6 +333,9 @@ public without sharing class GRE_Lead_Controller {
         sv.SV_Completed_Date_Time__c = svRec.SV_Completed_Date_Time__c;
         sv.Remark__c = svRec.Remark__c;
         sv.Status__c = svRec.Status__c;
+        if (svRec.Status__c == 'Completed') {
+            sv.GRE_User__c = UserInfo.getUserId();
+        }
         // sv.Feedback__c = 'NULL';
         sv.Site_Visit_rating__c = 'Warm';
         sv.Visit_Type__c = svRec.Visit_Type__c;
@@ -384,6 +411,17 @@ public without sharing class GRE_Lead_Controller {
                 System.debug('Lead shared with Pre-Sales user: ' + ldRec.Pre_Sales_User__c);
             }
         }
+
+        // added by claude 29-09-26 - return the assigned Sales user's name when the lead was reassigned (Round Robin or manual GRE push); null when the owner was unchanged
+        String assignedUserName = null;
+        Boolean wasReassigned = (useRoundRobin == true) || actionType == 'insertRelatedSource' || actionType == 'CancelFollowups';
+        if (wasReassigned && ldRec.OwnerId != null) {
+            List<User> assignedUsers = [SELECT Name FROM User WHERE Id = :ldRec.OwnerId LIMIT 1];
+            if (!assignedUsers.isEmpty()) {
+                assignedUserName = assignedUsers[0].Name;
+            }
+        }
+        return assignedUserName;
     }
 
     //added by karthik 18-11-25
@@ -430,6 +468,7 @@ public without sharing class GRE_Lead_Controller {
             sv.Status__c = 'Completed';
             sv.Handled_By__c = assignedUserId;
             sv.OwnerId = assignedUserId;
+            sv.GRE_User__c = UserInfo.getUserId();
             sv.Check_In__c = System.now();
             sv.SV_Completed_Date_Time__c = System.now();
             sv.Project__c = ld.Allocated_Project__c;

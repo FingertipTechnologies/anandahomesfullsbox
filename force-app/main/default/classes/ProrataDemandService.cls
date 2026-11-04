@@ -1,18 +1,16 @@
 /**
  * @description Raises the split Prorata / Partial demands described in BRD §8.4.
  *
- *              For a Prorata / Partial booking each eligible milestone produces TWO demands
- *              instead of one:
- *                • Bank demand     — Bank Flat + Bank GST, raised when the milestone is
- *                                    completed, delivered to the banker contact.
- *                • Customer demand — Customer Flat + Customer GST, raised on the milestone's
- *                                    demand date (after the forecast-date reminder).
+ *              For a split-funding booking each eligible milestone produces separate Flat and
+ *              GST demands for each applicable audience:
+ *                • Bank Flat and Bank GST are raised when the milestone is completed.
+ *                • Customer Flat and Customer GST are raised on the milestone's demand date.
  *
  *              Standard (Self / Loan) bookings are untouched — they keep using the normal
  *              single-demand flow (BulkDemandController / individual demand).
  *
- *              Each side is tracked independently on the Payment Schedule
- *              (Bank_Demand_Raised__c / Customer_Demand_Raised__c) so the same milestone is
+ *              Each component and audience is tracked independently on the Payment Schedule
+ *              so the same milestone component is
  *              never double-demanded on the same side, and raising a demand locks the split
  *              (Demand_Raised__c) per §8.3.1.
  * @author System
@@ -22,7 +20,6 @@ public with sharing class ProrataDemandService {
     /** Escape hatch for trusted bulk / migration processes. */
     public static Boolean bypass = false;
 
-    private static final Set<String> FUNDING_PRORATA = new Set<String>{ 'Prorata', 'Partial' };
     // Bank-funded types that carry a per-milestone Bank/Customer split (BRD §8.1).
     private static final Set<String> FUNDING_SPLIT = new Set<String>{
         'Loan', 'Bank Loan', 'NBFC Loan', 'Mixed Funding', 'Prorata', 'Partial'
@@ -66,9 +63,9 @@ public with sharing class ProrataDemandService {
             FROM Payment_Schedule__c
             WHERE Milestone_Name__c IN :names
             AND Booking__r.Project__c IN :projectIds
+            AND Booking__r.Project__r.Legacy_Split_Demand_Receipt__c = true
             AND Booking__r.Funding_Type__c IN :FUNDING_SPLIT
-            AND Bank_Demand_Raised__c = false
-            AND Bank_Flat_Amount__c > 0
+            AND (Bank_Flat_Amount__c > 0 OR Bank_GST_Amount__c > 0)
         ]) {
             scheduleIds.add(ps.Id);
         }
@@ -76,7 +73,7 @@ public with sharing class ProrataDemandService {
     }
 
     /**
-     * @description Daily job hook: raise the Customer demand for Prorata/Partial milestones whose
+     * @description Daily job hook: raise the Customer demand for split-funding milestones whose
      *              demand date has arrived (Due Date today or earlier), the forecast reminder has
      *              gone out, and the customer side has not been demanded yet. Called from
      *              DemandReminderSchedulable.
@@ -88,9 +85,13 @@ public with sharing class ProrataDemandService {
         for (Payment_Schedule__c ps : [
             SELECT Id
             FROM Payment_Schedule__c
-            WHERE Booking__r.Funding_Type__c IN :FUNDING_PRORATA
-            AND Customer_Demand_Raised__c = false
-            AND Customer_Flat_Prorata__c > 0
+            WHERE Booking__r.Funding_Type__c IN :FUNDING_SPLIT
+            AND Booking__r.Project__r.Legacy_Split_Demand_Receipt__c = true
+            AND (Customer_Flat_Prorata__c > 0 OR Customer_GST_Prorata__c > 0)
+            AND (
+                Customer_Flat_Demand_Raised__c = false OR Customer_Flat_Demand_Raised__c = null
+                OR Customer_GST_Demand_Raised__c = false OR Customer_GST_Demand_Raised__c = null
+            )
             AND Due_Date__c <= :today
             AND Status__c NOT IN :CLOSED_STATUSES
             LIMIT 200
@@ -110,50 +111,56 @@ public with sharing class ProrataDemandService {
                    Bank_Flat_Amount__c, Bank_GST_Amount__c, Customer_Flat_Prorata__c,
                    Customer_GST_Prorata__c, TDS_Amount__c, With_GST__c,
                    Bank_Demand_Raised__c, Customer_Demand_Raised__c,
-                   Booking__r.Funding_Type__c
+                   Bank_Flat_Demand_Raised__c, Bank_GST_Demand_Raised__c,
+                   Customer_Flat_Demand_Raised__c, Customer_GST_Demand_Raised__c,
+                   Booking__r.Funding_Type__c, Booking__r.Project__r.Legacy_Split_Demand_Receipt__c,
+                   Demand_Raised__c
             FROM Payment_Schedule__c
             WHERE Id IN :scheduleIds
             AND Booking__r.Funding_Type__c IN :FUNDING_SPLIT
+            AND Booking__r.Project__r.Legacy_Split_Demand_Receipt__c = true
         ];
         if (rows.isEmpty()) return 0;
 
         List<Demands__c> demands = new List<Demands__c>();
-        List<Payment_Schedule__c> flags = new List<Payment_Schedule__c>();
+        Map<Id, Payment_Schedule__c> flags = new Map<Id, Payment_Schedule__c>();
 
         for (Payment_Schedule__c ps : rows) {
             if (CLOSED_STATUSES.contains(ps.Status__c)) continue;
 
-            Boolean already = bankSide ? ps.Bank_Demand_Raised__c == true
-                                       : ps.Customer_Demand_Raised__c == true;
-            if (already) continue;
-
             Decimal flat = bankSide ? nz(ps.Bank_Flat_Amount__c) : nz(ps.Customer_Flat_Prorata__c);
             Decimal gst  = bankSide ? nz(ps.Bank_GST_Amount__c)  : nz(ps.Customer_GST_Prorata__c);
-            Decimal total = flat + gst;
-            if (total <= 0) continue;
+            for (String component : new List<String>{ DemandComponentService.FLAT, DemandComponentService.GST }) {
+                if (DemandComponentService.isComponentRaised(ps, component, bankSide)) continue;
+                Decimal amount = component == DemandComponentService.FLAT ? flat : gst;
+                if (amount <= 0) continue;
 
-            demands.add(new Demands__c(
-                Booking__c = ps.Booking__c,
-                Payment_Schedule__c = ps.Id,
-                Demand_Type__c = bankSide ? TYPE_BANK : TYPE_CUSTOMER,
-                Funding_Type__c = ps.Booking__r.Funding_Type__c,
-                Base_Amount__c = flat,
-                GST_Amount__c = gst,
-                TDS_Amount__c = bankSide ? 0 : nz(ps.TDS_Amount__c),
-                Demand_Amount__c = total,
-                Status__c = PostSalesConstants.DEMAND_STATUS_RAISED,
-                Demand_Date__c = Date.today(),
-                Due_Date__c = ps.Due_Date__c != null
-                    ? ps.Due_Date__c
-                    : Date.today().addDays(PostSalesConstants.DEFAULT_GRACE_PERIOD_DAYS)
-            ));
+                demands.add(new Demands__c(
+                    Booking__c = ps.Booking__c,
+                    Payment_Schedule__c = ps.Id,
+                    Demand_Type__c = bankSide ? TYPE_BANK : TYPE_CUSTOMER,
+                    Demand_Component__c = component,
+                    Demand_Audience__c = bankSide ? 'Bank' : 'Customer',
+                    Funding_Type__c = ps.Booking__r.Funding_Type__c,
+                    Base_Amount__c = component == DemandComponentService.FLAT ? amount : 0,
+                    Flat_Amount__c = component == DemandComponentService.FLAT ? amount : 0,
+                    GST_Amount__c = component == DemandComponentService.GST ? amount : 0,
+                    TDS_Amount__c = 0,
+                    Demand_Amount__c = amount,
+                    Pending_Amount__c = amount,
+                    Status__c = PostSalesConstants.DEMAND_STATUS_RAISED,
+                    Demand_Date__c = Date.today(),
+                    Due_Date__c = ps.Due_Date__c != null
+                        ? ps.Due_Date__c
+                        : Date.today().addDays(PostSalesConstants.DEFAULT_GRACE_PERIOD_DAYS)
+                ));
 
-            Payment_Schedule__c flag = new Payment_Schedule__c(Id = ps.Id);
-            if (bankSide) flag.Bank_Demand_Raised__c = true;
-            else flag.Customer_Demand_Raised__c = true;
-            // Raising either side locks the split (BRD §8.3.1).
-            flag.Demand_Raised__c = true;
-            flags.add(flag);
+                Payment_Schedule__c flag = flags.containsKey(ps.Id)
+                    ? flags.get(ps.Id)
+                    : new Payment_Schedule__c(Id = ps.Id);
+                DemandComponentService.markRaised(flag, component, bankSide);
+                flags.put(ps.Id, flag);
+            }
         }
 
         if (demands.isEmpty()) return 0;
@@ -164,7 +171,7 @@ public with sharing class ProrataDemandService {
             Boolean prior = ProrataInvariantService.bypass;
             ProrataInvariantService.bypass = true;
             try {
-                update flags;
+                update flags.values();
             } finally {
                 ProrataInvariantService.bypass = prior;
             }

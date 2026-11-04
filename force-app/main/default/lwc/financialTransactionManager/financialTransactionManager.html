@@ -234,6 +234,21 @@
                                     </lightning-combobox>
                                 </div>
                             </div>
+                            <template if:true={hasProjectAccountOptions}>
+                                <div class="form-row">
+                                    <div class="form-field">
+                                        <label class="field-label required">Account Name</label>
+                                        <lightning-combobox
+                                            value={accountNameId}
+                                            placeholder="Choose a project account..."
+                                            options={projectAccountOptions}
+                                            onchange={handleAccountNameChange}
+                                            required
+                                            variant="label-hidden">
+                                        </lightning-combobox>
+                                    </div>
+                                </div>
+                            </template>
                             <template if:true={isAdditionalChargeReceipt}>
                                 <div class="form-row">
                                     <div class="form-field">

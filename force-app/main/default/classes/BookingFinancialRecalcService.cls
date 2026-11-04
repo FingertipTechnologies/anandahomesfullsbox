@@ -252,7 +252,6 @@ public without sharing class BookingFinancialRecalcService {
                    Total_Receipt_Amount__c,
                    Pending_Amount__c,
                    Total_Base_Amount__c,
-                   GST_Amount__c,
                    Total_Base_Paid__c,
                    Total_GST_Paid__c,
                    Total_Base_Pending__c,
@@ -307,13 +306,11 @@ public without sharing class BookingFinancialRecalcService {
 
         // Base/GST totals from payment schedules
         Map<Id, Decimal> baseAmountByBooking = new Map<Id, Decimal>();
-        Map<Id, Decimal> gstAmountByBooking = new Map<Id, Decimal>();
         Map<Id, Decimal> basePendingByBooking = new Map<Id, Decimal>();
         Map<Id, Decimal> gstPendingByBooking = new Map<Id, Decimal>();
         for (AggregateResult ar : [
             SELECT Booking__c bkId,
                    SUM(Payment_Schedule_Amount__c) totalBase,
-                   SUM(GST_Amount__c) totalGst,
                    SUM(Payment_Schedule_Amount_Pending__c) totalBasePending,
                    SUM(GST_Amount_Pending__c) totalGstPending
             FROM Payment_Schedule__c
@@ -322,7 +319,6 @@ public without sharing class BookingFinancialRecalcService {
         ]) {
             Id bkId = (Id) ar.get('bkId');
             baseAmountByBooking.put(bkId, (Decimal) ar.get('totalBase'));
-            gstAmountByBooking.put(bkId, (Decimal) ar.get('totalGst'));
             basePendingByBooking.put(bkId, (Decimal) ar.get('totalBasePending'));
             gstPendingByBooking.put(bkId, (Decimal) ar.get('totalGstPending'));
         }
@@ -336,7 +332,6 @@ public without sharing class BookingFinancialRecalcService {
             Decimal totalBasePaid = basePaidByBooking.containsKey(b.Id) ? basePaidByBooking.get(b.Id) : 0;
             Decimal totalGstPaid = gstPaidByBooking.containsKey(b.Id) ? gstPaidByBooking.get(b.Id) : 0;
             Decimal totalBaseAmount = baseAmountByBooking.containsKey(b.Id) ? baseAmountByBooking.get(b.Id) : 0;
-            Decimal totalGstAmount = gstAmountByBooking.containsKey(b.Id) ? gstAmountByBooking.get(b.Id) : 0;
             Decimal totalBasePending = basePendingByBooking.containsKey(b.Id) ? basePendingByBooking.get(b.Id) : 0;
             Decimal totalGstPending = gstPendingByBooking.containsKey(b.Id) ? gstPendingByBooking.get(b.Id) : 0;
 
@@ -348,10 +343,6 @@ public without sharing class BookingFinancialRecalcService {
             }
             if (b.Total_Base_Amount__c != totalBaseAmount) {
                 b.Total_Base_Amount__c = totalBaseAmount;
-                changed = true;
-            }
-            if (b.GST_Amount__c != totalGstAmount) {
-                b.GST_Amount__c = totalGstAmount;
                 changed = true;
             }
             if (b.Total_Base_Paid__c != totalBasePaid) {

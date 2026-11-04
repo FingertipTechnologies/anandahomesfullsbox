@@ -89,6 +89,16 @@ public without sharing class PaymentScheduleRevisionService {
         if (clean.isEmpty()) {
             throw new AuraHandledException('There are no editable changes to submit.');
         }
+        if (hasSplitChanges(clean)) {
+            Booking__c bookingMode = [
+                SELECT Project__r.Legacy_Split_Demand_Receipt__c
+                FROM Booking__c WHERE Id = :bookingId LIMIT 1
+            ];
+            if (bookingMode.Project__r == null
+                || bookingMode.Project__r.Legacy_Split_Demand_Receipt__c != true) {
+                throw new AuraHandledException('Prorata split revisions are enabled only for legacy projects.');
+            }
+        }
 
         // Snapshot every schedule on the booking BEFORE any trial update, so the revision can
         // show a full old-vs-new comparison (and booking-level before/after totals) later.
@@ -184,10 +194,28 @@ public without sharing class PaymentScheduleRevisionService {
         }
         if (toApply.isEmpty()) return;
 
+        Set<Id> bookingIds = new Set<Id>();
+        for (Payment_Schedule_Revision__c revision : toApply) {
+            if (revision.Booking__c != null) bookingIds.add(revision.Booking__c);
+        }
+        Map<Id, Booking__c> bookingModes = bookingIds.isEmpty()
+            ? new Map<Id, Booking__c>()
+            : new Map<Id, Booking__c>([
+                SELECT Id, Project__r.Legacy_Split_Demand_Receipt__c
+                FROM Booking__c WHERE Id IN :bookingIds
+            ]);
+
         applying = true;
         try {
             for (Payment_Schedule_Revision__c r : toApply) {
                 List<RevisionLine> lines = parseNewValues(r.Proposed_Changes_JSON__c);
+                Booking__c bookingMode = bookingModes.get(r.Booking__c);
+                if (hasSplitChanges(lines)
+                    && (bookingMode == null || bookingMode.Project__r == null
+                        || bookingMode.Project__r.Legacy_Split_Demand_Receipt__c != true)) {
+                    r.addError('Prorata split revisions are enabled only for legacy projects.');
+                    continue;
+                }
                 List<Payment_Schedule__c> updates = buildScheduleUpdates(lines);
                 if (!updates.isEmpty()) {
                     update updates; // PaymentScheduleTrigger enforces §8.3.1 invariants
@@ -207,6 +235,17 @@ public without sharing class PaymentScheduleRevisionService {
         } finally {
             applying = false;
         }
+    }
+
+    private static Boolean hasSplitChanges(List<RevisionLine> lines) {
+        if (lines == null) return false;
+        for (RevisionLine line : lines) {
+            if (line != null && (line.bankFlat != null || line.customerFlat != null
+                || line.bankGst != null || line.customerGst != null)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ==================== HELPERS ====================

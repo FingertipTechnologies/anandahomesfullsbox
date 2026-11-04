@@ -25,6 +25,25 @@ private class DocumentDesignerControllerTest {
     }
 
     @isTest
+    static void getCapriNocTemplateDraft_returnsBookingViewerTemplate() {
+        DocumentDesignerController.TemplateWrapper draft =
+            DocumentDesignerController.getCapriNocTemplateDraft();
+        Map<String, Object> template =
+            (Map<String, Object>) JSON.deserializeUntyped(draft.templateJson);
+        List<Object> sections = (List<Object>) template.get('sections');
+        Map<String, Object> receiptTable = (Map<String, Object>) sections[3];
+        List<Object> filters = (List<Object>) receiptTable.get('filters');
+
+        System.assertEquals('Booking__c', draft.objectApiName);
+        System.assertEquals('Document Viewer', draft.displayContext);
+        System.assertEquals(true, draft.isActive);
+        System.assertEquals('Receipt_Line_Item__c', receiptTable.get('childObject'));
+        System.assertEquals('Booking__c', receiptTable.get('relationshipField'));
+        System.assertEquals(2, filters.size(), 'Only received and approved receipt rows should appear');
+        System.assert(draft.templateJson.contains('{!NOC_BALANCE_RECEIVABLE}'));
+    }
+
+    @isTest
     static void getTemplateById_existing_returnsWrapper() {
         Document_Template__c t = [SELECT Id FROM Document_Template__c LIMIT 1];
         DocumentDesignerController.TemplateWrapper w = DocumentDesignerController.getTemplateById(t.Id);

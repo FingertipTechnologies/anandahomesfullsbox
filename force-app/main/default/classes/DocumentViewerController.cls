@@ -63,7 +63,11 @@ public with sharing class DocumentViewerController {
                 return new List<ViewerTemplate>();
             }
 
-            SObject record = queryRecordForConditions(recordId, objectApiName, templates);
+            Map<Id, String> templateJsonById =
+                TemplateJsonStorageService.loadTemplateJsonMap(templates);
+            SObject record = queryRecordForConditions(
+                recordId, objectApiName, templates, templateJsonById
+            );
 
             User currentUser = [
                 SELECT Id, ProfileId, Profile.Name, UserRoleId, UserRole.Name
@@ -72,22 +76,26 @@ public with sharing class DocumentViewerController {
                 LIMIT 1
             ];
 
+            List<String> criteriaByTemplate = new List<String>();
+            for (Document_Template__c tmpl : templates) {
+                criteriaByTemplate.add(tmpl.Matching_Criteria__c);
+            }
+            List<Boolean> criteriaMatches = ConfigMatchingService.evaluateCriteriaBatch(
+                criteriaByTemplate, Id.valueOf(recordId), objectApiName
+            );
+
             String baseUrl = '/apex/DynamicDocumentPDF';
 
             List<ViewerTemplate> result = new List<ViewerTemplate>();
-            for (Document_Template__c tmpl : templates) {
-                if (!isTemplateVisible(tmpl, record, currentUser)) {
+            for (Integer i = 0; i < templates.size(); i++) {
+                Document_Template__c tmpl = templates[i];
+                if (!isTemplateVisible(
+                    tmpl, record, currentUser, templateJsonById.get(tmpl.Id)
+                )) {
                     continue;
                 }
 
-                if (String.isNotBlank(tmpl.Matching_Criteria__c)) {
-                    Boolean criteriaMatch = ConfigMatchingService.evaluateCriteria(
-                        tmpl.Matching_Criteria__c, Id.valueOf(recordId), objectApiName
-                    );
-                    if (!criteriaMatch) {
-                        continue;
-                    }
-                }
+                if (!criteriaMatches[i]) continue;
 
                 ViewerTemplate vt = new ViewerTemplate();
                 vt.id = tmpl.Id;
@@ -164,6 +172,13 @@ public with sharing class DocumentViewerController {
 
                 // 2. Page name or label contains the base object name (e.g. "Booking")
                 if (!isRelated && (nameLower.contains(baseNameLower) || labelLower.contains(baseNameLower))) {
+                    isRelated = true;
+                }
+
+                // The legacy sale-agreement pages are static PDFs without a Booking controller
+                // or merge fields, so associate them with Booking records by their page name.
+                if (!isRelated && objLower == 'booking__c'
+                    && nameLower.endsWith('_agreement_of_sale')) {
                     isRelated = true;
                 }
 
@@ -329,16 +344,20 @@ public with sharing class DocumentViewerController {
                 return new List<ViewerTemplate>();
             }
 
+            List<String> criteriaByTemplate = new List<String>();
+            for (Document_Template__c tmpl : templates) {
+                criteriaByTemplate.add(tmpl.Matching_Criteria__c);
+            }
+            List<Boolean> criteriaMatches = ConfigMatchingService.evaluateCriteriaBatch(
+                criteriaByTemplate, Id.valueOf(recordId), objectApiName
+            );
+
             String baseUrl = '/apex/DynamicDocumentPDF';
             List<ViewerTemplate> result = new List<ViewerTemplate>();
 
-            for (Document_Template__c tmpl : templates) {
-                if (String.isNotBlank(tmpl.Matching_Criteria__c)) {
-                    Boolean criteriaMatch = ConfigMatchingService.evaluateCriteria(
-                        tmpl.Matching_Criteria__c, Id.valueOf(recordId), objectApiName
-                    );
-                    if (!criteriaMatch) continue;
-                }
+            for (Integer i = 0; i < templates.size(); i++) {
+                Document_Template__c tmpl = templates[i];
+                if (!criteriaMatches[i]) continue;
 
                 ViewerTemplate vt = new ViewerTemplate();
                 vt.id = tmpl.Id;
@@ -363,8 +382,9 @@ public with sharing class DocumentViewerController {
 
     // ============================== CONDITION EVALUATION ==============================
 
-    private static Boolean isTemplateVisible(Document_Template__c tmpl, SObject record, User currentUser) {
-        String jsonStr = TemplateJsonStorageService.loadTemplateJson(tmpl);
+    private static Boolean isTemplateVisible(
+        Document_Template__c tmpl, SObject record, User currentUser, String jsonStr
+    ) {
         if (String.isBlank(jsonStr)) return true;
 
         try {
@@ -462,12 +482,16 @@ public with sharing class DocumentViewerController {
 
     // ============================== HELPERS ==============================
 
-    private static SObject queryRecordForConditions(String recordId, String objectApiName,
-                                                      List<Document_Template__c> templates) {
+    private static SObject queryRecordForConditions(
+        String recordId,
+        String objectApiName,
+        List<Document_Template__c> templates,
+        Map<Id, String> templateJsonById
+    ) {
         Set<String> fieldNames = new Set<String>{'Id'};
 
         for (Document_Template__c tmpl : templates) {
-            String jsonStr = TemplateJsonStorageService.loadTemplateJson(tmpl);
+            String jsonStr = templateJsonById.get(tmpl.Id);
             if (String.isNotBlank(jsonStr)) {
                 try {
                     Map<String, Object> templateJson = (Map<String, Object>) JSON.deserializeUntyped(jsonStr);

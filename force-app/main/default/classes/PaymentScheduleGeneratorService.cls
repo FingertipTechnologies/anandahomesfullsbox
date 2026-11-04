@@ -15,8 +15,8 @@ public with sharing class PaymentScheduleGeneratorService {
 
     // Funding types that carry a per-milestone Bank/Customer prorata split (BRD §8.1).
     private static final Set<String> FUNDING_PRORATA = new Set<String>{ 'Prorata', 'Partial' };
-    // Rounding tolerance (paise) when reconciling the split totals.
-    private static final Decimal SPLIT_TOLERANCE = 1;
+    // One paise tolerance for currency-scale totals.
+    private static final Decimal SPLIT_TOLERANCE = 0.01;
     // TDS is 1% of the Flat (base) amount.
     public static final Decimal TDS_RATE = 0.01;
 
@@ -32,7 +32,7 @@ public with sharing class PaymentScheduleGeneratorService {
     public static void generateSchedules(List<FlowInput> inputs) {
         Set<Id> bookingIds = new Set<Id>();
         for (FlowInput input : inputs) {
-            if (input.bookingId != null) {
+            if (input != null && input.bookingId != null) {
                 bookingIds.add(input.bookingId);
             }
         }
@@ -55,8 +55,7 @@ public with sharing class PaymentScheduleGeneratorService {
 
         // Step 1: Query Bookings with the configured parent lookup field
         String bookingQuery = 'SELECT Id, Name, ' + bookingParentField + ', Plot__c, Plot__r.Unit_Type__c, '
-            + 'Grand_Total__c, Total_Flat_Cost__c, GST_Amount__c, '
-            + 'Total_Payable_Amount__c '
+            + 'Grand_Total__c, Total_Flat_Cost__c, GST_Amount__c, TDS__c '
             + 'FROM Booking__c WHERE Id IN :bookingIds';
 
         List<Booking__c> bookings = Database.query(bookingQuery);
@@ -111,7 +110,6 @@ public with sharing class PaymentScheduleGeneratorService {
 
         // Step 3: Create Payment Schedules for each Booking
         List<Payment_Schedule__c> schedulesToInsert = new List<Payment_Schedule__c>();
-        List<Booking__c> bookingsToUpdate = new List<Booking__c>();
 
         for (Booking__c booking : bookings) {
             Id parentId = (Id) booking.get(bookingParentField);
@@ -141,8 +139,20 @@ public with sharing class PaymentScheduleGeneratorService {
             if (applicableMasters.isEmpty()) continue;
 
             Date bookingDate = Date.today();
-
+            Decimal applicablePercentageTotal = 0;
             for (Master_Payment_Schedule__c ms : applicableMasters) {
+                applicablePercentageTotal += ms.Percentage__c != null ? ms.Percentage__c : 0;
+            }
+            Boolean percentagesTotalOneHundred = applicablePercentageTotal == 100;
+            Decimal totalTds = booking.TDS__c != null
+                ? booking.TDS__c
+                : (baseAmount * TDS_RATE).setScale(0, System.RoundingMode.HALF_UP);
+            Decimal allocatedShare = 0;
+            Decimal allocatedTds = 0;
+            Decimal allocatedGst = 0;
+
+            for (Integer scheduleIndex = 0; scheduleIndex < applicableMasters.size(); scheduleIndex++) {
+                Master_Payment_Schedule__c ms = applicableMasters[scheduleIndex];
                 Payment_Schedule__c ps = new Payment_Schedule__c();
                 ps.Booking__c = booking.Id;
                 ps.Master_Payment_Schedule__c = ms.Id;
@@ -181,10 +191,27 @@ public with sharing class PaymentScheduleGeneratorService {
                 // TDS. Split that share into TDS (1%) and the Flat amount (the remaining 99%, which
                 // is what gets split Bank/Customer). GST comes from the Booking's GST Amount.
                 // Total Payable for the schedule = Flat + GST + TDS (i.e. share + GST).
+                Boolean isLastSchedule = scheduleIndex == applicableMasters.size() - 1;
                 Decimal share = (baseAmount * percentage / 100).setScale(0, System.RoundingMode.HALF_UP);
                 Decimal scheduleTds = (share * TDS_RATE).setScale(0, System.RoundingMode.HALF_UP);
                 Decimal scheduleBase = share - scheduleTds;
                 Decimal scheduleGst = (gstTotal * percentage / 100).setScale(0, System.RoundingMode.HALF_UP);
+                if (percentagesTotalOneHundred) {
+                    if (isLastSchedule) {
+                        // Put currency-rounding remainders on the final milestone so schedule totals
+                        // reconcile exactly to the Booking's flat cost, GST, and TDS.
+                        share = baseAmount - allocatedShare;
+                        scheduleTds = totalTds - allocatedTds;
+                        scheduleGst = gstTotal - allocatedGst;
+                    } else {
+                        scheduleTds = (totalTds * percentage / 100)
+                            .setScale(0, System.RoundingMode.HALF_UP);
+                    }
+                    scheduleBase = share - scheduleTds;
+                    allocatedShare += share;
+                    allocatedTds += scheduleTds;
+                    allocatedGst += scheduleGst;
+                }
                 Decimal scheduleTotal = scheduleBase + scheduleGst + scheduleTds;
 
                 ps.Amount__c = scheduleTotal;
@@ -209,12 +236,6 @@ public with sharing class PaymentScheduleGeneratorService {
                 schedulesToInsert.add(ps);
             }
 
-            Booking__c bookingUpdate = new Booking__c();
-            bookingUpdate.Id = booking.Id;
-            if (totalPayable > 0) {
-                bookingUpdate.Total_Payable_Amount__c = totalPayable;
-            }
-            bookingsToUpdate.add(bookingUpdate);
         }
 
         if (!schedulesToInsert.isEmpty()) {
@@ -230,22 +251,19 @@ public with sharing class PaymentScheduleGeneratorService {
             }
         }
 
-        if (!bookingsToUpdate.isEmpty()) {
-            update bookingsToUpdate;
-        }
-
-        // Auto-populate the Bank/Customer prorata split for Prorata/Partial bookings whose loan
-        // is already sanctioned. Safe no-op for everyone else (loan not yet known, self-funded, …).
-        applyProrataSplit(bookingMap.keySet());
     }
 
     /**
-     * @description Populates the per-milestone Bank/Customer prorata split
+     * @description Explicitly calculates the per-milestone Bank/Customer prorata split
      *              (Bank_Flat_Amount__c / Customer_Flat_Prorata__c and the GST equivalents) on a
      *              booking's payment schedules, derived from the booking's Loan Sanctioned Amount
      *              and Deficit. Enforces the BRD §8.3.1 invariants exactly:
      *                • per milestone  : Bank_Flat + Customer_Flat = base (and same for GST)
-     *                • across totals  : Σ Bank_Flat = Loan Sanctioned, Σ Customer_Flat = Deficit
+     *                • across totals  : Σ Bank (Flat + GST) = Loan Sanctioned,
+     *                                   Σ Customer (Flat + GST) = Deficit
+     *              This is retained for explicitly requested use; it is not invoked automatically
+     *              during schedule generation. Split edits should normally be submitted through
+     *              the revision editor and applied only after approval.
      *              SAFETY: only runs for Prorata/Partial bookings with a positive Loan Sanctioned
      *              Amount, only when the schedule base totals reconcile with Loan + Deficit, and it
      *              never lets a split failure block the caller (schedules simply stay unsplit).
@@ -254,12 +272,14 @@ public with sharing class PaymentScheduleGeneratorService {
         if (bookingIds == null || bookingIds.isEmpty()) return;
 
         Map<Id, Booking__c> books = new Map<Id, Booking__c>([
-            SELECT Id, Funding_Type__c, Loan_Sanctioned_Amount__c, Deficit__c
+            SELECT Id, Funding_Type__c, Loan_Sanctioned_Amount__c, Deficit__c,
+                   Project__r.Legacy_Split_Demand_Receipt__c
             FROM Booking__c WHERE Id IN :bookingIds
         ]);
         Set<Id> eligible = new Set<Id>();
         for (Booking__c b : books.values()) {
-            if (b.Funding_Type__c != null && FUNDING_PRORATA.contains(b.Funding_Type__c)
+            if (b.Project__r != null && b.Project__r.Legacy_Split_Demand_Receipt__c == true
+                && b.Funding_Type__c != null && FUNDING_PRORATA.contains(b.Funding_Type__c)
                 && b.Loan_Sanctioned_Amount__c != null && b.Loan_Sanctioned_Amount__c > 0) {
                 eligible.add(b.Id);
             }
@@ -290,40 +310,42 @@ public with sharing class PaymentScheduleGeneratorService {
             // Never overwrite an existing (manual or prior) split — only fill in when unsplit.
             Boolean alreadySplit = false;
             Decimal totalBase = 0;
+            Decimal totalGst = 0;
             for (Payment_Schedule__c ps : scheds) {
                 totalBase += (ps.Payment_Schedule_Amount__c != null ? ps.Payment_Schedule_Amount__c : 0);
+                totalGst += (ps.GST_Amount__c != null ? ps.GST_Amount__c : 0);
                 if ((ps.Bank_Flat_Amount__c != null && ps.Bank_Flat_Amount__c != 0)
                     || (ps.Customer_Flat_Prorata__c != null && ps.Customer_Flat_Prorata__c != 0)) {
                     alreadySplit = true;
                 }
             }
             if (alreadySplit) continue;
-            if (totalBase <= 0) continue;
-            // Consistency guard: the split only reconciles when the schedule base totals equal
-            // Loan Sanctioned + Deficit (i.e. no separate customer margin baked into the base).
-            if ((totalBase - (loan + deficit)).abs() > SPLIT_TOLERANCE) continue;
+            Decimal splitTotal = totalBase + totalGst;
+            if (splitTotal <= 0) continue;
+            // Booking deficit excludes TDS, while the schedule base does too; GST remains part
+            // of the customer/bank split. Therefore Base + GST must equal Loan + Deficit.
+            if ((splitTotal - (loan + deficit)).abs() > SPLIT_TOLERANCE) continue;
 
-            Decimal bankFraction = loan / totalBase; // == loan / (loan + deficit)
+            Decimal bankFraction = loan / splitTotal;
             Decimal runningBank = 0;
             for (Integer i = 0; i < scheds.size(); i++) {
                 Payment_Schedule__c ps = scheds[i];
                 Decimal base = ps.Payment_Schedule_Amount__c != null ? ps.Payment_Schedule_Amount__c : 0;
                 Decimal gst  = ps.GST_Amount__c != null ? ps.GST_Amount__c : 0;
+                Decimal scheduleSplitTotal = base + gst;
 
-                Decimal bankFlat;
+                Decimal bankPayable;
                 if (i == scheds.size() - 1) {
-                    // Last milestone absorbs rounding so Σ Bank_Flat == Loan Sanctioned exactly.
-                    bankFlat = loan - runningBank;
+                    // Last milestone absorbs rounding so total bank payable equals the loan.
+                    bankPayable = loan - runningBank;
                 } else {
-                    bankFlat = (base * bankFraction).setScale(0, System.RoundingMode.HALF_UP);
-                    runningBank += bankFlat;
+                    bankPayable = (scheduleSplitTotal * bankFraction)
+                        .setScale(0, System.RoundingMode.HALF_UP);
                 }
-                if (bankFlat < 0) bankFlat = 0;
-                if (bankFlat > base) bankFlat = base;
-
-                Decimal bankGst = (gst * bankFraction).setScale(0, System.RoundingMode.HALF_UP);
-                if (bankGst < 0) bankGst = 0;
-                if (bankGst > gst) bankGst = gst;
+                bankPayable = Math.max(0, Math.min(bankPayable, scheduleSplitTotal));
+                runningBank += bankPayable;
+                Decimal bankFlat = Math.min(bankPayable, base);
+                Decimal bankGst = bankPayable - bankFlat;
 
                 Payment_Schedule__c upd = new Payment_Schedule__c(Id = ps.Id);
                 upd.Bank_Flat_Amount__c = bankFlat;

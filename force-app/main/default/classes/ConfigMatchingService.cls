@@ -14,60 +14,96 @@ public with sharing class ConfigMatchingService {
      */
     @AuraEnabled
     public static Boolean evaluateCriteria(String matchingCriteriaJson, Id recordId, String objectApiName) {
-        if (String.isBlank(matchingCriteriaJson)) {
-            return true;
-        }
+        return evaluateCriteriaBatch(
+            new List<String>{ matchingCriteriaJson }, recordId, objectApiName
+        )[0];
+    }
 
-        Map<String, Object> criteria = (Map<String, Object>) JSON.deserializeUntyped(matchingCriteriaJson);
-        List<Object> conditions = (List<Object>) criteria.get('conditions');
-        String matchLogic = (String) criteria.get('matchLogic');
-
-        if (conditions == null || conditions.isEmpty()) {
-            return true;
-        }
-
-        // Get current user context
-        User currentUser = [SELECT Id, Profile.Name, UserRole.Name FROM User WHERE Id = :UserInfo.getUserId() LIMIT 1];
-        String profileName = currentUser.Profile.Name;
-        String roleName = currentUser.UserRole != null ? currentUser.UserRole.Name : '';
-
-        // Collect field paths we need to query
+    /**
+     * Evaluate multiple criteria sets against a shared record and user context.
+     * Results are returned in the same order as the input JSON values.
+     */
+    public static List<Boolean> evaluateCriteriaBatch(
+        List<String> matchingCriteriaJson, Id recordId, String objectApiName
+    ) {
+        List<Boolean> results = new List<Boolean>();
+        List<List<Object>> conditionsByConfig = new List<List<Object>>();
+        List<String> logicByConfig = new List<String>();
         Set<String> fieldPaths = new Set<String>();
-        for (Object condObj : conditions) {
-            Map<String, Object> cond = (Map<String, Object>) condObj;
-            String condType = (String) cond.get('type');
-            if (condType == 'field' && recordId != null) {
-                String fieldPath = (String) cond.get('fieldPath');
-                if (String.isNotBlank(fieldPath)) {
-                    fieldPaths.add(fieldPath);
+        Boolean needsUserContext = false;
+
+        for (String criteriaJson : matchingCriteriaJson) {
+            if (String.isBlank(criteriaJson)) {
+                conditionsByConfig.add(new List<Object>());
+                logicByConfig.add('AND');
+                results.add(true);
+                continue;
+            }
+
+            Map<String, Object> criteria =
+                (Map<String, Object>) JSON.deserializeUntyped(criteriaJson);
+            List<Object> conditions = (List<Object>) criteria.get('conditions');
+            if (conditions == null) conditions = new List<Object>();
+            conditionsByConfig.add(conditions);
+            logicByConfig.add((String) criteria.get('matchLogic'));
+            results.add(null);
+
+            for (Object condObj : conditions) {
+                Map<String, Object> cond = (Map<String, Object>) condObj;
+                String condType = (String) cond.get('type');
+                if (condType == 'field' && recordId != null) {
+                    String fieldPath = (String) cond.get('fieldPath');
+                    if (String.isNotBlank(fieldPath)) fieldPaths.add(fieldPath);
+                } else if (condType == 'profile' || condType == 'role') {
+                    needsUserContext = true;
                 }
             }
         }
 
-        // Query record fields if needed
+        User currentUser;
+        if (needsUserContext) {
+            currentUser = [
+                SELECT Id, Profile.Name, UserRole.Name
+                FROM User
+                WHERE Id = :UserInfo.getUserId()
+                LIMIT 1
+            ];
+        }
+
         Map<String, Object> fieldValues = new Map<String, Object>();
         if (!fieldPaths.isEmpty() && recordId != null && String.isNotBlank(objectApiName)) {
             fieldValues = queryFieldValues(recordId, objectApiName, fieldPaths);
         }
 
-        // Evaluate each condition
-        Boolean isAnd = (matchLogic == 'AND');
-        Boolean result = isAnd ? true : false;
-
-        for (Object condObj : conditions) {
-            Map<String, Object> cond = (Map<String, Object>) condObj;
-            Boolean condResult = evaluateSingleCondition(cond, fieldValues, profileName, roleName);
-
-            if (isAnd) {
-                result = result && condResult;
-                if (!result) return false;
-            } else {
-                result = result || condResult;
-                if (result) return true;
+        String profileName = currentUser != null ? currentUser.Profile.Name : '';
+        String roleName = currentUser != null && currentUser.UserRole != null
+            ? currentUser.UserRole.Name : '';
+        for (Integer i = 0; i < conditionsByConfig.size(); i++) {
+            List<Object> conditions = conditionsByConfig[i];
+            if (conditions.isEmpty()) {
+                results[i] = true;
+                continue;
             }
+
+            Boolean isAnd = logicByConfig[i] == 'AND';
+            Boolean result = isAnd;
+            for (Object condObj : conditions) {
+                Map<String, Object> cond = (Map<String, Object>) condObj;
+                Boolean conditionResult = evaluateSingleCondition(
+                    cond, fieldValues, profileName, roleName
+                );
+                if (isAnd) {
+                    result = result && conditionResult;
+                    if (!result) break;
+                } else {
+                    result = result || conditionResult;
+                    if (result) break;
+                }
+            }
+            results[i] = result;
         }
 
-        return result;
+        return results;
     }
 
     /**
@@ -82,13 +118,17 @@ public with sharing class ConfigMatchingService {
         List<String> matchingIds = new List<String>();
         List<Object> configs = (List<Object>) JSON.deserializeUntyped(configsJson);
 
+        List<String> criteriaByConfig = new List<String>();
         for (Object configObj : configs) {
             Map<String, Object> config = (Map<String, Object>) configObj;
-            String configId = (String) config.get('id');
-            String criteria = (String) config.get('matchingCriteria');
+            criteriaByConfig.add((String) config.get('matchingCriteria'));
+        }
 
-            if (evaluateCriteria(criteria, recordId, objectApiName)) {
-                matchingIds.add(configId);
+        List<Boolean> matches = evaluateCriteriaBatch(criteriaByConfig, recordId, objectApiName);
+        for (Integer i = 0; i < configs.size(); i++) {
+            Map<String, Object> config = (Map<String, Object>) configs[i];
+            if (matches[i]) {
+                matchingIds.add((String) config.get('id'));
             }
         }
 
@@ -202,9 +242,16 @@ public with sharing class ConfigMatchingService {
             ORDER BY Is_Default__c DESC
         ];
 
+        List<String> criteriaByTemplate = new List<String>();
         for (Email_Template_Config__c tmpl : templates) {
-            if (evaluateCriteria(tmpl.Matching_Criteria__c, recordId, objectApiName)) {
-                return tmpl.Id;
+            criteriaByTemplate.add(tmpl.Matching_Criteria__c);
+        }
+        List<Boolean> matches = evaluateCriteriaBatch(
+            criteriaByTemplate, recordId, objectApiName
+        );
+        for (Integer i = 0; i < templates.size(); i++) {
+            if (matches[i]) {
+                return templates[i].Id;
             }
         }
         return null;

@@ -28,6 +28,17 @@ export default class PaymentScheduleViewer extends LightningElement {
     @track paymentDueDate = '';
 
     @track isRaisingDemand = false;
+    @track demandComponent = 'Flat';
+    @track includeInterest = true;
+
+    get demandComponentOptions() {
+        return this.nextDemand.legacySplitDemandReceipt
+            ? [
+                { label: 'Flat only', value: 'Flat' },
+                { label: 'GST only', value: 'GST' }
+            ]
+            : [{ label: 'Flat + GST', value: 'Flat + GST' }];
+    }
 
     // Wire to ensure recordId is available
     @wire(getRecord, { recordId: '$recordId', fields: ['Booking__c.Id'] })
@@ -119,6 +130,7 @@ export default class PaymentScheduleViewer extends LightningElement {
     processData(result) {
         this.schedules = result.schedules || [];
         this.nextDemand = result.nextDemand || {};
+        this.demandComponent = this.nextDemand.legacySplitDemandReceipt ? 'Flat' : 'Flat + GST';
         this.bookingName = result.bookingName || '';
         this.projectName = result.projectName || 'N/A';
         this.unitName = result.unitName || 'N/A';
@@ -185,7 +197,11 @@ export default class PaymentScheduleViewer extends LightningElement {
     handleRaiseDemand() {
         if (this.isRaisingDemand) return;
         this.isRaisingDemand = true;
-        raiseDemandForBooking({ bookingId: this.recordId })
+        raiseDemandForBooking({
+            bookingId: this.recordId,
+            demandComponent: this.demandComponent,
+            includeInterest: this.demandComponent !== 'GST' && this.includeInterest
+        })
             .then(demandId => {
                 this.showToast('Success',
                     'Demand raised. The email-on-create flow will pick it up.', 'success');
@@ -204,6 +220,14 @@ export default class PaymentScheduleViewer extends LightningElement {
 
     handleRefresh() {
         this.loadData();
+    }
+
+    handleDemandComponentChange(event) {
+        this.demandComponent = event.detail.value;
+    }
+
+    handleInterestChange(event) {
+        this.includeInterest = event.target.checked;
     }
 
     handleClose() {
@@ -243,7 +267,53 @@ export default class PaymentScheduleViewer extends LightningElement {
     }
 
     get hasNextDemand() {
-        return this.nextDemand && this.nextDemand.grandTotal > 0;
+        return this.selectedDemand.totalAmount > 0;
+    }
+
+    get isRaiseDisabled() {
+        return this.isRaisingDemand || !this.hasNextDemand;
+    }
+
+    get showSourceBreakdown() {
+        return this.nextDemand && this.nextDemand.hasSplitFunding === true;
+    }
+
+    get selectedDemand() {
+        let totalAmount = 0;
+        let tdsAmount = 0;
+        let bankAmount = 0;
+        let customerAmount = 0;
+        let interestAmount = 0;
+        this.demandLines.forEach(line => {
+            totalAmount += line.selectedDemandAmount;
+            tdsAmount += line.selectedDemandTdsAmount;
+            if (line.isBankDemand) bankAmount += line.selectedDemandAmount;
+            else customerAmount += line.selectedDemandAmount;
+            if (this.demandComponent !== 'GST') interestAmount += line.interestPending || 0;
+        });
+        const includedInterest = this.demandComponent !== 'GST' && this.includeInterest
+            ? interestAmount
+            : 0;
+        const availableWaiver = Number(this.nextDemand.availableInterestWaiver) || 0;
+        const waivedInterest = Math.min(includedInterest, availableWaiver);
+        const netInterest = includedInterest - waivedInterest;
+        const netAmount = totalAmount + netInterest;
+        return {
+            totalAmount,
+            tdsAmount,
+            hasTdsAmount: tdsAmount > 0,
+            interestAmount: netInterest,
+            interestWaivedOff: waivedInterest,
+            netAmount,
+            formattedTotal: this.formatCurrency(netAmount),
+            formattedTdsAmount: this.formatCurrency(tdsAmount),
+            formattedGrossInterest: this.formatCurrency(interestAmount),
+            formattedInterestWaivedOff: this.formatCurrency(waivedInterest),
+            formattedInterest: this.formatCurrency(netInterest),
+            formattedBankAmount: this.formatCurrency(bankAmount),
+            formattedCustomerAmount: this.formatCurrency(customerAmount),
+            formattedComponentAmount: this.formatCurrency(totalAmount)
+        };
     }
 
     get nextDemandTitle() {
@@ -266,8 +336,12 @@ export default class PaymentScheduleViewer extends LightningElement {
     get step2DotClass() { return this.stepIndicatorClasses.step2; }
 
     // Expanded detail calculation values
-    get hasGstBreakdown() {
-        return this.schedules.some(s => s.gstAmount > 0 || s.basePending > 0);
+    get isFlatDemand() {
+        return this.demandComponent !== 'GST';
+    }
+
+    get isGstDemand() {
+        return this.demandComponent !== 'Flat';
     }
 
     get totalBaseAmount() {
@@ -282,50 +356,15 @@ export default class PaymentScheduleViewer extends LightningElement {
         return this.formatCurrency(total);
     }
 
-    get totalScheduleAmount() {
-        let total = 0;
-        this.schedules.forEach(s => { total += s.amount || 0; });
-        return this.formatCurrency(total);
-    }
-
-    get totalBasePaid() {
-        let total = 0;
-        this.schedules.forEach(s => { total += s.basePaid || 0; });
-        return this.formatCurrency(total);
-    }
-
-    get totalGstPaid() {
-        let total = 0;
-        this.schedules.forEach(s => { total += s.gstPaid || 0; });
-        return this.formatCurrency(total);
-    }
-
-    get totalBasePending() {
-        let total = 0;
-        this.schedules.forEach(s => { total += s.basePending || 0; });
-        return this.formatCurrency(total);
-    }
-
-    get totalGstPending() {
-        let total = 0;
-        this.schedules.forEach(s => { total += s.gstPending || 0; });
-        return this.formatCurrency(total);
-    }
-
-    get totalPending() {
-        let total = 0;
-        this.schedules.forEach(s => { total += s.pendingAmount || 0; });
-        return this.formatCurrency(total);
-    }
-
     get totalInterest() {
         let total = 0;
-        this.schedules.forEach(s => { total += s.interestPending || 0; });
+        this.demandLines.forEach(line => { total += line.interestPending || 0; });
         return this.formatCurrency(total);
     }
 
     get hasAnyInterest() {
-        return this.schedules.some(s => (s.interestPending || 0) > 0);
+        return this.demandComponent !== 'GST'
+            && this.demandLines.some(line => (line.interestPending || 0) > 0);
     }
 
     get completedSchedules() {
@@ -368,7 +407,26 @@ export default class PaymentScheduleViewer extends LightningElement {
     // The milestones actually contributing to the next demand, each tagged with its source
     // (Bank or Customer) so the raising UI can show the user where the money is coming from.
     get demandLines() {
-        return this.completedSchedules.filter(s => (s.demandableAmount || 0) > 0);
+        return this.completedSchedules
+            .map(s => ({
+                ...s,
+                selectedDemandAmount: this.demandComponent === 'Flat + GST'
+                    ? (s.combinedDemandableAmount || 0)
+                    : (s[this.demandComponent === 'Flat'
+                        ? 'flatDemandableAmount'
+                        : 'gstDemandableAmount'] || 0),
+                selectedDemandTdsAmount: this.demandComponent !== 'GST' && !s.isBankDemand
+                    ? (s.tdsDemandableAmount || 0)
+                    : 0,
+                formattedSelectedDemand: this.formatCurrency(
+                    this.demandComponent === 'Flat + GST'
+                        ? (s.combinedDemandableAmount || 0)
+                        : (s[this.demandComponent === 'Flat'
+                            ? 'flatDemandableAmount'
+                            : 'gstDemandableAmount'] || 0)
+                )
+            }))
+            .filter(s => s.selectedDemandAmount > 0);
     }
 
     get hasDemandLines() {

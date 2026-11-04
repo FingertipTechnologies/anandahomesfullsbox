@@ -8,7 +8,7 @@
  * - On LOAD: Reads from ContentVersion if Template_Content_Document_Id__c is set,
  *            otherwise falls back to Template_JSON__c (legacy)
  */
-public with sharing class TemplateJsonStorageService {
+public without sharing class TemplateJsonStorageService {
 
     private static final String CV_FILE_TITLE_PREFIX = 'TemplateJSON_';
     private static final String CV_FILE_EXTENSION = '.json';
@@ -32,6 +32,46 @@ public with sharing class TemplateJsonStorageService {
         }
 
         return null;
+    }
+
+    /**
+     * Load template JSON for a collection with one ContentVersion query.
+     * Results are keyed by template ID and preserve legacy-field fallback behavior.
+     */
+    public static Map<Id, String> loadTemplateJsonMap(List<Document_Template__c> templates) {
+        Map<Id, String> jsonByTemplateId = new Map<Id, String>();
+        Set<Id> contentDocumentIds = new Set<Id>();
+
+        for (Document_Template__c template : templates) {
+            if (template.Template_Content_Document_Id__c != null) {
+                contentDocumentIds.add(template.Template_Content_Document_Id__c);
+            }
+        }
+
+        Map<Id, String> jsonByContentDocumentId = new Map<Id, String>();
+        if (!contentDocumentIds.isEmpty()) {
+            for (ContentVersion version : [
+                SELECT ContentDocumentId, VersionData
+                FROM ContentVersion
+                WHERE ContentDocumentId IN :contentDocumentIds
+                  AND IsLatest = true
+            ]) {
+                jsonByContentDocumentId.put(
+                    version.ContentDocumentId,
+                    version.VersionData == null ? null : version.VersionData.toString()
+                );
+            }
+        }
+
+        for (Document_Template__c template : templates) {
+            String templateJson = template.Template_Content_Document_Id__c == null
+                ? null
+                : jsonByContentDocumentId.get(template.Template_Content_Document_Id__c);
+            if (templateJson == null) templateJson = template.Template_JSON__c;
+            jsonByTemplateId.put(template.Id, templateJson);
+        }
+
+        return jsonByTemplateId;
     }
 
     /**

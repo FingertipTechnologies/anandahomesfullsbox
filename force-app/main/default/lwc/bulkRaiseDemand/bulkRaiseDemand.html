@@ -76,9 +76,39 @@
                             <template if:true={isStep2}>
                                 <h3 class="custom-section-title">
                                     <lightning-icon icon-name="utility:checkin" size="x-small"></lightning-icon>
-                                    Select Milestone to Raise Demand
+                                    Select Tower and Milestone to Raise Demand
                                 </h3>
-                                <p class="section-desc">Select the milestone up to which you want to raise demand. All pending schedules from milestone 1 to the selected one will be included.</p>
+                                <template if:true={hasTowers}>
+                                    <p class="section-desc">Select a tower, then choose the milestone up to which you want to raise demand. Eligible schedules from bookings in that tower, from milestone 1 to the selected one, will be included.</p>
+                                    <lightning-combobox
+                                        label="Select Tower"
+                                        value={selectedTowerId}
+                                        options={towerOptions}
+                                        onchange={handleTowerSelect}
+                                        placeholder="Choose a tower..."
+                                        class="slds-m-bottom_medium">
+                                    </lightning-combobox>
+                                </template>
+                                <template if:false={hasTowers}>
+                                    <p class="section-desc">Select the milestone up to which you want to raise demand. All eligible schedules from milestone 1 to the selected one will be included.</p>
+                                </template>
+                                <lightning-radio-group
+                                    name="demandComponent"
+                                    label="Demand component"
+                                    options={demandComponentOptions}
+                                    value={demandComponent}
+                                    type="button"
+                                    onchange={handleDemandComponentChange}
+                                    class="slds-m-bottom_medium">
+                                </lightning-radio-group>
+                                <template if:true={hasTowers}>
+                                    <template if:false={selectedTowerId}>
+                                        <div class="info-banner slds-m-bottom_medium">
+                                            <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+                                            <span>Choose a tower to load its milestones.</span>
+                                        </div>
+                                    </template>
+                                </template>
                                 <template if:true={hasMilestones}>
                                     <div class="milestone-list">
                                         <template for:each={milestones} for:item="ms">
@@ -113,7 +143,12 @@
                                     <div class="empty-state">
                                         <lightning-icon icon-name="utility:info" size="large"></lightning-icon>
                                         <h3>No Milestones</h3>
-                                        <p>No master payment schedules found for this project.</p>
+                                        <template if:true={hasTowers}>
+                                            <p>No payment schedules with master milestones were found for this tower.</p>
+                                        </template>
+                                        <template if:false={hasTowers}>
+                                            <p>No master payment schedules found for this project.</p>
+                                        </template>
                                     </div>
                                 </template>
 
@@ -134,11 +169,19 @@
                                         <span class="summary-value">{selectedCount} bookings</span>
                                     </div>
                                     <div class="summary-item">
-                                        <span class="summary-label">Total Pending</span>
+                                        <span class="summary-label">Selected Component Amount</span>
                                         <span class="summary-value pending-text">{formattedTotalDemand}</span>
                                     </div>
                                     <div class="summary-item">
-                                        <span class="summary-label">Total Interest</span>
+                                        <span class="summary-label">Gross Interest</span>
+                                        <span class="summary-value interest-text">{formattedTotalGrossInterest}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Waiver Applied</span>
+                                        <span class="summary-value interest-text">{formattedTotalInterestWaivedOff}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Interest Charged</span>
                                         <span class="summary-value interest-text">{formattedTotalInterest}</span>
                                     </div>
                                     <div class="summary-item">
@@ -168,9 +211,12 @@
                                                 <th class="custom-th">Unit</th>
                                                 <th class="custom-th">Applicant</th>
                                                 <th class="custom-th slds-text-align_right">Previous Dues</th>
-                                                <th class="custom-th slds-text-align_right">Current Milestone</th>
-                                                <th class="custom-th slds-text-align_right">Total Pending</th>
-                                                <th class="custom-th slds-text-align_right">Interest</th>
+                                                <th class="custom-th slds-text-align_right">{demandComponent} at Milestone</th>
+                                                <th class="custom-th slds-text-align_right">{demandComponent} Amount</th>
+                                                <th class="custom-th slds-text-align_right">TDS Amount</th>
+                                                <th class="custom-th slds-text-align_right">Gross Interest</th>
+                                                <th class="custom-th slds-text-align_right">Waiver</th>
+                                                <th class="custom-th slds-text-align_right">Interest Charged</th>
                                                 <th class="custom-th slds-text-align_right">Bank Payable</th>
                                                 <th class="custom-th slds-text-align_right">Customer Payable</th>
                                                 <th class="custom-th slds-text-align_right">Net Demand</th>
@@ -190,6 +236,9 @@
                                                     <td class="slds-text-align_right">{booking.formattedPreviousAmount}</td>
                                                     <td class="slds-text-align_right">{booking.formattedCurrentAmount}</td>
                                                     <td class="slds-text-align_right pending-text">{booking.formattedPending}</td>
+                                                    <td class="slds-text-align_right">{booking.formattedTdsAmount}</td>
+                                                    <td class="slds-text-align_right interest-text">{booking.formattedGrossInterest}</td>
+                                                    <td class="slds-text-align_right interest-text">{booking.formattedInterestWaivedOff}</td>
                                                     <td class="slds-text-align_right interest-text">{booking.formattedInterest}</td>
                                                     <td class="slds-text-align_right">{booking.formattedBankPayable}</td>
                                                     <td class="slds-text-align_right">{booking.formattedCustomerPayable}</td>
@@ -218,7 +267,7 @@
                                     </div>
                                     <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4">
                                         <div class="info-box">
-                                            <div class="info-label">TOTAL PENDING</div>
+                                            <div class="info-label">{demandComponent} DEMAND</div>
                                             <div class="info-value pending-text">{formattedTotalDemand}</div>
                                         </div>
                                     </div>
@@ -226,6 +275,12 @@
                                         <div class="info-box">
                                             <div class="info-label">TOTAL INTEREST</div>
                                             <div class="info-value interest-text">{formattedTotalInterest}</div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4">
+                                        <div class="info-box">
+                                            <div class="info-label">TOTAL TDS</div>
+                                            <div class="info-value">{formattedTotalTdsAmount}</div>
                                         </div>
                                     </div>
                                     <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4">
@@ -265,7 +320,8 @@
                                         </div>
                                         <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-bottom_small">
                                             <lightning-input type="checkbox" label="Include Interest"
-                                                checked={includeInterest} onchange={handleInterestToggle}></lightning-input>
+                                                checked={includeInterest} onchange={handleInterestToggle}
+                                                disabled={isGstDemand}></lightning-input>
                                         </div>
                                         <div class="slds-col slds-size_1-of-1 slds-p-bottom_small">
                                             <lightning-textarea label="Notes" value={notes}

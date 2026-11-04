@@ -34,7 +34,7 @@ export default class DynamicFormModal extends NavigationMixin(LightningElement) 
     @track uploadedDocuments = {};
     @track renderedChildSections = [];
 
-    isLoading = false;
+    isLoading = true;
 
     connectedCallback() {
         this.parseConfiguration();

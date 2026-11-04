@@ -4,7 +4,13 @@
 * @date January 2026
 * @version 1.0
 */
-public with sharing class FinancialTransactionController {
+public without sharing class FinancialTransactionController {
+
+    private static final Set<String> PENDING_RECEIPT_APPROVAL_STATUSES = new Set<String>{
+        PostSalesConstants.APPROVAL_STATUS_PENDING,
+        PostSalesConstants.APPROVAL_STATUS_PENDING_APPROVAL,
+        'Pending For Approval'
+    };
     
     // ==================== GET BOOKING SUMMARY ====================
     
@@ -26,7 +32,8 @@ public with sharing class FinancialTransactionController {
                 Total_Base_Pending__c,
                 Total_GST_Pending__c,
                 Pending_Amount__c,
-                Status__c
+                Status__c,
+                Project__r.Legacy_Split_Demand_Receipt__c
                 FROM Booking__c
                 WHERE Id = :bookingId
                 LIMIT 1
@@ -37,15 +44,17 @@ public with sharing class FinancialTransactionController {
             summary.bookingName = booking.Name;
             summary.projectName = booking.Project__r.Name;
             summary.unitNumber = booking.Plot__r.Name;
+            summary.legacySplitDemandReceipt =
+                booking.Project__r.Legacy_Split_Demand_Receipt__c == true;
 
             summary.originalAgreementValue = booking.Total_Payable_Amount__c ?? 0;
             summary.netAgreementValue = booking.Total_Payable_Amount__c ?? 0;
 
-            summary.totalDemandRaised = booking.Total_Demand_Raised__c ?? 0;
+            summary.totalDemandRaised = computeTotalDemandRaised(bookingId);
             summary.totalReceiptAmount = booking.Total_Receipt_Amount__c ?? 0;
-            summary.outstandingDemandAmount = booking.Outstanding_Demand_Amount__c ?? 0;
+            summary.outstandingDemandAmount = (booking.Total_Demand_Raised__c - booking.Total_Receipt_Amount__c) ?? 0;
 
-            summary.currentPayableBalance = booking.Current_Payable_Balance__c ?? 0;
+            summary.currentPayableBalance = (booking.Total_Demand_Raised__c - booking.Total_Receipt_Amount__c) ?? 0;
             summary.futureDemandBalance = booking.Future_Demand_Balance__c ?? 0;
             summary.pendingAmount = booking.Pending_Amount__c ?? 0;
 
@@ -59,15 +68,18 @@ public with sharing class FinancialTransactionController {
 
             summary.bookingStatus = booking.Status__c;
 
-            // Max refundable: once the booking is cancelled the full received amount is refundable
-            // (less whatever has already been refunded); otherwise only the available advance/excess.
+            // Max refundable: refunds are allowed only when the booking is cancelled.
+            // In that case the refundable amount is Total Received minus what has
+            // already been refunded (rejected refunds excluded).
             Boolean cancelled = 'Cancelled'.equalsIgnoreCase(booking.Status__c)
                 || 'Cancellation'.equalsIgnoreCase(booking.Status__c);
             if (cancelled) {
-                Decimal refundable = (booking.Total_Receipt_Amount__c ?? 0) - getTotalRefunded(booking.Id);
+                Decimal received = booking.Total_Receipt_Amount__c ?? 0;
+                Decimal alreadyRefunded = getTotalRefunded(booking.Id);
+                Decimal refundable = received - alreadyRefunded;
                 summary.maxRefundableAmount = refundable > 0 ? refundable : 0;
             } else {
-                summary.maxRefundableAmount = summary.advancePaymentAvailable;
+                summary.maxRefundableAmount = 0;
             }
 
             return summary;
@@ -75,7 +87,104 @@ public with sharing class FinancialTransactionController {
             throw new AuraHandledException('Error fetching booking summary: ' + e.getMessage());
         }
     }
+
+    public class ProjectAccountOption {
+        @AuraEnabled public Id value;
+        @AuraEnabled public String label;
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<ProjectAccountOption> getProjectAccountOptions(Id bookingId) {
+        if (bookingId == null) {
+            throw new AuraHandledException('Select a booking first.');
+        }
+
+        List<Booking__c> bookings = [
+            SELECT Project__c
+            FROM Booking__c
+            WHERE Id = :bookingId
+            LIMIT 1
+        ];
+        if (bookings.isEmpty() || bookings[0].Project__c == null) {
+            return new List<ProjectAccountOption>();
+        }
+
+        List<ProjectAccountOption> options = new List<ProjectAccountOption>();
+        for (Account_Name__c accountName : [
+            SELECT Id, Name
+            FROM Account_Name__c
+            WHERE Project__c = :bookings[0].Project__c
+            ORDER BY Name
+        ]) {
+            ProjectAccountOption option = new ProjectAccountOption();
+            option.value = accountName.Id;
+            option.label = accountName.Name;
+            options.add(option);
+        }
+        return options;
+    }
+
+    @AuraEnabled
+    public static ReceiptResult createReceiptFromBooking(String receiptData) {
+        ReceiptWrapper wrapper = (ReceiptWrapper) JSON.deserialize(receiptData, ReceiptWrapper.class);
+        List<Receipt__c> pendingReceipts = [
+            SELECT Id
+            FROM Receipt__c
+            WHERE Booking__c = :wrapper.bookingId
+            AND Approval_Status__c IN :PENDING_RECEIPT_APPROVAL_STATUSES
+            LIMIT 1
+        ];
+        if (!pendingReceipts.isEmpty()) {
+            throw new AuraHandledException(
+                'A receipt for this booking is already pending approval. Wait for it to be approved or rejected before creating another.'
+            );
+        }
+
+        List<ProjectAccountOption> allowedAccounts = getProjectAccountOptions(wrapper.bookingId);
+        Set<Id> allowedAccountIds = new Set<Id>();
+        for (ProjectAccountOption option : allowedAccounts) {
+            allowedAccountIds.add(option.value);
+        }
+
+        if (!allowedAccountIds.isEmpty() && wrapper.accountNameId == null) {
+            throw new AuraHandledException('Select a project Account Name before creating the receipt.');
+        }
+        if (wrapper.accountNameId != null && !allowedAccountIds.contains(wrapper.accountNameId)) {
+            throw new AuraHandledException('Select an Account Name record associated with this booking project.');
+        }
+        return createReceipt(receiptData);
+    }
     
+    /**
+     * @description Total demanded for a booking, de-duplicated per Payment Schedule.
+     *              The Booking rollup (Total_Demand_Raised__c) is a straight SUM over
+     *              Demands__c, so if a demand was accidentally raised twice against the
+     *              same schedule the rollup doubles. Here each schedule is counted once
+     *              (its earliest non-cancelled demand), while demands not linked to any
+     *              schedule (additional charges, custom/interest demands) still sum
+     *              individually.
+     */
+    private static Decimal computeTotalDemandRaised(String bookingId) {
+        Decimal total = 0;
+        Set<Id> countedSchedules = new Set<Id>();
+        for (Demands__c d : [
+            SELECT Payment_Schedule__c, Demand_Amount__c
+            FROM Demands__c
+            WHERE Booking__c = :bookingId
+            AND Status__c != 'Cancelled'
+            ORDER BY CreatedDate ASC
+        ]) {
+            if (d.Payment_Schedule__c != null) {
+                if (countedSchedules.contains(d.Payment_Schedule__c)) {
+                    continue; // duplicate demand on an already-counted schedule
+                }
+                countedSchedules.add(d.Payment_Schedule__c);
+            }
+            total += d.Demand_Amount__c ?? 0;
+        }
+        return total;
+    }
+
     // ==================== GET OPEN DEMANDS ====================
     
     @AuraEnabled(cacheable=true)
@@ -146,7 +255,7 @@ public with sharing class FinancialTransactionController {
     
     @AuraEnabled(cacheable=true)
     public static List<CreditNoteInfo> getAvailableCredits(String bookingId) {
-        try {
+        /*try {
             List<Credit_Note__c> credits = [
                 SELECT Id, Name, Credit_Date__c,
                 Credit_Amount__c, Available_Amount__c,
@@ -177,7 +286,8 @@ public with sharing class FinancialTransactionController {
             return creditList;
         } catch (Exception e) {
             throw new AuraHandledException('Error fetching credits: ' + e.getMessage());
-        }
+        }*/
+        return null;
     }
     
     // ==================== GET AVAILABLE ADVANCES ====================
@@ -290,8 +400,100 @@ public with sharing class FinancialTransactionController {
         }
     }
     
+    // ==================== GET PENDING ADDITIONAL CHARGES ====================
+
+    /**
+     * @description Additional charges on a booking that still have money outstanding, for the
+     *              Additional Charge lookup on the Financial Transaction Manager. Pending is
+     *              (Amount + GST) - Amount Paid; cancelled charges are excluded.
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<AdditionalChargeInfo> getPendingAdditionalCharges(String bookingId) {
+        try {
+            List<AdditionalChargeInfo> result = new List<AdditionalChargeInfo>();
+            for (Additional_Charge__c ac : [
+                SELECT Id, Name, Charge_Name__c, Charge_Type__c, Amount__c, GST_Amount__c,
+                       Amount_Paid__c, Status__c, Due_Date__c
+                FROM Additional_Charge__c
+                WHERE Booking__c = :bookingId
+                AND Status__c != 'Cancelled'
+                ORDER BY Due_Date__c ASC NULLS LAST, CreatedDate ASC
+            ]) {
+                Decimal pending = additionalChargePending(ac);
+                if (pending <= 0) continue;
+
+                AdditionalChargeInfo info = new AdditionalChargeInfo();
+                info.chargeId = ac.Id;
+                info.chargeNumber = ac.Name;
+                info.chargeName = ac.Charge_Name__c;
+                info.chargeType = ac.Charge_Type__c;
+                info.amount = ac.Amount__c;
+                info.gstAmount = ac.GST_Amount__c;
+                info.amountPaid = ac.Amount_Paid__c;
+                info.pendingAmount = pending;
+                info.status = ac.Status__c;
+                info.dueDate = ac.Due_Date__c;
+                info.formattedPending = formatCurrency(pending);
+                result.add(info);
+            }
+            return result;
+        } catch (Exception e) {
+            throw new AuraHandledException('Error fetching pending additional charges: ' + e.getMessage());
+        }
+    }
+
+    /** Outstanding amount on an additional charge: (Amount + GST) - Amount Paid, floored at 0. */
+    private static Decimal additionalChargePending(Additional_Charge__c ac) {
+        Decimal total = (ac.Amount__c ?? 0) + (ac.GST_Amount__c ?? 0);
+        return Math.max(0, total - (ac.Amount_Paid__c ?? 0));
+    }
+
+    private class ReceiptComponentAllocation {
+        public Decimal baseAmount = 0;
+        public Decimal gstAmount = 0;
+        public Decimal tdsAmount = 0;
+    }
+
+    private static ReceiptComponentAllocation splitReceiptAllocation(
+        Decimal amount,
+        Decimal basePending,
+        Decimal gstPending,
+        Decimal tdsPending,
+        Boolean legacyInstallment,
+        Boolean legacyGstReceipt,
+        Boolean tdsPayment,
+        Boolean combinedModeReceipt,
+        String demandComponent
+    ) {
+        ReceiptComponentAllocation allocation = new ReceiptComponentAllocation();
+        if (legacyInstallment || (combinedModeReceipt && demandComponent == 'Flat')) {
+            allocation.baseAmount = Math.min(amount, basePending);
+        } else if (legacyGstReceipt || (combinedModeReceipt && demandComponent == 'GST')) {
+            allocation.gstAmount = Math.min(amount, gstPending);
+        } else if (tdsPayment) {
+            allocation.tdsAmount = Math.min(amount, tdsPending);
+        } else if (combinedModeReceipt) {
+            Decimal flatAndGstPending = basePending + gstPending;
+            if (flatAndGstPending > 0) {
+                allocation.baseAmount = Math.min(
+                    basePending,
+                    (amount * basePending / flatAndGstPending).setScale(2, RoundingMode.HALF_UP)
+                );
+                allocation.gstAmount = Math.min(gstPending, amount - allocation.baseAmount);
+                allocation.baseAmount = Math.min(
+                    basePending,
+                    amount - allocation.gstAmount
+                );
+            }
+        } else {
+            allocation.baseAmount = Math.min(amount, basePending);
+            allocation.gstAmount = Math.min(amount - allocation.baseAmount, gstPending);
+        }
+        return allocation;
+    }
+
     // Picklist resolution now delegated to PostSalesConstants
-    
+
     // ==================== CREATE RECEIPT ====================
     
     @AuraEnabled
@@ -300,6 +502,20 @@ public with sharing class FinancialTransactionController {
         
         
             ReceiptWrapper wrapper = (ReceiptWrapper) JSON.deserialize(receiptData, ReceiptWrapper.class);
+
+            if (wrapper.bookingId != null && wrapper.receiptType == 'GST Amount') {
+                Booking__c receiptBooking = [
+                    SELECT Project__r.Legacy_Split_Demand_Receipt__c
+                    FROM Booking__c
+                    WHERE Id = :wrapper.bookingId
+                    LIMIT 1
+                ];
+                if (receiptBooking.Project__r == null
+                    || receiptBooking.Project__r.Legacy_Split_Demand_Receipt__c != true) {
+                    throw new AuraHandledException(
+                        'GST Amount receipts are only available for legacy split projects.');
+                }
+            }
             
             // Validate duplicate transaction number
             Integer duplicateCount = [
@@ -316,6 +532,7 @@ public with sharing class FinancialTransactionController {
             // Create Receipt
             Receipt__c receipt = new Receipt__c();
             receipt.Booking__c = wrapper.bookingId;
+            receipt.Account_Name__c = wrapper.accountNameId;
             receipt.Receipt_Date__c = wrapper.receiptDate;
             receipt.Amount_Received__c = wrapper.amountReceived;
             receipt.TDS_Deducted__c = wrapper.tdsAmount ?? 0;
@@ -331,10 +548,83 @@ public with sharing class FinancialTransactionController {
             receipt.Remarks__c = wrapper.remarks;
             receipt.Total_Amount__c = wrapper.amountReceived;
             receipt.Receipt_Type__c = wrapper.receiptType;
+            // Persist the allocation inputs so the SAME allocation can be run later, on approval.
+            receipt.Use_Advances__c = wrapper.useAdvances == true;
+            receipt.Use_Credits__c = wrapper.useCredits == true;
+            receipt.Additional_Charge__c = wrapper.additionalChargeId;
             receipt.Approval_Status__c = PostSalesConstants.APPROVAL_STATUS_PENDING_APPROVAL;
             
             insert receipt;
-            
+
+            // Receipt Line Items are NOT created at creation time. Allocation to payment schedules /
+            // demands / advances happens only when the receipt is APPROVED (ReceiptTrigger ->
+            // ReceiptAllocationService -> allocateReceipt), so a Rejected receipt never produces
+            // line items and there is nothing to reverse.
+            ReceiptResult created = new ReceiptResult();
+            created.receiptId = receipt.Id;
+            created.receiptNumber = receipt.Name;
+            created.success = true;
+            created.message = 'Receipt created successfully. Pending approval.';
+            created.lineItemCount = 0;
+            created.allocatedToDemands = 0;
+            created.advanceUtilized = 0;
+            created.creditApplied = 0;
+            created.excessAmount = 0;
+            return created;
+    }
+
+    // ==================== ALLOCATE RECEIPT (runs on approval) ====================
+
+    /**
+     * @description Creates the Receipt Line Items and adjusts payment schedules / demands / advances
+     *              for a receipt. Invoked when the receipt is APPROVED (see ReceiptTrigger ->
+     *              ReceiptAllocationService), NOT at creation, so a Rejected receipt never produces
+     *              line items. Idempotent: does nothing if line items already exist for the receipt.
+     * @param receiptId the approved Receipt to allocate
+     */
+    public static ReceiptResult allocateReceipt(Id receiptId) {
+            Receipt__c receipt = [
+                SELECT Id, Name, Booking__c, Total_Amount__c, Receipt_Date__c, Receipt_Type__c
+                       , Additional_Charge__c, Use_Advances__c, Use_Credits__c,
+                       New_Advance_Created__c, Created_Advance__c,
+                       Booking__r.Project__r.Legacy_Split_Demand_Receipt__c
+                FROM Receipt__c WHERE Id = :receiptId LIMIT 1
+            ];
+
+            // Idempotency: never double-allocate a receipt that already has line items.
+            if ([SELECT COUNT() FROM Receipt_Line_Item__c WHERE Receipt__c = :receiptId] > 0) {
+                ReceiptResult skip = new ReceiptResult();
+                skip.receiptId = receipt.Id;
+                skip.receiptNumber = receipt.Name;
+                skip.success = true;
+                skip.message = 'Receipt already allocated.';
+                skip.lineItemCount = 0;
+                return skip;
+            }
+
+            // Reconstruct the allocation inputs the original createReceipt logic used, from the
+            // fields persisted on the receipt at creation.
+            ReceiptWrapper wrapper = new ReceiptWrapper();
+            wrapper.bookingId = receipt.Booking__c;
+            wrapper.amountReceived = receipt.Total_Amount__c;
+            wrapper.receiptDate = receipt.Receipt_Date__c;
+            wrapper.receiptType = receipt.Receipt_Type__c;
+            wrapper.additionalChargeId = receipt.Additional_Charge__c;
+            wrapper.useAdvances = receipt.Use_Advances__c == true;
+            wrapper.useCredits = receipt.Use_Credits__c == true;
+            Boolean legacySplitMode =
+                receipt.Booking__r.Project__r != null
+                && receipt.Booking__r.Project__r.Legacy_Split_Demand_Receipt__c == true;
+            Boolean isLegacyInstallment =
+                legacySplitMode && receipt.Receipt_Type__c == 'Installment Payment';
+            Boolean isLegacyGstReceipt =
+                legacySplitMode && receipt.Receipt_Type__c == 'GST Amount';
+            Boolean isTdsPayment = receipt.Receipt_Type__c == 'TDS Payment';
+            Boolean isCombinedModeReceipt =
+                !legacySplitMode
+                && (receipt.Receipt_Type__c == 'Installment Payment'
+                    || receipt.Receipt_Type__c == 'GST Amount');
+
             Decimal remainingAmount = receipt.Total_Amount__c;
             List<Receipt_Line_Item__c> lineItems = new List<Receipt_Line_Item__c>();
             Integer sequence = 1;
@@ -342,9 +632,63 @@ public with sharing class FinancialTransactionController {
             Decimal advanceUtilized = 0;
             Decimal creditApplied = 0;
             Decimal allocatedToDemands = 0;
-            
+
+            // Step 0: Additional Charge receipts are allocated against the selected charge only —
+            // they never touch payment schedules or demands (Steps 1-3 are skipped below). Any
+            // excess over the charge's pending amount still falls through to Step 4 as an advance.
+            Boolean isAdditionalCharge =
+                PostSalesConstants.RECEIPT_TYPE_ADDITIONAL_CHARGE.equals(wrapper.receiptType);
+            Additional_Charge__c chargeToUpdate;
+
+            if (isAdditionalCharge) {
+                if (wrapper.additionalChargeId == null) {
+                    throw new AuraHandledException(
+                        'Please select an additional charge for an Additional Charge receipt.');
+                }
+
+                List<Additional_Charge__c> charges = [
+                    SELECT Id, Amount__c, GST_Amount__c, Amount_Paid__c, Status__c
+                    FROM Additional_Charge__c
+                    WHERE Id = :wrapper.additionalChargeId
+                    AND Booking__c = :wrapper.bookingId
+                ];
+                if (charges.isEmpty()) {
+                    throw new AuraHandledException(
+                        'The selected additional charge does not belong to this booking.');
+                }
+
+                chargeToUpdate = charges[0];
+                Decimal chargePending = additionalChargePending(chargeToUpdate);
+                if (chargePending <= 0) {
+                    throw new AuraHandledException(
+                        'The selected additional charge has no pending amount.');
+                }
+
+                Decimal allocated = Math.min(chargePending, remainingAmount);
+
+                // Split base first, then GST — same ordering the payment-schedule passes use.
+                Decimal basePending = Math.max(0,
+                    (chargeToUpdate.Amount__c ?? 0) - (chargeToUpdate.Amount_Paid__c ?? 0));
+                Decimal baseAlloc = Math.min(allocated, basePending);
+                Decimal gstAlloc = allocated - baseAlloc;
+
+                Receipt_Line_Item__c chargeLine = createLineItem(
+                    receipt.Id, wrapper.bookingId, sequence++,
+                    PostSalesConstants.ALLOCATION_ADDITIONAL_CHARGE, PostSalesConstants.LINE_ITEM_TYPE_PRINCIPAL,
+                    null, null, null, null, allocated, baseAlloc, gstAlloc
+                );
+                chargeLine.Additional_Charge__c = chargeToUpdate.Id;
+                lineItems.add(chargeLine);
+
+                remainingAmount -= allocated;
+
+                chargeToUpdate.Amount_Paid__c = (chargeToUpdate.Amount_Paid__c ?? 0) + allocated;
+                chargeToUpdate.Status__c =
+                    additionalChargePending(chargeToUpdate) <= 0 ? 'Paid' : 'Partially Paid';
+            }
+
             // Step 1: Utilize Advances (if enabled)
-            if (wrapper.useAdvances) {
+            if (wrapper.useAdvances == true && !isAdditionalCharge) {
                 List<Advance_Payment__c> advances = [
                     SELECT Id, Available_Amount__c
                     FROM Advance_Payment__c
@@ -381,7 +725,7 @@ public with sharing class FinancialTransactionController {
             }
             
             // Step 2: Apply Credits (if enabled)
-            if (wrapper.useCredits) {
+           /* if (wrapper.useCredits && !isAdditionalCharge) {
                 List<Credit_Note__c> credits = [
                     SELECT Id, Available_Amount__c
                     FROM Credit_Note__c
@@ -406,30 +750,39 @@ public with sharing class FinancialTransactionController {
                     remainingAmount -= allocated;
                     creditApplied += allocated;
                 }
-            }
+            }*/
             
             // Step 3: Allocate to Payment Schedules & their Demands
-            // Sequential allocation: Base Amount first, then GST Amount per schedule
-            List<Payment_Schedule__c> pendingSchedules = [
-                SELECT Id, Name, Pending_Amount__c, Sequence__c,
-                       Payment_Schedule_Amount__c, GST_Amount__c,
-                       Payment_Schedule_Amount_Pending__c, GST_Amount_Pending__c
-                FROM Payment_Schedule__c
-                WHERE Booking__c = :wrapper.bookingId
-                AND Pending_Amount__c > 0
-                ORDER BY Sequence__c ASC
-            ];
+            // Legacy/general receipts retain component ordering. Combined installments use
+            // their schedule's Flat/GST ratio, while TDS receipts target only the TDS balance.
+            // Left empty for Additional Charge receipts so every allocation pass below is a no-op —
+            // the money was already tagged to the charge in Step 0.
+            List<Payment_Schedule__c> pendingSchedules = new List<Payment_Schedule__c>();
+            List<Demands__c> allOpenDemands = new List<Demands__c>();
 
-            // Get all open demands grouped by Payment Schedule
-            List<Demands__c> allOpenDemands = [
-                SELECT Id, Name, Pending_Amount__c, Payment_Schedule__c,
-                Demand_Type__c, Status__c, Due_Date__c
-                FROM Demands__c
-                WHERE Booking__c = :wrapper.bookingId
-                AND Status__c IN :PostSalesConstants.DEMAND_ALL_OPEN_STATUSES
-                AND Pending_Amount__c > 0
-                ORDER BY Due_Date__c ASC
-            ];
+            if (!isAdditionalCharge) {
+                pendingSchedules = [
+                    SELECT Id, Name, Pending_Amount__c, Sequence__c,
+                           Payment_Schedule_Amount__c, GST_Amount__c,
+                           Payment_Schedule_Amount_Pending__c, GST_Amount_Pending__c,
+                           TDS_Amount__c, TDS_Amount_Pending__c
+                    FROM Payment_Schedule__c
+                    WHERE Booking__c = :wrapper.bookingId
+                    AND Pending_Amount__c > 0
+                    ORDER BY Sequence__c ASC
+                ];
+
+                // Get all open demands grouped by Payment Schedule
+                allOpenDemands = [
+                    SELECT Id, Name, Pending_Amount__c, Payment_Schedule__c,
+                    Demand_Type__c, Demand_Component__c, Status__c, Due_Date__c
+                    FROM Demands__c
+                    WHERE Booking__c = :wrapper.bookingId
+                    AND Status__c IN :PostSalesConstants.DEMAND_ALL_OPEN_STATUSES
+                    AND Pending_Amount__c > 0
+                    ORDER BY Due_Date__c ASC
+                ];
+            }
 
             Map<Id, List<Demands__c>> demandsBySchedule = new Map<Id, List<Demands__c>>();
             List<Demands__c> unlinkedDemands = new List<Demands__c>();
@@ -445,96 +798,131 @@ public with sharing class FinancialTransactionController {
                 }
             }
 
-            // BUG-0643: pay RAISED DEMANDS first across ALL schedules (in Sequence order), then
-            // use any leftover to pre-fill un-demanded schedule pending. Previously each schedule
-            // was fully filled (including its un-demanded pending) before moving on, so a payment
-            // for a demand raised on a later schedule was mis-applied to an earlier schedule's
-            // pending (and spilled onto the next). Two passes keep the tracked pending per schedule.
-            Map<Id, Decimal> psBasePending = new Map<Id, Decimal>();
-            Map<Id, Decimal> psGstPending  = new Map<Id, Decimal>();
-            Map<Id, Decimal> psRemainingMap = new Map<Id, Decimal>();
-            for (Payment_Schedule__c ps : pendingSchedules) {
-                psBasePending.put(ps.Id, ps.Payment_Schedule_Amount_Pending__c ?? (ps.Payment_Schedule_Amount__c ?? 0));
-                psGstPending.put(ps.Id, ps.GST_Amount_Pending__c ?? (ps.GST_Amount__c ?? 0));
-                psRemainingMap.put(ps.Id, ps.Pending_Amount__c);
-            }
-
-            // Pass 1 — allocate to raised demands, schedule by schedule in Sequence order.
+            // Allocate in Payment Schedule sequence order. For each schedule, pay its
+            // linked demands first, then allocate any remaining schedule balance directly
+            // to that schedule before moving to the next one.
             for (Payment_Schedule__c ps : pendingSchedules) {
                 if (remainingAmount <= 0) break;
-                if (!demandsBySchedule.containsKey(ps.Id)) continue;
 
-                Decimal basePending = psBasePending.get(ps.Id);
-                Decimal gstPending  = psGstPending.get(ps.Id);
-                Decimal psRemaining = psRemainingMap.get(ps.Id);
+                Decimal basePending = ps.Payment_Schedule_Amount_Pending__c
+                    ?? (ps.Payment_Schedule_Amount__c ?? 0);
+                Decimal gstPending = ps.GST_Amount_Pending__c ?? (ps.GST_Amount__c ?? 0);
+                Decimal tdsPending = ps.TDS_Amount_Pending__c ?? (ps.TDS_Amount__c ?? 0);
+                Decimal eligibleScheduleAmount = basePending + gstPending + tdsPending;
+                if (isLegacyInstallment) {
+                    eligibleScheduleAmount = basePending;
+                    gstPending = 0;
+                    tdsPending = 0;
+                } else if (isLegacyGstReceipt) {
+                    eligibleScheduleAmount = gstPending;
+                    basePending = 0;
+                    tdsPending = 0;
+                } else if (isTdsPayment) {
+                    eligibleScheduleAmount = tdsPending;
+                    basePending = 0;
+                    gstPending = 0;
+                } else if (isCombinedModeReceipt) {
+                    eligibleScheduleAmount = basePending + gstPending;
+                    tdsPending = 0;
+                }
+                Decimal psRemaining = Math.min(
+                    ps.Pending_Amount__c ?? 0,
+                    isLegacyInstallment || isLegacyGstReceipt || isTdsPayment || isCombinedModeReceipt
+                        ? eligibleScheduleAmount
+                        : (ps.Pending_Amount__c ?? 0)
+                );
 
-                for (Demands__c demand : demandsBySchedule.get(ps.Id)) {
-                    if (remainingAmount <= 0 || psRemaining <= 0) break;
-                    if (demand.Pending_Amount__c <= 0) continue;
+                if (demandsBySchedule.containsKey(ps.Id)) {
+                    for (Demands__c demand : demandsBySchedule.get(ps.Id)) {
+                        if (remainingAmount <= 0 || psRemaining <= 0) break;
+                        if (demand.Pending_Amount__c <= 0) continue;
+                        if ((isLegacyInstallment && demand.Demand_Component__c != 'Flat')
+                            || (isLegacyGstReceipt && demand.Demand_Component__c != 'GST')
+                            || (isTdsPayment
+                                && ((legacySplitMode && demand.Demand_Component__c != 'Flat')
+                                    || (!legacySplitMode
+                                        && demand.Demand_Component__c == 'GST')))) {
+                            continue;
+                        }
 
-                    Decimal allocated = Math.min(
-                        Math.min(demand.Pending_Amount__c, remainingAmount),
-                        psRemaining
+                        Decimal demandCapacity = basePending + gstPending;
+                        if (isLegacyInstallment) {
+                            demandCapacity = demand.Demand_Component__c == 'Flat' ? basePending : 0;
+                        } else if (isLegacyGstReceipt) {
+                            demandCapacity = gstPending;
+                        } else if (isTdsPayment) {
+                            demandCapacity = tdsPending;
+                        } else if (isCombinedModeReceipt && demand.Demand_Component__c == 'Flat') {
+                            demandCapacity = basePending;
+                        } else if (isCombinedModeReceipt && demand.Demand_Component__c == 'GST') {
+                            demandCapacity = gstPending;
+                        } else if (isCombinedModeReceipt) {
+                            demandCapacity = basePending + gstPending + tdsPending;
+                        }
+                        Decimal allocated = Math.min(
+                            Math.min(Math.min(demand.Pending_Amount__c, remainingAmount), psRemaining),
+                            demandCapacity
+                        );
+                        if (allocated <= 0) continue;
+
+                        ReceiptComponentAllocation components = splitReceiptAllocation(
+                            allocated, basePending, gstPending, tdsPending,
+                            isLegacyInstallment, isLegacyGstReceipt, isTdsPayment,
+                            isCombinedModeReceipt, demand.Demand_Component__c
+                        );
+
+                        lineItems.add(createLineItem(
+                            receipt.Id, wrapper.bookingId, sequence++,
+                            PostSalesConstants.ALLOCATION_DEMAND_PAYMENT, PostSalesConstants.LINE_ITEM_TYPE_PRINCIPAL,
+                            demand.Id, ps.Id, null, null, allocated,
+                            components.baseAmount, components.gstAmount, components.tdsAmount
+                        ));
+
+                        basePending -= components.baseAmount;
+                        gstPending -= components.gstAmount;
+                        tdsPending -= components.tdsAmount;
+                        remainingAmount -= allocated;
+                        psRemaining -= allocated;
+                        allocatedToDemands += allocated;
+                        demand.Pending_Amount__c -= allocated;
+                    }
+                }
+
+                // A schedule can have no demand, or its demand can be smaller than the
+                // schedule balance. In either case, apply remaining funds directly to the
+                // schedule without exceeding its own outstanding balance.
+                if (remainingAmount > 0 && psRemaining > 0) {
+                    Decimal allocated = Math.min(psRemaining, remainingAmount);
+                    ReceiptComponentAllocation components = splitReceiptAllocation(
+                        allocated, basePending, gstPending, tdsPending,
+                        isLegacyInstallment, isLegacyGstReceipt, isTdsPayment,
+                        isCombinedModeReceipt, null
                     );
-
-                    // Split allocated amount: base first, then GST
-                    Decimal baseAlloc = Math.min(allocated, basePending);
-                    Decimal gstAlloc = allocated - baseAlloc;
-                    gstAlloc = Math.min(gstAlloc, gstPending);
 
                     lineItems.add(createLineItem(
                         receipt.Id, wrapper.bookingId, sequence++,
-                        PostSalesConstants.ALLOCATION_DEMAND_PAYMENT, PostSalesConstants.LINE_ITEM_TYPE_PRINCIPAL,
-                        demand.Id, ps.Id,
-                        null, null, allocated, baseAlloc, gstAlloc
+                        PostSalesConstants.ALLOCATION_PAYMENT_SCHEDULE, PostSalesConstants.LINE_ITEM_TYPE_PRINCIPAL,
+                        null, ps.Id, null, null, allocated,
+                        components.baseAmount, components.gstAmount, components.tdsAmount
                     ));
 
-                    basePending -= baseAlloc;
-                    gstPending -= gstAlloc;
+                    basePending -= components.baseAmount;
+                    gstPending -= components.gstAmount;
+                    tdsPending -= components.tdsAmount;
                     remainingAmount -= allocated;
-                    psRemaining -= allocated;
                     allocatedToDemands += allocated;
-                    demand.Pending_Amount__c -= allocated;
                 }
-
-                psBasePending.put(ps.Id, basePending);
-                psGstPending.put(ps.Id, gstPending);
-                psRemainingMap.put(ps.Id, psRemaining);
-            }
-
-            // Pass 2 — use any remaining receipt amount to pre-fill schedule pending (e.g. the
-            // booking-amount receipt, or an over-payment) in Sequence order.
-            for (Payment_Schedule__c ps : pendingSchedules) {
-                if (remainingAmount <= 0) break;
-
-                Decimal psRemaining = psRemainingMap.get(ps.Id);
-                if (psRemaining <= 0) continue;
-
-                Decimal basePending = psBasePending.get(ps.Id);
-                Decimal gstPending  = psGstPending.get(ps.Id);
-
-                Decimal allocated = Math.min(psRemaining, remainingAmount);
-
-                // Split: base first, then GST
-                Decimal baseAlloc = Math.min(allocated, basePending);
-                Decimal gstAlloc = allocated - baseAlloc;
-                gstAlloc = Math.min(gstAlloc, gstPending);
-
-                lineItems.add(createLineItem(
-                    receipt.Id, wrapper.bookingId, sequence++,
-                    PostSalesConstants.ALLOCATION_PAYMENT_SCHEDULE, PostSalesConstants.LINE_ITEM_TYPE_PRINCIPAL,
-                    null, ps.Id,
-                    null, null, allocated, baseAlloc, gstAlloc
-                ));
-
-                remainingAmount -= allocated;
-                allocatedToDemands += allocated;
             }
 
             // Allocate to demands not linked to any Payment Schedule (no base/GST split)
             for (Demands__c demand : unlinkedDemands) {
                 if (remainingAmount <= 0) break;
                 if (demand.Pending_Amount__c <= 0) continue;
+                if (isTdsPayment) continue;
+                if ((isLegacyInstallment && demand.Demand_Component__c != 'Flat')
+                    || (isLegacyGstReceipt && demand.Demand_Component__c != 'GST')) {
+                    continue;
+                }
 
                 Decimal allocated = Math.min(demand.Pending_Amount__c, remainingAmount);
 
@@ -573,6 +961,11 @@ public with sharing class FinancialTransactionController {
                 insert lineItems;
             }
 
+            // Roll the collected amount back onto the additional charge
+            if (chargeToUpdate != null) {
+                update chargeToUpdate;
+            }
+
             // ── Update Demands: reduce pending, update status, link to receipt ──
             Map<Id, Decimal> demandAllocations = new Map<Id, Decimal>();
             for (Receipt_Line_Item__c li : lineItems) {
@@ -605,6 +998,7 @@ public with sharing class FinancialTransactionController {
             Map<Id, Decimal> scheduleAllocations = new Map<Id, Decimal>();
             Map<Id, Decimal> scheduleBaseAllocations = new Map<Id, Decimal>();
             Map<Id, Decimal> scheduleGstAllocations = new Map<Id, Decimal>();
+            Map<Id, Decimal> scheduleTdsAllocations = new Map<Id, Decimal>();
             for (Receipt_Line_Item__c li : lineItems) {
                 if (li.Payment_Schedule__c != null) {
                     Decimal prev = scheduleAllocations.containsKey(li.Payment_Schedule__c) ? scheduleAllocations.get(li.Payment_Schedule__c) : 0;
@@ -613,6 +1007,8 @@ public with sharing class FinancialTransactionController {
                     scheduleBaseAllocations.put(li.Payment_Schedule__c, prevBase + (li.Base_Amount__c ?? 0));
                     Decimal prevGst = scheduleGstAllocations.containsKey(li.Payment_Schedule__c) ? scheduleGstAllocations.get(li.Payment_Schedule__c) : 0;
                     scheduleGstAllocations.put(li.Payment_Schedule__c, prevGst + (li.GST_Amount__c ?? 0));
+                    Decimal prevTds = scheduleTdsAllocations.containsKey(li.Payment_Schedule__c) ? scheduleTdsAllocations.get(li.Payment_Schedule__c) : 0;
+                    scheduleTdsAllocations.put(li.Payment_Schedule__c, prevTds + (li.TDS_Amount__c ?? 0));
                 }
             }
 
@@ -621,13 +1017,15 @@ public with sharing class FinancialTransactionController {
                     SELECT Id, Pending_Amount__c, Amount_Paid__c, Amount__c, Status__c, Last_Receipt__c,
                            Payment_Schedule_Amount__c, GST_Amount__c,
                            Payment_Schedule_Amount_Paid__c, GST_Amount_Paid__c,
-                           Payment_Schedule_Amount_Pending__c, GST_Amount_Pending__c
+                           Payment_Schedule_Amount_Pending__c, GST_Amount_Pending__c,
+                           TDS_Amount__c, TDS_Amount_Paid__c, TDS_Amount_Pending__c
                     FROM Payment_Schedule__c WHERE Id IN :scheduleAllocations.keySet()
                 ];
                 for (Payment_Schedule__c ps : schedulesToUpdate) {
                     Decimal allocated = scheduleAllocations.get(ps.Id);
                     Decimal baseAlloc = scheduleBaseAllocations.containsKey(ps.Id) ? scheduleBaseAllocations.get(ps.Id) : 0;
                     Decimal gstAlloc = scheduleGstAllocations.containsKey(ps.Id) ? scheduleGstAllocations.get(ps.Id) : 0;
+                    Decimal tdsAlloc = scheduleTdsAllocations.containsKey(ps.Id) ? scheduleTdsAllocations.get(ps.Id) : 0;
 
                     // Update total amounts
                     ps.Pending_Amount__c = Math.max(0, (ps.Pending_Amount__c ?? 0) - allocated);
@@ -641,6 +1039,10 @@ public with sharing class FinancialTransactionController {
                     ps.GST_Amount_Paid__c = (ps.GST_Amount_Paid__c ?? 0) + gstAlloc;
                     ps.GST_Amount_Pending__c = Math.max(0, (ps.GST_Amount__c ?? 0) - (ps.GST_Amount_Paid__c ?? 0));
 
+                    // Update TDS only for allocations explicitly classified as TDS.
+                    ps.TDS_Amount_Paid__c = (ps.TDS_Amount_Paid__c ?? 0) + tdsAlloc;
+                    ps.TDS_Amount_Pending__c = Math.max(0, (ps.TDS_Amount__c ?? 0) - (ps.TDS_Amount_Paid__c ?? 0));
+
                     ps.Last_Receipt__c = receipt.Id;
                     if (ps.Pending_Amount__c <= 0) {
                         //ps.Status__c = PostSalesConstants.SCHEDULE_STATUS_PAID;
@@ -652,7 +1054,7 @@ public with sharing class FinancialTransactionController {
             }
 
             // ── Update Credits: reduce Available_Amount ──
-            if (wrapper.useCredits) {
+            if (wrapper.useCredits == true) {
                 Map<Id, Decimal> creditAllocations = new Map<Id, Decimal>();
                 for (Receipt_Line_Item__c li : lineItems) {
                     if (li.Credit_Note__c != null) {
@@ -672,7 +1074,7 @@ public with sharing class FinancialTransactionController {
             }
 
             // ── Update Advances: reduce Available_Amount ──
-            if (wrapper.useAdvances) {
+            if (wrapper.useAdvances == true) {
                 Map<Id, Decimal> advanceAllocations = new Map<Id, Decimal>();
                 for (Receipt_Line_Item__c li : lineItems) {
                     if (li.Advance_Payment__c != null) {
@@ -700,7 +1102,7 @@ public with sharing class FinancialTransactionController {
             result.receiptId = receipt.Id;
             result.receiptNumber = receipt.Name;
             result.success = true;
-            result.message = 'Receipt created successfully. Pending approval.';
+            result.message = 'Receipt allocated to payment schedule.';
             result.advanceUtilized = advanceUtilized;
             result.creditApplied = creditApplied;
             result.allocatedToDemands = allocatedToDemands;
@@ -714,10 +1116,10 @@ public with sharing class FinancialTransactionController {
     }
 
     // ==================== INVOCABLE: BOOKING ADVANCE RECEIPT (for Flow) ====================
-    // Lets a Flow (e.g. on Booking creation) create a receipt for the captured booking
-    // advance. Builds a ReceiptWrapper and calls the existing createReceipt(String) so the
-    // exact same allocation logic (advances -> credits -> schedules/demands -> excess advance)
-    // is reused without changing any existing code.
+    // Lets a Flow (e.g. on Booking creation) create a receipt for the captured booking advance.
+    // Builds a ReceiptWrapper and calls createReceipt(String), which creates the receipt in
+    // Pending Approval. Like every receipt, its line items and milestone adjustment are made only
+    // when it is approved (ReceiptTrigger -> ReceiptAllocationService -> allocateReceipt).
 
     @InvocableMethod(
         label='Create Booking Advance Receipt'
@@ -733,7 +1135,7 @@ public with sharing class FinancialTransactionController {
                 w.bookingId         = req.bookingId;
                 w.amountReceived    = req.amountReceived;
                 w.receiptDate       = (req.receiptDate != null) ? req.receiptDate : Date.today();
-                w.receiptType       = String.isNotBlank(req.receiptType) ? req.receiptType : 'Advance Payment';
+                w.receiptType       = String.isNotBlank(req.receiptType) ? req.receiptType : 'Installment Payment';
                 w.paymentMode       = req.paymentMode;
                 w.paymentFrom       = req.paymentFrom;
                 w.bankName          = req.bankName;
@@ -745,6 +1147,7 @@ public with sharing class FinancialTransactionController {
                                       : ('ADV-' + req.bookingId + '-' + Datetime.now().getTime());
                 w.tdsAmount         = (req.tdsAmount != null) ? req.tdsAmount : 0;
                 w.remarks           = req.remarks;
+                w.accountNameId     = String.isNotBlank(req.accountName) ? (Id) req.accountName : null;
                 w.useAdvances       = (req.useAdvances != null) ? req.useAdvances : true;
                 w.useCredits        = (req.useCredits  != null) ? req.useCredits  : true;
 
@@ -845,7 +1248,21 @@ public with sharing class FinancialTransactionController {
                 refundData, RefundWrapper.class
             );
             
-            // Validate refund amount
+            // Refunds are only permitted when the booking is in Cancellation/Cancelled status
+            Booking__c booking = [
+                SELECT Id, Status__c
+                FROM Booking__c
+                WHERE Id = :wrapper.bookingId
+                LIMIT 1
+            ];
+            Boolean cancelled = 'Cancelled'.equalsIgnoreCase(booking.Status__c)
+                || 'Cancellation'.equalsIgnoreCase(booking.Status__c);
+            if (!cancelled) {
+                throw new AuraHandledException(
+                    'Refunds can only be processed when the booking status is Cancellation.');
+            }
+            
+            // Validate refund amount (Total Received - Total Already Refunded)
             Decimal maxRefund = getMaxRefundableAmount(wrapper.bookingId);
             if (wrapper.refundAmount > maxRefund) {
                 throw new AuraHandledException(
@@ -863,7 +1280,9 @@ public with sharing class FinancialTransactionController {
             refund.Bank_Name__c = wrapper.bankName;
             refund.Transaction_Reference__c = wrapper.transactionReference;
             refund.Description__c = wrapper.description;
-            refund.Status__c = PostSalesConstants.APPROVAL_STATUS_PENDING;
+            refund.Status__c = 'Approved';
+            refund.Refund_Type__c = 'Cancellation Refund';
+            refund.Requested_Date__c = system.today();
             
             insert refund;
             
@@ -884,7 +1303,7 @@ public with sharing class FinancialTransactionController {
             Payment_Schedule__c, Demand_Type__c, Status__c, Due_Date__c
             FROM Demands__c
             WHERE Booking__c = :bookingId
-            AND Status__c IN :PostSalesConstants.DEMAND_OPEN_STATUSES
+            AND Status__c IN :PostSalesConstants.DEMAND_ALL_OPEN_STATUSES
             AND Pending_Amount__c > 0
             ORDER BY Due_Date__c ASC
         ];
@@ -929,6 +1348,18 @@ public with sharing class FinancialTransactionController {
         Id demandId, Id scheduleId, Id advanceId, Id creditId,
         Decimal amount, Decimal baseAmount, Decimal gstAmount
     ) {
+        return createLineItem(
+            receiptId, bookingId, sequence, allocationType, lineItemType,
+            demandId, scheduleId, advanceId, creditId, amount, baseAmount, gstAmount, 0
+        );
+    }
+
+    private static Receipt_Line_Item__c createLineItem(
+        Id receiptId, Id bookingId, Integer sequence,
+        String allocationType, String lineItemType,
+        Id demandId, Id scheduleId, Id advanceId, Id creditId,
+        Decimal amount, Decimal baseAmount, Decimal gstAmount, Decimal tdsAmount
+    ) {
         Receipt_Line_Item__c item = new Receipt_Line_Item__c();
         item.Receipt__c = receiptId;
         item.Booking__c = bookingId;
@@ -944,6 +1375,7 @@ public with sharing class FinancialTransactionController {
         item.Allocated_Amount__c = amount;
         item.Base_Amount__c = baseAmount;
         item.GST_Amount__c = gstAmount;
+        item.TDS_Amount__c = tdsAmount;
         return item;
     }
     
@@ -1100,6 +1532,7 @@ public with sharing class FinancialTransactionController {
         @AuraEnabled public Decimal totalGSTPaid;
         @AuraEnabled public Decimal totalBasePending;
         @AuraEnabled public Decimal totalGSTPending;
+        @AuraEnabled public Boolean legacySplitDemandReceipt;
     }
     
     public class DemandInfo {
@@ -1141,6 +1574,7 @@ public with sharing class FinancialTransactionController {
     
     public class ReceiptWrapper {
         public Id bookingId;
+        public Id accountNameId;
         public Date receiptDate;
         public Decimal amountReceived;
         public Decimal tdsAmount;
@@ -1152,8 +1586,23 @@ public with sharing class FinancialTransactionController {
         public Date chequeDate;
         public String remarks;
         public String receiptType;
+        public Id additionalChargeId;
         public Boolean useAdvances;
         public Boolean useCredits;
+    }
+
+    public class AdditionalChargeInfo {
+        @AuraEnabled public Id chargeId;
+        @AuraEnabled public String chargeNumber;
+        @AuraEnabled public String chargeName;
+        @AuraEnabled public String chargeType;
+        @AuraEnabled public Decimal amount;
+        @AuraEnabled public Decimal gstAmount;
+        @AuraEnabled public Decimal amountPaid;
+        @AuraEnabled public Decimal pendingAmount;
+        @AuraEnabled public String status;
+        @AuraEnabled public Date dueDate;
+        @AuraEnabled public String formattedPending;
     }
     
     public class ReceiptResult {
@@ -1194,6 +1643,8 @@ public with sharing class FinancialTransactionController {
         public Decimal tdsAmount;
         @InvocableVariable(label='Remarks')
         public String remarks;
+        @InvocableVariable(label='Account Name')
+        public String accountName;
         @InvocableVariable(label='Use Available Advances (default true)')
         public Boolean useAdvances;
         @InvocableVariable(label='Use Available Credits (default true)')

@@ -1,7 +1,12 @@
 public with sharing class BulkDemandController {
 
     // Funding types that carry a per-milestone Bank/Customer prorata split (BRD §8.1).
-    private static final Set<String> PRORATA_FUNDING_TYPES = new Set<String>{ 'Prorata', 'Partial' };
+    private static final Set<String> SPLIT_FUNDING_TYPES = new Set<String>{
+        'Loan', 'Bank Loan', 'NBFC Loan', 'Mixed Funding', 'Prorata', 'Partial'
+    };
+
+    // Only payment schedules whose own Status__c is Completed are eligible for a bulk demand.
+    private static final String SCHEDULE_STATUS_COMPLETED = 'Completed';
 
     // ============ WRAPPER CLASSES ============
 
@@ -9,8 +14,14 @@ public with sharing class BulkDemandController {
         @AuraEnabled public Id projectId { get; set; }
         @AuraEnabled public String projectName { get; set; }
         @AuraEnabled public String projectType { get; set; }
+        @AuraEnabled public Boolean legacySplitDemandReceipt { get; set; }
         @AuraEnabled public Decimal interestRate { get; set; }
         @AuraEnabled public Decimal reminderDays { get; set; }
+    }
+
+    public class TowerWrapper {
+        @AuraEnabled public Id id { get; set; }
+        @AuraEnabled public String name { get; set; }
     }
 
     public class MasterMilestoneWrapper {
@@ -32,10 +43,20 @@ public with sharing class BulkDemandController {
         @AuraEnabled public String applicantName { get; set; }
         @AuraEnabled public String email { get; set; }
         @AuraEnabled public Decimal totalPending { get; set; }
+        @AuraEnabled public Decimal totalFlatAmount { get; set; }
+        @AuraEnabled public Decimal totalGstAmount { get; set; }
+        @AuraEnabled public Decimal totalTdsAmount { get; set; }
         @AuraEnabled public Decimal totalInterest { get; set; }
+        @AuraEnabled public Decimal grossInterest { get; set; }
+        @AuraEnabled public Decimal interestWaivedOff { get; set; }
         @AuraEnabled public Decimal netDemandAmount { get; set; }
         @AuraEnabled public String formattedPending { get; set; }
+        @AuraEnabled public String formattedFlatAmount { get; set; }
+        @AuraEnabled public String formattedGstAmount { get; set; }
+        @AuraEnabled public String formattedTdsAmount { get; set; }
         @AuraEnabled public String formattedInterest { get; set; }
+        @AuraEnabled public String formattedGrossInterest { get; set; }
+        @AuraEnabled public String formattedInterestWaivedOff { get; set; }
         @AuraEnabled public String formattedNet { get; set; }
         @AuraEnabled public List<PaymentScheduleLineItem> scheduleItems { get; set; }
         @AuraEnabled public Boolean isSelected { get; set; }
@@ -61,6 +82,7 @@ public with sharing class BulkDemandController {
         @AuraEnabled public Decimal pendingAmount { get; set; }
         @AuraEnabled public Decimal basePending { get; set; }
         @AuraEnabled public Decimal gstPending { get; set; }
+        @AuraEnabled public Decimal tdsAmount { get; set; }
         @AuraEnabled public Decimal interestAmount { get; set; }
         @AuraEnabled public Decimal sequence { get; set; }
         @AuraEnabled public String formattedPending { get; set; }
@@ -75,7 +97,9 @@ public with sharing class BulkDemandController {
 
     public class BulkDemandRequest {
         @AuraEnabled public Id projectId { get; set; }
+        @AuraEnabled public Id towerId { get; set; }
         @AuraEnabled public Id masterPaymentScheduleId { get; set; }
+        @AuraEnabled public String demandComponent { get; set; }
         @AuraEnabled public List<BookingDemandItem> bookings { get; set; }
         @AuraEnabled public Decimal gracePeriodDays { get; set; }
         @AuraEnabled public Decimal dueDateOffsetDays { get; set; }
@@ -120,7 +144,8 @@ public with sharing class BulkDemandController {
     @AuraEnabled(cacheable=true)
     public static ProjectContextWrapper getProjectContext(Id projectId) {
         List<Project__c> projects = [
-            SELECT Id, Name, Project_Type__c, Interest_Rate__c, Reminder_Days__c
+            SELECT Id, Name, Project_Type__c, Interest_Rate__c, Reminder_Days__c,
+                   Legacy_Split_Demand_Receipt__c
             FROM Project__c
             WHERE Id = :projectId
             LIMIT 1
@@ -135,14 +160,47 @@ public with sharing class BulkDemandController {
         wrapper.projectId = project.Id;
         wrapper.projectName = project.Name;
         wrapper.projectType = project.Project_Type__c;
+        wrapper.legacySplitDemandReceipt = project.Legacy_Split_Demand_Receipt__c == true;
         wrapper.interestRate = project.Interest_Rate__c;
         wrapper.reminderDays = project.Reminder_Days__c;
         return wrapper;
     }
 
     @AuraEnabled(cacheable=true)
-    public static List<MasterMilestoneWrapper> getCompletedMilestones(Id projectId) {
+    public static List<TowerWrapper> getProjectTowers(Id projectId) {
+        if (projectId == null) {
+            throw new AuraHandledException('Project is required to load towers.');
+        }
+
+        List<TowerWrapper> towers = new List<TowerWrapper>();
+        for (Block__c tower : [
+            SELECT Id, Name
+            FROM Block__c
+            WHERE Project__c = :projectId
+            ORDER BY Name ASC
+        ]) {
+            TowerWrapper wrapper = new TowerWrapper();
+            wrapper.id = tower.Id;
+            wrapper.name = tower.Name;
+            towers.add(wrapper);
+        }
+        return towers;
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<MasterMilestoneWrapper> getCompletedMilestones(Id projectId, Id towerId) {
         List<MasterMilestoneWrapper> wrappers = new List<MasterMilestoneWrapper>();
+        if (projectId == null) {
+            throw new AuraHandledException('Project is required to load milestones.');
+        }
+
+        if (towerId != null && [
+            SELECT COUNT()
+            FROM Block__c
+            WHERE Id = :towerId AND Project__c = :projectId
+        ] == 0) {
+            throw new AuraHandledException('The selected tower does not belong to this project.');
+        }
 
         // Get ALL active milestones (not just completed)
         List<Master_Payment_Schedule__c> milestones = [
@@ -153,35 +211,78 @@ public with sharing class BulkDemandController {
             ORDER BY Sequence__c ASC
         ];
 
-        // Check which milestones already have demands raised for all bookings
         Set<Id> milestoneIds = new Set<Id>();
         for (Master_Payment_Schedule__c ms : milestones) {
             milestoneIds.add(ms.Id);
         }
 
-        // Count payment schedules with demand raised per milestone using two queries
-        Map<Id, Integer> totalByMilestone = new Map<Id, Integer>();
-        Map<Id, Integer> demandedByMilestone = new Map<Id, Integer>();
-
-        for (AggregateResult ar : [
-            SELECT Master_Payment_Schedule__c msId, COUNT(Id) cnt
-            FROM Payment_Schedule__c
-            WHERE Master_Payment_Schedule__c IN :milestoneIds
-            AND Booking__r.Status__c != 'Cancellation' and Booking__r.Status__c != 'Swapping'
-            GROUP BY Master_Payment_Schedule__c
-        ]) {
-            totalByMilestone.put((Id) ar.get('msId'), (Integer) ar.get('cnt'));
+        Set<Id> towerMilestoneIds = new Set<Id>();
+        if (towerId != null && !milestoneIds.isEmpty()) {
+            for (Payment_Schedule__c ps : [
+                SELECT Master_Payment_Schedule__c
+                FROM Payment_Schedule__c
+                WHERE Master_Payment_Schedule__c IN :milestoneIds
+                AND Booking__r.Project__c = :projectId
+                AND Booking__r.Plot__r.Block1__c = :towerId
+                AND Booking__r.Status__c != 'Cancellation'
+                AND Booking__r.Status__c != 'Swapping'
+            ]) {
+                towerMilestoneIds.add(ps.Master_Payment_Schedule__c);
+            }
+            milestones = new List<Master_Payment_Schedule__c>();
+            if (!towerMilestoneIds.isEmpty()) {
+                milestones = [
+                    SELECT Id, Name, Sequence__c, Percentage__c, Status__c, Payment_Type__c
+                    FROM Master_Payment_Schedule__c
+                    WHERE Id IN :towerMilestoneIds
+                    AND Project__c = :projectId
+                    AND Is_Active__c = true
+                    ORDER BY Sequence__c ASC
+                ];
+            }
         }
 
-        for (AggregateResult ar : [
-            SELECT Master_Payment_Schedule__c msId, COUNT(Id) cnt
-            FROM Payment_Schedule__c
-            WHERE Master_Payment_Schedule__c IN :milestoneIds
-            AND Booking__r.Status__c != 'Cancellation' and Booking__r.Status__c != 'Swapping'
-            AND Demand_Raised__c = true
-            GROUP BY Master_Payment_Schedule__c
-        ]) {
-            demandedByMilestone.put((Id) ar.get('msId'), (Integer) ar.get('cnt'));
+        // Check which milestones already have demands raised for all bookings
+        milestoneIds.clear();
+        for (Master_Payment_Schedule__c ms : milestones) {
+            milestoneIds.add(ms.Id);
+        }
+
+        // Count schedule rows in-scope per milestone.
+        Map<Id, Integer> totalByMilestone = new Map<Id, Integer>();
+        Map<Id, Integer> demandedByMilestone = new Map<Id, Integer>();
+        List<Payment_Schedule__c> scopedSchedules;
+        if (towerId == null) {
+            scopedSchedules = [
+                SELECT Master_Payment_Schedule__c, Demand_Raised__c
+                FROM Payment_Schedule__c
+                WHERE Master_Payment_Schedule__c IN :milestoneIds
+                AND Booking__r.Status__c != 'Cancellation'
+                AND Booking__r.Status__c != 'Swapping'
+                AND Booking__r.Project__c = :projectId
+            ];
+        } else {
+            scopedSchedules = [
+                SELECT Master_Payment_Schedule__c, Demand_Raised__c
+                FROM Payment_Schedule__c
+                WHERE Master_Payment_Schedule__c IN :milestoneIds
+                AND Booking__r.Status__c != 'Cancellation'
+                AND Booking__r.Status__c != 'Swapping'
+                AND Booking__r.Project__c = :projectId
+                AND Booking__r.Plot__r.Block1__c = :towerId
+            ];
+        }
+
+        for (Payment_Schedule__c ps : scopedSchedules) {
+            Id milestoneId = ps.Master_Payment_Schedule__c;
+            Integer total = totalByMilestone.containsKey(milestoneId)
+                ? totalByMilestone.get(milestoneId) + 1 : 1;
+            totalByMilestone.put(milestoneId, total);
+            if (ps.Demand_Raised__c == true) {
+                Integer demanded = demandedByMilestone.containsKey(milestoneId)
+                    ? demandedByMilestone.get(milestoneId) + 1 : 1;
+                demandedByMilestone.put(milestoneId, demanded);
+            }
         }
 
         Map<Id, Boolean> milestoneFullyDemanded = new Map<Id, Boolean>();
@@ -193,6 +294,7 @@ public with sharing class BulkDemandController {
 
         Decimal cumPct = 0;
         for (Master_Payment_Schedule__c ms : milestones) {
+            if (ms.Payment_Type__c == DemandComponentService.TIME_BASED_PAYMENT_TYPE) continue;
             MasterMilestoneWrapper w = new MasterMilestoneWrapper();
             w.id = ms.Id;
             w.name = ms.Name;
@@ -212,25 +314,67 @@ public with sharing class BulkDemandController {
     }
 
     @AuraEnabled
-    public static List<BookingDemandWrapper> getBookingsForMilestone(Id projectId, Id masterPaymentScheduleId) {
+    public static List<BookingDemandWrapper> getBookingsForMilestone(
+        Id projectId,
+        Id towerId,
+        Id masterPaymentScheduleId,
+        String demandComponent
+    ) {
+        validateDemandComponent(demandComponent);
+        if (projectId == null || masterPaymentScheduleId == null) {
+            throw new AuraHandledException('Project and milestone are required.');
+        }
+        Project__c demandProject = [
+            SELECT Legacy_Split_Demand_Receipt__c FROM Project__c WHERE Id = :projectId LIMIT 1
+        ];
+        validateProjectDemandMode(demandComponent, demandProject.Legacy_Split_Demand_Receipt__c);
+        if (towerId != null && [
+            SELECT COUNT()
+            FROM Block__c
+            WHERE Id = :towerId AND Project__c = :projectId
+        ] == 0) {
+            throw new AuraHandledException('The selected tower does not belong to this project.');
+        }
+
         // Get the selected milestone's sequence
-        Master_Payment_Schedule__c selectedMilestone = [
-            SELECT Id, Sequence__c, Payment_Type__c
+        List<Master_Payment_Schedule__c> selectedMilestones = [
+            SELECT Id, Project__c, Sequence__c, Payment_Type__c
             FROM Master_Payment_Schedule__c
-            WHERE Id = :masterPaymentScheduleId
+            WHERE Id = :masterPaymentScheduleId AND Project__c = :projectId
             LIMIT 1
         ];
+        if (selectedMilestones.isEmpty()) {
+            throw new AuraHandledException('The selected milestone does not belong to this project.');
+        }
+        Master_Payment_Schedule__c selectedMilestone = selectedMilestones[0];
+        if (selectedMilestone.Payment_Type__c == DemandComponentService.TIME_BASED_PAYMENT_TYPE) {
+            throw new AuraHandledException('Time Based schedules cannot be raised as demands.');
+        }
 
         Decimal milestoneSequence = selectedMilestone.Sequence__c;
 
         // Get active bookings for this project
-        List<Booking__c> bookings = [
-            SELECT Id, Name, Plot__r.Name, First_Applicant_Name__c, Email__c, Funding_Type__c
-            FROM Booking__c
-            WHERE Project__c = :projectId
-            AND Status__c != 'Cancellation' and Status__c != 'Swapping'
-            ORDER BY Name ASC
-        ];
+        List<Booking__c> bookings;
+        if (towerId == null) {
+            bookings = [
+                SELECT Id, Name, Plot__r.Name, First_Applicant_Name__c, Email__c, Funding_Type__c,
+                       Project__r.Legacy_Split_Demand_Receipt__c
+                FROM Booking__c
+                WHERE Project__c = :projectId
+                AND Status__c != 'Cancellation' AND Status__c != 'Swapping'
+                ORDER BY Name ASC
+            ];
+        } else {
+            bookings = [
+                SELECT Id, Name, Plot__r.Name, First_Applicant_Name__c, Email__c, Funding_Type__c,
+                       Project__r.Legacy_Split_Demand_Receipt__c
+                FROM Booking__c
+                WHERE Project__c = :projectId
+                AND Plot__r.Block1__c = :towerId
+                AND Status__c != 'Cancellation' AND Status__c != 'Swapping'
+                ORDER BY Name ASC
+            ];
+        }
 
         if (bookings.isEmpty()) {
             return new List<BookingDemandWrapper>();
@@ -242,19 +386,30 @@ public with sharing class BulkDemandController {
             bookingIds.add(b.Id);
             bookingMap.put(b.Id, b);
         }
+        Map<Id, Decimal> remainingWaivers = InterestWaiverService.getRemainingWaivers(bookingIds);
 
-        // Query ALL payment schedules up to and including the selected milestone
-        // (both demand-raised and not) for cumulative calculation
+        // Query payment schedules up to and including the selected milestone. Component flags
+        // determine whether the selected component has already been demanded. Only schedules whose own
+        // Status__c is Completed are eligible — a booking whose schedules are all still
+        // pending simply produces no rows here and drops out of the list below.
         List<Payment_Schedule__c> allSchedules = [
             SELECT Id, Name, Booking__c, Milestone_Name__c,
                    Amount__c, Pending_Amount__c, Interest_Pending__c,
-                   Sequence__c, S_No__c, Demand_Raised__c,
-                   Payment_Schedule_Amount_Pending__c, GST_Amount_Pending__c,
+                   Sequence__c, S_No__c, Demand_Raised__c, Status__c,
+                   Payment_Schedule_Amount_Pending__c, Payment_Schedule_Amount_Paid__c,
+                   GST_Amount_Pending__c, GST_Amount_Paid__c,
+                   TDS_Amount_Pending__c,
                    Bank_Flat_Amount__c, Bank_GST_Amount__c,
-                   Master_Payment_Schedule__c
+                   Customer_Flat_Prorata__c, Customer_GST_Prorata__c,
+                   Booking__r.Funding_Type__c, Booking__r.Project__r.Legacy_Split_Demand_Receipt__c,
+                   Bank_Demand_Raised__c, Customer_Demand_Raised__c,
+                   Bank_Flat_Demand_Raised__c, Bank_GST_Demand_Raised__c,
+                   Customer_Flat_Demand_Raised__c, Customer_GST_Demand_Raised__c,
+                   Master_Payment_Schedule__c, Master_Payment_Schedule__r.Payment_Type__c
             FROM Payment_Schedule__c
             WHERE Booking__c IN :bookingIds
             AND S_No__c <= :milestoneSequence
+            AND Status__c = :SCHEDULE_STATUS_COMPLETED
             ORDER BY Sequence__c ASC
         ];
 
@@ -281,6 +436,9 @@ public with sharing class BulkDemandController {
             w.applicantName = booking.First_Applicant_Name__c;
             w.email = booking.Email__c;
             w.totalPending = 0;
+            w.totalFlatAmount = 0;
+            w.totalGstAmount = 0;
+            w.totalTdsAmount = 0;
             w.totalInterest = 0;
             w.currentMilestoneAmount = 0;
             w.previousMilestonesAmount = 0;
@@ -289,52 +447,86 @@ public with sharing class BulkDemandController {
             w.scheduleItems = new List<PaymentScheduleLineItem>();
             w.isSelected = true;
 
-            Boolean isProrata = booking.Funding_Type__c != null
-                && PRORATA_FUNDING_TYPES.contains(booking.Funding_Type__c);
+            Boolean isProrata = booking.Project__r.Legacy_Split_Demand_Receipt__c == true
+                && booking.Funding_Type__c != null
+                && SPLIT_FUNDING_TYPES.contains(booking.Funding_Type__c);
             Boolean hasUnraisedDemand = false;
+            // True only if THIS booking has an actual Payment_Schedule__c row (Status__c =
+            // Completed, per the allSchedules query above) matching the milestone selected in
+            // Step 2. The Step 2 "COMPLETED" badge reflects the master/template flag, which can
+            // say Completed project-wide even when this specific booking hasn't reached that
+            // milestone yet (data issue) — this flag catches that at the booking level instead.
+            Boolean selectedMilestoneCompletedForBooking = false;
 
             for (Payment_Schedule__c ps : bookingSchedules) {
+                if (DemandComponentService.isTimeBasedSchedule(ps)) continue;
                 Decimal pending = ps.Pending_Amount__c != null ? ps.Pending_Amount__c : 0;
                 Decimal interest = ps.Interest_Pending__c != null ? ps.Interest_Pending__c : 0;
-                Decimal amount = ps.Amount__c != null ? ps.Amount__c : 0;
                 Boolean isCurrentMilestone = (ps.Master_Payment_Schedule__c == masterPaymentScheduleId);
-                Boolean isDemandNotRaised = (ps.Demand_Raised__c != true && pending > 0);
+                Boolean isBankSplit = isProrata
+                    && (nz(ps.Bank_Flat_Amount__c) != 0 || nz(ps.Bank_GST_Amount__c) != 0);
+                Boolean isBankDemand = isBankSplit;
+                Boolean isDemandNotRaised = !DemandComponentService.isComponentRaised(
+                    ps, demandComponent, isBankDemand
+                );
 
-                // Separate current milestone vs previous milestones
+                // Reaching a current-milestone Completed schedule confirms this booking has
+                // actually hit the milestone selected in Step 2 (used for the skip check
+                // below), regardless of whether that milestone was already demanded.
                 if (isCurrentMilestone) {
-                    w.currentMilestoneAmount += pending;
-                } else {
+                    selectedMilestoneCompletedForBooking = true;
+                } else if (demandComponent == DemandComponentService.FLAT && ps.Demand_Raised__c == true) {
+                    // True "Previous Dues" (QA item 5): earlier milestones already demanded but
+                    // still unpaid. These are NOT part of this demand (never re-demanded) but the
+                    // customer still owes them, so they are shown and added into Net Demand.
+                    // Earlier milestones never demanded join THIS demand via totalPending below,
+                    // so counting them here too would double-count them in the net.
                     w.previousMilestonesAmount += pending;
                 }
 
-                // Only include schedules where demand hasn't been raised
+                // Only schedules whose selected component hasn't been raised count toward the amounts
+                // shown and demanded. The Current/Previous breakdown is now gated on the SAME
+                // condition as Total Pending / Net Demand, so Previous Dues + Current Milestone
+                // always reconciles with Net Demand — and an already-demanded milestone (e.g. the
+                // booking-amount demand on milestone #1) is never re-demanded. This also keeps the
+                // Bulk flow in agreement with the single Raise Demand flow up to the same milestone.
                 if (isDemandNotRaised) {
+                    // Raise only the selected Flat or GST component, using the Bank amount when
+                    // the schedule has a split and the schedule amount otherwise.
+                    Decimal demandable = DemandComponentService.amount(ps, demandComponent, isBankDemand);
+                    if (demandable <= 0) continue;
+                    Decimal tdsDemandable = DemandComponentService.includesFlat(demandComponent) && !isBankDemand
+                        ? nz(ps.TDS_Amount_Pending__c) : 0;
+                    Decimal flatDemandable = demandComponent == DemandComponentService.FLAT
+                        ? demandable - tdsDemandable
+                        : (demandComponent == DemandComponentService.FLAT_AND_GST
+                            ? nz(ps.Payment_Schedule_Amount_Pending__c) : 0);
+                    Decimal gstDemandable = demandComponent == DemandComponentService.GST
+                        ? demandable
+                        : (demandComponent == DemandComponentService.FLAT_AND_GST
+                            ? nz(ps.GST_Amount_Pending__c) : 0);
                     hasUnraisedDemand = true;
 
-                    // What is actually demandable right now: when a real Bank split exists on
-                    // this milestone, ONLY Bank Flat + Bank GST is demanded here — the Customer
-                    // portion is reminded separately per BRD §8.5, not raised in this demand.
-                    // Otherwise the full pending amount (Base + GST + TDS) is demanded, entirely
-                    // from the Customer. This is the single source of truth for the amount —
-                    // Total Pending, Net Demand, and Bank/Customer Payable all derive from it,
-                    // so they always sum consistently.
-                    Decimal bankFlat = ps.Bank_Flat_Amount__c != null ? ps.Bank_Flat_Amount__c : 0;
-                    Decimal bankGst = ps.Bank_GST_Amount__c != null ? ps.Bank_GST_Amount__c : 0;
-                    Boolean thisIsBank = isProrata && (bankFlat != 0 || bankGst != 0);
-                    Decimal demandable = thisIsBank ? (bankFlat + bankGst) : pending;
+                    // Current Milestone shows the selected milestone's demandable amount. Earlier
+                    // not-yet-demanded milestones still flow into Total Pending / Net Demand below;
+                    // they are NOT added to Previous Dues, which (per QA item 5) means amounts
+                    // already demanded but unpaid — accumulated in the loop above. The schedule
+                    // matching the selected milestone is what the Demand's Payment_Schedule__c
+                    // lookup links to.
+                    if (isCurrentMilestone) {
+                        w.currentMilestoneAmount += demandable;
+                        w.currentMilestoneScheduleId = ps.Id;
+                    }
 
                     w.totalPending += demandable;
-                    w.totalInterest += interest;
-                    if (thisIsBank) {
+                    w.totalFlatAmount += flatDemandable;
+                    w.totalGstAmount += gstDemandable;
+                    w.totalTdsAmount += tdsDemandable;
+                    if (DemandComponentService.includesFlat(demandComponent)) w.totalInterest += interest;
+                    if (isBankDemand) {
                         w.bankPayableAmount += demandable;
                     } else {
                         w.customerPayableAmount += demandable;
-                    }
-
-                    // The schedule matching the selected milestone — this is what the Demand's
-                    // Payment_Schedule__c lookup should link to.
-                    if (isCurrentMilestone) {
-                        w.currentMilestoneScheduleId = ps.Id;
                     }
 
                     PaymentScheduleLineItem item = new PaymentScheduleLineItem();
@@ -342,24 +534,35 @@ public with sharing class BulkDemandController {
                     item.scheduleName = ps.Name;
                     item.milestoneName = ps.Milestone_Name__c;
                     item.pendingAmount = demandable;
-                    item.basePending = ps.Payment_Schedule_Amount_Pending__c;
-                    item.gstPending = ps.GST_Amount_Pending__c;
-                    item.interestAmount = interest;
+                    item.basePending = flatDemandable;
+                    item.gstPending = gstDemandable;
+                    item.tdsAmount = tdsDemandable;
+                    item.interestAmount = DemandComponentService.includesFlat(demandComponent) ? interest : 0;
                     item.sequence = ps.Sequence__c;
                     item.formattedPending = formatCurrency(demandable);
                     item.formattedInterest = formatCurrency(interest);
                     item.isSelected = true;
                     item.isCurrentMilestone = isCurrentMilestone;
-                    item.isBankPayable = thisIsBank;
+                    item.isBankPayable = isBankDemand;
                     w.scheduleItems.add(item);
                 }
             }
 
+            // Skip this booking if the milestone selected in Step 2 is not actually Completed
+            // for THIS booking's own schedule — even though the Step 2 badge may show
+            // "COMPLETED" (that badge reflects the master/template flag, not this booking).
+            if (!selectedMilestoneCompletedForBooking) continue;
+
             // Skip bookings with no unraised demand schedules
             if (!hasUnraisedDemand) continue;
 
-            w.netDemandAmount = w.totalPending + w.totalInterest;
+            // Net = previous dues (already demanded, unpaid) + what this demand raises + interest.
+            applyPreviewWaiver(w, remainingWaivers.get(bookingId));
+            w.netDemandAmount = w.totalPending + w.totalInterest + w.previousMilestonesAmount;
             w.formattedPending = formatCurrency(w.totalPending);
+            w.formattedFlatAmount = formatCurrency(w.totalFlatAmount);
+            w.formattedGstAmount = formatCurrency(w.totalGstAmount);
+            w.formattedTdsAmount = formatCurrency(w.totalTdsAmount);
             w.formattedInterest = formatCurrency(w.totalInterest);
             w.formattedNet = formatCurrency(w.netDemandAmount);
             w.formattedCurrentAmount = formatCurrency(w.currentMilestoneAmount);
@@ -372,22 +575,44 @@ public with sharing class BulkDemandController {
         return wrappers;
     }
 
+    @AuraEnabled(cacheable=true)
+    public static List<Project__c> getProjects() {
+        return [SELECT Id, Name FROM Project__c ORDER BY Name LIMIT 1000];
+    }
+
     @AuraEnabled
-    public static List<BookingDemandWrapper> getIndividualCompletedSchedules(Id projectId) {
-        // Query payment schedules where master milestone is completed and has pending amounts
+    public static List<BookingDemandWrapper> getIndividualCompletedSchedules(Id projectId, String demandComponent) {
+        validateDemandComponent(demandComponent);
+        if (projectId == null) {
+            throw new AuraHandledException('Project is required.');
+        }
+        Project__c demandProject = [
+            SELECT Legacy_Split_Demand_Receipt__c FROM Project__c WHERE Id = :projectId LIMIT 1
+        ];
+        validateProjectDemandMode(demandComponent, demandProject.Legacy_Split_Demand_Receipt__c);
+        // Query payment schedules where the schedule itself is Completed (and its master
+        // milestone is completed) and has pending amounts.
         List<Payment_Schedule__c> schedules = [
             SELECT Id, Name, Booking__c, Booking__r.Name, Booking__r.Plot__r.Name,
                    Booking__r.First_Applicant_Name__c, Booking__r.Email__c, Booking__r.Funding_Type__c,
+                   Booking__r.Project__r.Legacy_Split_Demand_Receipt__c,
                    Milestone_Name__c, Pending_Amount__c, Interest_Pending__c,
-                   Sequence__c, Master_Payment_Schedule__r.Status__c,
+                   Sequence__c, Status__c, Master_Payment_Schedule__r.Status__c,
                    Payment_Schedule_Amount_Pending__c, GST_Amount_Pending__c,
-                   Bank_Flat_Amount__c, Bank_GST_Amount__c
+                   Payment_Schedule_Amount_Paid__c, GST_Amount_Paid__c,
+                   TDS_Amount_Pending__c,
+                   Bank_Flat_Amount__c, Bank_GST_Amount__c,
+                   Customer_Flat_Prorata__c, Customer_GST_Prorata__c,
+                   Demand_Raised__c, Bank_Demand_Raised__c, Customer_Demand_Raised__c,
+                   Bank_Flat_Demand_Raised__c, Bank_GST_Demand_Raised__c,
+                   Customer_Flat_Demand_Raised__c, Customer_GST_Demand_Raised__c,
+                   Master_Payment_Schedule__r.Payment_Type__c
             FROM Payment_Schedule__c
             WHERE Booking__r.Project__c = :projectId
             AND Booking__r.Status__c != 'Cancellation' and Booking__r.Status__c != 'Swapping'
+            AND Status__c = :SCHEDULE_STATUS_COMPLETED
             AND Master_Payment_Schedule__r.Status__c = :PostSalesConstants.MILESTONE_STATUS_COMPLETED
             AND Pending_Amount__c > 0
-            AND (Demand_Raised__c = false OR Demand_Raised__c = null)
             ORDER BY Booking__r.Name ASC, Sequence__c ASC
         ];
 
@@ -395,6 +620,7 @@ public with sharing class BulkDemandController {
         Map<Id, BookingDemandWrapper> wrapperMap = new Map<Id, BookingDemandWrapper>();
 
         for (Payment_Schedule__c ps : schedules) {
+            if (DemandComponentService.isTimeBasedSchedule(ps)) continue;
             Id bookingId = ps.Booking__c;
 
             if (!wrapperMap.containsKey(bookingId)) {
@@ -405,6 +631,9 @@ public with sharing class BulkDemandController {
                 w.applicantName = ps.Booking__r.First_Applicant_Name__c;
                 w.email = ps.Booking__r.Email__c;
                 w.totalPending = 0;
+                w.totalFlatAmount = 0;
+                w.totalGstAmount = 0;
+                w.totalTdsAmount = 0;
                 w.totalInterest = 0;
                 w.bankPayableAmount = 0;
                 w.customerPayableAmount = 0;
@@ -414,22 +643,36 @@ public with sharing class BulkDemandController {
             }
 
             BookingDemandWrapper w = wrapperMap.get(bookingId);
-            Decimal pending = ps.Pending_Amount__c != null ? ps.Pending_Amount__c : 0;
             Decimal interest = ps.Interest_Pending__c != null ? ps.Interest_Pending__c : 0;
 
             // Same rule as the Apartment flow and the individual Raise Demand view: Bank Flat +
             // Bank GST only when a real split exists, otherwise the full pending amount as
             // Customer. Total Pending / Net Demand derive from this single figure so they
             // always sum to Bank Payable + Customer Payable.
-            Boolean isProrata = ps.Booking__r.Funding_Type__c != null
-                && PRORATA_FUNDING_TYPES.contains(ps.Booking__r.Funding_Type__c);
-            Decimal bankFlat = ps.Bank_Flat_Amount__c != null ? ps.Bank_Flat_Amount__c : 0;
-            Decimal bankGst = ps.Bank_GST_Amount__c != null ? ps.Bank_GST_Amount__c : 0;
-            Boolean thisIsBank = isProrata && (bankFlat != 0 || bankGst != 0);
-            Decimal demandable = thisIsBank ? (bankFlat + bankGst) : pending;
+            Boolean isProrata = ps.Booking__r.Project__r.Legacy_Split_Demand_Receipt__c == true
+                && ps.Booking__r.Funding_Type__c != null
+                && SPLIT_FUNDING_TYPES.contains(ps.Booking__r.Funding_Type__c);
+            Boolean thisIsBank = isProrata
+                && (nz(ps.Bank_Flat_Amount__c) != 0 || nz(ps.Bank_GST_Amount__c) != 0);
+            if (DemandComponentService.isComponentRaised(ps, demandComponent, thisIsBank)) continue;
+            Decimal demandable = DemandComponentService.amount(ps, demandComponent, thisIsBank);
+            if (demandable <= 0) continue;
+            Decimal tdsDemandable = DemandComponentService.includesFlat(demandComponent) && !thisIsBank
+                ? nz(ps.TDS_Amount_Pending__c) : 0;
+            Decimal flatDemandable = demandComponent == DemandComponentService.FLAT
+                ? demandable - tdsDemandable
+                : (demandComponent == DemandComponentService.FLAT_AND_GST
+                    ? nz(ps.Payment_Schedule_Amount_Pending__c) : 0);
+            Decimal gstDemandable = demandComponent == DemandComponentService.GST
+                ? demandable
+                : (demandComponent == DemandComponentService.FLAT_AND_GST
+                    ? nz(ps.GST_Amount_Pending__c) : 0);
 
             w.totalPending += demandable;
-            w.totalInterest += interest;
+            w.totalFlatAmount += flatDemandable;
+            w.totalGstAmount += gstDemandable;
+            w.totalTdsAmount += tdsDemandable;
+            if (DemandComponentService.includesFlat(demandComponent)) w.totalInterest += interest;
             if (thisIsBank) {
                 w.bankPayableAmount += demandable;
             } else {
@@ -441,9 +684,10 @@ public with sharing class BulkDemandController {
             item.scheduleName = ps.Name;
             item.milestoneName = ps.Milestone_Name__c;
             item.pendingAmount = demandable;
-            item.basePending = ps.Payment_Schedule_Amount_Pending__c;
-            item.gstPending = ps.GST_Amount_Pending__c;
-            item.interestAmount = interest;
+            item.basePending = flatDemandable;
+            item.gstPending = gstDemandable;
+            item.tdsAmount = tdsDemandable;
+            item.interestAmount = DemandComponentService.includesFlat(demandComponent) ? interest : 0;
             item.sequence = ps.Sequence__c;
             item.formattedPending = formatCurrency(demandable);
             item.formattedInterest = formatCurrency(interest);
@@ -454,9 +698,18 @@ public with sharing class BulkDemandController {
 
         // Calculate net amounts
         List<BookingDemandWrapper> wrappers = new List<BookingDemandWrapper>();
+        Set<Id> wrapperBookingIds = wrapperMap.keySet();
+        Map<Id, Decimal> remainingWaivers = InterestWaiverService.getRemainingWaivers(wrapperBookingIds);
         for (BookingDemandWrapper w : wrapperMap.values()) {
+            if (DemandComponentService.includesFlat(demandComponent)) {
+                w.grossInterest = w.totalInterest;
+            }
+            applyPreviewWaiver(w, remainingWaivers.get(w.bookingId));
             w.netDemandAmount = w.totalPending + w.totalInterest;
             w.formattedPending = formatCurrency(w.totalPending);
+            w.formattedFlatAmount = formatCurrency(w.totalFlatAmount);
+            w.formattedGstAmount = formatCurrency(w.totalGstAmount);
+            w.formattedTdsAmount = formatCurrency(w.totalTdsAmount);
             w.formattedInterest = formatCurrency(w.totalInterest);
             w.formattedNet = formatCurrency(w.netDemandAmount);
             w.formattedBankPayable = formatCurrency(w.bankPayableAmount);
@@ -465,6 +718,17 @@ public with sharing class BulkDemandController {
         }
 
         return wrappers;
+    }
+
+    private static void applyPreviewWaiver(BookingDemandWrapper wrapper, Decimal remainingWaiver) {
+        wrapper.grossInterest = wrapper.totalInterest == null ? 0 : wrapper.totalInterest;
+        wrapper.interestWaivedOff = InterestWaiverService.getWaiverAmount(
+            wrapper.grossInterest,
+            remainingWaiver
+        );
+        wrapper.totalInterest = wrapper.grossInterest - wrapper.interestWaivedOff;
+        wrapper.formattedGrossInterest = formatCurrency(wrapper.grossInterest);
+        wrapper.formattedInterestWaivedOff = formatCurrency(wrapper.interestWaivedOff);
     }
 
     // ============ WRITE METHODS ============
@@ -480,9 +744,37 @@ public with sharing class BulkDemandController {
 
         try {
             BulkDemandRequest request = (BulkDemandRequest) JSON.deserialize(requestJson, BulkDemandRequest.class);
+            validateDemandComponent(request.demandComponent);
 
             if (request.bookings == null || request.bookings.isEmpty()) {
                 throw new AuraHandledException('No bookings provided for demand creation');
+            }
+            if (request.towerId != null && (request.projectId == null || request.masterPaymentScheduleId == null)) {
+                throw new AuraHandledException('Project and milestone are required when raising a tower demand.');
+            }
+            if (request.towerId != null && [
+                SELECT COUNT()
+                FROM Block__c
+                WHERE Id = :request.towerId AND Project__c = :request.projectId
+            ] == 0) {
+                throw new AuraHandledException('The selected tower does not belong to this project.');
+            }
+            Master_Payment_Schedule__c selectedTowerMilestone;
+            if (request.towerId != null) {
+                List<Master_Payment_Schedule__c> selectedMilestones = [
+                    SELECT Id, Sequence__c, Payment_Type__c
+                    FROM Master_Payment_Schedule__c
+                    WHERE Id = :request.masterPaymentScheduleId AND Project__c = :request.projectId
+                    LIMIT 1
+                ];
+                if (selectedMilestones.isEmpty()) {
+                    throw new AuraHandledException('The selected milestone does not belong to this project.');
+                }
+                if (selectedMilestones[0].Payment_Type__c
+                    == DemandComponentService.TIME_BASED_PAYMENT_TYPE) {
+                    throw new AuraHandledException('Time Based schedules cannot be raised as demands.');
+                }
+                selectedTowerMilestone = selectedMilestones[0];
             }
 
             // Collect all booking IDs for name lookup
@@ -492,26 +784,128 @@ public with sharing class BulkDemandController {
             }
 
             Map<Id, Booking__c> bookingMap = new Map<Id, Booking__c>([
-                SELECT Id, Name, Funding_Type__c FROM Booking__c WHERE Id IN :bookingIds
+                SELECT Id, Name, Project__c, Plot__r.Block1__c, Funding_Type__c,
+                       Project__r.Legacy_Split_Demand_Receipt__c
+                FROM Booking__c WHERE Id IN :bookingIds
             ]);
+            Boolean legacyMode;
+            for (Booking__c booking : bookingMap.values()) {
+                if (request.projectId != null && booking.Project__c != request.projectId) {
+                    throw new AuraHandledException('One or more selected bookings do not belong to the selected project.');
+                }
+                Boolean bookingLegacyMode =
+                    booking.Project__r.Legacy_Split_Demand_Receipt__c == true;
+                if (legacyMode != null && legacyMode != bookingLegacyMode) {
+                    throw new AuraHandledException('A demand request cannot mix legacy split and combined projects.');
+                }
+                legacyMode = bookingLegacyMode;
+            }
+            if (legacyMode == true && request.demandComponent == DemandComponentService.FLAT_AND_GST) {
+                throw new AuraHandledException('Legacy projects require a separate Flat or GST demand.');
+            }
+            if (legacyMode == false && request.demandComponent != DemandComponentService.FLAT_AND_GST) {
+                throw new AuraHandledException('This project requires a combined Flat + GST demand.');
+            }
+            Map<Id, Decimal> initialRemainingWaivers =
+                InterestWaiverService.getRemainingWaivers(bookingIds, true);
+            Map<Id, Decimal> remainingWaivers = new Map<Id, Decimal>(initialRemainingWaivers);
+            if (request.towerId != null) {
+                for (Id bookingId : bookingIds) {
+                    Booking__c booking = bookingMap.get(bookingId);
+                    if (booking == null || booking.Project__c != request.projectId
+                        || booking.Plot__r == null || booking.Plot__r.Block1__c != request.towerId) {
+                        throw new AuraHandledException('One or more selected bookings do not belong to the selected tower.');
+                    }
+                }
+            }
 
             // Gather the milestone payment-schedule splits so each Demand can be filled with the
             // Base / GST / TDS amounts, and Prorata/Partial bookings demand only the Bank portion
             // (the customer side is reminded via the Master Payment Schedule forecast, BRD §8.5).
             // Sequence__c is also pulled so the demand can link to the latest (highest-sequence)
-            // schedule included in it, matching the individual Raise Demand flow.
+            // schedule included in it, matching the individual Raise Demand flow. Status__c is
+            // pulled so a schedule that is no longer Completed can be rejected server-side.
             Set<Id> allScheduleIds = new Set<Id>();
             for (BookingDemandItem item : request.bookings) {
                 if (item.scheduleIds != null) allScheduleIds.addAll(item.scheduleIds);
+                if (item.currentMilestoneScheduleId != null) {
+                    allScheduleIds.add(item.currentMilestoneScheduleId);
+                }
             }
             Map<Id, Payment_Schedule__c> scheduleMap = allScheduleIds.isEmpty()
                 ? new Map<Id, Payment_Schedule__c>()
                 : new Map<Id, Payment_Schedule__c>([
-                    SELECT Id, Payment_Schedule_Amount_Pending__c, GST_Amount_Pending__c,
+                    SELECT Id, Booking__c, Master_Payment_Schedule__c, Milestone_Name__c, S_No__c,
+                           Payment_Schedule_Amount_Pending__c, GST_Amount_Pending__c,
+                           Payment_Schedule_Amount_Paid__c, GST_Amount_Paid__c,
+                           Interest_Pending__c,
                            TDS_Amount_Pending__c, Bank_Flat_Amount__c, Bank_GST_Amount__c,
-                           Sequence__c
+                           Customer_Flat_Prorata__c, Customer_GST_Prorata__c,
+                           Sequence__c, Demand_Raised__c, Status__c,
+                           Bank_Demand_Raised__c, Customer_Demand_Raised__c,
+                           Bank_Flat_Demand_Raised__c, Bank_GST_Demand_Raised__c,
+                           Customer_Flat_Demand_Raised__c, Customer_GST_Demand_Raised__c,
+                           Booking__r.Funding_Type__c,
+                           Booking__r.Project__r.Legacy_Split_Demand_Receipt__c,
+                           Master_Payment_Schedule__r.Payment_Type__c
                     FROM Payment_Schedule__c WHERE Id IN :allScheduleIds
                 ]);
+            for (BookingDemandItem item : request.bookings) {
+                if (item.scheduleIds != null) {
+                    for (Id scheduleId : item.scheduleIds) {
+                        Payment_Schedule__c schedule = scheduleMap.get(scheduleId);
+                        if (schedule == null || schedule.Booking__c != item.bookingId) {
+                            throw new AuraHandledException(
+                                'One or more selected payment schedules do not belong to the selected booking.'
+                            );
+                        }
+                        if (DemandComponentService.isTimeBasedSchedule(schedule)) {
+                            throw new AuraHandledException(
+                                'Time Based schedules cannot be raised as demands.'
+                            );
+                        }
+                    }
+                }
+                if (item.currentMilestoneScheduleId != null) {
+                    Payment_Schedule__c currentSchedule = scheduleMap.get(item.currentMilestoneScheduleId);
+                    if (currentSchedule == null || currentSchedule.Booking__c != item.bookingId) {
+                        throw new AuraHandledException(
+                            'The selected milestone schedule does not belong to the selected booking.'
+                        );
+                    }
+                    if (DemandComponentService.isTimeBasedSchedule(currentSchedule)) {
+                        throw new AuraHandledException(
+                            'Time Based schedules cannot be raised as demands.'
+                        );
+                    }
+                }
+            }
+            if (request.towerId != null) {
+                for (BookingDemandItem item : request.bookings) {
+                    if (item.scheduleIds != null) {
+                        for (Id scheduleId : item.scheduleIds) {
+                            Payment_Schedule__c ps = scheduleMap.get(scheduleId);
+                            if (ps == null || ps.Booking__c != item.bookingId
+                                || ps.S_No__c > selectedTowerMilestone.Sequence__c) {
+                                throw new AuraHandledException(
+                                    'One or more selected payment schedules are outside the selected booking or milestone range.'
+                                );
+                            }
+                        }
+                    }
+                    if (item.currentMilestoneScheduleId != null) {
+                        Payment_Schedule__c currentSchedule =
+                            scheduleMap.get(item.currentMilestoneScheduleId);
+                        if (currentSchedule == null
+                            || currentSchedule.Booking__c != item.bookingId
+                            || currentSchedule.Master_Payment_Schedule__c != request.masterPaymentScheduleId) {
+                            throw new AuraHandledException(
+                                'The selected milestone schedule does not match the selected booking and tower milestone.'
+                            );
+                        }
+                    }
+                }
+            }
 
             // Calculate due date
             Date dueDate = Date.today();
@@ -530,13 +924,80 @@ public with sharing class BulkDemandController {
             // Customer" — captured while computing the Base/GST/TDS split below, and consumed
             // later when marking each schedule's Bank_Demand_Raised__c / Customer_Demand_Raised__c.
             Map<Integer, Map<Id, Boolean>> scheduleSourceByIndex = new Map<Integer, Map<Id, Boolean>>();
+            Map<Integer, Decimal> grossInterestByIndex = new Map<Integer, Decimal>();
             Integer idx = 0;
 
             for (BookingDemandItem item : request.bookings) {
+                // Guard against double-demanding and against demanding a schedule that is not
+                // Completed: drop any schedule that already has a demand raised against it
+                // (Demand_Raised__c = true) or whose Status__c is not Completed. Raising a second
+                // demand on the same schedule would double Total Demand Raised on the Booking. If
+                // every schedule of this item is filtered out, skip the item entirely and report
+                // it back to the UI instead of inserting a duplicate or premature demand.
+                if (item.scheduleIds != null && !item.scheduleIds.isEmpty()) {
+                    List<Id> freshScheduleIds = new List<Id>();
+                    Integer alreadyRaised = 0;
+                    Integer notCompleted = 0;
+                    Integer noComponentAmount = 0;
+                    for (Id sid : item.scheduleIds) {
+                        Payment_Schedule__c ps = scheduleMap.get(sid);
+                        Boolean scheduleIsBank = ps != null
+                            && isSplitFunding(bookingMap.get(item.bookingId))
+                            && (nz(ps.Bank_Flat_Amount__c) != 0 || nz(ps.Bank_GST_Amount__c) != 0);
+                        if (ps != null && DemandComponentService.isComponentRaised(
+                                ps, request.demandComponent, scheduleIsBank
+                            )) {
+                            alreadyRaised++;
+                        } else if (ps != null && ps.Status__c != SCHEDULE_STATUS_COMPLETED) {
+                            notCompleted++;
+                        } else if (ps != null && DemandComponentService.amount(
+                                ps, request.demandComponent, scheduleIsBank
+                            ) <= 0) {
+                            noComponentAmount++;
+                        } else {
+                            freshScheduleIds.add(sid);
+                        }
+                    }
+                    if (freshScheduleIds.isEmpty()) {
+                        DemandResultItem skipped = new DemandResultItem();
+                        skipped.bookingId = item.bookingId;
+                        skipped.bookingName = bookingMap.containsKey(item.bookingId)
+                            ? bookingMap.get(item.bookingId).Name : '';
+                        skipped.success = false;
+                        skipped.errorMessage = notCompleted > 0 && alreadyRaised == 0
+                            ? 'Skipped: the selected payment schedule(s) are not marked Completed.'
+                            : noComponentAmount > 0 && alreadyRaised == 0
+                                ? 'Skipped: no pending ' + request.demandComponent
+                                    + ' amount exists on the selected payment schedule(s).'
+                            : 'Skipped: a demand has already been raised for the selected payment schedule(s). Raising it again would duplicate the demand.';
+                        result.results.add(skipped);
+                        result.failureCount++;
+                        continue;
+                    }
+                    // Demand only the schedules that are Completed and not demanded yet.
+                    item.scheduleIds = freshScheduleIds;
+                }
+
                 Demands__c demand = new Demands__c();
                 demand.Booking__c = item.bookingId;
-                demand.Interest_Amount__c = request.includeInterest == true ? item.interestAmount : 0;
-                demand.Previous_Dues__c = item.previousDues;
+                Boolean includeFlatExtras = DemandComponentService.includesFlat(request.demandComponent);
+                Decimal grossInterest = 0;
+                if (includeFlatExtras && request.includeInterest == true) {
+                    if (item.scheduleIds != null && !item.scheduleIds.isEmpty()) {
+                        for (Id scheduleId : item.scheduleIds) {
+                            Payment_Schedule__c schedule = scheduleMap.get(scheduleId);
+                            if (schedule != null) grossInterest += nz(schedule.Interest_Pending__c);
+                        }
+                    }
+                }
+                Decimal remainingWaiver = remainingWaivers.get(item.bookingId);
+                Decimal waiverAmount = InterestWaiverService.getWaiverAmount(grossInterest, remainingWaiver);
+                demand.Interest_Amount__c = grossInterest - waiverAmount;
+                demand.Interest_Waived_Off_Amount__c = waiverAmount;
+                remainingWaivers.put(item.bookingId, nz(remainingWaiver) - waiverAmount);
+                demand.Previous_Dues__c = includeFlatExtras && item.previousDues != null
+                    ? item.previousDues : 0;
+                demand.Demand_Component__c = request.demandComponent;
                 demand.Status__c = PostSalesConstants.DEMAND_STATUS_RAISED;
                 demand.Demand_Date__c = Date.today();
                 demand.Due_Date__c = dueDate;
@@ -545,9 +1006,8 @@ public with sharing class BulkDemandController {
                 demand.Reminder_Date__c = dueDate;
 
                 // ---- Amount / GST / TDS breakdown from the milestone schedules ----
-                String funding = bookingMap.containsKey(item.bookingId)
-                    ? bookingMap.get(item.bookingId).Funding_Type__c : null;
-                Boolean isProrata = funding != null && PRORATA_FUNDING_TYPES.contains(funding);
+                Booking__c booking = bookingMap.get(item.bookingId);
+                Boolean isProrata = isSplitFunding(booking);
 
                 Decimal baseAmt = 0, gstAmt = 0, tdsAmt = 0;
                 // True only when at least one schedule carries a real Bank/Customer prorata
@@ -567,16 +1027,21 @@ public with sharing class BulkDemandController {
                         scheduleIsBank.put(sid, thisIsBank);
 
                         if (thisIsBank) {
-                            // Bank portion of a genuinely split schedule.
                             hasBankSplit = true;
-                            baseAmt += bankFlat;
-                            gstAmt  += bankGst;
+                            if (DemandComponentService.includesFlat(request.demandComponent)) baseAmt += bankFlat;
+                            else gstAmt += bankGst;
                         } else {
-                            // Non-prorata, or a Prorata/Partial schedule with no split populated:
-                            // use the full pending amounts so the demand is never 0.
-                            baseAmt += ps.Payment_Schedule_Amount_Pending__c != null ? ps.Payment_Schedule_Amount_Pending__c : 0;
-                            gstAmt  += ps.GST_Amount_Pending__c != null ? ps.GST_Amount_Pending__c : 0;
-                            tdsAmt  += ps.TDS_Amount_Pending__c != null ? ps.TDS_Amount_Pending__c : 0;
+                            if (request.demandComponent == DemandComponentService.FLAT) {
+                                baseAmt += nz(ps.Payment_Schedule_Amount_Pending__c);
+                            } else if (request.demandComponent == DemandComponentService.GST) {
+                                gstAmt += nz(ps.GST_Amount_Pending__c);
+                            } else {
+                                baseAmt += nz(ps.Payment_Schedule_Amount_Pending__c);
+                                gstAmt += nz(ps.GST_Amount_Pending__c);
+                            }
+                            if (DemandComponentService.includesFlat(request.demandComponent)) {
+                                tdsAmt += nz(ps.TDS_Amount_Pending__c);
+                            }
                         }
 
                         // Track the latest milestone by sequence (the bigger Sequence__c number)
@@ -588,10 +1053,26 @@ public with sharing class BulkDemandController {
                     }
                 }
 
+                Decimal componentAmount = baseAmt + gstAmt + tdsAmt;
+                if (componentAmount <= 0) {
+                    DemandResultItem skipped = new DemandResultItem();
+                    skipped.bookingId = item.bookingId;
+                    skipped.bookingName = booking != null ? booking.Name : '';
+                    skipped.success = false;
+                    skipped.errorMessage = 'Skipped: no pending ' + request.demandComponent
+                        + ' amount exists on the selected payment schedules.';
+                    result.results.add(skipped);
+                    result.failureCount++;
+                    continue;
+                }
+
                 demand.Base_Amount__c = baseAmt;
+                // Flat_Amount__c is the "Instalment Amount Payable" the Demand Letter table reads
+                // (and what the single-demand path in PaymentScheduleViewController populates). Bulk
+                // previously set only Base_Amount__c, leaving that column blank on the letter.
+                demand.Flat_Amount__c = baseAmt;
                 demand.GST_Amount__c = gstAmt;
                 demand.TDS_Amount__c = tdsAmt;
-               // demand.Funding_Type__c = funding;
                 // Link to the schedule matching the milestone selected in Step 2 when the
                 // client supplied one; otherwise fall back to the highest-sequence schedule
                 // included in this demand, then the first schedule id.
@@ -603,24 +1084,17 @@ public with sharing class BulkDemandController {
                     demand.Payment_Schedule__c = item.scheduleIds[0];
                 }
 
-                if (isProrata && hasBankSplit) {
+                if (hasBankSplit) {
                     // Prorata / Partial with a real split: raise only the Bank demand. The
                     // customer-payable amount is reminded from the Master Payment Schedule
                     // forecast date (BRD §8.5) and demanded on its due date.
-                    Decimal bankTotal = baseAmt + gstAmt;
-                    demand.Demand_Amount__c = bankTotal;
-                    demand.Pending_Amount__c = bankTotal;
+                    demand.Demand_Amount__c = componentAmount;
+                    demand.Pending_Amount__c = componentAmount;
                     demand.Demand_Audience__c = 'Bank';
                     demand.Demand_Type__c = 'Bank Demand';
                 } else {
-                    // Non-prorata, or Prorata/Partial with no split populated: raise the full
-                    // pending amount as a Customer demand (prevents the ₹0 demand). Only trust a
-                    // UI-supplied amount when it is greater than 0, otherwise use the computed total.
-                    Decimal total = (item.demandAmount != null && item.demandAmount > 0)
-                        ? item.demandAmount
-                        : (baseAmt + gstAmt);
-                    demand.Demand_Amount__c = total;
-                    demand.Pending_Amount__c = total; // initial pending so reminders fire
+                    demand.Demand_Amount__c = componentAmount;
+                    demand.Pending_Amount__c = componentAmount;
                     demand.Demand_Audience__c = 'Customer';
                     demand.Demand_Type__c = demandType;
                 }
@@ -628,6 +1102,7 @@ public with sharing class BulkDemandController {
                 demandsToInsert.add(demand);
                 indexToItem.put(idx, item);
                 scheduleSourceByIndex.put(idx, scheduleIsBank);
+                grossInterestByIndex.put(idx, grossInterest);
                 idx++;
             }
 
@@ -635,6 +1110,9 @@ public with sharing class BulkDemandController {
 
             // Process results and update payment schedules
             List<Payment_Schedule__c> schedulesToUpdate = new List<Payment_Schedule__c>();
+            List<Demands__c> waiverAdjustments = new List<Demands__c>();
+            Map<Id, Decimal> remainingAfterSuccessfulDemands =
+                new Map<Id, Decimal>(initialRemainingWaivers);
 
             for (Integer i = 0; i < insertResults.size(); i++) {
                 DemandResultItem resultItem = new DemandResultItem();
@@ -648,6 +1126,21 @@ public with sharing class BulkDemandController {
                     resultItem.success = true;
                     result.successCount++;
 
+                    Decimal grossInterest = grossInterestByIndex.get(i);
+                    Decimal availableWaiver = remainingAfterSuccessfulDemands.get(requestItem.bookingId);
+                    Decimal appliedWaiver = InterestWaiverService.getWaiverAmount(grossInterest, availableWaiver);
+                    remainingAfterSuccessfulDemands.put(
+                        requestItem.bookingId,
+                        nz(availableWaiver) - appliedWaiver
+                    );
+                    if (demandsToInsert[i].Interest_Waived_Off_Amount__c != appliedWaiver) {
+                        waiverAdjustments.add(new Demands__c(
+                            Id = insertResults[i].getId(),
+                            Interest_Amount__c = grossInterest - appliedWaiver,
+                            Interest_Waived_Off_Amount__c = appliedWaiver
+                        ));
+                    }
+
                     // Mark payment schedules as demand raised — flips the general
                     // Demand_Raised__c flag (which locks the schedule for editing elsewhere)
                     // plus the Bank/Customer-specific flag matching where each schedule's
@@ -657,14 +1150,9 @@ public with sharing class BulkDemandController {
                         for (Id schedId : requestItem.scheduleIds) {
                             Payment_Schedule__c ps = new Payment_Schedule__c();
                             ps.Id = schedId;
-                            ps.Demand_Raised__c = true;
                             ps.Demand_Date__c = Date.today();
                             Boolean isBank = sourceMap != null && sourceMap.get(schedId) == true;
-                            if (isBank) {
-                                ps.Bank_Demand_Raised__c = true;
-                            } else {
-                                ps.Customer_Demand_Raised__c = true;
-                            }
+                            DemandComponentService.markRaised(ps, request.demandComponent, isBank);
                             schedulesToUpdate.add(ps);
                         }
                     }
@@ -680,6 +1168,9 @@ public with sharing class BulkDemandController {
             // Update payment schedules
             if (!schedulesToUpdate.isEmpty()) {
                 Database.update(schedulesToUpdate, false);
+            }
+            if (!waiverAdjustments.isEmpty()) {
+                update waiverAdjustments;
             }
 
             // Query demand names
@@ -728,31 +1219,15 @@ public with sharing class BulkDemandController {
                 WHERE Id IN :demandIds
             ];
 
-            if (String.isNotBlank(templateId)) {
-                // Build all emails first, then send them in ONE Messaging.sendEmail call so the
-                // per-transaction email-invocation limit isn't hit for many demands (BUG-0642).
-                List<Messaging.SingleEmailMessage> emailsToSend = new List<Messaging.SingleEmailMessage>();
-                for (Demands__c demand : demands) {
-                    if (String.isNotBlank(demand.Booking__r.Email__c)) {
-                        try {
-                            EmailSenderController.PreparedEmailData prepared =
-                                EmailSenderController.prepareEmailFromTemplate(templateId, demand.Booking__c);
-
-                            Messaging.SingleEmailMessage email = new Messaging.SingleEmailMessage();
-                            email.setToAddresses(new List<String>{ demand.Booking__r.Email__c });
-                            email.setSubject(prepared.subject);
-                            email.setHtmlBody(prepared.body);
-                            email.setSaveAsActivity(true);
-                            emailsToSend.add(email);
-                        } catch (Exception emailEx) {
-                            System.debug('Error preparing email for demand ' + demand.Name + ': ' + emailEx.getMessage());
-                        }
-                    }
-                }
-                if (!emailsToSend.isEmpty()) {
-                    Messaging.sendEmail(emailsToSend, false);
-                }
-            }
+            // NOTE: the demand email is sent by the record-triggered flow "Send_Demand_Email",
+            // which fires on every Demands__c insert and renders the "Demand Raise Mail" template
+            // through EmailSenderInvocable against the Demands__c record — so merge fields resolve
+            // (Applicant, Project, Milestone, etc.) and the Demand Letter document is attached, for
+            // every funding type. This method therefore does NOT send its own email: the previous
+            // implementation called prepareEmailFromTemplate with the Booking Id while the template's
+            // object is Demands__c, so its query matched nothing and it sent the template RAW with no
+            // attachment — a second, broken email on top of the flow's correct one. It now only
+            // stamps the email-tracking fields the flow does not maintain.
 
             // Update demand records
             List<Demands__c> demandsToUpdate = new List<Demands__c>();
@@ -939,6 +1414,34 @@ public with sharing class BulkDemandController {
     }
 
     // ============ UTILITY ============
+
+    private static void validateDemandComponent(String demandComponent) {
+        if (demandComponent != DemandComponentService.FLAT
+            && demandComponent != DemandComponentService.GST
+            && demandComponent != DemandComponentService.FLAT_AND_GST) {
+            throw new AuraHandledException('Select Flat, GST, or Flat + GST for the demand component.');
+        }
+    }
+
+    private static void validateProjectDemandMode(String demandComponent, Boolean legacyMode) {
+        if ((legacyMode == true && demandComponent == DemandComponentService.FLAT_AND_GST)
+            || (legacyMode != true && demandComponent != DemandComponentService.FLAT_AND_GST)) {
+            throw new AuraHandledException(legacyMode == true
+                ? 'Legacy projects require a separate Flat or GST demand.'
+                : 'This project requires a combined Flat + GST demand.');
+        }
+    }
+
+    private static Boolean isSplitFunding(Booking__c booking) {
+        return booking != null && booking.Project__r != null
+            && booking.Project__r.Legacy_Split_Demand_Receipt__c == true
+            && booking.Funding_Type__c != null
+            && SPLIT_FUNDING_TYPES.contains(booking.Funding_Type__c);
+    }
+
+    private static Decimal nz(Decimal value) {
+        return value == null ? 0 : value;
+    }
 
     private static String formatCurrency(Decimal value) {
         return PostSalesConstants.formatCurrency(value);

@@ -9,7 +9,8 @@ import getOpenDemands from '@salesforce/apex/FinancialTransactionController.getO
 import getAvailableCredits from '@salesforce/apex/FinancialTransactionController.getAvailableCredits';
 import getAvailableAdvances from '@salesforce/apex/FinancialTransactionController.getAvailableAdvances';
 import getTransactionHistory from '@salesforce/apex/FinancialTransactionController.getTransactionHistory';
-import createReceipt from '@salesforce/apex/FinancialTransactionController.createReceipt';
+import createReceiptFromBooking from '@salesforce/apex/FinancialTransactionController.createReceiptFromBooking';
+import getProjectAccountOptions from '@salesforce/apex/FinancialTransactionController.getProjectAccountOptions';
 import createCreditNote from '@salesforce/apex/FinancialTransactionController.createCreditNote';
 import createDebitNote from '@salesforce/apex/FinancialTransactionController.createDebitNote';
 import createRefund from '@salesforce/apex/FinancialTransactionController.createRefund';
@@ -20,6 +21,7 @@ import getDebitTypeOptions from '@salesforce/apex/FinancialTransactionController
 import getRefundReasonOptions from '@salesforce/apex/FinancialTransactionController.getRefundReasonOptions';
 import getReceiptTypeOptions from '@salesforce/apex/FinancialTransactionController.getReceiptTypeOptions';
 import getPendingPaymentSchedules from '@salesforce/apex/FinancialTransactionController.getPendingPaymentSchedules';
+import getPendingAdditionalCharges from '@salesforce/apex/FinancialTransactionController.getPendingAdditionalCharges';
 import resolveConfigurationForRecord from '@salesforce/apex/PostSalesAdminController.resolveConfigurationForRecord';
 import resolveEmailTemplateForAction from '@salesforce/apex/ConfigMatchingService.resolveEmailTemplateForAction';
 import sendEmail from '@salesforce/apex/EmailSenderController.sendEmail';
@@ -60,6 +62,9 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
     // Receipt Fields
     @track receiptDate = new Date().toISOString().split('T')[0];
     @track receiptType = '';
+    @track projectAccountOptions = [];
+    @track accountNameId = '';
+    @track additionalChargeId = '';
     @track amountReceived = 0;
     @track tdsAmount = 0;
     @track paymentMode = '';
@@ -100,6 +105,9 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
     
     // Pending Payment Schedules
     @track pendingPaymentSchedules = [];
+
+    // Pending Additional Charges (used when Receipt Type = Additional Charge)
+    @track pendingAdditionalCharges = [];
 
     // Post Sales Configuration per transaction type
     @track configByType = {};
@@ -162,12 +170,14 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
         try {
             await Promise.all([
                 this.loadBookingSummary(),
+                this.loadProjectAccountOptions(),
                 this.loadOpenDemands(),
                 this.loadAvailableCredits(),
                 this.loadAvailableAdvances(),
                 this.loadPicklistOptions(),
                 this.loadTransactionHistory(),
                 this.loadPendingPaymentSchedules(),
+                this.loadPendingAdditionalCharges(),
                 this.loadPostSalesConfigs()
             ]);
         } catch (error) {
@@ -209,6 +219,11 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
             console.error('Error loading booking summary:', error);
         }
     }
+
+    async loadProjectAccountOptions() {
+        this.projectAccountOptions = await getProjectAccountOptions({ bookingId: this.recordId }) || [];
+        this.accountNameId = '';
+    }
     
     async loadOpenDemands() {
         try {
@@ -239,6 +254,15 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
             this.pendingPaymentSchedules = await getPendingPaymentSchedules({ bookingId: this.recordId }) || [];
         } catch (error) {
             console.error('Error loading pending payment schedules:', error);
+        }
+    }
+
+    async loadPendingAdditionalCharges() {
+        try {
+            this.pendingAdditionalCharges = await getPendingAdditionalCharges({ bookingId: this.recordId }) || [];
+        } catch (error) {
+            console.error('Error loading pending additional charges:', error);
+            this.pendingAdditionalCharges = [];
         }
     }
 
@@ -449,6 +473,10 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
 
     get hasPendingPaymentSchedules() {
         return this.pendingPaymentSchedules && this.pendingPaymentSchedules.length > 0;
+    }
+
+    get hasProjectAccountOptions() {
+        return this.projectAccountOptions && this.projectAccountOptions.length > 0;
     }
     
     get hasTransactionHistory() {
@@ -677,8 +705,57 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
         });
     }
     
+    // True once the user picks Receipt Type = Additional Charge. Drives the Additional Charge
+    // lookup and hides the payment-schedule/demand allocation previews, which do not apply.
+    get isAdditionalChargeReceipt() {
+        return this.receiptType === 'Additional Charge';
+    }
+
+    get showScheduleAllocationPreview() {
+        return this.hasPendingPaymentSchedules && !this.isAdditionalChargeReceipt;
+    }
+
+    get showDemandAllocationPreview() {
+        return this.hasOpenDemands && !this.isAdditionalChargeReceipt;
+    }
+
+    get additionalChargeOptions() {
+        return this.pendingAdditionalCharges.map(ac => ({
+            label: `${ac.chargeName || ac.chargeNumber} — ${ac.chargeType} (Pending: ${ac.formattedPending})`,
+            value: ac.chargeId
+        }));
+    }
+
+    get hasPendingAdditionalCharges() {
+        return this.pendingAdditionalCharges.length > 0;
+    }
+
+    get selectedAdditionalCharge() {
+        return this.pendingAdditionalCharges.find(ac => ac.chargeId === this.additionalChargeId);
+    }
+
+    // Preview of how this receipt lands on the selected charge, mirroring the Apex allocation.
+    get additionalChargeAllocationPreview() {
+        const charge = this.selectedAdditionalCharge;
+        if (!charge) {
+            return null;
+        }
+
+        const pending = charge.pendingAmount || 0;
+        const allocated = Math.min(this.amountReceived || 0, pending);
+        const percentage = pending > 0 ? (allocated / pending) * 100 : 0;
+
+        return {
+            ...charge,
+            formattedAllocated: this.formatCurrency(allocated),
+            formattedExcess: this.formatCurrency(Math.max(0, (this.amountReceived || 0) - pending)),
+            hasExcess: (this.amountReceived || 0) > pending,
+            progressStyle: `width: ${percentage}%`
+        };
+    }
+
     // ==================== EVENT HANDLERS ====================
-    
+
     toggleSummary() {
         this.showSummary = !this.showSummary;
     }
@@ -699,6 +776,7 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
         // Receipt fields
         this.receiptDate = today;
         this.receiptType = '';
+        this.additionalChargeId = '';
         this.amountReceived = 0;
         this.tdsAmount = 0;
         this.paymentMode = '';
@@ -745,6 +823,19 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
     
     handleReceiptTypeChange(event) {
         this.receiptType = event.detail.value;
+        // Switching away from Additional Charge must drop the selection, otherwise a stale
+        // charge id would ride along on an installment receipt.
+        if (!this.isAdditionalChargeReceipt) {
+            this.additionalChargeId = '';
+        }
+    }
+
+    handleAccountNameChange(event) {
+        this.accountNameId = event.detail.value;
+    }
+
+    handleAdditionalChargeChange(event) {
+        this.additionalChargeId = event.detail.value;
     }
 
     handleAmountChange(event) {
@@ -880,6 +971,7 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
                 bookingId: this.recordId,
                 receiptDate: this.receiptDate,
                 receiptType: this.receiptType,
+                additionalChargeId: this.isAdditionalChargeReceipt ? this.additionalChargeId : null,
                 amountReceived: this.amountReceived,
                 tdsAmount: this.tdsAmount || 0,
                 paymentMode: this.paymentMode,
@@ -892,7 +984,8 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
                 useCredits: this.useCredits
             };
             
-            const result = await createReceipt({ receiptData: JSON.stringify(receiptData) });
+            receiptData.accountNameId = this.accountNameId || null;
+            const result = await createReceiptFromBooking({ receiptData: JSON.stringify(receiptData) });
 
             if (result.success) {
                 this.showToast('Success', result.message || 'Receipt created successfully', 'success');
@@ -1058,6 +1151,11 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
         if (!this.receiptType) {
             errors.push('Please select a receipt type');
         }
+        if (this.isAdditionalChargeReceipt && !this.additionalChargeId) {
+            errors.push(this.hasPendingAdditionalCharges
+                ? 'Please select the additional charge this payment is against'
+                : 'This booking has no additional charge with a pending amount');
+        }
         if (!this.amountReceived || this.amountReceived <= 0) {
             errors.push('Please enter a valid amount greater than zero');
         }
@@ -1072,6 +1170,9 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
         }
         if (!this.paymentFrom) {
             errors.push('Please select payment source');
+        }
+        if (this.hasProjectAccountOptions && !this.accountNameId) {
+            errors.push('Please select the project Account Name');
         }
         
         if (errors.length > 0) {

@@ -21,7 +21,7 @@
  *              before this change was deployed.
  * @author System
  */
-public with sharing class PaymentScheduleRevisionService {
+public without sharing class PaymentScheduleRevisionService {
 
     /** Process type used to find the Approval_Configuration__c and stamp Approval_Name__c. */
     @TestVisible private static final String PROCESS_TYPE = 'PaymentScheduleRevision';
@@ -89,11 +89,22 @@ public with sharing class PaymentScheduleRevisionService {
         if (clean.isEmpty()) {
             throw new AuraHandledException('There are no editable changes to submit.');
         }
+        if (hasSplitChanges(clean)) {
+            Booking__c bookingMode = [
+                SELECT Project__r.Legacy_Split_Demand_Receipt__c
+                FROM Booking__c WHERE Id = :bookingId LIMIT 1
+            ];
+            if (bookingMode.Project__r == null
+                || bookingMode.Project__r.Legacy_Split_Demand_Receipt__c != true) {
+                throw new AuraHandledException('Prorata split revisions are enabled only for legacy projects.');
+            }
+        }
 
         // Snapshot every schedule on the booking BEFORE any trial update, so the revision can
         // show a full old-vs-new comparison (and booking-level before/after totals) later.
         Map<Id, Payment_Schedule__c> oldRows = new Map<Id, Payment_Schedule__c>([
-            SELECT Id, Milestone_Name__c, Percentage__c, Payment_Schedule_Amount__c, GST_Amount__c,
+            SELECT Id, Milestone_Name__c, Master_Payment_Schedule__r.Name,
+                   Percentage__c, Payment_Schedule_Amount__c, GST_Amount__c,
                    TDS_Amount__c, Amount__c, Bank_Flat_Amount__c, Customer_Flat_Prorata__c,
                    Bank_GST_Amount__c, Customer_GST_Prorata__c, With_GST__c
             FROM Payment_Schedule__c
@@ -183,10 +194,28 @@ public with sharing class PaymentScheduleRevisionService {
         }
         if (toApply.isEmpty()) return;
 
+        Set<Id> bookingIds = new Set<Id>();
+        for (Payment_Schedule_Revision__c revision : toApply) {
+            if (revision.Booking__c != null) bookingIds.add(revision.Booking__c);
+        }
+        Map<Id, Booking__c> bookingModes = bookingIds.isEmpty()
+            ? new Map<Id, Booking__c>()
+            : new Map<Id, Booking__c>([
+                SELECT Id, Project__r.Legacy_Split_Demand_Receipt__c
+                FROM Booking__c WHERE Id IN :bookingIds
+            ]);
+
         applying = true;
         try {
             for (Payment_Schedule_Revision__c r : toApply) {
                 List<RevisionLine> lines = parseNewValues(r.Proposed_Changes_JSON__c);
+                Booking__c bookingMode = bookingModes.get(r.Booking__c);
+                if (hasSplitChanges(lines)
+                    && (bookingMode == null || bookingMode.Project__r == null
+                        || bookingMode.Project__r.Legacy_Split_Demand_Receipt__c != true)) {
+                    r.addError('Prorata split revisions are enabled only for legacy projects.');
+                    continue;
+                }
                 List<Payment_Schedule__c> updates = buildScheduleUpdates(lines);
                 if (!updates.isEmpty()) {
                     update updates; // PaymentScheduleTrigger enforces §8.3.1 invariants
@@ -206,6 +235,17 @@ public with sharing class PaymentScheduleRevisionService {
         } finally {
             applying = false;
         }
+    }
+
+    private static Boolean hasSplitChanges(List<RevisionLine> lines) {
+        if (lines == null) return false;
+        for (RevisionLine line : lines) {
+            if (line != null && (line.bankFlat != null || line.customerFlat != null
+                || line.bankGst != null || line.customerGst != null)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     // ==================== HELPERS ====================
@@ -239,7 +279,11 @@ public with sharing class PaymentScheduleRevisionService {
             if (editedL != null) {
                 RevisionLineDiff diff = new RevisionLineDiff();
                 diff.id = row.Id;
-                diff.milestoneName = row.Milestone_Name__c;
+                // Milestone label must never be blank: use the schedule's own Milestone Name, and
+                // when that is empty fall back to the linked Master Payment Schedule's Name.
+                diff.milestoneName = String.isNotBlank(row.Milestone_Name__c)
+                    ? row.Milestone_Name__c
+                    : (row.Master_Payment_Schedule__r != null ? row.Master_Payment_Schedule__r.Name : '');
                 diff.oldValues = oldL;
                 diff.newValues = newL;
                 diffs.add(diff);

@@ -23,6 +23,7 @@ public with sharing class BookingStageRemarkService {
 
         List<Booking_Stage_Remark__c> toInsert = new List<Booking_Stage_Remark__c>();
         for (Booking__c b : newBookings) {
+            if (String.isBlank(b.Stage_Remarks__c)) continue;
             toInsert.add(buildRemark(b.Id, null, b.Status__c, b.Stage_Remarks__c));
         }
         insertRemarks(toInsert);
@@ -44,6 +45,9 @@ public with sharing class BookingStageRemarkService {
 
             // Only capture when the stage actually changed.
             if (b.Status__c == oldB.Status__c) continue;
+
+            // Only create a remark when the user has actually entered stage comments.
+            if (String.isBlank(b.Stage_Remarks__c)) continue;
 
             // The remark belongs to the stage that was just completed (the previous stage),
             // using whatever Stage_Remarks the user recorded while in that stage.

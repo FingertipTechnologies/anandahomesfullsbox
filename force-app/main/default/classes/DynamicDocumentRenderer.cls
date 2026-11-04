@@ -17,6 +17,11 @@
  *   ],
  *   "styles": { "fontFamily": "...", "fontSize": "12px", "primaryColor": "#333" }
  * }
+ *
+ * Table sections support two modes:
+ *  - Child table:       childObject + relationshipField set -> one row per child record.
+ *  - Main-record table: childObject blank -> exactly ONE row sourced from the main
+ *    record's own fields (direct like Amount__c or lookup paths like Booking__r.Amount__c).
  */
 public with sharing class DynamicDocumentRenderer {
 
@@ -89,7 +94,7 @@ public with sharing class DynamicDocumentRenderer {
         String hdrFontSize = getStr(header, 'fontSize', '');
         Boolean hdrBold = header.get('bold') == true;
         String hdrColor = getStr(header, 'textColor', '');
-        String hdrStyle = 'border-bottom:2px solid #ccc;padding-bottom:10px;margin-bottom:16px;';
+        String hdrStyle = 'padding-bottom:10px;margin-bottom:16px;';
         if (String.isNotBlank(hdrFontSize)) hdrStyle += 'font-size:' + hdrFontSize + ';';
         if (hdrBold) hdrStyle += 'font-weight:bold;';
         if (String.isNotBlank(hdrColor)) hdrStyle += 'color:' + hdrColor + ';';
@@ -280,8 +285,7 @@ public with sharing class DynamicDocumentRenderer {
 
             String value = '';
             if (record != null && String.isNotBlank(fieldName)) {
-                Object val = getFieldValue(record, fieldName);
-                value = val != null ? String.valueOf(val) : '';
+                value = formatFieldValue(getFieldValue(record, fieldName));
             }
 
             html.append('<td style="padding:4px 8px;font-weight:bold;width:15%;border:1px solid #eee;background:#f9f9f9;">' + label + '</td>');
@@ -338,7 +342,14 @@ public with sharing class DynamicDocumentRenderer {
         return html.toString();
     }
 
-    // ---- TABLE SECTION (Child / Related Records) ----
+    // ---- TABLE SECTION (Child / Related Records OR Main-Record single row) ----
+    // Two modes:
+    //  1. Child table: childObject + relationshipField set -> one row per child record.
+    //  2. Main-record table: childObject blank -> exactly ONE row whose values come
+    //     from the main record itself. Column fields may be direct (Amount__c) or
+    //     lookup paths (Booking__r.Amount__c); both resolve via getFieldValue and
+    //     are already included in the main record query (all accessible fields +
+    //     "field":"Rel.Field" paths scanned by addReferencedParentFields).
     private static String renderTableSection(Map<String, Object> section, SObject record,
                                               String recordId, String objectApiName) {
         String title = getStr(section, 'title', '');
@@ -349,7 +360,13 @@ public with sharing class DynamicDocumentRenderer {
         Boolean showRowNumbers = section.get('showRowNumbers') == true;
         List<Object> columns = (List<Object>) section.get('columns');
 
-        if (String.isBlank(childObject) || String.isBlank(relationshipField) || columns == null) {
+        // Blank childObject = main-record table (1 row from the parent record itself)
+        Boolean isMainRecordTable = String.isBlank(childObject);
+
+        if (columns == null || columns.isEmpty()) {
+            return '<p style="color:red;">Table section missing configuration.</p>';
+        }
+        if (!isMainRecordTable && String.isBlank(relationshipField)) {
             return '<p style="color:red;">Table section missing configuration.</p>';
         }
 
@@ -362,10 +379,21 @@ public with sharing class DynamicDocumentRenderer {
             columnLabels.add(getStr(col, 'label', ''));
         }
 
-        // Query child records
-        List<SObject> children = queryChildRecords(
-            childObject, relationshipField, recordId, fieldNames, orderBy, maxRows
-        );
+        // Rows: child records, or the main record itself as a single row
+        List<SObject> children;
+        if (isMainRecordTable) {
+            children = (record != null) ? new List<SObject>{ record } : new List<SObject>();
+        } else {
+            children = queryChildRecords(
+                childObject,
+                relationshipField,
+                recordId,
+                fieldNames,
+                orderBy,
+                maxRows,
+                (List<Object>) section.get('filters')
+            );
+        }
 
         // Table styles
         String headerBg = getStr(section, 'headerBackground', '#f5f5f5');
@@ -384,7 +412,7 @@ public with sharing class DynamicDocumentRenderer {
         html.append('<thead><tr>');
         if (showRowNumbers) {
             html.append('<th style="background:' + headerBg + ';color:' + headerColor +
-                        ';border:1px solid ' + borderColor + ';padding:6px 8px;text-align:center;">#</th>');
+                        ';border:1px solid ' + borderColor + ';padding:6px 8px;text-align:center;">Sl. No</th>');
         }
         for (String lbl : columnLabels) {
             html.append('<th style="background:' + headerBg + ';color:' + headerColor +
@@ -412,7 +440,7 @@ public with sharing class DynamicDocumentRenderer {
                 }
                 for (String fName : fieldNames) {
                     Object val = getFieldValue(child, fName);
-                    String display = val != null ? String.valueOf(val) : '';
+                    String display = formatFieldValue(val);
                     html.append('<td style="border:1px solid ' + borderColor +
                                 ';padding:4px 8px;">' + display + '</td>');
                 }
@@ -423,6 +451,8 @@ public with sharing class DynamicDocumentRenderer {
 
         // ---- TOTALS ROW ----
         // Shown when "Show Totals" is on, or when any column has an aggregate configured.
+        // For a main-record table the aggregates run over its single row (sum/min/max =
+        // the value itself, count = 1); 'parent' still reads from the main record.
         Boolean anyAggregate = false;
         for (Object colObj : columns) {
             String agg = getStr((Map<String, Object>) colObj, 'total', 'none');
@@ -444,7 +474,7 @@ public with sharing class DynamicDocumentRenderer {
                 if (agg == 'parent') {
                     String pf = getStr(col, 'totalParentField', '');
                     Object pv = (record != null && String.isNotBlank(pf)) ? getFieldValue(record, pf) : null;
-                    cellVal = pv != null ? String.valueOf(pv) : '';
+                    cellVal = formatFieldValue(pv);
                 } else if (agg == 'sum' || agg == 'count' || agg == 'average' || agg == 'min' || agg == 'max') {
                     cellVal = computeAggregate(children, fieldNames[ci], agg);
                 } else if (!labelPlaced) {
@@ -467,6 +497,18 @@ public with sharing class DynamicDocumentRenderer {
 
     private static String resolveMergeFields(String content, SObject record, String objectApiName) {
         if (record == null || String.isBlank(content)) return content;
+
+        content = content.replace('{!TODAY}', formatFieldValue(Date.today()));
+        content = content.replace('{!NOW}', Datetime.now().format('dd/MM/yyyy HH:mm'));
+        if (objectApiName == 'Booking__c') {
+            content = content.replace(
+                '{!NOC_BALANCE_RECEIVABLE}',
+                formatFieldValue(calculateNocBalance(
+                    (Decimal) getFieldValue(record, 'Total_Flat_Cost__c'),
+                    (Decimal) getFieldValue(record, 'Total_Receipt_Amount__c')
+                ))
+            );
+        }
 
         // ---- Function: {!INWORDS(Field__c)} -> the field's numeric value in words ----
         // (parentheses keep this from matching the plain {!Field} pattern below)
@@ -511,18 +553,20 @@ public with sharing class DynamicDocumentRenderer {
             }
 
             Object val = getFieldValue(record, fieldPath);
-            replacements.put(fullMatch, val != null ? String.valueOf(val) : '');
+            replacements.put(fullMatch, formatFieldValue(val));
         }
 
         for (String key : replacements.keySet()) {
             content = content.replace(key, replacements.get(key));
         }
 
-        // Resolve TODAY
-        content = content.replace('{!TODAY}', String.valueOf(Date.today()));
-        content = content.replace('{!NOW}', String.valueOf(Datetime.now()));
-
         return content;
+    }
+
+    @TestVisible
+    private static Decimal calculateNocBalance(Decimal totalConsideration, Decimal receivedAmount) {
+        return Math.max(0, (totalConsideration == null ? 0 : totalConsideration)
+            - (receivedAmount == null ? 0 : receivedAmount));
     }
 
     // ============================== QUERY HELPERS ==============================
@@ -603,7 +647,8 @@ public with sharing class DynamicDocumentRenderer {
 
     private static List<SObject> queryChildRecords(String childObject, String relationshipField,
                                                      String parentRecordId, List<String> fieldNames,
-                                                     String orderBy, Integer maxRows) {
+                                                     String orderBy, Integer maxRows,
+                                                     List<Object> filters) {
         if (String.isBlank(childObject) || String.isBlank(relationshipField)) {
             return new List<SObject>();
         }
@@ -631,6 +676,21 @@ public with sharing class DynamicDocumentRenderer {
                         ' FROM ' + String.escapeSingleQuotes(childObject) +
                         ' WHERE ' + String.escapeSingleQuotes(relationshipField) + ' = :parentRecordId';
 
+        Map<String, Object> bindValues = new Map<String, Object>{ 'parentRecordId' => parentRecordId };
+        if (filters != null) {
+            Integer filterIndex = 0;
+            for (Object filterObj : filters) {
+                Map<String, Object> filter = (Map<String, Object>) filterObj;
+                String fieldPath = getStr(filter, 'field', '');
+                if (!isValidChildFieldPath(childObject, fieldPath)) {
+                    throw new IllegalArgumentException('Invalid child table filter field: ' + fieldPath);
+                }
+                String bindName = 'filterValue' + filterIndex++;
+                query += ' AND ' + fieldPath + ' = :' + bindName;
+                bindValues.put(bindName, filter.get('value'));
+            }
+        }
+
         if (String.isNotBlank(orderBy)) {
             query += ' ORDER BY ' + String.escapeSingleQuotes(orderBy);
         }
@@ -638,11 +698,43 @@ public with sharing class DynamicDocumentRenderer {
         query += ' LIMIT ' + maxRows;
 
         try {
-            return Database.query(query);
+            return Database.queryWithBinds(query, bindValues, AccessLevel.SYSTEM_MODE);
         } catch (Exception e) {
             System.debug('Error querying child records: ' + e.getMessage() + ' | Query: ' + query);
             return new List<SObject>();
         }
+    }
+
+    private static Boolean isValidChildFieldPath(String objectApiName, String fieldPath) {
+        if (String.isBlank(objectApiName) || String.isBlank(fieldPath)) return false;
+        Schema.SObjectType currentType = Schema.getGlobalDescribe().get(objectApiName);
+        if (currentType == null) return false;
+
+        List<String> parts = fieldPath.split('\\.');
+        for (Integer i = 0; i < parts.size(); i++) {
+            Map<String, Schema.SObjectField> fields =
+                currentType.getDescribe().fields.getMap();
+            if (i == parts.size() - 1) {
+                return fields.containsKey(parts[i])
+                    && fields.get(parts[i]).getDescribe().isAccessible();
+            }
+
+            Schema.SObjectField relationshipField;
+            for (Schema.SObjectField field : fields.values()) {
+                Schema.DescribeFieldResult description = field.getDescribe();
+                if (description.getType() == Schema.DisplayType.REFERENCE
+                    && description.getRelationshipName() != null
+                    && description.getRelationshipName().equalsIgnoreCase(parts[i])) {
+                    relationshipField = field;
+                    break;
+                }
+            }
+            if (relationshipField == null || relationshipField.getDescribe().getReferenceTo().isEmpty()) {
+                return false;
+            }
+            currentType = relationshipField.getDescribe().getReferenceTo()[0];
+        }
+        return false;
     }
 
     // ============================== FIELD VALUE TRAVERSAL ==============================
@@ -671,60 +763,105 @@ public with sharing class DynamicDocumentRenderer {
 
     /**
      * @description Scan the template JSON for parent relationship field references
-     * (e.g., Account__r.Phone, Owner.Email) used in merge fields or fieldGrid sections
-     * and add them to the query field set.
+     * (e.g., Account__r.Phone, Owner.Email, and multi-hop grandparent paths like
+     * Booking__r.Unit__r.Name) used in merge fields, fieldGrid sections, or table
+     * columns, and add them to the query field set. The "field" scan (pattern 2)
+     * also covers main-record TABLE columns that use lookup paths (Booking__r.Amount__c),
+     * since table columns store their path under the same "field" key.
+     *
+     * Supports ANY relationship depth (Booking__r.Unit__r.Name,
+     * Booking__r.Project__r.Owner__r.Name, etc.) — each hop is validated against schema
+     * so a single bad/renamed field only skips that one merge field instead of throwing
+     * and losing the whole query (which would blank out every merge field on the page).
      */
     private static void addReferencedParentFields(String templateJson, Set<String> fieldSet,
                                                     Map<String, Schema.SObjectField> fieldMap) {
-        // 1. Scan for {!Relationship.Field} patterns in content
-        Pattern p = Pattern.compile('\\{!([A-Za-z0-9_]+)\\.([A-Za-z0-9_]+)\\}');
-        Matcher m = p.matcher(templateJson);
-        while (m.find()) {
-            String relOrObj = m.group(1);
-            String fieldName = m.group(2);
-            // Check if it's a valid relationship name on the object
-            if (isValidRelationship(relOrObj, fieldMap)) {
-                fieldSet.add(relOrObj + '.' + fieldName);
-            }
-        }
+        // Each pattern is scanned over overlapping slices of the (potentially very large) template
+        // JSON. Running a matcher across a ~300 KB string in one pass can exceed Apex's regex step
+        // limit ("Regex too complicated") once the template is merge-field dense, so every scan is
+        // windowed; the overlap (larger than any real token) keeps a token that straddles a slice
+        // boundary from being missed, and duplicate hits are harmless because fieldSet is a Set.
+        //
+        // 1. {!Relationship.Relationship....Field} patterns (any depth) in content
+        scanReferencedPaths('\\{!([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)\\}', templateJson, fieldSet, fieldMap);
+        // 1b. {!INWORDS(...)} calls too — e.g. {!INWORDS(Booking__r.Unit__r.Cost__c)}
+        scanReferencedPaths('(?i)\\{!\\s*INWORDS\\s*\\(\\s*([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)\\s*\\)\\s*\\}', templateJson, fieldSet, fieldMap);
+        // 2. fieldGrid / table-column fields with dot notation (any depth)
+        //    (e.g., "field":"Account__r.Phone" or "field":"Booking__r.Unit__r.Name")
+        scanReferencedPaths('"field"\\s*:\\s*"([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)"', templateJson, fieldSet, fieldMap);
+        // 3. table-column parent-field totals with dot notation (any depth)
+        //    (e.g., "totalParentField":"Booking__r.Unit__r.Total_Flat_Cost__c")
+        scanReferencedPaths('"totalParentField"\\s*:\\s*"([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)"', templateJson, fieldSet, fieldMap);
+    }
 
-        // 2. Scan for fieldGrid fields with dot notation (e.g., "field":"Account__r.Phone")
-        Pattern fieldPattern = Pattern.compile('"field"\\s*:\\s*"([A-Za-z0-9_]+)\\.([A-Za-z0-9_]+)"');
-        Matcher fm = fieldPattern.matcher(templateJson);
-        while (fm.find()) {
-            String rel = fm.group(1);
-            String fld = fm.group(2);
-            if (isValidRelationship(rel, fieldMap)) {
-                fieldSet.add(rel + '.' + fld);
-            }
-        }
+    // Window/overlap for scanReferencedPaths. Overlap must exceed the longest possible merge token
+    // so no token is split across a boundary and lost.
+    private static final Integer SCAN_WINDOW = 20000;
+    private static final Integer SCAN_OVERLAP = 400;
 
-        // 3. Scan for table-column parent-field totals with dot notation
-        //    (e.g., "totalParentField":"Booking__r.Total_Flat_Cost__c") so the value the
-        //    totals row pulls from a related parent record is actually queried.
-        Pattern totalPattern = Pattern.compile('"totalParentField"\\s*:\\s*"([A-Za-z0-9_]+)\\.([A-Za-z0-9_]+)"');
-        Matcher tm = totalPattern.matcher(templateJson);
-        while (tm.find()) {
-            String rel = tm.group(1);
-            String fld = tm.group(2);
-            if (isValidRelationship(rel, fieldMap)) {
-                fieldSet.add(rel + '.' + fld);
+    /**
+     * @description Run one capture-group-1 pattern over `text` in overlapping windows and validate +
+     * add each captured dotted path. Windowing keeps any single matcher pass well under Apex's regex
+     * step limit even when the template JSON is very large and merge-field dense; the overlap ensures
+     * a token spanning a window boundary is still matched in the next window (the Set dedupes).
+     */
+    private static void scanReferencedPaths(String regex, String text,
+                                            Set<String> fieldSet,
+                                            Map<String, Schema.SObjectField> fieldMap) {
+        if (String.isBlank(text)) return;
+        Pattern p = Pattern.compile(regex);
+        Integer len = text.length();
+        Integer start = 0;
+        while (start < len) {
+            Integer endPos = Math.min(len, start + SCAN_WINDOW);
+            Matcher m = p.matcher(text.substring(start, endPos));
+            while (m.find()) {
+                addValidatedPath(m.group(1), fieldSet, fieldMap);
             }
+            if (endPos >= len) break;
+            start = endPos - SCAN_OVERLAP;
         }
     }
 
-    private static Boolean isValidRelationship(String relName, Map<String, Schema.SObjectField> fieldMap) {
-        // Check if this relationship name matches a lookup field on the object
+    /**
+     * @description Walk a dotted relationship path (e.g. Booking__r.Unit__r.Name) one hop
+     * at a time, validating each relationship segment against the schema of whatever object
+     * it points to. If every hop resolves, the full path is added to the SOQL field set. If
+     * any hop is invalid (typo'd relationship name, non-reference field, etc.) the path is
+     * silently skipped — that single merge field just won't resolve, instead of throwing and
+     * falling back to an Id/Name-only query that would blank out every merge field on the page.
+     */
+    private static void addValidatedPath(String fieldPath, Set<String> fieldSet,
+                                          Map<String, Schema.SObjectField> rootFieldMap) {
+        List<String> parts = fieldPath.split('\\.');
+        if (parts.size() < 2) return; // no relationship hop — nothing extra to query
+
+        Map<String, Schema.SObjectField> currentFieldMap = rootFieldMap;
+        // Walk every segment except the last (the last segment is the actual field name)
+        for (Integer i = 0; i < parts.size() - 1; i++) {
+            Schema.SObjectField relField = findRelationshipField(parts[i], currentFieldMap);
+            if (relField == null) return; // unknown relationship hop — bail out safely
+
+            List<Schema.SObjectType> refs = relField.getDescribe().getReferenceTo();
+            if (refs.isEmpty()) return; // polymorphic/unresolvable reference — bail out safely
+            currentFieldMap = refs[0].getDescribe().fields.getMap();
+        }
+
+        fieldSet.add(fieldPath);
+    }
+
+    /** Finds the lookup field on fieldMap whose RelationshipName matches relName (case-insensitive). */
+    private static Schema.SObjectField findRelationshipField(String relName, Map<String, Schema.SObjectField> fieldMap) {
         for (String fName : fieldMap.keySet()) {
             Schema.DescribeFieldResult dfr = fieldMap.get(fName).getDescribe();
             if (dfr.getType() == Schema.DisplayType.REFERENCE) {
                 String lookupRelName = dfr.getRelationshipName();
                 if (String.isNotBlank(lookupRelName) && lookupRelName.equalsIgnoreCase(relName)) {
-                    return true;
+                    return fieldMap.get(fName);
                 }
             }
         }
-        return false;
+        return null;
     }
 
     // ============================== UTILITIES ==============================
@@ -825,6 +962,25 @@ public with sharing class DynamicDocumentRenderer {
         if (d == null) return '';
         if (d == d.round()) return String.valueOf(d.longValue());
         return String.valueOf(d);
+    }
+
+    /**
+     * @description Renders date values in day/month/year format. DateTime fields show the
+     *              calendar date only; non-date values pass through String.valueOf.
+     */
+    private static String formatFieldValue(Object val) {
+        if (val == null) return '';
+        if (val instanceof DateTime) {
+            return ((DateTime) val).format('dd/MM/yyyy');
+        }
+        if (val instanceof Date) {
+            Date dateValue = (Date) val;
+            return DateTime.newInstance(
+                dateValue,
+                Time.newInstance(0, 0, 0, 0)
+            ).format('dd/MM/yyyy');
+        }
+        return String.valueOf(val);
     }
 
     private static String getStr(Map<String, Object> data, String key, String defaultVal) {

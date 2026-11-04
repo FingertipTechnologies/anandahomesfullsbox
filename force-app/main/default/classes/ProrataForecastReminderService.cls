@@ -25,7 +25,8 @@ public with sharing class ProrataForecastReminderService {
                    Customer_Flat_Prorata__c, Customer_GST_Prorata__c, With_GST__c,
                    Booking__c, Booking__r.Name, Booking__r.Email__c,
                    Booking__r.First_Applicant_Name__c, Booking__r.OwnerId,
-                   Booking__r.Funding_Type__c
+                   Booking__r.Funding_Type__c,
+                   Booking__r.Project__r.Legacy_Split_Demand_Receipt__c
             FROM Payment_Schedule__c
             WHERE Forecast_Date__c <= :today
             AND Forecast_Reminder_Sent__c = false
@@ -33,6 +34,7 @@ public with sharing class ProrataForecastReminderService {
             AND Demand_Raised__c = false
             AND Status__c NOT IN :CLOSED_STATUSES
             AND Booking__r.Funding_Type__c IN :FUNDING_PRORATA
+            AND Booking__r.Project__r.Legacy_Split_Demand_Receipt__c = true
             LIMIT 200
         ];
         if (schedules.isEmpty()) return 0;

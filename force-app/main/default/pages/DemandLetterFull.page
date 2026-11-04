@@ -1,0 +1,85 @@
+<apex:page standardController="Demands__c" extensions="DemandLetterPDFController" renderAs="pdf" showHeader="false"
+           sidebar="false" applyBodyTag="false" applyHtmlTag="false" title="Demand Letter">
+<html>
+<head>
+    <style type="text/css">
+        @page { size: A4 portrait; margin: 19mm 18mm; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #111; line-height: 1.4; }
+        p { margin: 0 0 10px; }
+        .date { margin-bottom: 15px; }
+        .subject { margin-top: 4px; }
+        .installment-table, .account-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 12px 0 16px; }
+        .installment-table th, .installment-table td, .account-table td { border: 1px solid #222; padding: 6px; vertical-align: middle; }
+        .installment-table th { text-align: center; font-weight: bold; }
+        .installment-table td { text-align: right; }
+        .installment-table td:first-child, .account-table td:first-child { text-align: left; }
+        .installment-table .total-label { font-weight: bold; text-align: left; }
+        .account-table td:first-child { width: 32%; font-weight: bold; }
+        .signature { margin-top: 22px; }
+        .error { border: 1px solid #900; color: #900; padding: 10px; }
+    </style>
+</head>
+<body>
+    <apex:outputPanel layout="block" rendered="{!NOT(ISBLANK(errorMessage))}" styleClass="error">
+        <apex:outputText value="{!errorMessage}" />
+    </apex:outputPanel>
+    <apex:outputPanel layout="block" rendered="{!ISBLANK(errorMessage)}">
+        <p class="date">Date: <apex:outputField value="{!Demands__c.Demand_Date__c}" /></p>
+        <p>To,</p>
+        <p><strong><apex:outputField value="{!Demands__c.Booking__r.Applicant_Name__c}" /></strong></p>
+        <p class="subject"><strong>Sub: Demand Letter for Flat Disbursement.</strong></p>
+        <p>
+            Ref: LAN No. <apex:outputField value="{!Demands__c.Booking__r.Loan_Account_Number__c}" />,
+            (Bank Name:- <apex:outputField value="{!Demands__c.Booking__r.Loan_Bank_Name__c}" />)
+        </p>
+        <p>
+            Flat No. <apex:outputField value="{!Demands__c.Booking__r.Plot__r.Name}" />,
+            Floor-<apex:outputField value="{!Demands__c.Booking__r.FloorNo__c}" />,
+            Block "<apex:outputField value="{!Demands__c.Booking__r.Plot__r.Tower_Block__c}" />" –
+            “<apex:outputField value="{!Demands__c.Booking__r.Project__r.Name}" />” Project
+        </p>
+        <p>
+            With reference to the subject mentioned, we are pleased to inform you that, we have
+            completed the construction progress as per the Instalment Description, mentioned in
+            the below table.
+        </p>
+        <p>
+            Request your attention for clearing the instalment(s) due towards the said work(s)
+            completed, amounting to Rs. <strong>₹
+            <apex:outputText value="{!Demands__c.Demanded_Amount__c}" />/-</strong> (INCLUDING GST).
+            Receivable within 7 days from the date of this demand letter.
+        </p>
+        <table class="installment-table">
+            <colgroup><col style="width:44%" /><col style="width:19%" /><col style="width:37%" /></colgroup>
+            <thead>
+                <tr>
+                    <th>Instalment Description</th>
+                    <th>Payable %age<br/>As per stage</th>
+                    <th>Instalment Amount Payable<br/>(INCLUDING GST)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><apex:outputField value="{!Demands__c.Payment_Schedule__r.Milestone_Name__c}" /></td>
+                    <td><apex:outputField value="{!Demands__c.Payment_Schedule__r.Percentage__c}" /></td>
+                    <td>₹ <apex:outputText value="{!Demands__c.Demanded_Amount__c}" /></td>
+                </tr>
+            </tbody>
+        </table>
+        <p>Payments shall be made through A/c Payee Cheques of CTS 2010 standard, Demand Draft (DD), RTGS, or NEFT to the account details stated hereunder:</p>
+        <table class="account-table">
+            <tbody>
+                <tr><td>NAME OF ACCOUNT HOLDER</td><td><apex:outputText value="{!accountHolder}" /></td></tr>
+                <tr><td>BANK ACCOUNT NUMBER</td><td><apex:outputText value="{!accountNumber}" /></td></tr>
+                <tr><td>IFSC CODE</td><td><apex:outputText value="{!ifscCode}" /></td></tr>
+                <tr><td>ACCOUNT TYPE</td><td><apex:outputText value="CURRENT ACCOUNT" /></td></tr>
+                <tr><td>NAME OF BANK</td><td><apex:outputText value="{!bankName}" /></td></tr>
+                <tr><td>BRANCH</td><td><apex:outputText value="{!accountBranch}" /></td></tr>
+                <tr><td>BRANCH CITY</td><td><apex:outputText value="{!branchCity}" /></td></tr>
+            </tbody>
+        </table>
+        <p class="signature">Thanking you,<br/><strong>For M/S. <apex:outputField value="{!Demands__c.Booking__r.Project__r.Name}" /></strong><br/>AUTHORISED SIGNATORY</p>
+    </apex:outputPanel>
+</body>
+</html>
+</apex:page>

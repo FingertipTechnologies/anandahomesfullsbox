@@ -1,0 +1,3 @@
+public class CAPRI_CANCELLATION_LETTER {
+
+}

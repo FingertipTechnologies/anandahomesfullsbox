@@ -2,46 +2,9 @@
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Mobile_Number_Validation</fullName>
     <active>true</active>
-    <description>India (or blank country) numbers must be exactly 10 digits. Other countries only need digits. A secondary number with no Secondary Country follows the primary Country. Mirrored client-side in newLeadComponent and GRE_LeadCreation handleSubmit.</description>
     <errorConditionFormula>OR(
-    /* Primary phone, India or no country: exactly 10 digits */
-    AND(
-        NOT(ISBLANK(Phone__c)),
-        OR(ISBLANK(TEXT(Country__c)), ISPICKVAL(Country__c, &quot;India&quot;)),
-        NOT(REGEX(Phone__c, &quot;^[0-9]{10}$&quot;))
-    ),
-    /* Primary phone, other country: digits only */
-    AND(
-        NOT(ISBLANK(Phone__c)),
-        NOT(ISBLANK(TEXT(Country__c))),
-        NOT(ISPICKVAL(Country__c, &quot;India&quot;)),
-        NOT(REGEX(Phone__c, &quot;^[0-9]+$&quot;))
-    ),
-    /* Secondary phone, India (own country, or inherited from primary): exactly 10 digits */
-    AND(
-        NOT(ISBLANK(Secondary_Phone__c)),
-        OR(
-            ISPICKVAL(Secondary_Country__c, &quot;India&quot;),
-            AND(
-                ISBLANK(TEXT(Secondary_Country__c)),
-                OR(ISBLANK(TEXT(Country__c)), ISPICKVAL(Country__c, &quot;India&quot;))
-            )
-        ),
-        NOT(REGEX(Secondary_Phone__c, &quot;^[0-9]{10}$&quot;))
-    ),
-    /* Secondary phone, other country (own, or inherited from primary): digits only */
-    AND(
-        NOT(ISBLANK(Secondary_Phone__c)),
-        OR(
-            AND(NOT(ISBLANK(TEXT(Secondary_Country__c))), NOT(ISPICKVAL(Secondary_Country__c, &quot;India&quot;))),
-            AND(
-                ISBLANK(TEXT(Secondary_Country__c)),
-                NOT(ISBLANK(TEXT(Country__c))),
-                NOT(ISPICKVAL(Country__c, &quot;India&quot;))
-            )
-        ),
-        NOT(REGEX(Secondary_Phone__c, &quot;^[0-9]+$&quot;))
-    )
+    AND(NOT(ISBLANK(Phone__c)), NOT(REGEX(Phone__c , &quot;^[0-9]{10}$&quot;))),
+    AND(NOT(ISBLANK(Secondary_Phone__c)), NOT(REGEX(Secondary_Phone__c , &quot;^[0-9]{10}$&quot;)))
 )</errorConditionFormula>
-    <errorMessage>For India, Phone Number and Secondary Phone Number must contain exactly 10 digits. For other countries they must contain only numbers.</errorMessage>
+    <errorMessage>Phone Number and Secondary Phone Number must contain exactly 10 digits and only numbers.</errorMessage>
 </ValidationRule>

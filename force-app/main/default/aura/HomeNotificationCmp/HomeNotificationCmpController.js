@@ -10,12 +10,14 @@
 	},
     onCallHandler:function(component, event, helper) {
         var leadRecordID=event.getSource().get("v.name");
+        //alert(leadRecordID);
          component.set("v.leadRecID",leadRecordID);
          component.set("v.isCall",true);
         
 	},
     onsvHandler:function(component, event, helper) {
          var svleadRecordID=event.getSource().get("v.name");
+         //alert(svleadRecordID);
          component.set("v.SvleadRecID",svleadRecordID);
          component.set("v.isSv",true);   
 	},
@@ -52,12 +54,6 @@
         //     component.set("v.isMissed1",true);
         else if(StatusValue1=='Completed')
              component.set("v.isCompleted1",true);
-        
-        // Default Completed Date to now when Completed is chosen; clear it otherwise
-        if(StatusValue1=='Completed')
-            component.set("v.completedDate", new Date().toISOString());
-        else
-            component.set("v.completedDate", "");
     },
     UpdateSvStatus:function(component,event,helper){
         
@@ -74,30 +70,16 @@
         }
     },
     UpdateflsStatus:function(component,event,helper){
-        var StatusValue1 = component.find('StatusID1').get('v.value');
-        if(!StatusValue1)
+        var StatusValue1=component.find('StatusID1').get('v.value');
+         var RemarksValue = component.find("remarks").get("v.value");
+        if(StatusValue1!='' && RemarksValue!='' && RemarksValue!=undefined)
         {
-            helper.displayMessage(component, "Please select a status", "error");
-            return;
+            helper.UpdateflsDetails(component, event,StatusValue1,RemarksValue,helper);
+            var closeMethod = component.get('c.closeModel');
+            
+            $A.enqueueAction(closeMethod);
+            
         }
-        var completedDate = null;
-        if(StatusValue1 == 'Completed')
-        {
-            completedDate = component.get("v.completedDate");
-            if(!completedDate)
-            {
-                helper.displayMessage(component, "Please enter the Completed Date", "error");
-                return;
-            }
-            if(new Date(completedDate) > new Date())
-            {
-                helper.displayMessage(component, "Completed Date cannot be in the future", "error");
-                return;
-            }
-        }
-        helper.UpdateflsDetails(component, event, StatusValue1, completedDate, helper);
-        var closeMethod = component.get('c.closeModel');
-        $A.enqueueAction(closeMethod);
     },
     closeModel: function(component, event, helper) {
         component.set("v.isCall",false);
@@ -111,7 +93,6 @@
         component.set("v.isScheduled1",false);
         component.set("v.isMissed1",false);
         component.set("v.isCompleted1",false);
-        component.set("v.completedDate","");
         
         component.set("v.SvleadRecID","");
         component.set("v.FlsleadRecId","");
@@ -138,36 +119,6 @@
             "slideDevName": "detail"
         });
         navigateEvent.fire();
-    },
-    // Lead's For The Day filters
-    onPeriodChange: function (component, event, helper) {
-        component.set("v.currentPage", 1);
-        if (component.get("v.period") === "custom") {
-            // wait for Apply; show a hint until both dates are chosen
-            component.set("v.rangeText", "Pick a start and end date, then Apply.");
-            if (component.get("v.startDate") && component.get("v.endDate")) {
-                helper.loadRecords(component);
-            }
-            return;
-        }
-        helper.loadRecords(component);
-    },
-    applyCustomRange: function (component, event, helper) {
-        if (!component.get("v.startDate") || !component.get("v.endDate")) {
-            helper.displayMessage(component, "Please enter both Start Date and End Date.", "error");
-            return;
-        }
-        component.set("v.currentPage", 1);
-        helper.loadRecords(component);
-    },
-    refreshLeads: function (component, event, helper) {
-        helper.loadRecords(component);
-    },
-    onStatusFilter: function (component, event, helper) {
-        var value = event.currentTarget.getAttribute("value");
-        component.set("v.statusFilter", value);
-        component.set("v.currentPage", 1);
-        helper.loadRecords(component);
     },
      addCustomerEvent: function(component, event, helper) {
         component.set('v.isModalOpen',true);

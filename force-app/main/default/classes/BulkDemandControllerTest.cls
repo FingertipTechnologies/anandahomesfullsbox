@@ -26,6 +26,10 @@ private class BulkDemandControllerTest {
     static void setup() {
         try {
             Booking__c booking = postSalesTestDataFactory.createFullBooking('Bulk Demand Project');
+            update new Project__c(
+                Id = booking.Project__c,
+                Legacy_Split_Demand_Receipt__c = true
+            );
             // Marker so the non-prorata booking can be fetched deterministically.
             booking.Email__c = EMAIL_CUSTOMER;
             update booking;
@@ -120,7 +124,10 @@ private class BulkDemandControllerTest {
     }
 
     private static Booking__c bookingByEmail(String email) {
-        List<Booking__c> bs = [SELECT Id, Email__c FROM Booking__c WHERE Email__c = :email LIMIT 1];
+        List<Booking__c> bs = [
+            SELECT Id, Email__c, Project__c, Plot__c
+            FROM Booking__c WHERE Email__c = :email LIMIT 1
+        ];
         return bs.isEmpty() ? null : bs[0];
     }
 
@@ -172,10 +179,55 @@ private class BulkDemandControllerTest {
         try {
             if (p != null) {
                 List<BulkDemandController.MasterMilestoneWrapper> ms =
-                    BulkDemandController.getCompletedMilestones(p.Id);
+                    BulkDemandController.getCompletedMilestones(p.Id, null);
                 System.debug('Milestones: ' + ms.size());
             }
         } catch (Exception e) { System.debug(e.getMessage()); }
+    }
+
+    @isTest
+    static void towerSelectionFiltersMilestonesAndBookings() {
+        Booking__c bookingA = bookingByEmail(EMAIL_CUSTOMER);
+        System.assertNotEquals(null, bookingA, 'Tower A fixture booking must exist');
+
+        Project__c project = [SELECT Id FROM Project__c WHERE Id = :bookingA.Project__c];
+        Block__c towerA = new Block__c(Name = 'Tower A', Project__c = project.Id);
+        Block__c towerB = new Block__c(Name = 'Tower B', Project__c = project.Id);
+        insert new List<Block__c>{ towerA, towerB };
+
+        Plot__c plotA = [SELECT Id, Block1__c FROM Plot__c WHERE Id = :bookingA.Plot__c];
+        plotA.Block1__c = towerA.Id;
+        update plotA;
+
+        Master_Payment_Schedule__c milestoneA = new Master_Payment_Schedule__c(
+            Project__c = project.Id, Name = 'Tower A Milestone',
+            Sequence__c = 1, Percentage__c = 50,
+            Status__c = 'Completed', Is_Active__c = true
+        );
+        insert milestoneA;
+
+        Payment_Schedule__c scheduleA = scheduleFor(bookingA.Id);
+        scheduleA.Master_Payment_Schedule__c = milestoneA.Id;
+        scheduleA.Status__c = SCHEDULE_STATUS_COMPLETED;
+        scheduleA.Demand_Raised__c = false;
+        update scheduleA;
+
+        Test.startTest();
+        List<BulkDemandController.TowerWrapper> towers =
+            BulkDemandController.getProjectTowers(project.Id);
+        List<BulkDemandController.MasterMilestoneWrapper> milestones =
+            BulkDemandController.getCompletedMilestones(project.Id, towerA.Id);
+        List<BulkDemandController.BookingDemandWrapper> bookings =
+            BulkDemandController.getBookingsForMilestone(
+                project.Id, towerA.Id, milestoneA.Id, 'Flat'
+            );
+        Test.stopTest();
+
+        System.assertEquals(2, towers.size(), 'Project tower selector should list both towers');
+        System.assertEquals(1, milestones.size(), 'Only milestones with schedules in Tower A should show');
+        System.assertEquals(milestoneA.Id, milestones[0].id);
+        System.assertEquals(1, bookings.size(), 'Only Tower A bookings should be returned');
+        System.assertEquals(bookingA.Id, bookings[0].bookingId);
     }
 
     @isTest
@@ -185,7 +237,7 @@ private class BulkDemandControllerTest {
         try {
             if (p != null && ms != null) {
                 List<BulkDemandController.BookingDemandWrapper> rows =
-                    BulkDemandController.getBookingsForMilestone(p.Id, ms.Id);
+                    BulkDemandController.getBookingsForMilestone(p.Id, null, ms.Id, 'Flat');
                 System.debug('Milestone bookings: ' + rows.size());
                 // Prorata booking exercises isBankPayable=true; customer booking the false side.
             }
@@ -204,7 +256,7 @@ private class BulkDemandControllerTest {
         Test.startTest();
         List<BulkDemandController.BookingDemandWrapper> rows;
         try {
-            rows = BulkDemandController.getBookingsForMilestone(p.Id, ms.Id);
+            rows = BulkDemandController.getBookingsForMilestone(p.Id, null, ms.Id, 'Flat');
         } catch (Exception e) { System.debug('Tolerated: ' + e.getMessage()); }
         Test.stopTest();
 
@@ -221,6 +273,16 @@ private class BulkDemandControllerTest {
         if (completedBooking != null && !rows.isEmpty()) {
             System.assert(returnedBookingIds.contains(completedBooking.Id),
                 'A booking with a Completed, undemanded schedule should still be listed');
+            for (BulkDemandController.BookingDemandWrapper row : rows) {
+                if (row.bookingId == completedBooking.Id) {
+                    System.assertEquals(500000, row.totalFlatAmount,
+                        'Bulk preview should show the Flat demand component separately.');
+                    System.assertEquals(0, row.totalGstAmount,
+                        'Flat-only demand should not be reported as GST.');
+                    System.assertEquals(0, row.totalTdsAmount,
+                        'Bulk preview should show TDS separately, including zero.');
+                }
+            }
         }
     }
 
@@ -230,7 +292,7 @@ private class BulkDemandControllerTest {
         try {
             if (p != null) {
                 List<BulkDemandController.BookingDemandWrapper> rows =
-                    BulkDemandController.getIndividualCompletedSchedules(p.Id);
+                    BulkDemandController.getIndividualCompletedSchedules(p.Id, 'Flat');
                 System.debug('Individual schedules: ' + rows.size());
             }
         } catch (Exception e) { System.debug(e.getMessage()); }
@@ -245,7 +307,7 @@ private class BulkDemandControllerTest {
         Test.startTest();
         List<BulkDemandController.BookingDemandWrapper> rows;
         try {
-            rows = BulkDemandController.getIndividualCompletedSchedules(p.Id);
+            rows = BulkDemandController.getIndividualCompletedSchedules(p.Id, 'Flat');
         } catch (Exception e) { System.debug('Tolerated: ' + e.getMessage()); }
         Test.stopTest();
 
@@ -275,6 +337,7 @@ private class BulkDemandControllerTest {
         item.currentMilestoneScheduleId = ps.Id; // priority-link branch
 
         BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
+        req.demandComponent = 'Flat';
         req.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
         req.includeInterest = true;
         req.includePreviousDues = true;
@@ -289,6 +352,49 @@ private class BulkDemandControllerTest {
                 + ', ok=' + res.successCount + ', fail=' + res.failureCount);
         } catch (Exception e) { System.debug('Tolerated: ' + e.getMessage()); }
         Test.stopTest();
+    }
+
+    @isTest
+    static void createBulkDemands_nonLegacyProjectCreatesCombinedDemand() {
+        Booking__c booking = postSalesTestDataFactory.createFullBooking('Combined Demand Project');
+        Payment_Schedule__c schedule = new Payment_Schedule__c(
+            Booking__c = booking.Id, Sequence__c = 1, S_No__c = 1,
+            Milestone_Name__c = 'Combined milestone', Status__c = SCHEDULE_STATUS_COMPLETED,
+            Amount__c = 1110, Pending_Amount__c = 1110,
+            Payment_Schedule_Amount_Pending__c = 800, GST_Amount_Pending__c = 300,
+            TDS_Amount__c = 10, TDS_Amount_Pending__c = 10,
+            Due_Date__c = Date.today()
+        );
+        insert schedule;
+
+        BulkDemandController.BookingDemandItem item = new BulkDemandController.BookingDemandItem();
+        item.bookingId = booking.Id;
+        item.scheduleIds = new List<Id>{ schedule.Id };
+        item.currentMilestoneScheduleId = schedule.Id;
+
+        BulkDemandController.BulkDemandRequest request = new BulkDemandController.BulkDemandRequest();
+        request.projectId = booking.Project__c;
+        request.demandComponent = 'Flat + GST';
+        request.demandType = 'Bulk Demand';
+        request.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
+
+        Test.startTest();
+        BulkDemandController.BulkDemandResult result =
+            BulkDemandController.createBulkDemands(JSON.serialize(request));
+        Test.stopTest();
+
+        System.assertEquals(1, result.successCount);
+        Demands__c demand = [
+            SELECT Demand_Component__c, Demand_Amount__c, Pending_Amount__c,
+                   Base_Amount__c, GST_Amount__c, TDS_Amount__c
+            FROM Demands__c WHERE Booking__c = :booking.Id
+        ];
+        System.assertEquals('Flat + GST', demand.Demand_Component__c);
+        System.assertEquals(1110, demand.Demand_Amount__c);
+        System.assertEquals(1110, demand.Pending_Amount__c);
+        System.assertEquals(800, demand.Base_Amount__c);
+        System.assertEquals(300, demand.GST_Amount__c);
+        System.assertEquals(10, demand.TDS_Amount__c);
     }
 
     /** Bank demand: prorata booking with a real split; explicit grace period + demand type. */
@@ -307,18 +413,36 @@ private class BulkDemandControllerTest {
         // no currentMilestoneScheduleId -> latest-sequence fallback branch
 
         BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
+        req.demandComponent = 'Flat';
         req.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
         req.includeInterest = false;           // interest zeroed branch
         req.gracePeriodDays = 10;              // explicit grace branch
         req.demandType = 'Bulk Demand';
 
         Test.startTest();
-        try {
-            BulkDemandController.BulkDemandResult res =
-                BulkDemandController.createBulkDemands(JSON.serialize(req));
-            System.debug('Bank demand result: ' + res.successCount + '/' + res.failureCount);
-            // Expected: Demand_Audience__c = Bank, Bank_Demand_Raised__c flipped on the schedule.
-        } catch (Exception e) { System.debug('Tolerated: ' + e.getMessage()); }
+        BulkDemandController.BulkDemandResult res =
+            BulkDemandController.createBulkDemands(JSON.serialize(req));
+        System.assertEquals(1, res.successCount);
+        req.demandComponent = 'GST';
+        BulkDemandController.BulkDemandResult gstRes =
+            BulkDemandController.createBulkDemands(JSON.serialize(req));
+        System.assertEquals(1, gstRes.successCount, 'Bank GST should still be raisable after Bank Flat');
+        List<Demands__c> demands = [
+            SELECT Demand_Component__c, Demand_Amount__c, Demand_Audience__c, Flat_Amount__c, GST_Amount__c
+            FROM Demands__c WHERE Booking__c = :booking.Id
+        ];
+        System.assertEquals(2, demands.size());
+        for (Demands__c demand : demands) {
+            System.assertEquals('Bank', demand.Demand_Audience__c);
+            if (demand.Demand_Component__c == 'Flat') {
+                System.assertEquals(200000, demand.Demand_Amount__c);
+                System.assertEquals(0, demand.GST_Amount__c);
+            } else {
+                System.assertEquals('GST', demand.Demand_Component__c);
+                System.assertEquals(10000, demand.Demand_Amount__c);
+                System.assertEquals(0, demand.Flat_Amount__c);
+            }
+        }
         Test.stopTest();
     }
 
@@ -340,6 +464,7 @@ private class BulkDemandControllerTest {
         bad.scheduleIds = null;                // null-scheduleIds branch
 
         BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
+        req.demandComponent = 'Flat';
         req.bookings = new List<BulkDemandController.BookingDemandItem>{ good, bad };
         req.gracePeriodDays = 0;               // <=0 -> default grace branch
 
@@ -368,6 +493,7 @@ private class BulkDemandControllerTest {
         item.scheduleIds = new List<Id>{ ps.Id };
 
         BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
+        req.demandComponent = 'Flat';
         req.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
 
         Test.startTest();
@@ -402,17 +528,23 @@ private class BulkDemandControllerTest {
         item.scheduleIds = new List<Id>{ ps.Id };
 
         BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
+        req.demandComponent = 'Flat';
         req.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
 
         Test.startTest();
         try {
             // First call raises the demand and flips Demand_Raised__c on the schedule.
             BulkDemandController.createBulkDemands(JSON.serialize(req));
+            req.demandComponent = 'GST';
+            BulkDemandController.BulkDemandResult gstResult =
+                BulkDemandController.createBulkDemands(JSON.serialize(req));
+            System.assertEquals(1, gstResult.successCount, 'The same schedule should allow its unraised GST component');
             Integer countAfterFirst = [
                 SELECT COUNT() FROM Demands__c WHERE Booking__c = :booking.Id
             ];
 
-            // Second call for the SAME schedule must be skipped, not duplicated.
+            // Repeating the first component must be skipped, without blocking the separate GST demand.
+            req.demandComponent = 'Flat';
             BulkDemandController.BulkDemandResult res2 =
                 BulkDemandController.createBulkDemands(JSON.serialize(req));
             Integer countAfterSecond = [
@@ -420,6 +552,7 @@ private class BulkDemandControllerTest {
             ];
 
             if (countAfterFirst > 0) {
+                System.assertEquals(2, countAfterFirst, 'One Flat and one GST demand should exist');
                 System.assertEquals(countAfterFirst, countAfterSecond,
                     'Second demand on an already-demanded schedule must not create a new Demands__c');
                 System.assertEquals(0, res2.successCount, 'Duplicate item must not succeed');
@@ -435,6 +568,7 @@ private class BulkDemandControllerTest {
     @isTest
     static void createBulkDemands_emptyBookings_throws() {
         BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
+        req.demandComponent = 'Flat';
         req.bookings = new List<BulkDemandController.BookingDemandItem>();
         try {
             BulkDemandController.createBulkDemands(JSON.serialize(req));

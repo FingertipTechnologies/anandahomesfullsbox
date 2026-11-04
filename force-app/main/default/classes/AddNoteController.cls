@@ -1,6 +1,4 @@
 public without sharing class AddNoteController {
-
-//added
     
     @AuraEnabled
     public static void updateLastNote(String leadId, String newNote) {

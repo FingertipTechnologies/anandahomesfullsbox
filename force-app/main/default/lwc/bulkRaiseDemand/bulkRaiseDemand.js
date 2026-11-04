@@ -10,6 +10,7 @@ import getConfigurationByType from '@salesforce/apex/PostSalesAdminController.ge
 import resolveConfigurationForRecord from '@salesforce/apex/PostSalesAdminController.resolveConfigurationForRecord';
 import getEmailTemplateOptions from '@salesforce/apex/PostSalesAdminController.getEmailTemplateOptions';
 import getProjects from '@salesforce/apex/BulkDemandController.getProjects';
+import getProjectTowers from '@salesforce/apex/BulkDemandController.getProjectTowers';
 
 export default class BulkRaiseDemand extends LightningElement {
     @api recordId;
@@ -28,8 +29,20 @@ export default class BulkRaiseDemand extends LightningElement {
     @track demandConfig = {};
 
     // Step 2: Milestones (Apartment flow)
+    @track towerOptions = [];
+    @track selectedTowerId = '';
     @track milestones = [];
     @track selectedMilestoneId = null;
+    @track demandComponent = 'Flat';
+
+    get demandComponentOptions() {
+        return this.projectContext.legacySplitDemandReceipt
+            ? [
+                { label: 'Flat only', value: 'Flat' },
+                { label: 'GST only', value: 'GST' }
+            ]
+            : [{ label: 'Flat + GST', value: 'Flat + GST' }];
+    }
 
     // Step 3: Bookings
     @track bookings = [];
@@ -107,7 +120,10 @@ export default class BulkRaiseDemand extends LightningElement {
     // Computed
     get hasMilestones() { return this.milestones && this.milestones.length > 0; }
     get hasBookings() { return this.bookings && this.bookings.length > 0; }
-    get isLoadBookingsDisabled() { return !this.selectedMilestoneId; }
+    get isLoadBookingsDisabled() {
+        return !this.selectedMilestoneId || (this.towerOptions.length > 0 && !this.selectedTowerId);
+    }
+    get hasTowers() { return this.towerOptions && this.towerOptions.length > 0; }
 
     get selectedBookings() {
         return this.bookings.filter(b => b.isSelected);
@@ -122,11 +138,27 @@ export default class BulkRaiseDemand extends LightningElement {
     }
 
     get totalInterestAmount() {
+        if (!this.includeInterest || this.isGstDemand) return 0;
         return this.selectedBookings.reduce((sum, b) => sum + (b.totalInterest || 0), 0);
     }
 
+    get totalGrossInterestAmount() {
+        if (!this.includeInterest || this.isGstDemand) return 0;
+        return this.selectedBookings.reduce((sum, b) => sum + (b.grossInterest || 0), 0);
+    }
+
+    get totalInterestWaivedOffAmount() {
+        if (!this.includeInterest || this.isGstDemand) return 0;
+        return this.selectedBookings.reduce((sum, b) => sum + (b.interestWaivedOff || 0), 0);
+    }
+
     get totalNetAmount() {
-        return this.selectedBookings.reduce((sum, b) => sum + (b.netDemandAmount || 0), 0);
+        return this.selectedBookings.reduce((sum, b) => {
+            const includedInterest = this.includeInterest && !this.isGstDemand
+                ? (b.totalInterest || 0)
+                : 0;
+            return sum + (b.totalPending || 0) + (b.previousMilestonesAmount || 0) + includedInterest;
+        }, 0);
     }
 
     // Bank vs Customer split of the demand that will actually be raised, across selected bookings.
@@ -138,16 +170,24 @@ export default class BulkRaiseDemand extends LightningElement {
         return this.selectedBookings.reduce((sum, b) => sum + (b.customerPayableAmount || 0), 0);
     }
 
+    get totalTdsAmount() {
+        return this.selectedBookings.reduce((sum, b) => sum + (b.totalTdsAmount || 0), 0);
+    }
+
     get formattedTotalDemand() { return this.formatCurrency(this.totalDemandAmount); }
     get formattedTotalInterest() { return this.formatCurrency(this.totalInterestAmount); }
+    get formattedTotalGrossInterest() { return this.formatCurrency(this.totalGrossInterestAmount); }
+    get formattedTotalInterestWaivedOff() { return this.formatCurrency(this.totalInterestWaivedOffAmount); }
     get formattedTotalNet() { return this.formatCurrency(this.totalNetAmount); }
     get formattedTotalBankPayable() { return this.formatCurrency(this.totalBankPayable); }
     get formattedTotalCustomerPayable() { return this.formatCurrency(this.totalCustomerPayable); }
+    get formattedTotalTdsAmount() { return this.formatCurrency(this.totalTdsAmount); }
 
     get canProceedToReview() {
         return this.selectedCount > 0;
     }
     get isReviewDisabled() { return !this.canProceedToReview; }
+    get isGstDemand() { return this.demandComponent === 'GST'; }
 
     get selectedMilestoneName() {
         const ms = this.milestones.find(m => m.id === this.selectedMilestoneId);
@@ -189,6 +229,8 @@ export default class BulkRaiseDemand extends LightningElement {
     }
 
     resetState() {
+        this.towerOptions = [];
+        this.selectedTowerId = '';
         this.milestones = [];
         this.selectedMilestoneId = null;
         this.bookings = [];
@@ -226,6 +268,7 @@ export default class BulkRaiseDemand extends LightningElement {
                     return;
                 }
                 this.projectContext = context;
+                this.demandComponent = context.legacySplitDemandReceipt ? 'Flat' : 'Flat + GST';
 
                 if (config) {
                     this.demandConfig = config;
@@ -257,8 +300,30 @@ export default class BulkRaiseDemand extends LightningElement {
 
     loadStep2Data() {
         this.isLoading = true;
-        // Always load all milestones regardless of flow type
-        getCompletedMilestones({ projectId: this.effectiveProjectId })
+        getProjectTowers({ projectId: this.effectiveProjectId })
+            .then(towers => {
+                this.towerOptions = (towers || []).map(tower => ({
+                    label: tower.name,
+                    value: tower.id
+                }));
+                if (this.hasTowers) {
+                    this.selectedTowerId = '';
+                    this.selectedMilestoneId = null;
+                    this.milestones = [];
+                    return;
+                }
+                return this.loadMilestones(null);
+            })
+            .catch(error => { this.showToast('Error', this.getErrorMessage(error), 'error'); })
+            .finally(() => { this.isLoading = false; });
+    }
+
+    loadMilestones(towerId) {
+        this.isLoading = true;
+        return getCompletedMilestones({
+            projectId: this.effectiveProjectId,
+            towerId: towerId || null
+        })
             .then(result => {
                 this.milestones = (result || []).map(ms => ({
                     ...ms,
@@ -266,8 +331,18 @@ export default class BulkRaiseDemand extends LightningElement {
                     radioClass: 'ms-radio'
                 }));
             })
-            .catch(error => { this.showToast('Error', this.getErrorMessage(error), 'error'); })
+            .catch(error => {
+                this.milestones = [];
+                this.showToast('Error', this.getErrorMessage(error), 'error');
+            })
             .finally(() => { this.isLoading = false; });
+    }
+
+    handleTowerSelect(event) {
+        this.selectedTowerId = event.detail.value;
+        this.selectedMilestoneId = null;
+        this.bookings = [];
+        this.loadMilestones(this.selectedTowerId);
     }
 
     handleMilestoneSelect(event) {
@@ -281,16 +356,26 @@ export default class BulkRaiseDemand extends LightningElement {
         }));
     }
 
+    handleDemandComponentChange(event) {
+        this.demandComponent = event.detail.value;
+    }
+
     handleLoadBookings() {
         if (!this.selectedMilestoneId) {
             this.showToast('Warning', 'Please select a milestone', 'warning');
+            return;
+        }
+        if (!this.demandComponent) {
+            this.showToast('Warning', 'Please select the demand component', 'warning');
             return;
         }
 
         this.isLoading = true;
         getBookingsForMilestone({
             projectId: this.effectiveProjectId,
-            masterPaymentScheduleId: this.selectedMilestoneId
+            towerId: this.selectedTowerId || null,
+            masterPaymentScheduleId: this.selectedMilestoneId,
+            demandComponent: this.demandComponent
         })
         .then(result => {
             this.bookings = result.map(b => ({ ...b, isSelected: true }));
@@ -360,7 +445,9 @@ export default class BulkRaiseDemand extends LightningElement {
 
         const request = {
             projectId: this.effectiveProjectId,
+            towerId: this.selectedTowerId || null,
             masterPaymentScheduleId: this.selectedMilestoneId,
+            demandComponent: this.demandComponent,
             bookings: this.selectedBookings.map(b => ({
                 bookingId: b.bookingId,
                 demandAmount: b.totalPending,

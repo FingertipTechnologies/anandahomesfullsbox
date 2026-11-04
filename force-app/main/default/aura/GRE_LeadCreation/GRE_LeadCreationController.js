@@ -30,16 +30,6 @@
 
         // Pre-fetch record type ID
         helper.getRecordTypeId(component, event);
-
-        // Project options for the New Lead form (server side excludes "No Project")
-        var projectAction = component.get("c.getProjectOptions");
-        projectAction.setCallback(this, function(response) {
-            if (response.getState() === "SUCCESS") {
-                var values = response.getReturnValue() || [];
-                component.set("v.newLeadProjectOptions", values.map(function(v){ return { label: v, value: v }; }));
-            }
-        });
-        $A.enqueueAction(projectAction);
     },
     toggleNewLead: function(component, event, helper) {
         var visible = component.get('v.newLeadForm');
@@ -90,40 +80,20 @@
         let phoneValue = phoneField.get("v.value");
         let secondaryPhoneValue = secondaryPhoneField.get("v.value");
 
-        // Validate phone numbers client-side (mirrors Lead__c Mobile_Number_Validation rule).
-        // India (or no country chosen, which the trigger defaults to India) must be exactly
-        // 10 digits. Any other country only has to be digits, with no length requirement.
-        var selectedCountry = component.find("CountryLookupField").get("v.value");
-        var isIndia = !selectedCountry || selectedCountry === 'India';
+        // Validate phone numbers client-side (mirrors Lead__c Mobile_Number_Validation rule)
         var TEN_DIGITS = /^[0-9]{10}$/;
-        var DIGITS_ONLY = /^[0-9]+$/;
-        var rule = isIndia ? TEN_DIGITS : DIGITS_ONLY;
-        var badPhone = phoneValue && !rule.test(String(phoneValue));
-        var badSecondary = secondaryPhoneValue && !rule.test(String(secondaryPhoneValue));
+        var badPhone = phoneValue && !TEN_DIGITS.test(String(phoneValue));
+        var badSecondary = secondaryPhoneValue && !TEN_DIGITS.test(String(secondaryPhoneValue));
         if (badPhone || badSecondary) {
             component.set("v.isSubmitting", false);
             component.set('v.spinner', false);
-            helper.toastMsg('error', 'Invalid Phone Number', isIndia
-                ? 'Phone Number and Secondary Phone Number must contain exactly 10 digits and only numbers.'
-                : 'Phone Number and Secondary Phone Number must contain only numbers.');
+            helper.toastMsg('error', 'Invalid Phone Number',
+                'Phone Number and Secondary Phone Number must contain exactly 10 digits and only numbers.');
             return;
         }
 
         // Get the event fields and add additional values
         var eventFields = event.getParam("fields");
-
-        // Project: GRE users have it fixed to their own project (record field on the form);
-        // everyone else picks from the filtered combobox, so inject it into the save.
-        if (!component.get("v.isGREUser")) {
-            var selectedProject = component.get("v.selectedNewLeadProject");
-            if (!selectedProject) {
-                component.set("v.isSubmitting", false);
-                component.set('v.spinner', false);
-                helper.toastMsg('error', 'Error', 'Please select a Project Name.');
-                return;
-            }
-            eventFields["Allocated_Project__c"] = selectedProject;
-        }
 
         var subSourceValue = eventFields["Primary_Sub_Source__c"];
         if (!subSourceValue) {
@@ -971,10 +941,8 @@
     closeCheckoutModal : function(component) {
         component.set("v.isCheckoutModalOpen", false);
         component.set("v.checkoutTime", null);
-        component.set("v.checkoutRemark", "");      //added by ankita 27-10-2026
     },
 
-    
     saveCheckoutTime : function(component, event, helper) {
         var checkoutTime = component.get("v.checkoutTime");
         if ($A.util.isEmpty(checkoutTime)) {
@@ -985,21 +953,8 @@
             helper.toastMsg("error", "Missing Fields", "Checkout Date and Time is required.");
             return;
         }
-
-        // Added validation for Checkout Remark
-        var checkoutRemark = component.get("v.checkoutRemark");
-        if ($A.util.isEmpty(checkoutRemark) || !checkoutRemark.trim()) {
-            var remarkInput = component.find("checkoutRemarkInput");
-            if (remarkInput) {
-                remarkInput.showHelpMessageIfInvalid();
-            }
-            helper.toastMsg("error", "Missing Fields", "Checkout Remark is required.");
-            return;
-        }
-
         helper.updateCheckoutTime(component, true);
     },
-
 
     svVisitSourceTypeChange : function(component, event, helper) {
         var v = event.getSource().get("v.value");

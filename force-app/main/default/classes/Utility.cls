@@ -1,10 +1,7 @@
 public class Utility {
 
     public static boolean runLeadTrigger = true;
-    // Set to false before inserting Related_Source__c from Apex (e.g. RelatedSourceBackfillBatch)
-    // to skip RelatedSourceTrigger: no Pulse call-out, no CP sharing, no remark sync.
-    public static boolean runRelatedSourceTrigger = true;
-    public static boolean runTaskTrigger = true;
+    public static boolean runTaskTrigger = true; 
     public static boolean runOpportunityTrigger = true; 
      
     

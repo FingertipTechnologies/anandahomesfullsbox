@@ -5,9 +5,9 @@ private class BulkLeadReassignmentController_Test {
 
     @TestSetup
     static void setupData() {
-        // Create test users on Pre-Sales Executive profile so they pass the
-        // getInitData() profile filter ('Pre-Sales Executive', 'Sales Executive')
+        // Create test users on the profiles eligible for lead reassignment.
         Profile preSalesProfile = [SELECT Id FROM Profile WHERE Name = 'Pre-Sales Executive' LIMIT 1];
+        Profile salesProfile = [SELECT Id FROM Profile WHERE Name = 'Associate Manager' LIMIT 1];
 
         User testUser1 = new User(
             FirstName = 'Test', LastName = 'Owner1',
@@ -28,6 +28,16 @@ private class BulkLeadReassignmentController_Test {
             EmailEncodingKey = 'UTF-8', LanguageLocaleKey = 'en_US'
         );
         insert testUser2;
+
+        User salesUser = new User(
+            FirstName = 'Test', LastName = 'SalesOwner',
+            Email = 'testsalesowner@test.com',
+            Username = 'testsalesowner.' + DateTime.now().getTime() + '@test.com',
+            Alias = 'tsowner', ProfileId = salesProfile.Id,
+            TimeZoneSidKey = 'Asia/Kolkata', LocaleSidKey = 'en_IN',
+            EmailEncodingKey = 'UTF-8', LanguageLocaleKey = 'en_US'
+        );
+        insert salesUser;
 
         // Create test leads owned by testUser1
         List<Lead__c> leads = new List<Lead__c>();
@@ -53,6 +63,14 @@ private class BulkLeadReassignmentController_Test {
         System.assertNotEquals(null, data.statusOptions, 'Status options should not be null');
         System.assertNotEquals(null, data.activeUsers, 'Active users should not be null');
         System.assert(data.activeUsers.size() > 0, 'Should have at least one active user');
+        Boolean includesAssociateManager = false;
+        for (BulkLeadReassignmentController.UserOption option : data.activeUsers) {
+            if (option.profileName == 'Associate Manager') {
+                includesAssociateManager = true;
+                break;
+            }
+        }
+        System.assert(includesAssociateManager, 'Associate Manager users should be available for reassignment');
     }
 
     @isTest
@@ -66,6 +84,7 @@ private class BulkLeadReassignmentController_Test {
         Test.stopTest();
 
         System.assertEquals(5, leads.size(), 'Should return 5 leads');
+        System.assertNotEquals(null, leads[0].Name__c, 'Lead Name should be returned for the results table');
     }
 
     @isTest
@@ -159,6 +178,34 @@ private class BulkLeadReassignmentController_Test {
             System.assertEquals('Permanent', rh.Reassignment_Type__c);
             System.assertEquals('Completed', rh.Status__c);
         }
+    }
+
+    @isTest
+    static void testPermanentTransferFromPreSalesToSales() {
+        User preSalesOwner = [SELECT Id FROM User WHERE LastName = 'Owner1' LIMIT 1];
+        User salesOwner = [SELECT Id FROM User WHERE LastName = 'SalesOwner' LIMIT 1];
+        Lead__c lead = [SELECT Id FROM Lead__c WHERE OwnerId = :preSalesOwner.Id LIMIT 1];
+        Id preSalesRecordTypeId = Schema.SObjectType.Lead__c
+            .getRecordTypeInfosByDeveloperName().get('Pre_Sales').getRecordTypeId();
+        Id salesRecordTypeId = Schema.SObjectType.Lead__c
+            .getRecordTypeInfosByDeveloperName().get('Sales').getRecordTypeId();
+        lead.RecordTypeId = preSalesRecordTypeId;
+        update lead;
+
+        Test.startTest();
+        BulkLeadReassignmentController.reassignLeads(
+            new List<Id>{ lead.Id }, preSalesOwner.Id, salesOwner.Id,
+            'Permanent', 'Sales handoff', null
+        );
+        Test.stopTest();
+
+        Lead__c reassignedLead = [
+            SELECT OwnerId, RecordTypeId
+            FROM Lead__c
+            WHERE Id = :lead.Id
+        ];
+        System.assertEquals(salesOwner.Id, reassignedLead.OwnerId, 'Lead owner should move to Associate Manager');
+        System.assertEquals(salesRecordTypeId, reassignedLead.RecordTypeId, 'Lead record type should change to Sales');
     }
 
     @isTest

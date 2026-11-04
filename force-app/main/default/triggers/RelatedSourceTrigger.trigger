@@ -1,44 +1,26 @@
 trigger RelatedSourceTrigger on Related_Source__c (after insert, before insert) {
-    // Bypass switches. Label Enable_Trigger is the org-wide switch LeadTrigger already honours
-    // during data loads; Utility.runRelatedSourceTrigger lets Apex (RelatedSourceBackfillBatch)
-    // insert Related Sources without the Pulse call-out, the CP sharing and the remark sync.
-    if (Label.Enable_Trigger != 'TRUE' || Utility.runRelatedSourceTrigger == false) {
-        return;
-    }
     /*
     Set<Id> relatedSourceIds = new Set<Id>();
-
+    
     // Collect the Ids of the newly inserted Related Source records
     for (Related_Source__c rs : Trigger.new) {
         relatedSourceIds.add(rs.Id);
     }
-
+    
     // Call the future method to send the data to Pulse TeleSystem
     if (!relatedSourceIds.isEmpty()) {
         SendLeadDetailsToPulseTeleSystem.sendLeadDetailsInBulk(relatedSourceIds);
     }
     */
-    // added by ankita 27-10-2026 Sync ONLY Related Source remarks to All Remarks with the special format
-    if (Trigger.isAfter && (Trigger.isInsert || Trigger.isUpdate)) {
-        for (Related_Source__c rs : Trigger.new) {
-            Boolean commentChanged = Trigger.isInsert
-                ? String.isNotBlank(rs.comments__c)
-                : (rs.comments__c != Trigger.oldMap.get(rs.Id).comments__c && String.isNotBlank(rs.comments__c));
-
-            if (commentChanged && rs.CLead__c != null) {
-                AddNoteController.updateLastNote(String.valueOf(rs.CLead__c),rs.comments__c);
-            }
-        }
-    }
-
+    
     if (Trigger.isAfter && Trigger.isInsert) {
-
+        
         Set<Id> relatedSourceIds = new Set<Id>();
         Set<Id> leadIdsToUpdate = new Set<Id>();
-
+        
         //added by karthik 16-01-26 [To collect cp owners and leads]
-        Map<Id, Set<Id>> cpOwnerToLeadMap = new Map<Id, Set<Id>>();
-
+        Map<Id, Set<Id>> cpOwnerToLeadMap = new Map<Id, Set<Id>>(); 
+        
         Set<Id> CPRecIds = new Set<Id>();
         for (Related_Source__c rs : Trigger.new) {
             if (rs.Channel_Partner__c != null){
@@ -46,24 +28,24 @@ trigger RelatedSourceTrigger on Related_Source__c (after insert, before insert) 
             }
         }
         Map<Id,Channel_Partner__c> CPMap = new Map<Id,Channel_Partner__c>([select id,ownerId from Channel_Partner__c where Id in: CPRecIds]);
-
+        
         for (Related_Source__c rs : Trigger.new) {
-
+            
             relatedSourceIds.add(rs.Id);
-
+            
             //add type condition exclude both fresh and re-opened
             if (rs.SLead__c != null && rs.Medium__c == 'CHANNEL PARTNERS' && rs.Channel_Partner__c != null && rs.Lead_Type__c == 'Re-Engaged') {
                 leadIdsToUpdate.add(rs.SLead__c);
             }
-
+            
             // Only Channel Partner related sources - added by karthik 16-01-26
             if (rs.SLead__c == null || rs.Channel_Partner__c == null || rs.Medium__c != 'CHANNEL PARTNERS') {
                     continue;
                 }
-
+            
             // CP Owner
             //Id cpOwnerId = rs.Channel_Partner__r.OwnerId;
-
+            
             Id cpOwnerId = CPMap.get(rs.Channel_Partner__c) != null ? CPMap.get(rs.Channel_Partner__c).OwnerId : null;
             system.debug('CPOwnerId > '+cpOwnerId);
             if (cpOwnerId == null) {
@@ -73,31 +55,31 @@ trigger RelatedSourceTrigger on Related_Source__c (after insert, before insert) 
             if (!cpOwnerToLeadMap.containsKey(cpOwnerId)) {
                 cpOwnerToLeadMap.put(cpOwnerId, new Set<Id>());
             }
-
+            
             cpOwnerToLeadMap.get(cpOwnerId).add(rs.SLead__c);
-
+            
         }
-
+        
         // Call the future method to send the data to Pulse TeleSystem
         if (!relatedSourceIds.isEmpty()) {
             SendLeadDetailsToPulseTeleSystem.sendLeadDetailsInBulk(relatedSourceIds);
         }
-
+        
         if (!leadIdsToUpdate.isEmpty()) {
-
-            //List<Lead> leadsToUpdate = [SELECT Id, Reengaged_From_CP__c FROM Lead WHERE Id IN :leadIdsToUpdate AND Reengaged_From_CP__c = false];
-
+            
+            //List<Lead> leadsToUpdate = [SELECT Id, Reengaged_From_CP__c FROM Lead WHERE Id IN :leadIdsToUpdate AND Reengaged_From_CP__c = false];	
+            
             List<Lead> leadsToUpdate = [SELECT Id, Re_Engaged_CP_Date__c FROM Lead WHERE Id IN :leadIdsToUpdate];
-
+            
             for (Lead ld : leadsToUpdate) {
                 ld.Re_Engaged_CP_Date__c = System.today();
             }
-
+            
             if (!leadsToUpdate.isEmpty()) {
                 update leadsToUpdate;
             }
         }
-
+        
         /* =================================================
            CP OWNER–WISE SHARING (NEW LOGIC)
         ================================================= */
@@ -110,7 +92,7 @@ trigger RelatedSourceTrigger on Related_Source__c (after insert, before insert) 
            Fetch existing LeadShares
         ----------------------------- */
         Set<String> existingShares = new Set<String>();
-
+        
         //Flatten all LeadIds from Map<CP_Owner, Set<LeadId>>
         Set<Id> allLeadIds = new Set<Id>();
         for (Set<Id> leadSet : cpOwnerToLeadMap.values()) {
@@ -147,7 +129,12 @@ trigger RelatedSourceTrigger on Related_Source__c (after insert, before insert) 
         }
 
         if (!sharesToInsert.isEmpty()) {
-            insert sharesToInsert;
+            // Partial-success insert: when the Lead org-wide default already grants
+            // the requested access level (e.g. OWD = Public Read/Write, or Read with
+            // Read shares), the share row is "trivial" and Salesforce rejects it with
+            // FIELD_INTEGRITY_EXCEPTION. Such rejections are safe to ignore — the
+            // access already exists — so we must not fail the whole transaction.
+            Database.insert(sharesToInsert, false);
         }
     }
 }

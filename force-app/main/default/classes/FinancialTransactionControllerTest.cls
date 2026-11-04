@@ -1510,6 +1510,135 @@ private class FinancialTransactionControllerTest {
     }
 
     @isTest
+    static void allocateReceipt_combinedModeSplitsInstallmentProportionally() {
+        Booking__c b = [SELECT Id, Project__c FROM Booking__c LIMIT 1];
+        update new Project__c(
+            Id = b.Project__c,
+            Legacy_Split_Demand_Receipt__c = false
+        );
+
+        Payment_Schedule__c ps = fx_schedule(
+            b.Id, 'COMBINED-RATIO', 139658, 103106, 30460, 1
+        );
+        ps.TDS_Amount__c = 6092;
+        ps.TDS_Amount_Pending__c = 6092;
+        insert ps;
+
+        Receipt__c receipt = fx_receipt(
+            b.Id, 66783, 'TXN-COMBINED-RATIO', 'Installment Payment',
+            false, false, null
+        );
+        Test.startTest();
+        FinancialTransactionController.allocateReceipt(receipt.Id);
+        Test.stopTest();
+
+        Receipt_Line_Item__c lineItem = [
+            SELECT Allocated_Amount__c, Base_Amount__c, GST_Amount__c, TDS_Amount__c
+            FROM Receipt_Line_Item__c
+            WHERE Receipt__c = :receipt.Id
+            LIMIT 1
+        ];
+        System.assertEquals(66783, lineItem.Allocated_Amount__c);
+        System.assertEquals(51553, lineItem.Base_Amount__c,
+            'Combined installment receipts should allocate Flat in the schedule ratio.');
+        System.assertEquals(15230, lineItem.GST_Amount__c,
+            'Combined installment receipts should allocate GST in the schedule ratio.');
+        System.assertEquals(0, lineItem.TDS_Amount__c,
+            'TDS must be handled through its own receipt type.');
+    }
+
+    @isTest
+    static void allocateReceipt_tdsPaymentAllocatesOnlyScheduleTds() {
+        Booking__c b = [SELECT Id, Project__c FROM Booking__c LIMIT 1];
+        update new Project__c(
+            Id = b.Project__c,
+            Legacy_Split_Demand_Receipt__c = false
+        );
+
+        Payment_Schedule__c ps = fx_schedule(
+            b.Id, 'TDS-ONLY', 139658, 103106, 30460, 1
+        );
+        ps.TDS_Amount__c = 6092;
+        ps.TDS_Amount_Pending__c = 6092;
+        insert ps;
+
+        Receipt__c receipt = fx_receipt(
+            b.Id, 6092, 'TXN-TDS-ONLY', 'TDS Payment',
+            false, false, null
+        );
+        Test.startTest();
+        FinancialTransactionController.allocateReceipt(receipt.Id);
+        Test.stopTest();
+
+        Receipt_Line_Item__c lineItem = [
+            SELECT Allocated_Amount__c, Base_Amount__c, GST_Amount__c, TDS_Amount__c
+            FROM Receipt_Line_Item__c
+            WHERE Receipt__c = :receipt.Id
+            LIMIT 1
+        ];
+        System.assertEquals(6092, lineItem.Allocated_Amount__c);
+        System.assertEquals(0, lineItem.Base_Amount__c);
+        System.assertEquals(0, lineItem.GST_Amount__c);
+        System.assertEquals(6092, lineItem.TDS_Amount__c);
+    }
+
+    @isTest
+    static void allocateReceipt_legacyTypesAllocateOnlyTheirComponent() {
+        Booking__c b = [SELECT Id, Project__c FROM Booking__c LIMIT 1];
+        update new Project__c(
+            Id = b.Project__c,
+            Legacy_Split_Demand_Receipt__c = true
+        );
+
+        Payment_Schedule__c ps = fx_schedule(
+            b.Id, 'LEGACY-COMPONENTS', 139658, 103106, 30460, 1
+        );
+        ps.TDS_Amount__c = 6092;
+        ps.TDS_Amount_Pending__c = 6092;
+        insert ps;
+
+        List<Receipt__c> receipts = new List<Receipt__c>{
+            fx_receipt(b.Id, 1000, 'TXN-LEGACY-FLAT', 'Installment Payment',
+                false, false, null),
+            fx_receipt(b.Id, 200, 'TXN-LEGACY-GST', 'GST Amount',
+                false, false, null),
+            fx_receipt(b.Id, 300, 'TXN-LEGACY-TDS', 'TDS Payment',
+                false, false, null)
+        };
+
+        Test.startTest();
+        for (Receipt__c receipt : receipts) {
+            FinancialTransactionController.allocateReceipt(receipt.Id);
+        }
+        Test.stopTest();
+
+        Set<Id> receiptIds = new Map<Id, Receipt__c>(receipts).keySet();
+        Map<Id, Receipt_Line_Item__c> lineItemByReceipt = new Map<Id, Receipt_Line_Item__c>();
+        for (Receipt_Line_Item__c lineItem : [
+            SELECT Receipt__c, Allocated_Amount__c, Base_Amount__c, GST_Amount__c, TDS_Amount__c
+            FROM Receipt_Line_Item__c
+            WHERE Receipt__c IN :receiptIds
+        ]) {
+            lineItemByReceipt.put(lineItem.Receipt__c, lineItem);
+        }
+
+        Receipt_Line_Item__c installmentLine = lineItemByReceipt.get(receipts[0].Id);
+        System.assertEquals(1000, installmentLine.Base_Amount__c);
+        System.assertEquals(0, installmentLine.GST_Amount__c);
+        System.assertEquals(0, installmentLine.TDS_Amount__c);
+
+        Receipt_Line_Item__c gstLine = lineItemByReceipt.get(receipts[1].Id);
+        System.assertEquals(0, gstLine.Base_Amount__c);
+        System.assertEquals(200, gstLine.GST_Amount__c);
+        System.assertEquals(0, gstLine.TDS_Amount__c);
+
+        Receipt_Line_Item__c tdsLine = lineItemByReceipt.get(receipts[2].Id);
+        System.assertEquals(0, tdsLine.Base_Amount__c);
+        System.assertEquals(0, tdsLine.GST_Amount__c);
+        System.assertEquals(300, tdsLine.TDS_Amount__c);
+    }
+
+    @isTest
     static void allocateReceipt_excessCreatesAdvance() {
         // Amount far exceeds any pending -> Step 4 creates an Advance_Payment__c.
         Booking__c b = fx_booking();

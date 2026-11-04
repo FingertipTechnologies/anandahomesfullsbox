@@ -15,8 +15,8 @@
  *                • TDS is customer-payable in full and sits OUTSIDE the split, because
  *                  Deficit__c = Grand_Total__c − Loan_Sanctioned_Amount__c − TDS__c.
  *
- *              Locking (FRD §2.4): a milestone is locked if and only if Demand_Raised__c = true.
- *              Status and part-payment do NOT lock a milestone.
+ *              Locking: demanded, completed, or paid milestones and milestones with a
+ *              non-rejected receipt allocation cannot be edited.
  *
  *              Edits are never written directly — PaymentScheduleRevisionService.stageAndSubmit
  *              trial-applies them inside a savepoint (so PaymentScheduleTrigger /
@@ -39,7 +39,7 @@ public with sharing class PaymentScheduleEditorController {
     };
 
     /** Currency rounding tolerance. Mirrors ProrataInvariantService.TOLERANCE. */
-    private static final Decimal TOLERANCE = 1;
+    private static final Decimal TOLERANCE = 0.01;
 
     // ─── Wrappers ────────────────────────────────────────────────────────────────
 
@@ -102,7 +102,8 @@ public with sharing class PaymentScheduleEditorController {
             }
 
             List<Booking__c> bookings = [
-                SELECT Id, Funding_Type__c, Loan_Sanctioned_Amount__c, Deficit__c, TDS__c
+                SELECT Id, Funding_Type__c, Loan_Sanctioned_Amount__c, Deficit__c, TDS__c,
+                       Project__r.Legacy_Split_Demand_Receipt__c
                 FROM Booking__c
                 WHERE Id = :bookingId
                 LIMIT 1
@@ -114,9 +115,11 @@ public with sharing class PaymentScheduleEditorController {
 
             EditResult result = new EditResult();
             result.fundingType = booking.Funding_Type__c;
-            result.isProrata = booking.Funding_Type__c != null
+            result.isProrata = booking.Project__r.Legacy_Split_Demand_Receipt__c == true
+                && booking.Funding_Type__c != null
                 && FUNDING_SPLIT.contains(booking.Funding_Type__c);
-            result.isStrictProrata = booking.Funding_Type__c != null
+            result.isStrictProrata = booking.Project__r.Legacy_Split_Demand_Receipt__c == true
+                && booking.Funding_Type__c != null
                 && FUNDING_PRORATA.contains(booking.Funding_Type__c);
             result.editingEnabled = checkEditingEnabled(booking);
 
@@ -130,6 +133,9 @@ public with sharing class PaymentScheduleEditorController {
                 WHERE Booking__c = :bookingId
                 ORDER BY Sequence__c ASC NULLS LAST
             ];
+            Set<Id> schedulesWithReceipts = getSchedulesWithReceipts(
+                new Map<Id, Payment_Schedule__c>(schedules).keySet()
+            );
 
             BookingTotals totals = new BookingTotals();
             totals.grandTotal = 0;
@@ -163,7 +169,7 @@ public with sharing class PaymentScheduleEditorController {
                 w.demandRaised = ps.Demand_Raised__c == true;
                 w.hasSplit = hasSplit(ps);
 
-                w.lockReason = computeLockReason(ps);
+                w.lockReason = computeLockReason(ps, schedulesWithReceipts);
                 w.isEditable = String.isBlank(w.lockReason);
 
                 totals.totalBase += w.baseAmount;
@@ -202,7 +208,8 @@ public with sharing class PaymentScheduleEditorController {
             throw new AuraHandledException('Select a booking first.');
         }
         List<Booking__c> bks = [
-            SELECT Id, Funding_Type__c FROM Booking__c WHERE Id = :bookingId LIMIT 1
+            SELECT Id, Funding_Type__c, Project__r.Legacy_Split_Demand_Receipt__c
+            FROM Booking__c WHERE Id = :bookingId LIMIT 1
         ];
         return bks.isEmpty() ? false : checkEditingEnabled(bks[0]);
     }
@@ -221,6 +228,14 @@ public with sharing class PaymentScheduleEditorController {
         try {
             if (bookingId == null) {
                 throw new AuraHandledException('Select a booking first.');
+            }
+            Booking__c bookingMode = [
+                SELECT Project__r.Legacy_Split_Demand_Receipt__c
+                FROM Booking__c WHERE Id = :bookingId LIMIT 1
+            ];
+            if (bookingMode.Project__r == null
+                || bookingMode.Project__r.Legacy_Split_Demand_Receipt__c != true) {
+                throw new AuraHandledException('Prorata split editing is enabled only for legacy projects.');
             }
             if (String.isBlank(schedulesJson)) {
                 throw new AuraHandledException('There is nothing to submit.');
@@ -242,13 +257,14 @@ public with sharing class PaymentScheduleEditorController {
             }
 
             Map<Id, Payment_Schedule__c> existing = new Map<Id, Payment_Schedule__c>([
-                SELECT Id, Booking__c, Milestone_Name__c, Demand_Raised__c,
+                SELECT Id, Booking__c, Milestone_Name__c, Demand_Raised__c, Status__c, Amount_Paid__c,
                        Payment_Schedule_Amount__c, GST_Amount__c,
                        Bank_Flat_Amount__c, Customer_Flat_Prorata__c,
                        Bank_GST_Amount__c, Customer_GST_Prorata__c
                 FROM Payment_Schedule__c
                 WHERE Id IN :ids AND Booking__c = :bookingId
             ]);
+            Set<Id> schedulesWithReceipts = getSchedulesWithReceipts(existing.keySet());
 
             List<PaymentScheduleRevisionService.RevisionLine> lines =
                 new List<PaymentScheduleRevisionService.RevisionLine>();
@@ -259,7 +275,7 @@ public with sharing class PaymentScheduleEditorController {
                 Payment_Schedule__c current = existing.get(w.id);
 
                 // A locked milestone is never staged, whatever the client sent.
-                if (String.isNotBlank(computeLockReason(current))) continue;
+                if (String.isNotBlank(computeLockReason(current, schedulesWithReceipts))) continue;
 
                 // Skip rows whose split is unchanged, so the approver sees only real edits.
                 if (!splitChanged(w, current)) continue;
@@ -279,12 +295,12 @@ public with sharing class PaymentScheduleEditorController {
 
             if (lines.isEmpty()) {
                 throw new AuraHandledException(
-                    'No editable milestone has changed. Demand-raised milestones cannot be edited.'
+                    'No editable milestone has changed. Demanded, completed, and payment-received milestones cannot be edited.'
                 );
             }
 
             // Fail fast on the two rules whose messages are clearer here than from the trigger.
-            preValidate(bookingId, edited, existing);
+            preValidate(bookingId, edited, existing, schedulesWithReceipts);
 
             return PaymentScheduleRevisionService.stageAndSubmit(bookingId, lines, reason);
 
@@ -303,9 +319,8 @@ public with sharing class PaymentScheduleEditorController {
     // ─── Helpers ─────────────────────────────────────────────────────────────────
 
     /**
-     * @description A milestone is locked if and only if its demand has been raised.
-     *              Status and part-payment are deliberately NOT lock conditions.
-     *              ProrataInvariantService.isLocked must stay identical to this.
+     * @description A milestone is locked if its demand is raised, it is completed/paid,
+     *              or it has a non-rejected receipt allocation.
      */
     @TestVisible
     private static String computeLockReason(Payment_Schedule__c ps) {
@@ -313,7 +328,40 @@ public with sharing class PaymentScheduleEditorController {
         if (ps.Demand_Raised__c == true) {
             return 'Demand raised';
         }
+        if (isCompleted(ps.Status__c)) return 'Completed';
+        if (nz(ps.Amount_Paid__c) > 0) return 'Payment received';
         return null;
+    }
+
+    private static String computeLockReason(Payment_Schedule__c ps, Set<Id> schedulesWithReceipts) {
+        String reason = computeLockReason(ps);
+        if (reason != null) return reason;
+        return ps != null && schedulesWithReceipts != null && schedulesWithReceipts.contains(ps.Id)
+            ? 'Receipt recorded'
+            : null;
+    }
+
+    private static Boolean isCompleted(String status) {
+        return 'Completed'.equalsIgnoreCase(status);
+    }
+
+    @TestVisible
+    private static Set<Id> getSchedulesWithReceipts(Set<Id> scheduleIds) {
+        Set<Id> scheduleIdsWithReceipts = new Set<Id>();
+        if (scheduleIds == null || scheduleIds.isEmpty()) return scheduleIdsWithReceipts;
+
+        for (Receipt_Line_Item__c line : [
+            SELECT Payment_Schedule__c, Allocated_Amount__c, Receipt__c, Receipt__r.Approval_Status__c
+            FROM Receipt_Line_Item__c
+            WHERE Payment_Schedule__c IN :scheduleIds
+        ]) {
+            if (nz(line.Allocated_Amount__c) > 0
+                && (line.Receipt__c == null
+                    || line.Receipt__r.Approval_Status__c != PostSalesConstants.APPROVAL_STATUS_REJECTED)) {
+                scheduleIdsWithReceipts.add(line.Payment_Schedule__c);
+            }
+        }
+        return scheduleIdsWithReceipts;
     }
 
     private static Boolean hasSplit(Payment_Schedule__c ps) {
@@ -334,13 +382,14 @@ public with sharing class PaymentScheduleEditorController {
      *              The trial update in stageAndSubmit remains the authority.
      */
     private static void preValidate(
-        Id bookingId, List<ScheduleWrapper> edited, Map<Id, Payment_Schedule__c> existing
+        Id bookingId, List<ScheduleWrapper> edited, Map<Id, Payment_Schedule__c> existing,
+        Set<Id> schedulesWithReceipts
     ) {
         List<String> problems = new List<String>();
 
         for (ScheduleWrapper w : edited) {
             if (w.id == null || !existing.containsKey(w.id)) continue;
-            if (String.isNotBlank(computeLockReason(existing.get(w.id)))) continue;
+            if (String.isNotBlank(computeLockReason(existing.get(w.id), schedulesWithReceipts))) continue;
 
             String label = String.isNotBlank(w.milestoneName) ? w.milestoneName : String.valueOf(w.sequence);
 
@@ -375,6 +424,8 @@ public with sharing class PaymentScheduleEditorController {
     }
 
     private static Boolean checkEditingEnabled(Booking__c booking) {
+        if (booking.Project__r == null
+            || booking.Project__r.Legacy_Split_Demand_Receipt__c != true) return false;
         // Bank-funded bookings can always revise their split; the control is approval, not a
         // config toggle (BRD §8.1/§8.2).
         if (booking.Funding_Type__c != null && FUNDING_SPLIT.contains(booking.Funding_Type__c)) {

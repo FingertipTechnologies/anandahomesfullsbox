@@ -291,6 +291,25 @@ private class DocumentViewerControllerTest {
     }
 
     @isTest
+    static void getVfPagesForRecord_booking_includesSaleAgreementPages() {
+        Account a = [SELECT Id FROM Account LIMIT 1];
+        Test.startTest();
+        List<DocumentViewerController.ViewerVfPage> pages =
+            DocumentViewerController.getVfPagesForRecord(a.Id, 'Booking__c');
+        Test.stopTest();
+
+        Boolean foundAgreementPage = false;
+        for (DocumentViewerController.ViewerVfPage page : pages) {
+            if (page.name.toLowerCase().endsWith('_agreement_of_sale')) {
+                foundAgreementPage = true;
+                break;
+            }
+        }
+        System.assert(foundAgreementPage,
+            'Booking documents should include the static sale-agreement Visualforce pages');
+    }
+
+    @isTest
     static void getVfPagesForRecord_blankId_throws() {
         Boolean threw = false;
         try {

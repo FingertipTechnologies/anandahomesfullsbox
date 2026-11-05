@@ -60,11 +60,20 @@ private class BookingFormControllerTest {
         );
         insert new List<Plot__c>{ fullUnit, fallbackUnit };
 
+        // The "Booking After Create Handler" flow runs for every booking with a
+        // unit and requires Quote__c (FieldMapperInvocable sourceRecordId); it
+        // also creates the booking-amount receipt, so Mode_Of_Payment__c is set
+        // the same way postSalesTestDataFactory.createBooking() does.
+        Quote__c fullQuote = postSalesTestDataFactory.createQuote(fullProject.Id);
+        Quote__c fallbackQuote = postSalesTestDataFactory.createQuote(fallbackProject.Id);
+
         Booking__c fullBooking = new Booking__c(
             Project__c = fullProject.Id,
             Plot__c = fullUnit.Id,
+            Quote__c = fullQuote.Id,
             Block__c = bookingTower.Id,
             Status__c = 'New',
+            Mode_Of_Payment__c = 'UPI',
             Booking_Date__c = Date.newInstance(2026, 10, 31),
 
             salutation_Applicant1__c = 'Mr',
@@ -100,7 +109,9 @@ private class BookingFormControllerTest {
         Booking__c fallbackBooking = new Booking__c(
             Project__c = fallbackProject.Id,
             Plot__c = fallbackUnit.Id,
+            Quote__c = fallbackQuote.Id,
             Status__c = 'New',
+            Mode_Of_Payment__c = 'UPI',
             Date_of_Booking__c = Date.newInstance(2026, 9, 1),
             Facing__c = 'North',
             BHK_Type__c = '1 BHK',

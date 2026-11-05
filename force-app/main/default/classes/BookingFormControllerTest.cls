@@ -7,8 +7,8 @@
  *                  price details and acknowledgement.
  *                - Fallback booking: secondary fields used when primary ones
  *                  are blank, unit tower, area fallback, balance floor at 0.
- *                - Booking without unit or dates: CreatedDate fallback and
- *                  blank co-applicant section.
+ *                - Booking without dates or co-applicants: CreatedDate
+ *                  fallback and blank co-applicant section.
  *                - Invalid input: no page, missing, malformed, wrong-object
  *                  and unknown ids.
  *                - Pure helpers: page split rule and formatters.
@@ -18,7 +18,7 @@ private class BookingFormControllerTest {
 
     private static final String FULL_APPLICANT = 'Ravi Kumar';
     private static final String FALLBACK_APPLICANT = 'Meena Iyer';
-    private static final String NO_UNIT_APPLICANT = 'No Unit Customer';
+    private static final String DATE_FALLBACK_APPLICANT = 'Date Fallback Customer';
 
     private static final String HEADING = 'DETAILS OF CO-APPLICANT';
 
@@ -58,14 +58,23 @@ private class BookingFormControllerTest {
             Saleable_Area_Sft__c = 0,
             Super_built_up_area__c = 1500
         );
-        insert new List<Plot__c>{ fullUnit, fallbackUnit };
+        Plot__c dateUnit = new Plot__c(
+            Project__c = fullProject.Id,
+            Name = 'C-303',
+            Unit_Type__c = 'Apartment',
+            Status__c = 'Available'
+        );
+        insert new List<Plot__c>{ fullUnit, fallbackUnit, dateUnit };
 
-        // The "Booking After Create Handler" flow runs for every booking with a
-        // unit and requires Quote__c (FieldMapperInvocable sourceRecordId); it
-        // also creates the booking-amount receipt, so Mode_Of_Payment__c is set
-        // the same way postSalesTestDataFactory.createBooking() does.
+        // Every booking is inserted in the same shape as
+        // postSalesTestDataFactory.createBooking(): unit, Quote, Booking Amount
+        // and Mode Of Payment. The org's "Booking After Create Handler" flow
+        // runs on booking create, passes Quote__c to FieldMapperInvocable as the
+        // required sourceRecordId and creates the booking-amount receipt, so a
+        // booking without these fails the whole insert.
         Quote__c fullQuote = postSalesTestDataFactory.createQuote(fullProject.Id);
         Quote__c fallbackQuote = postSalesTestDataFactory.createQuote(fallbackProject.Id);
+        Quote__c dateQuote = postSalesTestDataFactory.createQuote(fullProject.Id);
 
         Booking__c fullBooking = new Booking__c(
             Project__c = fullProject.Id,
@@ -129,12 +138,16 @@ private class BookingFormControllerTest {
             Funding_Type__c = 'Self',
             Cheque_DD_NEFT_RTGS_No__c = 'CHQ-9876'
         );
-        Booking__c noUnitBooking = new Booking__c(
+        Booking__c dateFallbackBooking = new Booking__c(
             Project__c = fullProject.Id,
+            Plot__c = dateUnit.Id,
+            Quote__c = dateQuote.Id,
             Status__c = 'New',
-            First_Applicant_Name__c = NO_UNIT_APPLICANT
+            Mode_Of_Payment__c = 'UPI',
+            Booking_Amount__c = 100000,
+            First_Applicant_Name__c = DATE_FALLBACK_APPLICANT
         );
-        insert new List<Booking__c>{ fullBooking, fallbackBooking, noUnitBooking };
+        insert new List<Booking__c>{ fullBooking, fallbackBooking, dateFallbackBooking };
 
         insert new List<Co_Applicant__c>{
             new Co_Applicant__c(
@@ -353,8 +366,8 @@ private class BookingFormControllerTest {
     }
 
     @IsTest
-    static void bookingWithoutUnitOrDatesFallsBackToCreatedDate() {
-        Booking__c booking = findBooking(NO_UNIT_APPLICANT);
+    static void bookingWithoutDatesFallsBackToCreatedDate() {
+        Booking__c booking = findBooking(DATE_FALLBACK_APPLICANT);
         Datetime createdAt = Datetime.newInstance(2026, 1, 15, 10, 30, 0);
         Test.setCreatedDate(booking.Id, createdAt);
 
@@ -364,11 +377,11 @@ private class BookingFormControllerTest {
 
         Assert.isFalse(form.hasError, 'No error expected: ' + form.errorMessage);
         Assert.areEqual(createdAt.format('dd/MM/yyyy'), form.bookingDate, 'CreatedDate fallback');
-        Assert.areEqual('', form.flatNo, 'No unit');
-        Assert.areEqual('', form.flatArea, 'No unit area');
-        Assert.areEqual('', form.towerName, 'No tower');
-        Assert.areEqual('', form.bookingAmountPayable, 'No unit project amount');
-        Assert.areEqual('', form.balanceBookingAmount, 'No balance without booking amount');
+        Assert.areEqual('C-303', form.flatNo, 'Unit name');
+        Assert.areEqual('', form.flatArea, 'Unit without any area prints empty');
+        Assert.areEqual('', form.towerName, 'Unit and booking without tower print empty');
+        Assert.areEqual('', form.flatConfiguration, 'Unit without BHK type prints empty');
+        Assert.areEqual('', form.gstOnBookingAmount, 'Unit without GST % prints empty');
         Assert.isTrue(form.coApplicants.isEmpty(), 'No co-applicants');
         Assert.areEqual(1, form.coApplicantPages.size(), 'Blank section + price details');
         Assert.areEqual(HEADING, form.coApplicantPages[0].coApplicants[0].heading, 'Blank section heading');

@@ -1,0 +1,108 @@
+<aura:component implements="force:hasRecordId,force:lightningQuickActionWithoutHeader" access="global">
+    <aura:attribute name="recordId" type="String" />
+    <aura:attribute name="booking" type="Object" />
+    <aura:attribute name="project" type="Object" />
+    <aura:attribute name="unit" type="Object" />
+    <aura:attribute name="projectId" type="String" />
+    <aura:attribute name="unitId" type="String" />
+    <aura:attribute name="bookingLoaded" type="Boolean" default="false" />
+    <aura:attribute name="projectLoaded" type="Boolean" default="false" />
+    <aura:attribute name="unitLoaded" type="Boolean" default="false" />
+    <aura:attribute name="isLoading" type="Boolean" default="true" />
+    <aura:attribute name="showPreview" type="Boolean" default="false" />
+    <aura:attribute name="vfUrl" type="String" />
+    <aura:attribute name="selectedPage" type="String" />
+    <aura:attribute name="errorMessage" type="String" />
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
+
+    <force:recordData aura:id="bookingLoader"
+        recordId="{!v.recordId}"
+        fields="Project__c,Plot__c"
+        targetFields="{!v.booking}"
+        recordUpdated="{!c.handleBookingUpdated}" />
+    <aura:if isTrue="{!not(empty(v.projectId))}">
+        <force:recordData aura:id="projectLoader"
+            recordId="{!v.projectId}"
+            fields="Name"
+            targetFields="{!v.project}"
+            recordUpdated="{!c.handleProjectUpdated}" />
+    </aura:if>
+    <aura:if isTrue="{!not(empty(v.unitId))}">
+        <force:recordData aura:id="unitLoader"
+            recordId="{!v.unitId}"
+            fields="LL_Share_Name__c"
+            targetFields="{!v.unit}"
+            recordUpdated="{!c.handleUnitUpdated}" />
+    </aura:if>
+
+    <aura:html tag="style">
+        .slds-modal__container {
+            width: 94vw !important;
+            max-width: 94vw !important;
+            min-width: 0 !important;
+            height: 94vh !important;
+            max-height: 94vh !important;
+            margin: 0 auto !important;
+        }
+        .slds-modal__content, .cuf-content {
+            padding: 0 !important;
+            height: 94vh !important;
+            max-height: 94vh !important;
+            overflow: hidden !important;
+        }
+        .slds-p-around--medium {
+            padding: 0 !important;
+        }
+        @media only screen and (max-width: 768px) {
+            .slds-modal__container {
+                width: 100vw !important;
+                max-width: 100vw !important;
+                height: 100vh !important;
+                max-height: 100vh !important;
+            }
+            .slds-modal__content, .cuf-content {
+                height: 100vh !important;
+                max-height: 100vh !important;
+            }
+        }
+    </aura:html>
+
+    <section class="agreement-preview">
+        <header class="preview-header">
+            <div class="preview-title">
+                <lightning:icon iconName="doctype:pdf" size="small" alternativeText="PDF" />
+                <div>
+                    <h2 class="slds-text-heading_medium">Agreement Preview</h2>
+                    <aura:if isTrue="{!not(empty(v.selectedPage))}">
+                        <p class="preview-subtitle">{!v.selectedPage}</p>
+                    </aura:if>
+                </div>
+            </div>
+            <lightning:button label="Close" variant="neutral" onclick="{!c.close}" />
+        </header>
+
+        <div class="preview-stage">
+            <aura:if isTrue="{!v.isLoading}">
+                <div class="preview-loading">
+                    <lightning:spinner alternativeText="Loading agreement preview" size="medium" />
+                    <p>Preparing your agreement preview…</p>
+                </div>
+            </aura:if>
+
+            <aura:if isTrue="{!not(empty(v.errorMessage))}">
+                <div class="preview-error" role="alert">
+                    <lightning:icon iconName="utility:error" variant="error" size="small" alternativeText="Error" />
+                    <div>
+                        <h3 class="slds-text-heading_small">Preview unavailable</h3>
+                        <p>{!v.errorMessage}</p>
+                    </div>
+                </div>
+            </aura:if>
+
+            <aura:if isTrue="{!v.showPreview}">
+                <iframe src="{!v.vfUrl}" title="Agreement PDF preview" class="agreement-frame" />
+            </aura:if>
+        </div>
+    </section>
+</aura:component>

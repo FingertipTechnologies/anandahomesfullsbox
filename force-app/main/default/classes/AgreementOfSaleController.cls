@@ -1,8 +1,40 @@
+/**
+ * Controller extension for the landowner / builder-share "Agreement of Sale"
+ * Visualforce PDFs (ARJUN_SINGH_, MAGHAN_SINGH_, SURESH_SINGH_, NAVEEN_SINGH_,
+ * NITIN_SINGH_ and BUILDER_SHARE_AGREEMENT_OF_SALE).
+ *
+ * The landowner whose template is being rendered is derived from the page
+ * name. The units that belong to that landowner are identified by the
+ * Plot__c.LL_Share_Name__c picklist ("LL Share Name").
+ */
 public with sharing class AgreementOfSaleController {
+    private static final Set<String> APPROVED_RECEIPT_STATUSES = new Set<String>{
+        'Approved', 'Approved by Finance Team'
+    };
+
+    /** Page-name fragment -> LL_Share_Name__c picklist value. */
+    private static final Map<String, String> PAGE_OWNERS = new Map<String, String>{
+        'ARJUN_SINGH_AGREEMENT_OF_SALE'  => 'ARJUN SINGH',
+        'MAGHAN_SINGH_AGREEMENT_OF_SALE' => 'MAGAN SINGH',
+        'SURESH_SINGH_AGREEMENT_OF_SALE' => 'SURESH SINGH',
+        'NAVEEN_SINGH_AGREEMENT_OF_SALE' => 'NAVEEN SINGH',
+        'NITIN_SINGH_AGREEMENT_OF_SALE'  => 'NITIN SINGH'
+    };
+
+    /** LL_Share_Name__c value -> name printed in the vendor unit table. */
+    private static final Map<String, String> OWNER_DISPLAY_NAMES = new Map<String, String>{
+        'ARJUN SINGH'  => 'Sri.K.Arjun Singh',
+        'MAGAN SINGH'  => 'Sri. Magan Singh',
+        'SURESH SINGH' => 'Sri.K. Suresh Singh',
+        'NAVEEN SINGH' => 'Sri. Naveen Singh',
+        'NITIN SINGH'  => 'Sri. Nithin Singh'
+    };
+
     public class ApplicantEntry {
         public Integer sequence { get; private set; }
         public String salutation { get; private set; }
         public String name { get; private set; }
+        public String relation { get; private set; }
         public String age { get; private set; }
         public String occupation { get; private set; }
         public String address { get; private set; }
@@ -11,12 +43,21 @@ public with sharing class AgreementOfSaleController {
         public String pan { get; private set; }
         public String email { get; private set; }
 
+        /** e.g. "SRI. PAMULAPATI MAHESH" */
         public String getDisplayName() {
-            return String.isBlank(salutation) ? name : salutation + ' ' + name;
+            String upperName = name == null ? '' : name.trim().toUpperCase();
+            return String.isBlank(salutation) ? upperName : salutation.toUpperCase() + ' ' + upperName;
         }
 
+        /**
+         * e.g. "S/O. SRI. VENKATESWARARAO PAMULAPATI, aged about 30 years,
+         * Occupation: Private Employee, Resident of ..., (AADHAAR No. X & PAN No. Y)"
+         */
         public String getLegalDetails() {
             List<String> details = new List<String>();
+            if (!String.isBlank(relation)) {
+                details.add(relation);
+            }
             if (!String.isBlank(age)) {
                 details.add('aged about ' + age + ' years');
             }
@@ -24,11 +65,11 @@ public with sharing class AgreementOfSaleController {
                 details.add('Occupation: ' + occupation);
             }
             if (!String.isBlank(address)) {
-                details.add(addressPrefix + address);
+                details.add(addressPrefix + address.trim());
             }
             details.add(
-                '(Aadhaar No. ' + (aadhaar == null ? '' : aadhaar) +
-                ' & PAN No. ' + (pan == null ? '' : pan) + ')'
+                '(AADHAAR No. ' + (aadhaar == null ? '' : aadhaar.trim()) +
+                ' & PAN No. ' + (pan == null ? '' : pan.trim()) + ')'
             );
             return String.join(details, ', ');
         }
@@ -37,6 +78,7 @@ public with sharing class AgreementOfSaleController {
             Integer sequence,
             String salutation,
             String name,
+            String relation,
             Date dateOfBirth,
             String occupation,
             String address,
@@ -48,6 +90,7 @@ public with sharing class AgreementOfSaleController {
             this.sequence = sequence;
             this.salutation = salutation;
             this.name = name;
+            this.relation = relation;
             this.age = getAge(dateOfBirth);
             this.occupation = occupation;
             this.address = address;
@@ -67,32 +110,52 @@ public with sharing class AgreementOfSaleController {
             this.sequence = sequence;
         }
 
+        /**
+         * Tower number/label for the unit. The "T1-707" style unit name is the
+         * most reliable source, then Tower Block, then the Tower picklist.
+         */
+        private String rawTower() {
+            if (!String.isBlank(unit.Name)) {
+                Matcher nameMatch = Pattern.compile('(?i)^T?\\s*(\\d+)\\s*-').matcher(unit.Name.trim());
+                if (nameMatch.find()) {
+                    return nameMatch.group(1);
+                }
+            }
+            if (!String.isBlank(unit.Tower_Block__c)) {
+                return unit.Tower_Block__c;
+            }
+            return unit.Tower__c;
+        }
+
+        /** "T-05" style tower label used in the vendor unit table. */
         public String getTowerDisplay() {
-            String tower = unit.Tower__c != null ? unit.Tower__c : unit.Tower_Block__c;
+            String tower = rawTower();
             if (String.isBlank(tower)) {
                 return '';
             }
 
-            Matcher towerMatch = Pattern.compile('(?i)^T-?(\\d+)$').matcher(tower);
+            Matcher towerMatch = Pattern.compile('(?i)^(?:T(?:OWER)?)?\\s*-?\\s*(\\d+)$').matcher(tower.trim());
             if (!towerMatch.matches()) {
-                return tower;
+                return tower.trim();
             }
 
             String towerNumber = towerMatch.group(1);
             return 'T-' + (towerNumber.length() == 1 ? '0' : '') + towerNumber;
         }
 
+        /** "7th" / "Ground" */
         public String getFloorDisplay() {
             if (String.isBlank(unit.Floor__c)) {
                 return '';
             }
-            if (unit.Floor__c == 'G') {
+            String floorValue = unit.Floor__c.trim();
+            if (floorValue.equalsIgnoreCase('G') || floorValue.equalsIgnoreCase('Ground')) {
                 return 'Ground';
             }
 
-            Matcher floorMatch = Pattern.compile('^(\\d+)$').matcher(unit.Floor__c);
-            if (!floorMatch.matches()) {
-                return unit.Floor__c;
+            Matcher floorMatch = Pattern.compile('^(\\d+)').matcher(floorValue);
+            if (!floorMatch.find()) {
+                return floorValue;
             }
 
             Integer floorNumber = Integer.valueOf(floorMatch.group(1));
@@ -110,30 +173,29 @@ public with sharing class AgreementOfSaleController {
             return String.valueOf(floorNumber) + suffix;
         }
 
+        /** Flat number without the tower prefix, e.g. "707" for unit "T1-707". */
         public String getFlatNumber() {
             if (!String.isBlank(unit.Plot_Number__c)) {
-                return unit.Plot_Number__c;
+                return unit.Plot_Number__c.trim();
             }
             if (String.isBlank(unit.Name)) {
                 return '';
             }
 
-            String tower = unit.Tower__c != null ? unit.Tower__c : unit.Tower_Block__c;
-            String unitPrefix = String.isBlank(tower) ? null : tower + '-';
-            if (unitPrefix != null && unit.Name.toUpperCase().startsWith(unitPrefix.toUpperCase())) {
-                return unit.Name.substring(unitPrefix.length());
-            }
-            return unit.Name;
+            Matcher nameMatch = Pattern.compile('(?i)^T?\\s*\\d*\\s*-\\s*(.+)$').matcher(unit.Name.trim());
+            return nameMatch.matches() ? nameMatch.group(1).trim() : unit.Name.trim();
         }
 
+        /** "East" (the picklist value without the trailing " Facing"). */
         public String getFacingDisplay() {
             if (String.isBlank(unit.Facing__c)) {
                 return '';
             }
             String suffix = ' Facing';
-            return unit.Facing__c.toLowerCase().endsWith(suffix.toLowerCase())
-                ? unit.Facing__c.substring(0, unit.Facing__c.length() - suffix.length())
-                : unit.Facing__c;
+            String facing = unit.Facing__c.trim();
+            return facing.toLowerCase().endsWith(suffix.toLowerCase())
+                ? facing.substring(0, facing.length() - suffix.length())
+                : facing;
         }
     }
 
@@ -189,16 +251,32 @@ public with sharing class AgreementOfSaleController {
             return schedule.Percentage__c;
         }
 
+        /** Base amount (+ TDS) excluding GST. */
         public Decimal getFlatCost() {
             return schedule.Flat_Cost__c;
         }
 
+        public Decimal getGstAmount() {
+            return schedule.GST_Amount__c;
+        }
+
+        /** Net amount including GST. */
         public Decimal getNetAmount() {
-            return schedule.Amount__c;
+            if (schedule.Amount__c != null) {
+                return schedule.Amount__c;
+            }
+            if (schedule.Flat_Cost__c == null) {
+                return null;
+            }
+            return schedule.Flat_Cost__c + (schedule.GST_Amount__c == null ? 0 : schedule.GST_Amount__c);
         }
 
         public String getFlatCostDisplay() {
             return formatIndianCurrency(getFlatCost());
+        }
+
+        public String getGstAmountDisplay() {
+            return formatIndianCurrency(getGstAmount());
         }
 
         public String getNetAmountDisplay() {
@@ -215,9 +293,11 @@ public with sharing class AgreementOfSaleController {
     public String buyerNames { get; private set; }
     public String ownerName { get; private set; }
     public String ownerDisplayName { get; private set; }
+    public Boolean isBuilderSharePage { get; private set; }
     public Decimal totalOwnerSaleableArea { get; private set; }
     public Decimal totalReceiptAmount { get; private set; }
     public Decimal totalScheduleFlatCost { get; private set; }
+    public Decimal totalScheduleGst { get; private set; }
     public Decimal totalScheduleNetAmount { get; private set; }
     public Decimal totalSchedulePercentage { get; private set; }
 
@@ -249,46 +329,92 @@ public with sharing class AgreementOfSaleController {
         totalOwnerSaleableArea = 0;
         totalReceiptAmount = 0;
         totalScheduleFlatCost = 0;
+        totalScheduleGst = 0;
         totalScheduleNetAmount = 0;
         totalSchedulePercentage = 0;
+        buyerNames = '';
+        ownerDisplayName = '';
+        isBuilderSharePage = currentPageUrl().contains('BUILDER_SHARE_AGREEMENT_OF_SALE');
         if (standardController == null || standardController.getId() == null) {
             return;
         }
 
         booking = [
             SELECT Id, Project__c, Plot__c, Car_Parking_Selected__c, No_of_car_parking__c,
-                   First_Applicant_Name__c, Second_Applicant_Name__c, Salutation__c,
-                   Date_of_Birth__c, Price_per_sqft__c, Basic_Price__c,
-                   Total_Flat_Cost__c, Loan_Bank_Name__c,
-                   Occupation__c, Address__c, Permanent_Address__c,
-                   Aadhaar__c, PAN_Number__c, Email1__c
+                   First_Applicant_Name__c, Second_Applicant_Name__c,
+                   // primary applicant (legacy field set)
+                   Salutation__c, Date_of_Birth__c, Occupation__c, Permanent_Address__c,
+                   Aadhaar__c, PAN_Number__c, Email1__c, S_o_D_o_W_o__c, Son_Daughter_Wife_of1__c,
+                   // primary applicant (booking form field set)
+                   salutation_Applicant1__c, Date_of_Birth1__c, Designation__c, Address__c,
+                   Communication_address__c, Aadhaar_Number__c, PAN_Number1__c, Email__c,
+                   Customer_Email__c, Relation_Details_Applicant1__c,
+                   // second applicant (booking form field set)
+                   salutation_Applicant2__c, Date_of_birth_Applicant2__c, Occupation1__c,
+                   Designation1__c, Permanent_Address1__c, Communication_address1__c,
+                   Aadhaar_Number1__c, Pan_Number_Applicant2__c, Email2__c,
+                   Relation_Details_Applicant2__c,
+                   // pricing
+                   Price_per_sqft__c, Basic_Price__c, Base_Price__c, Total_Flat_Cost__c,
+                   GST_Amount__c, Total_Schedule_GST__c, Loan_Bank_Name__c,
+                   Quote__r.Basic_Sale_Price_Rs__c,
+                   Plot__r.LL_Share_Name__c
             FROM Booking__c
             WHERE Id = :standardController.getId()
             LIMIT 1
         ];
+
         addApplicant(
-            booking.Salutation__c,
+            firstNonBlank(new List<String>{ booking.Salutation__c, booking.salutation_Applicant1__c }),
             booking.First_Applicant_Name__c,
-            booking.Date_of_Birth__c,
-            booking.Occupation__c,
-            booking.Permanent_Address__c,
+            buildRelation(
+                firstNonBlank(new List<String>{ booking.S_o_D_o_W_o__c, booking.Relation_Details_Applicant1__c }),
+                booking.Son_Daughter_Wife_of1__c
+            ),
+            booking.Date_of_Birth__c != null ? booking.Date_of_Birth__c : booking.Date_of_Birth1__c,
+            firstNonBlank(new List<String>{ booking.Occupation__c, booking.Designation__c }),
+            getPrimaryAddress(),
             'Resident of ',
-            booking.Aadhaar__c,
-            booking.PAN_Number__c,
-            booking.Email1__c
+            firstNonBlank(new List<String>{ booking.Aadhaar__c, booking.Aadhaar_Number__c }),
+            firstNonBlank(new List<String>{ booking.PAN_Number__c, booking.PAN_Number1__c }),
+            getPrimaryEmail()
         );
-        Co_Applicant__c coApplicant = getCoApplicant(booking.Id, booking.Second_Applicant_Name__c);
-        addApplicant(
-            coApplicant == null ? null : coApplicant.Salutation__c,
-            coApplicant == null ? null : coApplicant.Full_Name__c,
-            coApplicant == null ? null : coApplicant.Date_of_Birth__c,
-            coApplicant == null ? null : coApplicant.Occupation__c,
-            booking.Permanent_Address__c,
-            'Resident : ',
-            coApplicant == null ? null : coApplicant.Aadhar_Number__c,
-            coApplicant == null ? null : coApplicant.PAN_Number__c,
-            coApplicant == null ? null : coApplicant.Email__c
-        );
+
+        if (!String.isBlank(booking.Second_Applicant_Name__c)) {
+            Co_Applicant__c coApplicant = getCoApplicant(booking.Id, booking.Second_Applicant_Name__c);
+            if (coApplicant != null) {
+                addApplicant(
+                    coApplicant.Salutation__c,
+                    coApplicant.Full_Name__c,
+                    buildRelation(coApplicant.S_o_D_o_W_o__c, coApplicant.W_o_S_o_C_o_c__c),
+                    coApplicant.Date_of_Birth__c,
+                    coApplicant.Occupation__c,
+                    firstNonBlank(new List<String>{
+                        coApplicant.Permenent_Address__c, coApplicant.Address__c, getPrimaryAddress()
+                    }),
+                    'Resident of ',
+                    coApplicant.Aadhar_Number__c,
+                    coApplicant.PAN_Number__c,
+                    coApplicant.Email__c
+                );
+            } else {
+                addApplicant(
+                    booking.salutation_Applicant2__c,
+                    booking.Second_Applicant_Name__c,
+                    buildRelation(booking.Relation_Details_Applicant2__c, null),
+                    booking.Date_of_birth_Applicant2__c,
+                    firstNonBlank(new List<String>{ booking.Occupation1__c, booking.Designation1__c }),
+                    firstNonBlank(new List<String>{
+                        booking.Permanent_Address1__c, booking.Communication_address1__c, getPrimaryAddress()
+                    }),
+                    'Resident of ',
+                    booking.Aadhaar_Number1__c,
+                    booking.Pan_Number_Applicant2__c,
+                    booking.Email2__c
+                );
+            }
+        }
+
         List<String> names = new List<String>();
         for (ApplicantEntry applicant : applicants) {
             names.add(applicant.getDisplayName());
@@ -304,7 +430,7 @@ public with sharing class AgreementOfSaleController {
                        Built_up_area__c, Saleable_Area_Sft__c,
                        Common_Area_Allotted_to_Association__c, UDS__c,
                        Boundary_North__c, Boundary_South__c, Boundary_East__c, Boundary_West__c,
-                       Covered_Park_Parking__c
+                       Covered_Park_Parking__c, LL_Share_Name__c, Share__c
                 FROM Plot__c
                 WHERE Id = :booking.Plot__c
                 LIMIT 1
@@ -318,14 +444,14 @@ public with sharing class AgreementOfSaleController {
             return;
         }
 
+        // Every unit in the project that belongs to this landowner (LL Share Name).
         List<Plot__c> units = [
             SELECT Id, Name, Plot_Number__c, Tower__c, Tower_Block__c, Floor__c,
                    Saleable_Area_Sft__c, UDS__c, Facing__c
             FROM Plot__c
             WHERE Project__c = :booking.Project__c
-              AND Share__c = 'LANDOWNER'
               AND LL_Share_Name__c = :ownerName
-            ORDER BY Tower__c, Floor__c, Name
+            ORDER BY Tower_Block__c, Tower__c, Name
         ];
 
         Integer index = 1;
@@ -345,7 +471,7 @@ public with sharing class AgreementOfSaleController {
                    Receipt_Type__c
             FROM Receipt__c
             WHERE Booking__c = :bookingId
-              AND Approval_Status__c = 'Approved'
+              AND Approval_Status__c IN :APPROVED_RECEIPT_STATUSES
             ORDER BY Receipt_Date__c ASC, CreatedDate ASC
         ]) {
             receiptRows.add(new ReceiptRow(receipt));
@@ -354,7 +480,7 @@ public with sharing class AgreementOfSaleController {
 
         for (Payment_Schedule__c schedule : [
             SELECT Id, Milestone_Name__c, Description__c, Percentage__c,
-                   Flat_Cost__c, Amount__c
+                   Flat_Cost__c, GST_Amount__c, Amount__c
             FROM Payment_Schedule__c
             WHERE Booking__c = :bookingId
             ORDER BY Sequence__c ASC NULLS LAST, S_No__c ASC NULLS LAST, CreatedDate ASC
@@ -362,9 +488,40 @@ public with sharing class AgreementOfSaleController {
             PaymentScheduleRow row = new PaymentScheduleRow(schedule);
             paymentScheduleRows.add(row);
             totalScheduleFlatCost += row.getFlatCost() == null ? 0 : row.getFlatCost();
+            totalScheduleGst += row.getGstAmount() == null ? 0 : row.getGstAmount();
             totalScheduleNetAmount += row.getNetAmount() == null ? 0 : row.getNetAmount();
             totalSchedulePercentage += row.getPercentage() == null ? 0 : row.getPercentage();
         }
+    }
+
+    // ---------------------------------------------------------------- applicants
+
+    private String getPrimaryAddress() {
+        return firstNonBlank(new List<String>{
+            booking.Permanent_Address__c, booking.Address__c, booking.Communication_address__c
+        });
+    }
+
+    private String getPrimaryEmail() {
+        return firstNonBlank(new List<String>{
+            booking.Email1__c, booking.Email__c, booking.Customer_Email__c
+        });
+    }
+
+    /** Address printed in the "notice to the VENDEE" table. */
+    public String getBuyerAddress() {
+        return booking == null ? '' : getPrimaryAddress();
+    }
+
+    /** E-mail printed in the "notice to the VENDEE" table. */
+    public String getBuyerEmail() {
+        return booking == null ? '' : getPrimaryEmail();
+    }
+
+    public String getLoanBankName() {
+        return booking == null || String.isBlank(booking.Loan_Bank_Name__c)
+            ? '____________'
+            : booking.Loan_Bank_Name__c.trim();
     }
 
     private static String getAge(Date dateOfBirth) {
@@ -380,17 +537,33 @@ public with sharing class AgreementOfSaleController {
         return String.valueOf(age);
     }
 
+    /**
+     * The Co-Applicant record for the booking's second applicant: an exact
+     * (normalised) name match, or the only co-applicant when its name clearly
+     * refers to the same person. Returns null otherwise so the booking's own
+     * second-applicant fields are used instead of an unrelated record.
+     */
     private static Co_Applicant__c getCoApplicant(Id bookingId, String applicantName) {
         String normalizedApplicantName = normalizeApplicantName(applicantName);
-        for (Co_Applicant__c coApplicant : [
+        List<Co_Applicant__c> coApplicants = [
             SELECT Full_Name__c, Salutation__c, Date_of_Birth__c, Occupation__c,
+                   S_o_D_o_W_o__c, W_o_S_o_C_o_c__c, Address__c, Permenent_Address__c,
                    Aadhar_Number__c, PAN_Number__c, Email__c
             FROM Co_Applicant__c
             WHERE Booking__c = :bookingId
-        ]) {
+            ORDER BY CreatedDate ASC
+        ];
+        for (Co_Applicant__c coApplicant : coApplicants) {
             if (!String.isBlank(normalizedApplicantName) &&
                 normalizeApplicantName(coApplicant.Full_Name__c) == normalizedApplicantName) {
                 return coApplicant;
+            }
+        }
+        if (coApplicants.size() == 1 && !String.isBlank(normalizedApplicantName)) {
+            String coName = normalizeApplicantName(coApplicants[0].Full_Name__c);
+            if (!String.isBlank(coName) &&
+                (coName.contains(normalizedApplicantName) || normalizedApplicantName.contains(coName))) {
+                return coApplicants[0];
             }
         }
         return null;
@@ -400,9 +573,48 @@ public with sharing class AgreementOfSaleController {
         return String.isBlank(name) ? '' : name.trim().replaceAll('\\s+', ' ').toUpperCase();
     }
 
+    /** "S/O. SRI. FATHER NAME" from a relation picklist and the relative's name. */
+    private static String buildRelation(String relation, String relativeName) {
+        if (String.isBlank(relation) || String.isBlank(relativeName)) {
+            return '';
+        }
+        String label = relation.trim().toUpperCase();
+        if (!label.endsWith('.')) {
+            label += '.';
+        }
+        String relative = relativeName.trim();
+        Boolean hasSalutation = Pattern.compile('(?i)^(sri|smt|late|mr|mrs|ms|dr|kum)\\b').matcher(relative).find();
+        return label + ' ' + (hasSalutation ? '' : 'SRI. ') + relative.toUpperCase();
+    }
+
+    /** Maps picklist salutations (Mr./Mrs/Ms) onto the SRI./SMT. style used in the deeds. */
+    private static String formalSalutation(String salutation) {
+        if (String.isBlank(salutation)) {
+            return '';
+        }
+        String key = salutation.trim().replace('.', '').toLowerCase();
+        if (key == 'mr') {
+            return 'Sri.';
+        }
+        if (key == 'mrs') {
+            return 'Smt.';
+        }
+        if (key == 'ms' || key == 'miss') {
+            return 'Kum.';
+        }
+        if (key == 'dr') {
+            return 'Dr.';
+        }
+        if (key == 'm/s') {
+            return 'M/s.';
+        }
+        return salutation.trim();
+    }
+
     private void addApplicant(
         String salutation,
         String name,
+        String relation,
         Date dateOfBirth,
         String occupation,
         String address,
@@ -414,8 +626,9 @@ public with sharing class AgreementOfSaleController {
         if (!String.isBlank(name)) {
             applicants.add(new ApplicantEntry(
                 applicants.size() + 1,
-                salutation,
+                formalSalutation(salutation),
                 name,
+                relation,
                 dateOfBirth,
                 occupation,
                 address,
@@ -427,12 +640,27 @@ public with sharing class AgreementOfSaleController {
         }
     }
 
+    private static String firstNonBlank(List<String> values) {
+        for (String value : values) {
+            if (!String.isBlank(value)) {
+                return value.trim();
+            }
+        }
+        return null;
+    }
+
+    // ------------------------------------------------------------- selected unit
+
+    private OwnerUnitRow selectedRow() {
+        return new OwnerUnitRow(selectedUnit, 1);
+    }
+
+    /** Tower number only, e.g. "1" for "T-01". */
     public String getSelectedTowerDisplay() {
         if (selectedUnit == null) {
             return '';
         }
-        OwnerUnitRow selectedRow = new OwnerUnitRow(selectedUnit, 1);
-        String tower = selectedRow.getTowerDisplay();
+        String tower = selectedRow().getTowerDisplay();
         if (!tower.startsWith('T-')) {
             return tower;
         }
@@ -443,24 +671,32 @@ public with sharing class AgreementOfSaleController {
     }
 
     public String getSelectedFloorDisplay() {
-        if (selectedUnit == null) {
-            return '';
-        }
-        return new OwnerUnitRow(selectedUnit, 1).getFloorDisplay();
+        return selectedUnit == null ? '' : selectedRow().getFloorDisplay();
     }
 
     public String getSelectedFlatNumber() {
+        return selectedUnit == null ? '' : selectedRow().getFlatNumber();
+    }
+
+    /** Full flat label e.g. "T1-707" (unit name, or tower + flat number when the name is absent). */
+    public String getSelectedFlatLabel() {
         if (selectedUnit == null) {
             return '';
         }
-        return new OwnerUnitRow(selectedUnit, 1).getFlatNumber();
+        if (!String.isBlank(selectedUnit.Name)) {
+            return selectedUnit.Name.trim();
+        }
+        String tower = getSelectedTowerDisplay();
+        return (String.isBlank(tower) ? '' : 'T' + tower + '-') + getSelectedFlatNumber();
     }
 
     public String getSelectedFacingDisplay() {
-        if (selectedUnit == null) {
-            return '';
-        }
-        return new OwnerUnitRow(selectedUnit, 1).getFacingDisplay();
+        return selectedUnit == null ? '' : selectedRow().getFacingDisplay();
+    }
+
+    /** Upper-case facing used in the schedule tables, e.g. "EAST". */
+    public String getSelectedFacingUpper() {
+        return getSelectedFacingDisplay().toUpperCase();
     }
 
     public String getSelectedBhkNumber() {
@@ -468,10 +704,11 @@ public with sharing class AgreementOfSaleController {
             return '';
         }
 
-        Matcher bhkMatch = Pattern.compile('^\\s*(\\d+)').matcher(selectedUnit.BHK_Type__c);
+        Matcher bhkMatch = Pattern.compile('^\\s*(\\d+(?:\\.\\d+)?)').matcher(selectedUnit.BHK_Type__c);
         return bhkMatch.find() ? bhkMatch.group(1) : selectedUnit.BHK_Type__c;
     }
 
+    /** Wall area = plinth (built-up) - carpet - balcony. */
     public Decimal getSelectedWallArea() {
         if (selectedUnit == null || selectedUnit.Built_up_area__c == null ||
             selectedUnit.Carpet_Area__c == null || selectedUnit.Balcony_Area__c == null) {
@@ -482,11 +719,90 @@ public with sharing class AgreementOfSaleController {
             selectedUnit.Balcony_Area__c;
     }
 
-    public Decimal getAmenitiesAmount() {
-        if (booking == null || booking.Total_Flat_Cost__c == null || booking.Basic_Price__c == null) {
+    /** LL Share Name on the booked unit (may differ from the page's landowner). */
+    public String getUnitOwnerName() {
+        return selectedUnit == null ? '' : selectedUnit.LL_Share_Name__c;
+    }
+
+    /**
+     * Warning shown when the booked unit's LL Share Name does not match the
+     * landowner this page is for (empty when they match or when not applicable).
+     */
+    public String getOwnerMismatchMessage() {
+        if (selectedUnit == null) {
+            return '';
+        }
+        String unitOwner = selectedUnit.LL_Share_Name__c;
+        if (isBuilderSharePage) {
+            return String.isBlank(unitOwner)
+                ? ''
+                : 'Note: the booked unit ' + selectedUnit.Name + ' is tagged with LL Share Name "' +
+                    unitOwner + '" (landowner share) but this is the Builder Share agreement template.';
+        }
+        if (ownerName == null || String.isBlank(unitOwner) || unitOwner.equalsIgnoreCase(ownerName)) {
+            return '';
+        }
+        return 'Note: the booked unit ' + selectedUnit.Name + ' is tagged with LL Share Name "' +
+            unitOwner + '" but this agreement template is for "' + ownerName + '".';
+    }
+
+    // ------------------------------------------------------------------ amounts
+
+    /**
+     * Basic (base) sale price: the booking's Base Price, else the quote's
+     * basic sale price, else the Basic_Price__c formula.
+     */
+    private Decimal getBasicPriceValue() {
+        if (booking == null) {
             return null;
         }
-        return booking.Total_Flat_Cost__c - booking.Basic_Price__c;
+        if (booking.Base_Price__c != null && booking.Base_Price__c > 0) {
+            return booking.Base_Price__c;
+        }
+        if (booking.Quote__r != null && booking.Quote__r.Basic_Sale_Price_Rs__c != null &&
+            booking.Quote__r.Basic_Sale_Price_Rs__c > 0) {
+            return booking.Quote__r.Basic_Sale_Price_Rs__c;
+        }
+        if (booking.Basic_Price__c != null && booking.Basic_Price__c > 0) {
+            return booking.Basic_Price__c;
+        }
+        return null;
+    }
+
+    private Decimal getPricePerSquareFootValue() {
+        if (booking == null) {
+            return null;
+        }
+        if (booking.Price_per_sqft__c != null && booking.Price_per_sqft__c > 0) {
+            return booking.Price_per_sqft__c;
+        }
+        Decimal basicPrice = getBasicPriceValue();
+        if (basicPrice != null && selectedUnit != null && selectedUnit.Saleable_Area_Sft__c != null &&
+            selectedUnit.Saleable_Area_Sft__c > 0) {
+            return (basicPrice / selectedUnit.Saleable_Area_Sft__c).setScale(0, System.RoundingMode.HALF_UP);
+        }
+        return null;
+    }
+
+    private Decimal getGstAmountValue() {
+        if (booking == null) {
+            return null;
+        }
+        if (booking.GST_Amount__c != null && booking.GST_Amount__c > 0) {
+            return booking.GST_Amount__c;
+        }
+        if (booking.Total_Schedule_GST__c != null && booking.Total_Schedule_GST__c > 0) {
+            return booking.Total_Schedule_GST__c;
+        }
+        return totalScheduleGst > 0 ? totalScheduleGst : null;
+    }
+
+    public Decimal getAmenitiesAmount() {
+        Decimal basicPrice = getBasicPriceValue();
+        if (booking == null || booking.Total_Flat_Cost__c == null || basicPrice == null) {
+            return null;
+        }
+        return booking.Total_Flat_Cost__c - basicPrice;
     }
 
     public Decimal getBalanceAmount() {
@@ -508,12 +824,16 @@ public with sharing class AgreementOfSaleController {
         return amountInWords(getBalanceAmount());
     }
 
+    public String getGstAmountInWords() {
+        return amountInWords(getGstAmountValue());
+    }
+
     public String getFormattedPricePerSquareFoot() {
-        return formatIndianCurrency(booking == null ? null : booking.Price_per_sqft__c);
+        return formatIndianCurrency(getPricePerSquareFootValue());
     }
 
     public String getFormattedBasicPrice() {
-        return formatIndianCurrency(booking == null ? null : booking.Basic_Price__c);
+        return formatIndianCurrency(getBasicPriceValue());
     }
 
     public String getFormattedAmenitiesAmount() {
@@ -522,6 +842,10 @@ public with sharing class AgreementOfSaleController {
 
     public String getFormattedTotalFlatCost() {
         return formatIndianCurrency(booking == null ? null : booking.Total_Flat_Cost__c);
+    }
+
+    public String getFormattedGstAmount() {
+        return formatIndianCurrency(getGstAmountValue());
     }
 
     public String getFormattedTotalReceiptAmount() {
@@ -536,40 +860,49 @@ public with sharing class AgreementOfSaleController {
         return formatIndianCurrency(totalScheduleFlatCost);
     }
 
+    public String getFormattedTotalScheduleGst() {
+        return formatIndianCurrency(totalScheduleGst);
+    }
+
     public String getFormattedTotalScheduleNetAmount() {
         return formatIndianCurrency(totalScheduleNetAmount);
     }
 
-    public String getSelectedCarParkingDisplay() {
+    private Integer carParkingCount() {
         if (booking == null) {
-            return '';
+            return 0;
         }
         if (booking.No_of_car_parking__c != null && booking.No_of_car_parking__c > 0) {
-            return underThousand(Integer.valueOf(booking.No_of_car_parking__c));
+            return Integer.valueOf(booking.No_of_car_parking__c);
         }
-        return booking.Car_Parking_Selected__c == true ? 'One' : 'None';
+        return booking.Car_Parking_Selected__c == true ? 1 : 0;
     }
 
+    /** "One" / "Two" / "None" */
+    public String getSelectedCarParkingDisplay() {
+        Integer count = carParkingCount();
+        return count == 0 ? 'None' : underThousand(count);
+    }
+
+    /** " and One Car Parking" (empty when no parking). */
     public String getSelectedCarParkingClause() {
-        String parkingDisplay = getSelectedCarParkingDisplay();
-        if (String.isBlank(parkingDisplay) || parkingDisplay == 'None') {
+        Integer count = carParkingCount();
+        if (count == 0) {
             return '';
         }
-        String plural = booking.No_of_car_parking__c != null &&
-            booking.No_of_car_parking__c > 1 ? ' Spaces' : '';
-        return ' and ' + parkingDisplay + ' Car Parking' + plural;
+        return ' and ' + underThousand(count) + ' Car Parking' + (count > 1 ? ' Spaces' : '');
     }
 
     public String getAmenitiesDescription() {
-        String parkingDisplay = getSelectedCarParkingDisplay();
-        if (String.isBlank(parkingDisplay) || parkingDisplay == 'None') {
+        Integer count = carParkingCount();
+        if (count == 0) {
             return 'Amenities including Infrastructure charges';
         }
-        String plural = booking.No_of_car_parking__c != null &&
-            booking.No_of_car_parking__c > 1 ? ' spaces' : '';
-        return 'Amenities including ' + parkingDisplay + ' car parking' + plural +
-            ' & Infrastructure charges';
+        return 'Amenities including ' + underThousand(count) + ' car parking' +
+            (count > 1 ? ' spaces' : '') + ' & Infrastructure charges';
     }
+
+    // ---------------------------------------------------------------- formatting
 
     private static String formatIndianCurrency(Decimal amount) {
         if (amount == null) {
@@ -596,6 +929,7 @@ public with sharing class AgreementOfSaleController {
         return (isNegative ? '-' : '') + leadingDigits + ',' + formatted;
     }
 
+    /** "Rupees One Crore Five Lakh Thirteen Thousand Six Hundred Eighty Only" */
     private static String amountInWords(Decimal amount) {
         if (amount == null) {
             return '';
@@ -608,7 +942,7 @@ public with sharing class AgreementOfSaleController {
             digits = digits.substring(1);
         }
         if (digits == '0') {
-            return 'Zero Rupees Only';
+            return 'Rupees Zero Only';
         }
 
         List<String> groups = new List<String>();
@@ -635,8 +969,8 @@ public with sharing class AgreementOfSaleController {
         for (Integer index = groups.size() - 1; index >= 0; index--) {
             orderedGroups.add(groups[index]);
         }
-        return (isNegative ? 'Minus ' : '') +
-            String.join(orderedGroups, ' ') + ' Rupees Only';
+        return 'Rupees ' + (isNegative ? 'Minus ' : '') +
+            String.join(orderedGroups, ' ') + ' Only';
     }
 
     private static String underThousand(Integer value) {
@@ -664,32 +998,27 @@ public with sharing class AgreementOfSaleController {
         return String.join(words, ' ');
     }
 
-    private static String getOwnerForCurrentPage() {
-        String pageUrl = ApexPages.currentPage() == null
+    // --------------------------------------------------------------- landowner
+
+    private static String currentPageUrl() {
+        return ApexPages.currentPage() == null || ApexPages.currentPage().getUrl() == null
             ? ''
             : ApexPages.currentPage().getUrl().toUpperCase();
-        if (pageUrl.contains('ARJUN_SINGH_AGREEMENT_OF_SALE')) {
-            return 'ARJUN SINGH';
-        }
-        if (pageUrl.contains('MAGHAN_SINGH_AGREEMENT_OF_SALE')) {
-            return 'MAGAN SINGH';
-        }
-        if (pageUrl.contains('SURESH_SINGH_AGREEMENT_OF_SALE')) {
-            return 'SURESH SINGH';
+    }
+
+    private static String getOwnerForCurrentPage() {
+        String pageUrl = currentPageUrl();
+        for (String pageKey : PAGE_OWNERS.keySet()) {
+            if (pageUrl.contains(pageKey)) {
+                return PAGE_OWNERS.get(pageKey);
+            }
         }
         return null;
     }
 
     private static String getOwnerDisplayName(String owner) {
-        if (owner == 'ARJUN SINGH') {
-            return 'Sri.K.Arjun Singh';
-        }
-        if (owner == 'MAGAN SINGH') {
-            return 'Sri. Magan Singh';
-        }
-        if (owner == 'SURESH SINGH') {
-            return 'Sri.K. Suresh Singh';
-        }
-        return '';
+        return owner != null && OWNER_DISPLAY_NAMES.containsKey(owner)
+            ? OWNER_DISPLAY_NAMES.get(owner)
+            : '';
     }
 }

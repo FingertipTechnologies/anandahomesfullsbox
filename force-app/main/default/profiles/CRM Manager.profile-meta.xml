@@ -186,6 +186,10 @@
         <enabled>false</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>AgreementOfSaleControllerTest</apexClass>
+        <enabled>false</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>ApprovalActionHandler</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -591,6 +595,14 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DocumentViewerControllerTest</apexClass>
+        <enabled>false</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>DrizzleSaleDeedController</apexClass>
+        <enabled>false</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>DrizzleSaleDeedControllerTest</apexClass>
         <enabled>false</enabled>
     </classAccesses>
     <classAccesses>

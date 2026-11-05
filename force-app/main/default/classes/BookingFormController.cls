@@ -26,10 +26,6 @@ public with sharing class BookingFormController {
     private static final String DATE_FORMAT = 'dd/MM/yyyy';
     private static final String AREA_SUFFIX = ' Sft';
     private static final String CURRENCY_PREFIX = 'Rs. ';
-    private static final Decimal ONE_LAKH = 100000;
-    /** Amount in a Plot__c.Booking_Amount__c label, e.g. "3" in "3bhk – 3 lakhs". */
-    private static final Pattern LAKH_AMOUNT = Pattern.compile('(?i)(\\d+(?:\\.\\d+)?)\\s*(?:lakh|lac)');
-    private static final Pattern PLAIN_AMOUNT = Pattern.compile('^\\d+(?:\\.\\d+)?$');
 
     private static final String CO_APPLICANT_HEADING = 'DETAILS OF CO-APPLICANT';
     /** Co-applicant sections that fit on one page, above the price details. */
@@ -220,7 +216,7 @@ public with sharing class BookingFormController {
             SELECT Id, Name, Booking_Date__c, Date_of_Booking__c, CreatedDate,
                    Facing__c, BHK_Type__c,
                    Block__r.Name,
-                   Plot__r.Name, Plot__r.Booking_Amount__c,
+                   Plot__r.Name, Plot__r.Project__r.Booking_Amount__c, Plot__r.GST1__c,
                    Plot__r.Saleable_Area_Sft__c, Plot__r.Super_built_up_area__c,
                    Plot__r.Built_up_area__c, Plot__r.Facing__c,
                    Plot__r.BHK_Type__c, Plot__r.Tower__c, Plot__r.Block1__r.Name,
@@ -256,7 +252,7 @@ public with sharing class BookingFormController {
     private static List<SObject> queryCoApplicants(Id bookingId) {
         List<Co_Applicant__c> coApplicants = [
             SELECT Id, Salutation__c, Full_Name__c, First_Name__c, Last_Name__c,
-                   W_o_S_o_C_o_c__c, Contact_Number__c, Mobile__c, Email__c,
+                   W_o_S_o_C_o_c__c, Contact_Number__c, Email__c,
                    Date_of_Birth__c, Occupation__c, Aadhar_Number__c,
                    PAN_Number__c, Permenent_Address__c, Address__c
             FROM Co_Applicant__c
@@ -377,7 +373,7 @@ public with sharing class BookingFormController {
         CoApplicant co = new CoApplicant();
         co.name = withSalutation(textOf(record, 'Salutation__c'), fullName);
         co.fatherName = textOf(record, 'W_o_S_o_C_o_c__c');
-        co.phone = firstText(record, new List<String>{ 'Contact_Number__c', 'Mobile__c' });
+        co.phone = textOf(record, 'Contact_Number__c');
         co.email = textOf(record, 'Email__c');
         co.dob = textOf(record, 'Date_of_Birth__c');
         co.occupation = textOf(record, 'Occupation__c');
@@ -431,19 +427,18 @@ public with sharing class BookingFormController {
 
     /**
      * @description Price details are read straight from the records:
-     *                - Booking Amount Payable : Plot__c.Booking_Amount__c (picklist,
-     *                                           e.g. "3bhk – 3 lakhs" = Rs. 3,00,000)
+     *                - Booking Amount Payable : Project__c.Booking_Amount__c (unit's project)
      *                - Everything else        : Booking__c Financial Summary /
      *                                           New Stage fields
      *              Only the two lines that have no field are derived:
      *                - Balance Booking Amount = Booking Amount Payable - Advance Paid
-     *                - GST On Booking Amount  = Booking Amount Payable x GST %
+     *                - GST On Booking Amount  = Booking Amount Payable x Plot__c.GST1__c %
      */
     private void mapPriceDetails(Booking__c booking) {
         Decimal flatCost = decimalOf(booking, 'Total_Flat_Cost__c');
         Decimal gstAmount = decimalOf(booking, 'GST_Amount__c');
-        String plotBookingAmount = textOf(parentOf(booking, 'Plot__r'), 'Booking_Amount__c');
-        Decimal bookingAmount = parseLakhAmount(plotBookingAmount);
+        SObject unit = parentOf(booking, 'Plot__r');
+        Decimal bookingAmount = decimalOf(parentOf(unit, 'Project__r'), 'Booking_Amount__c');
         Decimal advance = decimalOf(booking, 'Booking_Amount__c');
 
         Decimal balance = null;
@@ -453,37 +448,19 @@ public with sharing class BookingFormController {
         }
 
         finalPrice = formatAmount(flatCost);
-        // Shows the picklist label as-is if it holds no recognisable amount.
-        bookingAmountPayable = bookingAmount != null
-            ? formatAmount(bookingAmount)
-            : plotBookingAmount;
+        bookingAmountPayable = formatAmount(bookingAmount);
         advancePaid = formatAmount(advance);
         balanceBookingAmount = formatAmount(balance);
         tdsPayable = formatAmount(decimalOf(booking, 'TDS__c'));
         gstPayable = formatAmount(gstAmount);
         gstOnBookingAmount = formatAmount(
-            percentOf(bookingAmount, gstPercentOf(booking, flatCost, gstAmount))
+            percentOf(bookingAmount, decimalOf(unit, 'GST1__c'))
         );
         loanAmount = formatAmount(decimalOf(booking, 'Loan_Sanctioned_Amount__c'));
 
         String fundingType = textOf(booking, 'Funding_Type__c').toLowerCase();
         isSelfFunded = SELF_FUNDING_TYPES.contains(fundingType);
         isBankLoan = LOAN_FUNDING_TYPES.contains(fundingType);
-    }
-
-    /**
-     * @description GST % from Booking__c.GST__c; when blank, the booking's own
-     *              rate GST_Amount__c / Total_Flat_Cost__c x 100.
-     */
-    private static Decimal gstPercentOf(Booking__c booking, Decimal flatCost, Decimal gstAmount) {
-        Decimal gstPercent = decimalOf(booking, 'GST__c');
-        if (gstPercent != null) {
-            return gstPercent;
-        }
-        if (flatCost == null || flatCost == 0 || gstAmount == null) {
-            return null;
-        }
-        return gstAmount * 100 / flatCost;
     }
 
     private void mapAcknowledgement(Booking__c booking) {
@@ -636,24 +613,6 @@ public with sharing class BookingFormController {
         return String.valueOf(value.day()).leftPad(2, '0') + '/'
             + String.valueOf(value.month()).leftPad(2, '0') + '/'
             + String.valueOf(value.year());
-    }
-
-    /**
-     * @description Converts a Plot__c.Booking_Amount__c picklist label to rupees:
-     *              "3bhk – 3 lakhs" -> 300000, "2.5 lakh" -> 250000,
-     *              "300000" -> 300000. Returns null when no amount is found.
-     */
-    @TestVisible
-    private static Decimal parseLakhAmount(String label) {
-        if (String.isBlank(label)) {
-            return null;
-        }
-        Matcher lakhMatch = LAKH_AMOUNT.matcher(label);
-        if (lakhMatch.find()) {
-            return Decimal.valueOf(lakhMatch.group(1)) * ONE_LAKH;
-        }
-        String digits = label.replaceAll('[,\\s]', '');
-        return PLAIN_AMOUNT.matcher(digits).matches() ? Decimal.valueOf(digits) : null;
     }
 
     @TestVisible

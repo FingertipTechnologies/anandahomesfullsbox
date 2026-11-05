@@ -3,7 +3,8 @@
     <fullName>All</fullName>
     <columns>NAME</columns>
     <columns>Status__c</columns>
-    <columns>Plot_Type__c</columns>
+    <columns>Saleable_Area_Sft__c</columns>
+    <columns>LL_Share_Name__c</columns>
     <columns>Project__c</columns>
     <columns>Block_Expiry_Date__c</columns>
     <columns>CREATEDBY_USER</columns>

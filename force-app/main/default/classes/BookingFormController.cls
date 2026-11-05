@@ -252,7 +252,7 @@ public with sharing class BookingFormController {
     private static List<SObject> queryCoApplicants(Id bookingId) {
         List<Co_Applicant__c> coApplicants = [
             SELECT Id, Salutation__c, Full_Name__c, First_Name__c, Last_Name__c,
-                   W_o_S_o_C_o_c__c, Contact_Number__c, Mobile__c, Email__c,
+                   W_o_S_o_C_o_c__c, Contact_Number__c, Email__c,
                    Date_of_Birth__c, Occupation__c, Aadhar_Number__c,
                    PAN_Number__c, Permenent_Address__c, Address__c
             FROM Co_Applicant__c
@@ -373,7 +373,7 @@ public with sharing class BookingFormController {
         CoApplicant co = new CoApplicant();
         co.name = withSalutation(textOf(record, 'Salutation__c'), fullName);
         co.fatherName = textOf(record, 'W_o_S_o_C_o_c__c');
-        co.phone = firstText(record, new List<String>{ 'Contact_Number__c', 'Mobile__c' });
+        co.phone = textOf(record, 'Contact_Number__c');
         co.email = textOf(record, 'Email__c');
         co.dob = textOf(record, 'Date_of_Birth__c');
         co.occupation = textOf(record, 'Occupation__c');

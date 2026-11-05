@@ -149,7 +149,7 @@ private class BookingFormControllerTest {
                 Booking__c = fallbackBooking.Id,
                 First_Name__c = 'Sita',
                 Last_Name__c = 'Devi',
-                Mobile__c = '9988776655',
+                Contact_Number__c = '9988776655',
                 Address__c = 'Ameerpet, Hyderabad'
             )
         };
@@ -323,7 +323,7 @@ private class BookingFormControllerTest {
         BookingFormController.CoApplicant co = form.coApplicants[0];
         Assert.areEqual(HEADING, co.heading, 'Single co-applicant is not numbered');
         Assert.areEqual('Sita Devi', co.name, 'First + Last name when Full_Name__c is blank');
-        Assert.areEqual('9988776655', co.phone, 'Mobile__c fallback');
+        Assert.areEqual('9988776655', co.phone, 'Contact_Number__c');
         Assert.areEqual('Ameerpet, Hyderabad', co.address, 'Address__c fallback');
         Assert.areEqual(1, form.coApplicantPages.size(), '[Co1 + price details]');
         Assert.isTrue(form.coApplicantPages[0].showPriceDetails, 'Price on the same page');

@@ -46,7 +46,7 @@ private class BookingFormControllerTest {
             Block1__c = unitTower.Id,
             Saleable_Area_Sft__c = 1250,
             Facing__c = 'East Facing',
-            BHK_Type__c = '2 BHK',
+            BHK_Type__c = '3 BHK',
             GST1__c = 5
         );
         Plot__c fallbackUnit = new Plot__c(
@@ -123,7 +123,6 @@ private class BookingFormControllerTest {
             Mode_Of_Payment__c = 'UPI',
             Date_of_Booking__c = Date.newInstance(2026, 9, 1),
             Facing__c = 'North',
-            BHK_Type__c = '1 BHK',
 
             First_Applicant_Name__c = FALLBACK_APPLICANT,
             Mobile__c = '9123456780',
@@ -135,7 +134,7 @@ private class BookingFormControllerTest {
             Permanent_Address__c = 'Plot 7, Banjara Hills, Hyderabad',
 
             Booking_Amount__c = 200000,
-            Funding_Type__c = 'Self',
+            Funding_Type__c = 'Self-Funded',
             Cheque_DD_NEFT_RTGS_No__c = 'CHQ-9876'
         );
         Booking__c dateFallbackBooking = new Booking__c(
@@ -165,7 +164,7 @@ private class BookingFormControllerTest {
             ),
             new Co_Applicant__c(
                 Booking__c = fullBooking.Id,
-                Salutation__c = 'Dr',
+                Salutation__c = 'Mr',
                 Full_Name__c = 'Vikram Singh',
                 Contact_Number__c = '9000000002'
             ),
@@ -231,7 +230,7 @@ private class BookingFormControllerTest {
         Assert.areEqual('A-101', form.flatNo, 'Flat number from unit name');
         Assert.areEqual('1,250 Sft', form.flatArea, 'Saleable area');
         Assert.areEqual('East Facing', form.facing, 'Facing from unit');
-        Assert.areEqual('2 BHK', form.flatConfiguration, 'Configuration from unit BHK type');
+        Assert.areEqual('3 BHK', form.flatConfiguration, 'Configuration from unit BHK type');
 
         Assert.areEqual('Mr. Ravi Kumar', form.applicantName, 'Applicant name with salutation');
         Assert.areEqual('Suresh Kumar', form.applicantFatherName, 'Father / husband name');
@@ -279,7 +278,7 @@ private class BookingFormControllerTest {
         Assert.areEqual('Lane 3, Kondapur, Hyderabad', record.address, 'Permenent_Address__c');
 
         Assert.areEqual(HEADING + ' 3', form.coApplicants[2].heading, 'Numbered heading');
-        Assert.areEqual('Dr. Vikram Singh', form.coApplicants[2].name, 'Oldest record first');
+        Assert.areEqual('Mr. Vikram Singh', form.coApplicants[2].name, 'Oldest record first');
 
         // 3 co-applicants -> [Co1, Co2] then [Co3 + price details]
         Assert.areEqual(2, form.coApplicantPages.size(), 'Two pages after the first applicant');
@@ -332,7 +331,7 @@ private class BookingFormControllerTest {
         Assert.areEqual('Tower B', form.towerName, 'Unit tower (Block1__c) fallback');
         Assert.areEqual('1,500 Sft', form.flatArea, 'Super built-up area when saleable area is 0');
         Assert.areEqual('North', form.facing, 'Booking facing fallback');
-        Assert.areEqual('1 BHK', form.flatConfiguration, 'Booking BHK fallback');
+        Assert.areEqual('', form.flatConfiguration, 'No BHK type on unit or booking prints empty');
 
         Assert.areEqual(FALLBACK_APPLICANT, form.applicantName, 'No salutation');
         Assert.areEqual('9123456780', form.applicantPhone, 'Mobile__c fallback');
@@ -359,8 +358,8 @@ private class BookingFormControllerTest {
         Assert.areEqual('', form.finalPrice, 'Blank flat cost prints empty');
         Assert.areEqual('', form.gstPayable, 'Blank GST amount prints empty');
         Assert.areEqual('', form.loanAmount, 'Blank loan amount prints empty');
-        Assert.isTrue(form.isSelfFunded, 'Self funding ticks Self');
-        Assert.isFalse(form.isBankLoan, 'Self funding does not tick Bank Loan');
+        Assert.isTrue(form.isSelfFunded, 'Self-Funded ticks Self');
+        Assert.isFalse(form.isBankLoan, 'Self-Funded does not tick Bank Loan');
         Assert.areEqual('CHQ-9876', form.chequeNumber, 'Cheque_DD_NEFT_RTGS_No__c fallback');
         Assert.areEqual('', form.bankName, 'Blank bank prints empty');
     }

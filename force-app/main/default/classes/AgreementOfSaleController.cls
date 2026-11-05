@@ -1,7 +1,8 @@
 /**
  * Controller extension for the landowner / builder-share "Agreement of Sale"
  * Visualforce PDFs (ARJUN_SINGH_, MAGHAN_SINGH_, SURESH_SINGH_, NAVEEN_SINGH_,
- * NITIN_SINGH_ and BUILDER_SHARE_AGREEMENT_OF_SALE).
+ * NITIN_SINGH_ and BUILDER_SHARE_AGREEMENT_OF_SALE) and for THE DRIZZLE builder
+ * agreements (SaleAgreementDrizzil and MortgageAgreementofSaleDrizzle).
  *
  * The landowner whose template is being rendered is derived from the page
  * name. The units that belong to that landowner are identified by the
@@ -42,15 +43,80 @@ public with sharing class AgreementOfSaleController {
         public String aadhaar { get; private set; }
         public String pan { get; private set; }
         public String email { get; private set; }
+        /** Salutation exactly as stored on the record (Mr, Mrs., ...). */
+        public String rawSalutation { get; private set; }
 
-        /** e.g. "SRI. PAMULAPATI MAHESH" */
+        // ---- THE DRIZZLE wording: "MR. NAME, S/o. MR. FATHER, aged about 29 years, Occupation: X; R/o: ..."
+
+        /** e.g. "MR. ANIL DEMO JUNIOR" */
+        public String getDrizzleName() {
+            String upperName = name == null ? '' : name.trim().toUpperCase();
+            if (String.isBlank(rawSalutation)) {
+                return upperName;
+            }
+            String prefix = rawSalutation.trim().toUpperCase();
+            if (!prefix.endsWith('.')) {
+                prefix += '.';
+            }
+            return prefix + ' ' + upperName;
+        }
+
+        /** e.g. "S/o. MR. SURESH DEMO SENIOR" (empty when no relation is recorded). */
+        public String getDrizzleRelation() {
+            if (String.isBlank(relation)) {
+                return '';
+            }
+            String label = relation.substringBefore(' ');
+            String relative = relation.substringAfter(' ');
+            Map<String, String> labels = new Map<String, String>{
+                'S/O.' => 'S/o.', 'D/O.' => 'D/o.', 'W/O.' => 'W/o.', 'H/O.' => 'H/o.', 'C/O.' => 'C/o.'
+            };
+            if (labels.containsKey(label)) {
+                label = labels.get(label);
+            }
+            if (relative.startsWith('SRI. ')) {
+                relative = 'MR. ' + relative.substring(5);
+            }
+            return label + ' ' + relative;
+        }
+
+        /** e.g. "MR. A, S/o. MR. B," - the bold opening of the allottee paragraph. */
+        public String getDrizzleNameLine() {
+            String rel = getDrizzleRelation();
+            return getDrizzleName() + (String.isBlank(rel) ? ',' : ', ' + rel + ',');
+        }
+
+        /** e.g. "aged about 29 years, Occupation: Pvt. Employee; R/o: 1-2-3, ..." */
+        public String getDrizzleDetails() {
+            List<String> parts = new List<String>();
+            if (!String.isBlank(age)) {
+                parts.add('aged about ' + age + ' years');
+            }
+            if (!String.isBlank(occupation)) {
+                parts.add('Occupation: ' + occupation.trim());
+            }
+            String text = String.join(parts, ', ');
+            if (!String.isBlank(address)) {
+                String addr = address.trim();
+                text += (String.isBlank(text) ? '' : '; ') + 'R/o: ' + addr + (addr.endsWith('.') ? '' : '.');
+            }
+            return text;
+        }
+
+        /** e.g. "(AADHAR NO: 1234 1234 1234, PAN NO: PQRST3456U)." */
+        public String getDrizzleIds() {
+            return '(AADHAR NO: ' + formatAadhaar(aadhaar) + ', PAN NO: ' +
+                (pan == null ? '' : pan.trim().toUpperCase()) + ').';
+        }
+
+        /** e.g. "SRI. RAVI KUMAR SAMPLE" */
         public String getDisplayName() {
             String upperName = name == null ? '' : name.trim().toUpperCase();
             return String.isBlank(salutation) ? upperName : salutation.toUpperCase() + ' ' + upperName;
         }
 
         /**
-         * e.g. "S/O. SRI. VENKATESWARARAO PAMULAPATI, aged about 30 years,
+         * e.g. "S/O. SRI. MOHAN RAO SAMPLE, aged about 30 years,
          * Occupation: Private Employee, Resident of ..., (AADHAAR No. X & PAN No. Y)"
          */
         public String getLegalDetails() {
@@ -199,6 +265,50 @@ public with sharing class AgreementOfSaleController {
         }
     }
 
+    /** One row of THE DRIZZLE price tables: amount, GST and total. */
+    public class ChargeLine {
+        public String label { get; private set; }
+        public String rateText { get; private set; }
+        public Decimal amount { get; private set; }
+        /** null = GST not applicable to this head. */
+        public Decimal gst { get; private set; }
+
+        private ChargeLine(String label, String rateText, Decimal amount, Decimal gst) {
+            this.label = label;
+            this.rateText = rateText;
+            this.amount = amount;
+            this.gst = gst;
+        }
+
+        public Decimal getTotal() {
+            return amount == null ? null : amount + (gst == null ? 0 : gst);
+        }
+
+        public String getAmountDisplay() {
+            return formatIndianCurrency(amount);
+        }
+
+        /** GST column of the price tables ("NA" when GST does not apply). */
+        public String getGstDisplay() {
+            if (amount == null) {
+                return '';
+            }
+            return gst == null ? 'NA' : formatIndianCurrency(gst);
+        }
+
+        /** GST column of Schedule-C ("0" when GST does not apply). */
+        public String getGstOrZeroDisplay() {
+            if (amount == null) {
+                return '';
+            }
+            return gst == null ? '0' : formatIndianCurrency(gst);
+        }
+
+        public String getTotalDisplay() {
+            return formatIndianCurrency(getTotal());
+        }
+    }
+
     public class ReceiptRow {
         private Receipt__c receipt;
 
@@ -240,7 +350,12 @@ public with sharing class AgreementOfSaleController {
         }
 
         public String getInstallmentName() {
-            return schedule.Milestone_Name__c;
+            if (!String.isBlank(schedule.Milestone_Name__c)) {
+                return schedule.Milestone_Name__c;
+            }
+            return !String.isBlank(schedule.Payment_Schedule_Name__c)
+                ? schedule.Payment_Schedule_Name__c
+                : schedule.Name;
         }
 
         public String getDescription() {
@@ -301,6 +416,15 @@ public with sharing class AgreementOfSaleController {
     public Decimal totalScheduleNetAmount { get; private set; }
     public Decimal totalSchedulePercentage { get; private set; }
 
+    // THE DRIZZLE price break-up
+    public List<ChargeLine> drizzlePriceLines { get; private set; }
+    public ChargeLine drizzlePriceTotal { get; private set; }
+    public List<ChargeLine> drizzleOtherLines { get; private set; }
+    public ChargeLine drizzleOtherTotal { get; private set; }
+    public ChargeLine drizzleCorpusLine { get; private set; }
+    public ChargeLine drizzleMaintenanceLine { get; private set; }
+    public ChargeLine drizzleLegalLine { get; private set; }
+
     public Boolean getHasApplicants() {
         return applicants != null && !applicants.isEmpty();
     }
@@ -326,6 +450,13 @@ public with sharing class AgreementOfSaleController {
         applicants = new List<ApplicantEntry>();
         receiptRows = new List<ReceiptRow>();
         paymentScheduleRows = new List<PaymentScheduleRow>();
+        drizzlePriceLines = new List<ChargeLine>();
+        drizzleOtherLines = new List<ChargeLine>();
+        drizzlePriceTotal = new ChargeLine('Total', '', null, null);
+        drizzleOtherTotal = new ChargeLine('Total', '', null, null);
+        drizzleCorpusLine = new ChargeLine('', '', null, null);
+        drizzleMaintenanceLine = new ChargeLine('', '', null, null);
+        drizzleLegalLine = new ChargeLine('', '', null, null);
         totalOwnerSaleableArea = 0;
         totalReceiptAmount = 0;
         totalScheduleFlatCost = 0;
@@ -334,7 +465,11 @@ public with sharing class AgreementOfSaleController {
         totalSchedulePercentage = 0;
         buyerNames = '';
         ownerDisplayName = '';
-        isBuilderSharePage = currentPageUrl().contains('BUILDER_SHARE_AGREEMENT_OF_SALE');
+        String pageUrl = currentPageUrl();
+        // Builder (developer share) templates: the unit must not belong to a landowner.
+        isBuilderSharePage = pageUrl.contains('BUILDER_SHARE_AGREEMENT_OF_SALE') ||
+            pageUrl.contains('SALEAGREEMENTDRIZZIL') ||
+            pageUrl.contains('MORTGAGEAGREEMENTOFSALEDRIZZLE');
         if (standardController == null || standardController.getId() == null) {
             return;
         }
@@ -344,7 +479,8 @@ public with sharing class AgreementOfSaleController {
                    First_Applicant_Name__c, Second_Applicant_Name__c,
                    // primary applicant (legacy field set)
                    Salutation__c, Date_of_Birth__c, Occupation__c, Permanent_Address__c,
-                   Aadhaar__c, PAN_Number__c, Email1__c, S_o_D_o_W_o__c, Son_Daughter_Wife_of1__c,
+                   Aadhaar__c, PAN_Number__c, Email1__c, S_o_D_o_W_o__c, Son_Daughter_Wife_of__c,
+                   Primary_Applicant_Age__c,
                    // primary applicant (booking form field set)
                    salutation_Applicant1__c, Date_of_Birth1__c, Designation__c, Address__c,
                    Communication_address__c, Aadhaar_Number__c, PAN_Number1__c, Email__c,
@@ -353,11 +489,20 @@ public with sharing class AgreementOfSaleController {
                    salutation_Applicant2__c, Date_of_birth_Applicant2__c, Occupation1__c,
                    Designation1__c, Permanent_Address1__c, Communication_address1__c,
                    Aadhaar_Number1__c, Pan_Number_Applicant2__c, Email2__c,
-                   Relation_Details_Applicant2__c,
+                   Relation_Details_Applicant2__c, Son_Daughter_Wife_of1__c,
                    // pricing
                    Price_per_sqft__c, Basic_Price__c, Base_Price__c, Total_Flat_Cost__c,
                    GST_Amount__c, Total_Schedule_GST__c, Loan_Bank_Name__c,
                    Quote__r.Basic_Sale_Price_Rs__c,
+                   // THE DRIZZLE price break-up
+                   Rate_Per_Sqft__c, GST__c, Covered_Park_Parking__c, Car_Parking_Charges__c,
+                   Extra_Covered_Parking_Charges__c,
+                   Quote__r.Price_Per_Sq_Ft__c, Quote__r.Infrastructure_Charges__c,
+                   Quote__r.Amenities_Car_Parking__c, Quote__r.Extra_Covered_Car_Parking_Charges__c,
+                   Quote__r.GST1__c,
+                   Project__r.Name, Project__r.GST_Percentage__c, Project__r.GST_Other_Percentage__c,
+                   Project__r.Corpus_Charge_Per_Sq_ft__c, Project__r.Maintenance_Per_sq_ft_per_month__c,
+                   Project__r.Maintenance_Month__c, Project__r.Document_Charges__c,
                    Plot__r.LL_Share_Name__c
             FROM Booking__c
             WHERE Id = :standardController.getId()
@@ -369,7 +514,7 @@ public with sharing class AgreementOfSaleController {
             booking.First_Applicant_Name__c,
             buildRelation(
                 firstNonBlank(new List<String>{ booking.S_o_D_o_W_o__c, booking.Relation_Details_Applicant1__c }),
-                booking.Son_Daughter_Wife_of1__c
+                booking.Son_Daughter_Wife_of__c
             ),
             booking.Date_of_Birth__c != null ? booking.Date_of_Birth__c : booking.Date_of_Birth1__c,
             firstNonBlank(new List<String>{ booking.Occupation__c, booking.Designation__c }),
@@ -379,6 +524,12 @@ public with sharing class AgreementOfSaleController {
             firstNonBlank(new List<String>{ booking.PAN_Number__c, booking.PAN_Number1__c }),
             getPrimaryEmail()
         );
+
+        // Age typed on the booking is used when no date of birth is recorded.
+        if (!applicants.isEmpty() && String.isBlank(applicants[0].age) &&
+            booking.Primary_Applicant_Age__c != null && booking.Primary_Applicant_Age__c > 0) {
+            applicants[0].age = String.valueOf(booking.Primary_Applicant_Age__c.intValue());
+        }
 
         if (!String.isBlank(booking.Second_Applicant_Name__c)) {
             Co_Applicant__c coApplicant = getCoApplicant(booking.Id, booking.Second_Applicant_Name__c);
@@ -401,7 +552,7 @@ public with sharing class AgreementOfSaleController {
                 addApplicant(
                     booking.salutation_Applicant2__c,
                     booking.Second_Applicant_Name__c,
-                    buildRelation(booking.Relation_Details_Applicant2__c, null),
+                    buildRelation(booking.Relation_Details_Applicant2__c, booking.Son_Daughter_Wife_of1__c),
                     booking.Date_of_birth_Applicant2__c,
                     firstNonBlank(new List<String>{ booking.Occupation1__c, booking.Designation1__c }),
                     firstNonBlank(new List<String>{
@@ -430,12 +581,17 @@ public with sharing class AgreementOfSaleController {
                        Built_up_area__c, Saleable_Area_Sft__c,
                        Common_Area_Allotted_to_Association__c, UDS__c,
                        Boundary_North__c, Boundary_South__c, Boundary_East__c, Boundary_West__c,
-                       Covered_Park_Parking__c, LL_Share_Name__c, Share__c
+                       Covered_Park_Parking__c, LL_Share_Name__c, Share__c,
+                       Block1__r.Name, Block__c, Other_Exclusive_Area__c,
+                       External_Wall_Area__c, Internal_Wall_Area__c,
+                       North_By__c, South_By__c, East_By__c, West_By__c
                 FROM Plot__c
                 WHERE Id = :booking.Plot__c
                 LIMIT 1
             ];
         }
+
+        buildDrizzleCharges();
 
         ownerName = getOwnerForCurrentPage();
         ownerDisplayName = getOwnerDisplayName(ownerName);
@@ -479,8 +635,8 @@ public with sharing class AgreementOfSaleController {
         }
 
         for (Payment_Schedule__c schedule : [
-            SELECT Id, Milestone_Name__c, Description__c, Percentage__c,
-                   Flat_Cost__c, GST_Amount__c, Amount__c
+            SELECT Id, Name, Milestone_Name__c, Payment_Schedule_Name__c, Description__c,
+                   Percentage__c, Flat_Cost__c, GST_Amount__c, Amount__c
             FROM Payment_Schedule__c
             WHERE Booking__c = :bookingId
             ORDER BY Sequence__c ASC NULLS LAST, S_No__c ASC NULLS LAST, CreatedDate ASC
@@ -624,7 +780,7 @@ public with sharing class AgreementOfSaleController {
         String email
     ) {
         if (!String.isBlank(name)) {
-            applicants.add(new ApplicantEntry(
+            ApplicantEntry entry = new ApplicantEntry(
                 applicants.size() + 1,
                 formalSalutation(salutation),
                 name,
@@ -636,7 +792,9 @@ public with sharing class AgreementOfSaleController {
                 aadhaar,
                 pan,
                 email
-            ));
+            );
+            entry.rawSalutation = salutation;
+            applicants.add(entry);
         }
     }
 
@@ -900,6 +1058,388 @@ public with sharing class AgreementOfSaleController {
         }
         return 'Amenities including ' + underThousand(count) + ' car parking' +
             (count > 1 ? ' spaces' : '') + ' & Infrastructure charges';
+    }
+
+    // ============================================================== THE DRIZZLE
+
+    private static final List<String> FLOOR_WORDS = new List<String>{
+        'GROUND', 'FIRST', 'SECOND', 'THIRD', 'FOURTH', 'FIFTH', 'SIXTH', 'SEVENTH', 'EIGHTH',
+        'NINTH', 'TENTH', 'ELEVENTH', 'TWELFTH', 'THIRTEENTH', 'FOURTEENTH', 'FIFTEENTH',
+        'SIXTEENTH', 'SEVENTEENTH', 'EIGHTEENTH', 'NINETEENTH', 'TWENTIETH', 'TWENTY FIRST',
+        'TWENTY SECOND', 'TWENTY THIRD', 'TWENTY FOURTH', 'TWENTY FIFTH', 'TWENTY SIXTH',
+        'TWENTY SEVENTH', 'TWENTY EIGHTH', 'TWENTY NINTH', 'THIRTIETH'
+    };
+
+    private static Decimal positive(Decimal value) {
+        return value != null && value > 0 ? value : null;
+    }
+
+    private static Decimal firstPositive(List<Decimal> values) {
+        for (Decimal value : values) {
+            if (value != null && value > 0) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private static Decimal nz(Decimal value) {
+        return value == null ? 0 : value;
+    }
+
+    private static Decimal percentOf(Decimal amount, Decimal percent) {
+        return amount == null || percent == null
+            ? null
+            : (amount * percent / 100).setScale(0, System.RoundingMode.HALF_UP);
+    }
+
+    /** "824.02", "317.313", "1375" - a number without trailing zeros or separators. */
+    private static String plainNumber(Decimal value) {
+        if (value == null) {
+            return '';
+        }
+        String text = value.stripTrailingZeros().toPlainString();
+        return text;
+    }
+
+    /** "1234 1234 1234" for a 12 digit Aadhaar; anything else is returned trimmed. */
+    private static String formatAadhaar(String value) {
+        if (String.isBlank(value)) {
+            return '';
+        }
+        String digits = value.replaceAll('[^0-9]', '');
+        if (digits.length() != 12) {
+            return value.trim();
+        }
+        return digits.substring(0, 4) + ' ' + digits.substring(4, 8) + ' ' + digits.substring(8);
+    }
+
+    /**
+     * Price break-up of THE DRIZZLE agreements.
+     * Table 1: Basic Price, Club House Membership & Infrastructure Charges, Car Parking.
+     *   Basic Price is the booking's Total Flat Cost less the other two heads, so the
+     *   rows always add up to the agreed consideration.
+     * Table 2 (payable at registration / handover): Corpus Fund, Maintenance deposit,
+     *   Legal and Documentation charges - rates come from the Project.
+     */
+    private void buildDrizzleCharges() {
+        if (booking == null) {
+            return;
+        }
+        Decimal area = selectedUnit == null ? null : positive(selectedUnit.Saleable_Area_Sft__c);
+        Decimal gstPercent = firstPositive(new List<Decimal>{
+            booking.Quote__r == null ? null : booking.Quote__r.GST1__c,
+            booking.GST__c,
+            booking.Project__r == null ? null : booking.Project__r.GST_Percentage__c
+        });
+        if (gstPercent == null) {
+            gstPercent = 5;
+        }
+        Decimal otherGstPercent = booking.Project__r == null
+            ? null
+            : positive(booking.Project__r.GST_Other_Percentage__c);
+        if (otherGstPercent == null) {
+            otherGstPercent = 18;
+        }
+
+        Decimal club = booking.Quote__r == null ? null : positive(booking.Quote__r.Infrastructure_Charges__c);
+        Decimal parking = firstPositive(new List<Decimal>{
+            booking.Quote__r == null ? null : booking.Quote__r.Amenities_Car_Parking__c,
+            booking.Covered_Park_Parking__c,
+            booking.Car_Parking_Charges__c
+        });
+        Decimal extraParking = firstPositive(new List<Decimal>{
+            booking.Quote__r == null ? null : booking.Quote__r.Extra_Covered_Car_Parking_Charges__c,
+            booking.Extra_Covered_Parking_Charges__c
+        });
+        if (extraParking != null) {
+            parking = nz(parking) + extraParking;
+        }
+        Decimal rate = firstPositive(new List<Decimal>{
+            booking.Quote__r == null ? null : booking.Quote__r.Price_Per_Sq_Ft__c,
+            booking.Price_per_sqft__c,
+            booking.Rate_Per_Sqft__c
+        });
+
+        Decimal total = positive(booking.Total_Flat_Cost__c);
+        Decimal basic;
+        if (total != null) {
+            basic = total - nz(club) - nz(parking);
+            if (basic <= 0) {
+                // the recorded heads exceed the agreed cost: show the agreed cost on its own
+                basic = total;
+                club = null;
+                parking = null;
+            }
+        } else if (rate != null && area != null) {
+            basic = (rate * area).setScale(0, System.RoundingMode.HALF_UP);
+        }
+        if (basic != null && area != null) {
+            rate = (basic / area).setScale(2, System.RoundingMode.HALF_UP);
+        }
+
+        Integer parkingCount = carParkingCount();
+        drizzlePriceLines.add(new ChargeLine('Basic Price', plainNumber(rate), basic, percentOf(basic, gstPercent)));
+        drizzlePriceLines.add(new ChargeLine(
+            'Club House Membership & Infrastructure Charges', '', nz(club), percentOf(nz(club), gstPercent)
+        ));
+        drizzlePriceLines.add(new ChargeLine(
+            'Car Parking (' + (parkingCount == 0 ? 'Nil' : String.valueOf(parkingCount) + ' No.') + ')',
+            '', nz(parking), percentOf(nz(parking), gstPercent)
+        ));
+        drizzlePriceTotal = sumLines('Total', drizzlePriceLines);
+
+        Decimal corpusRate = booking.Project__r == null ? null : positive(booking.Project__r.Corpus_Charge_Per_Sq_ft__c);
+        Decimal maintRate = booking.Project__r == null ? null : positive(booking.Project__r.Maintenance_Per_sq_ft_per_month__c);
+        Decimal maintMonths = booking.Project__r == null ? null : positive(booking.Project__r.Maintenance_Month__c);
+        Decimal legal = booking.Project__r == null ? null : positive(booking.Project__r.Document_Charges__c);
+        String monthsText = maintMonths == null ? '' : plainNumber(maintMonths);
+
+        Decimal corpus = corpusRate == null || area == null
+            ? null
+            : (corpusRate * area).setScale(0, System.RoundingMode.HALF_UP);
+        Decimal maintenance = maintRate == null || maintMonths == null || area == null
+            ? null
+            : (maintRate * maintMonths * area).setScale(0, System.RoundingMode.HALF_UP);
+
+        drizzleCorpusLine = new ChargeLine(
+            'Corpus Fund (Payable at the time of handover of the Apartment in favour of Association of Allottees)',
+            corpusRate == null ? '' : 'Rs. ' + plainNumber(corpusRate) + '/- per SFT',
+            corpus, null
+        );
+        drizzleMaintenanceLine = new ChargeLine(
+            'Maintenance Charges Deposit for ' + monthsText + ' months, payable at the time of hand over of ' +
+                'the Apartment, in favour of the Association of Allottees.',
+            maintRate == null ? '' : 'Rs. ' + maintRate.setScale(2).toPlainString() + 'ps. per SFT per Month for ' +
+                monthsText + ' Months',
+            maintenance, percentOf(maintenance, otherGstPercent)
+        );
+        drizzleLegalLine = new ChargeLine(
+            'Legal and Documentation charges', 'LS', legal, percentOf(legal, otherGstPercent)
+        );
+        drizzleOtherLines.add(drizzleCorpusLine);
+        drizzleOtherLines.add(drizzleMaintenanceLine);
+        drizzleOtherLines.add(drizzleLegalLine);
+        drizzleOtherTotal = sumLines('Total', drizzleOtherLines);
+    }
+
+    private static ChargeLine sumLines(String label, List<ChargeLine> lines) {
+        Decimal amount = null;
+        Decimal gst = null;
+        for (ChargeLine line : lines) {
+            if (line.amount != null) {
+                amount = nz(amount) + line.amount;
+            }
+            if (line.gst != null) {
+                gst = nz(gst) + line.gst;
+            }
+        }
+        return new ChargeLine(label, '', amount, amount == null ? null : nz(gst));
+    }
+
+    /** Total sale consideration including GST. */
+    public Decimal getDrizzleGrandTotal() {
+        return drizzlePriceTotal == null ? null : drizzlePriceTotal.getTotal();
+    }
+
+    public String getDrizzleGrandTotalDisplay() {
+        return formatIndianCurrency(getDrizzleGrandTotal());
+    }
+
+    public String getDrizzleGrandTotalInWords() {
+        return amountInWords(getDrizzleGrandTotal());
+    }
+
+    /** Consideration including GST less the receipts acknowledged in the agreement. */
+    public Decimal getDrizzleBalance() {
+        Decimal grandTotal = getDrizzleGrandTotal();
+        return grandTotal == null ? null : grandTotal - totalReceiptAmount;
+    }
+
+    public String getDrizzleBalanceDisplay() {
+        return formatIndianCurrency(getDrizzleBalance());
+    }
+
+    public String getDrizzleBalanceInWords() {
+        return amountInWords(getDrizzleBalance());
+    }
+
+    /** "50" - corpus rate per SFT as printed in "Rs.50/- per SFT". */
+    public String getDrizzleCorpusRate() {
+        return booking == null || booking.Project__r == null
+            ? ''
+            : plainNumber(positive(booking.Project__r.Corpus_Charge_Per_Sq_ft__c));
+    }
+
+    public String getDrizzleCorpusInWords() {
+        return amountInWords(drizzleCorpusLine == null ? null : drizzleCorpusLine.amount);
+    }
+
+    /** "Maintenance for 24 months @ Rs 3.5 /- per month per Sft" (Schedule-C row label). */
+    public String getDrizzleMaintenanceScheduleLabel() {
+        if (booking == null || booking.Project__r == null) {
+            return 'Maintenance';
+        }
+        Decimal months = positive(booking.Project__r.Maintenance_Month__c);
+        Decimal rate = positive(booking.Project__r.Maintenance_Per_sq_ft_per_month__c);
+        return 'Maintenance' + (months == null ? '' : ' for ' + plainNumber(months) + ' months') +
+            (rate == null ? '' : ' @ Rs ' + plainNumber(rate) + ' /- per month per Sft');
+    }
+
+    /** "Corpus Fund @ Rs. 50 /- per sft" (Schedule-C row label). */
+    public String getDrizzleCorpusScheduleLabel() {
+        String rate = getDrizzleCorpusRate();
+        return 'Corpus Fund' + (String.isBlank(rate) ? '' : ' @ Rs. ' + rate + ' /- per sft');
+    }
+
+    /** Block letter, e.g. "F": the Tower lookup, else the Block picklist, else the unit name prefix. */
+    public String getDrizzleBlock() {
+        if (selectedUnit == null) {
+            return '';
+        }
+        if (selectedUnit.Block1__r != null && !String.isBlank(selectedUnit.Block1__r.Name)) {
+            return selectedUnit.Block1__r.Name.trim().toUpperCase();
+        }
+        if (!String.isBlank(selectedUnit.Block__c)) {
+            return selectedUnit.Block__c.trim().toUpperCase();
+        }
+        if (!String.isBlank(selectedUnit.Name) && selectedUnit.Name.contains('-')) {
+            String prefix = selectedUnit.Name.substringBefore('-').trim();
+            if (prefix.length() <= 3) {
+                return prefix.toUpperCase();
+            }
+        }
+        return String.isBlank(selectedUnit.Tower__c) ? '' : selectedUnit.Tower__c.trim().toUpperCase();
+    }
+
+    /** "F-306" */
+    public String getDrizzleFlatNo() {
+        return selectedUnit == null || String.isBlank(selectedUnit.Name) ? '' : selectedUnit.Name.trim().toUpperCase();
+    }
+
+    /** "THIRD" / "GROUND" */
+    public String getDrizzleFloor() {
+        if (selectedUnit == null || String.isBlank(selectedUnit.Floor__c)) {
+            return '';
+        }
+        String floorValue = selectedUnit.Floor__c.trim();
+        if (floorValue.equalsIgnoreCase('G') || floorValue.equalsIgnoreCase('Ground')) {
+            return 'GROUND';
+        }
+        if (floorValue.isNumeric()) {
+            Integer floorNumber = Integer.valueOf(floorValue);
+            if (floorNumber >= 0 && floorNumber < FLOOR_WORDS.size()) {
+                return FLOOR_WORDS[floorNumber];
+            }
+        }
+        return floorValue.toUpperCase();
+    }
+
+    /** "2BHK" */
+    public String getDrizzleFlatType() {
+        return selectedUnit == null || String.isBlank(selectedUnit.BHK_Type__c)
+            ? ''
+            : selectedUnit.BHK_Type__c.trim().toUpperCase().replace(' BHK', 'BHK');
+    }
+
+    public String getDrizzleFlatSize() {
+        return selectedUnit == null ? '' : plainNumber(selectedUnit.Saleable_Area_Sft__c);
+    }
+
+    public String getDrizzleCarpetArea() {
+        return selectedUnit == null ? '' : plainNumber(selectedUnit.Carpet_Area__c);
+    }
+
+    public String getDrizzleBalconyArea() {
+        return selectedUnit == null ? '' : plainNumber(selectedUnit.Balcony_Area__c);
+    }
+
+    /** Utility area is held in "Other Exclusive Area" on the unit. */
+    public String getDrizzleUtilityArea() {
+        return selectedUnit == null ? '' : plainNumber(selectedUnit.Other_Exclusive_Area__c);
+    }
+
+    public String getDrizzleCommonArea() {
+        return selectedUnit == null ? '' : plainNumber(selectedUnit.Common_Area_Allotted_to_Association__c);
+    }
+
+    public String getDrizzleExternalWall() {
+        return selectedUnit == null ? '' : plainNumber(selectedUnit.External_Wall_Area__c);
+    }
+
+    public String getDrizzleInternalWall() {
+        return selectedUnit == null ? '' : plainNumber(selectedUnit.Internal_Wall_Area__c);
+    }
+
+    /** "32.60" */
+    public String getDrizzleUds() {
+        return selectedUnit == null || selectedUnit.UDS__c == null
+            ? ''
+            : selectedUnit.UDS__c.setScale(2, System.RoundingMode.HALF_UP).toPlainString();
+    }
+
+    public String getDrizzleProjectName() {
+        if (booking != null && booking.Project__r != null && !String.isBlank(booking.Project__r.Name)) {
+            return booking.Project__r.Name.trim().toUpperCase();
+        }
+        return selectedUnit == null || selectedUnit.Project__r == null || selectedUnit.Project__r.Name == null
+            ? ''
+            : selectedUnit.Project__r.Name.trim().toUpperCase();
+    }
+
+    private static String upperOrBlank(String value) {
+        return String.isBlank(value) ? '' : value.trim().toUpperCase();
+    }
+
+    public String getDrizzleBoundaryNorth() {
+        return selectedUnit == null ? '' : upperOrBlank(firstNonBlank(new List<String>{
+            selectedUnit.North_By__c, selectedUnit.Boundary_North__c }));
+    }
+
+    public String getDrizzleBoundarySouth() {
+        return selectedUnit == null ? '' : upperOrBlank(firstNonBlank(new List<String>{
+            selectedUnit.South_By__c, selectedUnit.Boundary_South__c }));
+    }
+
+    public String getDrizzleBoundaryEast() {
+        return selectedUnit == null ? '' : upperOrBlank(firstNonBlank(new List<String>{
+            selectedUnit.East_By__c, selectedUnit.Boundary_East__c }));
+    }
+
+    public String getDrizzleBoundaryWest() {
+        return selectedUnit == null ? '' : upperOrBlank(firstNonBlank(new List<String>{
+            selectedUnit.West_By__c, selectedUnit.Boundary_West__c }));
+    }
+
+    /** "MR. A & MR. B" */
+    public String getDrizzleBuyerNames() {
+        List<String> names = new List<String>();
+        for (ApplicantEntry applicant : applicants) {
+            names.add(applicant.getDrizzleName());
+        }
+        return String.join(names, ' & ');
+    }
+
+    /** "R/o: 1-2-3, ..." */
+    public String getDrizzleBuyerAddress() {
+        String address = getBuyerAddress();
+        return String.isBlank(address) ? '' : 'R/o: ' + address;
+    }
+
+    /** Every allottee's e-mail, "a@x.com & b@y.com". */
+    public String getDrizzleBuyerEmails() {
+        List<String> emails = new List<String>();
+        Set<String> seen = new Set<String>();
+        for (ApplicantEntry applicant : applicants) {
+            if (!String.isBlank(applicant.email) && !seen.contains(applicant.email.toLowerCase())) {
+                seen.add(applicant.email.toLowerCase());
+                emails.add(applicant.email.trim());
+            }
+        }
+        if (emails.isEmpty() && !String.isBlank(getBuyerEmail())) {
+            emails.add(getBuyerEmail());
+        }
+        return String.join(emails, ' & ');
     }
 
     // ---------------------------------------------------------------- formatting

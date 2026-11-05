@@ -256,6 +256,7 @@ img { border:0; }
 </style>
 </head>
 <body>
+<apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(ownerMismatchMessage))}"><div style="border:1px solid #c00;color:#c00;padding:4px;margin-bottom:8px;font-size:9pt">{!ownerMismatchMessage}</div></apex:outputPanel>
 <div class="footer"><div class="c6e">Page <span class="c6g"><span class="pagenumber"></span></span> of <span class="c6g"><span class="pagecount"></span></span></div></div>
 <div class="c0">&#160;</div>
 <div class="c0">&#160;</div>
@@ -278,7 +279,7 @@ img { border:0; }
 <div class="c1">&#160;</div>
 <div class="c3"><span class="c2">AGREEMENT OF SALE</span></div>
 <div class="c4">&#160;</div>
-<div class="c9"><span class="c5">This </span><span class="c6">AGREEMENT OF SALE </span><span class="c5">is made and executed on this the </span><span class="c7"><apex:outputText value="{0,date,dd}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></span><span class="c5"> day of </span><span class="c7"><apex:outputText value="{0,date,MMMM yyyy}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></span><span class="c5">, at Ranga Reddy District, Telangana State, by and between: -</span></div>
+<div class="c9"><span class="c5">This </span><span class="c6">AGREEMENT OF SALE </span><span class="c5">is made and executed on this the </span><span class="c7"><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,dd}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">____</apex:outputPanel></span><span class="c5"> day of </span><span class="c7"><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,MMMM yyyy}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">____________ ______</apex:outputPanel></span><span class="c5">, at Ranga Reddy District, Telangana State, by and between: -</span></div>
 <div class="c9">&#160;</div>
 <div class="ce"><span class="ca">1.</span><span class="cb"></span><span class="cc">Sri. K. MAGAN SINGH</span><span class="cd">, </span><span class="cc">S/o Late K. SATYANARAYANA SINGH, </span><span class="cd">aged 70 Years, Occupation: Business, Resident of 12-1-325/D, Dattatreya Nagar, Asif Nagar, Hyderabad, Telangana State - 500028. (Aadhaar No. 6046 3431 7974 &amp; PAN No. ANFPM1588D).</span></div>
 <div class="cf">&#160;</div>
@@ -794,7 +795,7 @@ img { border:0; }
 <div class="c3m">&#160;</div>
 <div class="c3m">&#160;</div>
 <div class="c3m">&#160;</div>
-<div class="c3m"><span class="c6">Balance </span><span class="c8">Rs. {!formattedBalanceAmount}/- ({!balanceAmountInWords})</span><span class="c6"> availing by the way of loan from </span><span class="c8">{!booking.Loan_Bank_Name__c}.</span></div>
+<div class="c3m"><span class="c6">Balance </span><span class="c8">Rs. {!formattedBalanceAmount}/- ({!balanceAmountInWords})</span><span class="c6"> availing by the way of loan from </span><span class="c8">{!loanBankName}.</span></div>
 <div class="c3m">&#160;</div>
 <div class="c3m">&#160;</div>
 <div class="c2p">1.12<span class="c3b"></span><span class="c5">The VENDEE/S shall pay the installments as stipulated above within 15 days from the date of notice issued by the DEVELOPER, failing which it shall carry interest at the rate of 24% prescribed in the Rules.</span></div>
@@ -1026,12 +1027,12 @@ img { border:0; }
 <tr>
 <td class="c1x"><div class="cx"><span class="c8">Address</span></div></td>
 <td class="c1x"><div class="cx"><span class="c8">:</span></div></td>
-<td class="c1x"><div class="cx"><span class="c7">{!booking.Address__c}</span></div></td>
+<td class="c1x"><div class="cx"><span class="c7">{!buyerAddress}</span></div></td>
 </tr>
 <tr>
 <td class="c1x"><div class="cx"><span class="c8">E mail</span></div></td>
 <td class="c1x"><div class="cx"><span class="c8">:</span></div></td>
-<td class="c1x"><div class="cx"><span class="c7">{!booking.Email1__c}</span></div></td>
+<td class="c1x"><div class="cx"><span class="c7">{!buyerEmail}</span></div></td>
 </tr>
 </table></div>
 <div class="c4f">&#160;</div>

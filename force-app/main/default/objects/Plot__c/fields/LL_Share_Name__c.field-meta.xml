@@ -25,6 +25,16 @@
                 <default>false</default>
                 <label>SURESH SINGH</label>
             </value>
+            <value>
+                <fullName>NAVEEN SINGH</fullName>
+                <default>false</default>
+                <label>NAVEEN SINGH</label>
+            </value>
+            <value>
+                <fullName>NITIN SINGH</fullName>
+                <default>false</default>
+                <label>NITIN SINGH</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

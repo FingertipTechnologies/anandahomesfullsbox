@@ -186,7 +186,7 @@ public with sharing class CapriNocApprovedEmailInvocable {
                        Related_Swap_History__c, Related_Cancellation_Booking_Ids__c,
                        Related_Swap_History_Ids__c, Booking__c,
                        Booking__r.Capri_Email__c, Booking__r.Unit_NumberFor__c,
-                       Booking__r.Project_Name__c
+                       Booking__r.Project_Name__c, Booking__r.Project__r.Name
                 FROM NOC__c
                 WHERE Id IN :batchIds
                 WITH SYSTEM_MODE
@@ -207,7 +207,10 @@ public with sharing class CapriNocApprovedEmailInvocable {
                 }
 
                 String unitNumber = noc.Booking__r.Unit_NumberFor__c;
-                String projectName = noc.Booking__r.Project_Name__c;
+                // Project_Name__c is a formula that can be blank; fall back to the project itself.
+                String projectName = String.isNotBlank(noc.Booking__r.Project_Name__c)
+                    ? noc.Booking__r.Project_Name__c
+                    : (noc.Booking__r.Project__r == null ? null : noc.Booking__r.Project__r.Name);
                 Messaging.SingleEmailMessage email = new Messaging.SingleEmailMessage();
                 email.setToAddresses(new List<String>{ noc.Booking__r.Capri_Email__c });
                 email.setSubject(

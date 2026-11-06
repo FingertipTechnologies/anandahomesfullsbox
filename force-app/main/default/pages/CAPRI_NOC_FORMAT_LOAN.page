@@ -4,14 +4,19 @@
     <html>
     <head>
         <style type="text/css">
-            @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
-            body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #222; }
-            p { margin: 0 0 10px 0; line-height: 1.35; }
-            table { width: 100%; border-collapse: collapse; margin: 8px 0 14px 0; }
-            th, td { border: 1px solid #777; padding: 5px; text-align: left; vertical-align: top; }
-            th { background-color: #e9eef5; }
-            .date { text-align: right; }
-            .section-title { margin: 12px 0 5px 0; font-weight: bold; }
+            /* Layout follows "CAPRI NOC FORMAT LOAN.docx"; the top margin leaves room for the letterhead. */
+            @page { size: A4; margin: 150pt 72pt 45pt 64pt; }
+            body { font-family: 'Times New Roman', Times, serif; font-size: 10pt; color: #000; line-height: 1.2; }
+            p { margin: 0; text-align: justify; }
+            .gap { height: 11pt; }
+            .right { text-align: right; }
+            .left { text-align: left; }
+            table { width: 100%; border-collapse: collapse; margin: 0; }
+            th, td { border: 0.75pt solid #000; padding: 2pt 5pt; text-align: left; vertical-align: top; font-size: 10pt; }
+            table.details td { padding: 4pt 5pt; }
+            table.receipts th { text-align: center; font-weight: bold; vertical-align: middle; }
+            table.receipts td { text-align: center; }
+            tr { page-break-inside: avoid; }
         </style>
     </head>
     <body>
@@ -19,80 +24,84 @@
             <p>{!errorMessage}</p>
         </apex:outputPanel>
         <apex:outputPanel rendered="{!ISBLANK(errorMessage)}">
-            <p class="date"><b>Date:</b> {!TODAY()}</p>
-            <p>
-                <b>To,</b><br/>
-                Capri Global Capital Limited<br/>
-                502, Tower A,<br/>
-                Peninsula Business Park,<br/>
-                Senapati Bapat Marg,<br/>
-                Lower Parel, Mumbai 400 013.
-            </p>
-            <p>
-                <b>Sub:</b> Request for issue of No Objection Certificate for sale of Flat No.
-                <b><apex:outputText value="{!booking.Plot__r.Name}"/></b> in the mortgaged property
-                <b><apex:outputText value="{!booking.Project__r.Name}"/></b>, situated at
-                <apex:outputText value="{!booking.Project__r.Project_Address__c}"/>.
-                <apex:outputText value="{!booking.Project__r.Project_description__c}"/>
-            </p>
-            <p>Dear Sir,</p>
-            <p>
-                We are pleased to inform you that we have finalized a deal for transfer of the
-                above flat. The flat and sale consideration details are set out below.
-            </p>
-            <p>
-                We hereby request you to grant a NOC for entering into an Agreement for Sale and
-                for taking a home loan from <b><apex:outputText value="{!booking.Bank_Name__c}"/></b>,
-                <apex:outputText value="{!booking.Bank_Branch__c}"/>. Branch contact:
-                <apex:outputText value="{!booking.Banker_Contact_Person__c}"/>
-                <apex:outputText value="{!booking.Banker_Contact_Number__c}"/>.
-            </p>
-            <p>The in-principle bank sanction letter in favour of the purchaser is attached for your reference.</p>
+            <p class="right">Date:&#160;<apex:outputText value="{0,date,dd/MM/yyyy}"><apex:param value="{!TODAY()}"/></apex:outputText></p>
+            <p class="left">To,</p>
+            <p class="left">Capri Global Capital Limited</p>
+            <p>502, Tower A,</p>
+            <p>Peninsula Business Park,</p>
+            <p>Senapati Bapat Marg,</p>
+            <p>Lower Parel, Mumbai 400 013.</p>
+            <div class="gap">&#160;</div>
+            <p><b>Sub: Request for issue of No objection Certificate with respect to Sale of Flat No
+                {!booking.Plot__r.Name} ({!booking.Plot__r.Saleable_Area_Sft__c} Sq. ft.) in the Mortgaged Property named as
+                &#8220;{!booking.Project__r.Name}&#8221; located at {!booking.Project__r.Project_Address__c}</b></p>
+            <div class="gap">&#160;</div>
+            <p class="left">Dear Sir,</p>
+            <div class="gap">&#160;</div>
+            <p>We are pleased to inform you that we have finalized a deal for transfer of the following Flat details of which are as under:</p>
+            <div class="gap">&#160;</div>
 
-            <table>
-                <tr><td><b>Flat No.</b></td><td><apex:outputText value="{!booking.Plot__r.Name}"/></td></tr>
-                <tr><td><b>Building No.</b></td><td><apex:outputText value="{!booking.Plot__r.Block1__r.Name}"/></td></tr>
-                <tr><td><b>Name of Buyer and Address</b></td><td><apex:outputText value="{!booking.First_Applicant_Name__c}"/><br/><apex:outputText value="{!booking.Permanent_Address__c}"/></td></tr>
-                <tr><td><b>Date of Allotment</b></td><td><apex:outputText value="{0,date,dd/MM/yyyy}"><apex:param value="{!booking.Booking_Date__c}"/></apex:outputText></td></tr>
-                <tr><td><b>Saleable Area (sq. ft.)</b></td><td><apex:outputText value="{!booking.Plot__r.Saleable_Area_Sft__c}"/></td></tr>
-                <tr><td><b>Rate (Rs./sq. ft.)</b></td><td><apex:outputText value="{!booking.Rate_Per_Sqft__c}"/></td></tr>
-                <tr><td><b>Amenities &amp; Infrastructure</b></td><td><apex:outputText value="{!booking.Cost_Sheet__r.Amenities_Charges__c}"/></td></tr>
-                <tr><td><b>Total Sale Consideration</b></td><td><apex:outputText value="{0,number,#,##,##0.00}"><apex:param value="{!booking.Total_Flat_Cost__c}"/></apex:outputText></td></tr>
-                <tr><td><b>Amount received in escrow till date</b></td><td><apex:outputText value="{0,number,#,##,##0.00}"><apex:param value="{!totalReceived}"/></apex:outputText></td></tr>
-                <tr><td><b>Balance Receivables</b></td><td><apex:outputText value="{0,number,#,##,##0.00}"><apex:param value="{!balanceReceivable}"/></apex:outputText></td></tr>
+            <table class="details">
+                <tr><td style="width:47%">Flat No.</td><td>{!booking.Plot__r.Name}</td></tr>
+                <tr><td>Building No.</td><td>{!IF(ISBLANK(booking.Plot__r.Tower_Block__c), booking.Plot__r.Block1__r.Name, booking.Plot__r.Tower_Block__c)}</td></tr>
+                <tr><td>Name of the Buyer and his address</td><td><b>{!buyerNames}</b><br/><b>Address:</b> {!booking.Permanent_Address__c}</td></tr>
+                <tr><td>Date of Allotment</td><td><apex:outputText value="{0,date,dd-MM-yyyy}"><apex:param value="{!booking.Booking_Date__c}"/></apex:outputText></td></tr>
+                <tr><td>Saleable Area in Sq. fts.</td><td>{!booking.Plot__r.Saleable_Area_Sft__c}</td></tr>
+                <tr><td>Rate in Rs. /Sq. Ft.</td><td>{!rateText}/-</td></tr>
+                <tr><td>Amenities &amp; Infrastructure</td><td>{!amenitiesText}/-</td></tr>
+                <tr><td>Total Sale Consideration</td><td>{!considerationText}/-</td></tr>
+                <tr><td>Amt received in escrow account till date</td><td>{!totalReceivedText}/-</td></tr>
+                <tr><td>Balance Receivables</td><td>{!balanceText}/-</td></tr>
             </table>
+            <div class="gap">&#160;</div>
 
-            <p class="section-title">Details of amounts received till date:</p>
-            <table>
-                <thead>
+            <p>We hereby request you to grant a NOC for entering into an Agreement for Sale of in respect for the above Flat
+                and also grant NOC for taking Home Loan from <b>{!bankName}, &#8220;{!booking.Bank_Branch__c}&#8221;</b>
+                and contact person at the branch is &#8220;<b>{!booking.Banker_Contact_Person__c}</b>&#8221;, in respect of above Flat.</p>
+            <div class="gap">&#160;</div>
+            <p>The in-principle Bank sanction letter in favor of the above purchaser is attached for your ready reference.</p>
+            <div class="gap">&#160;</div>
+            <p><b>* Details of &#8216;Amount received till date&#8217; is/are as below: -</b></p>
+            <div class="gap">&#160;</div>
+
+            <table class="receipts">
+                <tr>
+                    <th style="width:6%">Sr. No</th>
+                    <th style="width:13%">Cheque date</th>
+                    <th style="width:13%">Deposited Date</th>
+                    <th style="width:12%">Amount Deposited by</th>
+                    <th style="width:20%">Cheque No./RTGS/NEFT/IMPS Ref. no. if any</th>
+                    <th style="width:13%">Amount</th>
+                    <th style="width:23%">Deposited in Master Collection Escrow/Current A/c. /DFT/Others (Please Specify with A/c no.)</th>
+                </tr>
+                <apex:variable var="rowNo" value="{!0}"/>
+                <apex:repeat value="{!receiptLineItems}" var="receipt">
+                    <apex:variable var="rowNo" value="{!rowNo + 1}"/>
                     <tr>
-                        <th>Receipt</th>
-                        <th>Cheque Date</th>
-                        <th>Deposited Date</th>
-                        <th>Deposited By</th>
-                        <th>Cheque / RTGS / NEFT / IMPS Reference</th>
-                        <th>Amount</th>
-                        <th>Collection Account</th>
+                        <td><apex:outputText value="{0,number,0}"><apex:param value="{!rowNo}"/></apex:outputText></td>
+                        <td><apex:outputText value="{0,date,dd-MM-yyyy}"><apex:param value="{!receipt.Cheque_Date__c}"/></apex:outputText></td>
+                        <td><apex:outputText value="{0,date,dd-MM-yyyy}"><apex:param value="{!receipt.Receipt__r.Receipt_Date__c}"/></apex:outputText></td>
+                        <td>{!IF(ISBLANK(receipt.Mode_of_Payment__c), receipt.Payment_From__c, receipt.Mode_of_Payment__c)}</td>
+                        <td>{!receipt.Cheque_no_Transaction_Number__c}</td>
+                        <td><apex:outputText value="{0,number,#,##0}"><apex:param value="{!receipt.Received_Amount__c}"/></apex:outputText></td>
+                        <td>{!receipt.Receipt__r.Account_Name__r.Name}</td>
                     </tr>
-                </thead>
-                <tbody>
-                    <apex:repeat value="{!receiptLineItems}" var="receipt">
-                        <tr>
-                            <td><apex:outputText value="{!receipt.Name}"/></td>
-                            <td><apex:outputText value="{0,date,dd/MM/yyyy}"><apex:param value="{!receipt.Cheque_Date__c}"/></apex:outputText></td>
-                            <td><apex:outputText value="{0,date,dd/MM/yyyy}"><apex:param value="{!receipt.Receipt__r.Receipt_Date__c}"/></apex:outputText></td>
-                            <td><apex:outputText value="{!receipt.Payment_From__c}"/></td>
-                            <td><apex:outputText value="{!receipt.Cheque_no_Transaction_Number__c}"/></td>
-                            <td><apex:outputText value="{0,number,#,##,##0.00}"><apex:param value="{!receipt.Received_Amount__c}"/></apex:outputText></td>
-                            <td><apex:outputText value="{!receipt.Receipt__r.Account_Name__r.Name}"/></td>
-                        </tr>
-                    </apex:repeat>
-                </tbody>
+                </apex:repeat>
+                <tr>
+                    <td colspan="5" style="text-align:right"><b>Total</b></td>
+                    <td><b>{!totalReceivedText}/-</b></td>
+                    <td>&#160;</td>
+                </tr>
             </table>
-            <p>Yours truly,</p>
-            <p><b>For M/s. ANANDA HOMES</b></p>
-            <br/><br/>
-            <p>Authorised Signatory</p>
+            <div class="gap">&#160;</div>
+            <div class="gap">&#160;</div>
+            <div style="page-break-inside:avoid">
+                <p>Yours truly,</p>
+                <div class="gap">&#160;</div>
+                <p><b>For M/s. ANANDA HOMES</b></p>
+                <div style="height:55pt">&#160;</div>
+                <p class="left"><b>Authorised Signatory</b></p>
+            </div>
         </apex:outputPanel>
     </body>
     </html>

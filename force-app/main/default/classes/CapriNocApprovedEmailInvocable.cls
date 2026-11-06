@@ -78,37 +78,84 @@ public with sharing class CapriNocApprovedEmailInvocable {
         return results;
     }
 
+    /**
+     * The mail always carries the NOC request for the current unit. One swap letter is added for
+     * every swap selected on the NOC and one cancellation letter for every cancellation selected;
+     * with nothing selected only the current unit's NOC goes out.
+     */
+    @TestVisible
     private static List<Messaging.EmailFileAttachment> buildAttachments(NOC__c noc) {
+        String unitNumber = noc.Booking__r.Unit_NumberFor__c;
         List<Messaging.EmailFileAttachment> attachments = new List<Messaging.EmailFileAttachment>{
             EmailPdfGenerator.generatePdfAttachment(
                 'CAPRI_NOC_FORMAT_LOAN',
                 noc.Id,
-                buildFileName('CAPRI_NOC_Loan', noc.Booking__r.Unit_NumberFor__c),
+                buildFileName('CAPRI_NOC_Loan', unitNumber, null),
                 'id'
             )
         };
 
-        if (noc.Related_Swap_History__c != null) {
+        List<Id> swapIds = CapriNocPdfController.selectedSwapIds(noc);
+        for (Integer i = 0; i < swapIds.size(); i++) {
             attachments.add(EmailPdfGenerator.generatePdfAttachment(
                 'CAPRI_NOC_FORMAT_SWAP',
                 noc.Id,
-                buildFileName('CAPRI_NOC_Swap', noc.Booking__r.Unit_NumberFor__c),
-                'id'
+                buildFileName('CAPRI_NOC_Swap', unitNumber, swapIds.size() > 1 ? i + 1 : null),
+                'id',
+                new Map<String, String>{ CapriNocPdfController.RELATED_ID_PARAM => swapIds[i] }
             ));
         }
-        if (noc.Related_Cancellation_Booking__c != null) {
+
+        List<Id> cancellationIds = CapriNocPdfController.selectedCancellationIds(noc);
+        for (Integer i = 0; i < cancellationIds.size(); i++) {
             attachments.add(EmailPdfGenerator.generatePdfAttachment(
                 'CAPRI_CANCELLATION_LETTER',
                 noc.Id,
-                buildFileName('CAPRI_Cancellation', noc.Booking__r.Unit_NumberFor__c),
-                'id'
+                buildFileName('CAPRI_Cancellation', unitNumber, cancellationIds.size() > 1 ? i + 1 : null),
+                'id',
+                new Map<String, String>{ CapriNocPdfController.RELATED_ID_PARAM => cancellationIds[i] }
             ));
         }
         return attachments;
     }
 
-    private static String buildFileName(String prefix, String unitNumber) {
-        String fileName = prefix + (String.isBlank(unitNumber) ? '' : '_' + unitNumber);
+    /**
+     * From the NOC trigger: when a Capri NOC becomes Approved, queue the mail to the Capri email on
+     * its booking. NOCs of other types, and bookings without a Capri email, are left alone so the
+     * approval itself is never blocked.
+     */
+    public static void queueForApprovedNocs(List<NOC__c> newList, Map<Id, NOC__c> oldMap) {
+        if (newList == null || oldMap == null) {
+            return;
+        }
+        Set<Id> approvedIds = new Set<Id>();
+        for (NOC__c noc : newList) {
+            NOC__c old = oldMap.get(noc.Id);
+            if (noc.Approval_Status__c == 'Approved'
+                && old != null && old.Approval_Status__c != 'Approved'
+                && noc.NOC_Type__c == 'Capri NOC'
+                && noc.Booking__c != null) {
+                approvedIds.add(noc.Id);
+            }
+        }
+        if (approvedIds.isEmpty()) {
+            return;
+        }
+        List<Id> toSend = new List<Id>();
+        for (NOC__c noc : [
+            SELECT Id FROM NOC__c
+            WHERE Id IN :approvedIds AND Booking__r.Capri_Email__c != null
+        ]) {
+            toSend.add(noc.Id);
+        }
+        if (!toSend.isEmpty() && Limits.getQueueableJobs() < Limits.getLimitQueueableJobs()) {
+            System.enqueueJob(new SendApprovedNocEmailQueueable(toSend));
+        }
+    }
+
+    private static String buildFileName(String prefix, String unitNumber, Integer sequence) {
+        String fileName = prefix + (String.isBlank(unitNumber) ? '' : '_' + unitNumber)
+            + (sequence == null ? '' : '_' + sequence);
         return fileName.replaceAll('[^A-Za-z0-9_-]', '_') + '.pdf';
     }
 
@@ -134,7 +181,8 @@ public with sharing class CapriNocApprovedEmailInvocable {
 
             Map<Id, NOC__c> nocsById = new Map<Id, NOC__c>([
                 SELECT Id, Name, Approval_Status__c, Related_Cancellation_Booking__c,
-                       Related_Swap_History__c, Booking__c,
+                       Related_Swap_History__c, Related_Cancellation_Booking_Ids__c,
+                       Related_Swap_History_Ids__c, Booking__c,
                        Booking__r.Capri_Email__c, Booking__r.Unit_NumberFor__c,
                        Booking__r.Project_Name__c
                 FROM NOC__c

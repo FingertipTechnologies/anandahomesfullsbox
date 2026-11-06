@@ -1229,7 +1229,7 @@ img { border:0; }
 <tr class="c4r">
 <td class="cz"><div class="cf"><span class="c8">Attention</span></div></td>
 <td class="cz"><div class="cf"><span class="c8">:</span></div></td>
-<td class="cz"><div class="cf"><span class="c8">{!buyerNames}</span></div></td>
+<td class="cz"><div class="cf"><span class="c8">{!allBuyerNames}</span></div></td>
 </tr>
 <tr class="c4s">
 <td class="cz"><div class="cf"><span class="c8">Address</span></div></td>

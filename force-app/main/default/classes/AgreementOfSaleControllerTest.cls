@@ -590,6 +590,14 @@ private class AgreementOfSaleControllerTest {
         System.assert(latha.getDeedDetails().startsWith('Resident of '), 'Falls back to the primary address');
         System.assertEquals('(AADHAAR No.  & PAN No. )', latha.getDeedIds(), 'Blank ids print empty');
         System.assert(controller.getAllApplicants() === purchasers, 'Built once and cached');
+
+        List<String> names = new List<String>();
+        for (AgreementOfSaleController.ApplicantEntry purchaser : purchasers) {
+            names.add(purchaser.getDisplayName());
+        }
+        System.assertEquals(String.join(names, ' & '), controller.getAllBuyerNames(), 'Notice Attention lists every purchaser');
+        System.assert(controller.getAllBuyerNames().contains('SRI. KIRAN EXTRA'), 'Co-applicant in the notice names');
+        System.assert(!controller.buyerNames.contains('KIRAN EXTRA'), 'Shared buyerNames is unchanged for the other pages');
     }
 
     @IsTest
@@ -628,6 +636,7 @@ private class AgreementOfSaleControllerTest {
 
         System.assertEquals('', controller.getSelectedTowerName(), 'No unit, no tower');
         System.assert(controller.getAllApplicants().isEmpty(), 'No booking, no purchasers');
+        System.assertEquals('', controller.getAllBuyerNames(), 'No booking, no notice names');
         System.assertEquals(null, AgreementOfSaleController.queryTowerLookupName(null), 'Null unit id');
     }
 }

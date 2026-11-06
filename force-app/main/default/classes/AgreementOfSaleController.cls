@@ -1006,6 +1006,18 @@ public with sharing class AgreementOfSaleController {
         return allApplicants;
     }
 
+    /**
+     * Names for the "notice to the VENDEE (S)" Attention row: every purchaser
+     * from getAllApplicants() joined with " & ", e.g. "SRI. A & SMT. B".
+     */
+    public String getAllBuyerNames() {
+        List<String> names = new List<String>();
+        for (ApplicantEntry entry : getAllApplicants()) {
+            names.add(entry.getDisplayName());
+        }
+        return String.join(names, ' & ');
+    }
+
     private List<ApplicantEntry> buildAllApplicants() {
         List<ApplicantEntry> result = new List<ApplicantEntry>(applicants);
         if (booking == null || booking.Id == null) {

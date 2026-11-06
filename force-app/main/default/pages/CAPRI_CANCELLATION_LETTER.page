@@ -5,7 +5,7 @@
     <head>
         <style type="text/css">
             /* Layout follows "CAPRI CANCELLATION LETTER.docx"; the top margin leaves room for the letterhead.
-               Add ?relatedId=<cancelled Booking Id> to print a cancellation other than the NOC's first one. */
+               Add ?relatedId=(cancelled Booking Id) to print a cancellation other than the NOC's first one. */
             @page { size: A4; margin: 100pt 72pt 40pt 72pt; }
             body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #000; line-height: 1.25; }
             p { margin: 0; text-align: left; }

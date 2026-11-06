@@ -54,18 +54,36 @@ public with sharing class PaymentScheduleGeneratorService {
         List<Object> fieldMappings = (List<Object>) creationConfig.get('fieldMappings');
 
         // Step 1: Query Bookings with the configured parent lookup field
-        String bookingQuery = 'SELECT Id, Name, ' + bookingParentField + ', Plot__c, Plot__r.Unit_Type__c, '
+        String bookingQuery = 'SELECT Id, Name, ' + bookingParentField + ', Plot__c, Plot__r.Unit_Type__c, Plot__r.Block1__c, '
             + 'Grand_Total__c, Total_Flat_Cost__c, GST_Amount__c, TDS__c '
             + 'FROM Booking__c WHERE Id IN :bookingIds';
 
         List<Booking__c> bookings = Database.query(bookingQuery);
         if (bookings.isEmpty()) return;
 
+        // Never generate twice: a booking that already has payment schedules is left alone, so a
+        // second caller (another flow, a manual re-run) cannot duplicate the milestones.
+        Set<Id> alreadyScheduled = new Set<Id>();
+        for (AggregateResult ar : [
+            SELECT Booking__c bookingId FROM Payment_Schedule__c
+            WHERE Booking__c IN :bookingIds GROUP BY Booking__c
+        ]) {
+            alreadyScheduled.add((Id) ar.get('bookingId'));
+        }
+        if (!alreadyScheduled.isEmpty()) {
+            List<Booking__c> pending = new List<Booking__c>();
+            for (Booking__c b : bookings) {
+                if (!alreadyScheduled.contains(b.Id)) pending.add(b);
+            }
+            bookings = pending;
+            if (bookings.isEmpty()) return;
+        }
+
         // Collect parent IDs from the configured field
         Set<Id> parentIds = new Set<Id>();
         Map<Id, Booking__c> bookingMap = new Map<Id, Booking__c>();
         for (Booking__c b : bookings) {
-            Id parentId = (Id) b.get(bookingParentField);
+            Id parentId = parentIdOf(b, bookingParentField);
             if (parentId != null) {
                 parentIds.add(parentId);
             }
@@ -112,7 +130,7 @@ public with sharing class PaymentScheduleGeneratorService {
         List<Payment_Schedule__c> schedulesToInsert = new List<Payment_Schedule__c>();
 
         for (Booking__c booking : bookings) {
-            Id parentId = (Id) booking.get(bookingParentField);
+            Id parentId = parentIdOf(booking, bookingParentField);
             if (parentId == null) continue;
 
             List<Master_Payment_Schedule__c> masters = masterByParent.get(parentId);
@@ -251,6 +269,20 @@ public with sharing class PaymentScheduleGeneratorService {
             }
         }
 
+    }
+
+    /**
+     * @description The record a booking's master schedules hang off (configured parent field).
+     *              When the schedules are tower-wise (parent = Block__c) and the booking's own
+     *              tower is not filled, the tower of the booking's unit is used instead - a
+     *              booking raised from a quote carries the unit but not the tower.
+     */
+    private static Id parentIdOf(Booking__c booking, String bookingParentField) {
+        Id parentId = (Id) booking.get(bookingParentField);
+        if (parentId == null && bookingParentField == 'Block__c' && booking.Plot__r != null) {
+            parentId = booking.Plot__r.Block1__c;
+        }
+        return parentId;
     }
 
     /**

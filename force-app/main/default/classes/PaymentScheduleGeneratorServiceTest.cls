@@ -180,6 +180,9 @@ private class PaymentScheduleGeneratorServiceTest {
             Status__c = 'New'
         );
         insert booking;
+        // The booking flow may already have generated schedules from the project's master rows;
+        // this test works on its own two hand-built schedules only.
+        delete [SELECT Id FROM Payment_Schedule__c WHERE Booking__c = :booking.Id];
 
         List<Payment_Schedule__c> schedules = new List<Payment_Schedule__c>{
             new Payment_Schedule__c(
@@ -474,6 +477,47 @@ private class PaymentScheduleGeneratorServiceTest {
         PaymentScheduleGeneratorService.generateSchedules(new List<PaymentScheduleGeneratorService.FlowInput>{ input });
         Test.stopTest();
 
+    }
+
+    @IsTest
+    static void testTowerWiseSchedulesUseTheUnitsTowerAndNeverDuplicate() {
+        Project__c project = [SELECT Id FROM Project__c LIMIT 1];
+        Quote__c quote = [SELECT Id FROM Quote__c LIMIT 1];
+        Block__c tower = new Block__c(Name = 'TW-TEST', Project__c = project.Id);
+        insert tower;
+        Plot__c unit = new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Available', Block1__c = tower.Id);
+        insert unit;
+
+        List<Master_Payment_Schedule__c> masters = [SELECT Id FROM Master_Payment_Schedule__c WHERE Project__c = :project.Id];
+        for (Master_Payment_Schedule__c m : masters) {
+            m.Tower__c = tower.Id;
+        }
+        update masters;
+
+        // Tower-wise configuration: master rows are matched on their tower.
+        insert new Post_Sales_Configuration__c(
+            Configuration_Type__c = 'Payment Schedule',
+            Is_Active__c = true,
+            Reminder_Config__c = '{"sourceParentField":"Tower__c","bookingParentField":"Block__c","fieldMappings":[]}'
+        );
+
+        // The booking carries the unit but not the tower, as a booking raised from a quote does.
+        Booking__c booking = new Booking__c(
+            Project__c = project.Id, Plot__c = unit.Id, Quote__c = quote.Id,
+            Booking_Amount__c = 100000, Mode_Of_Payment__c = 'UPI', Booking_Date__c = Date.today(),
+            Total_Flat_Cost__c = 5000000, GST_Amount__c = 250000, Status__c = 'New'
+        );
+        insert booking;
+
+        Test.startTest();
+        PaymentScheduleGeneratorService.generateForBookings(new Set<Id>{ booking.Id });
+        Integer afterFirstRun = [SELECT COUNT() FROM Payment_Schedule__c WHERE Booking__c = :booking.Id];
+        PaymentScheduleGeneratorService.generateForBookings(new Set<Id>{ booking.Id });
+        Integer afterSecondRun = [SELECT COUNT() FROM Payment_Schedule__c WHERE Booking__c = :booking.Id];
+        Test.stopTest();
+
+        System.assertEquals(masters.size(), afterFirstRun, 'One schedule per master row of the tower of the unit');
+        System.assertEquals(afterFirstRun, afterSecondRun, 'A second run must not duplicate the schedules');
     }
 
     @IsTest

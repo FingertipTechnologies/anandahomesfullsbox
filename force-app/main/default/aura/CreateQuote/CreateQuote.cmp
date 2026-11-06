@@ -231,6 +231,20 @@
                             <div class="slds-size_4-of-8 slds-p-horizontal_small">
                                 <lightning:input name="Court_Yard_Premium__c" type="number" formatter="currency" step="0.01" disabled="true" label="Court Yard Premium" value="{!v.oppPlot.Court_Yard_Premium__c}" />
                             </div>
+                             <aura:if isTrue="{!v.projectName == 'The Drizzle'}">
+                              <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="Lake_Premium__c" type="number" formatter="currency" step="0.01" disabled="true" label="Lake Premium" value="{!v.oppPlot.Lake_Premium__c}" />
+                            </div>
+                            <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="Extra_Covered_Car_Parking_Charges__c" type="number" formatter="currency" step="0.01" disabled="true" label="Extra Car Parking" value="{!v.oppPlot.Extra_Covered_Car_Parking_Charges__c}" />
+                            </div>
+                                 <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="Piped_Gas__c" type="number" formatter="currency" step="0.01" disabled="true" label="Piped Gas" value="{!v.oppPlot.Piped_Gas__c}" />
+                            </div>
+                            
+                               
+							</aura:if>
+       
                             <div class="slds-size_4-of-8 slds-p-horizontal_small">
                                 <lightning:input name="Outer_Premium__c" type="number" formatter="currency" step="0.01" disabled="true" label="Outer Premium" value="{!v.oppPlot.Outer_Premium__c}" />
                             </div>

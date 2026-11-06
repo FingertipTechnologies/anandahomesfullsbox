@@ -455,14 +455,54 @@
         </itemInstances>
         <itemInstances>
             <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
                 <fieldItem>Record.Tower_Block__c</fieldItem>
                 <identifier>RecordTower_Block__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
             <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
                 <fieldItem>Record.LL_Share_Name__c</fieldItem>
                 <identifier>RecordLL_Share_Name__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Wall_Area__c</fieldItem>
+                <identifier>RecordWall_Area__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Plinth_Area__c</fieldItem>
+                <identifier>RecordPlinth_Area__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.Extra_Car_Parking__c</fieldItem>
+                <identifier>RecordExtra_Car_Parking__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.Lake_Premium__c</fieldItem>
+                <identifier>RecordLake_Premium__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <name>Facet-3f820b0c-d28b-4f12-a7c3-a6b0b44f8f8e</name>
@@ -517,6 +557,16 @@
                 </fieldInstanceProperties>
                 <fieldItem>Record.Move_in_charges__c</fieldItem>
                 <identifier>RecordMove_in_charges_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Mortgaged_to_HMDA__c</fieldItem>
+                <identifier>RecordMortgaged_to_HMDA_cField</identifier>
             </fieldInstance>
         </itemInstances>
         <name>Facet-7fbb5486-99c3-4e73-963a-ff1c60c8d5e7</name>

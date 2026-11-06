@@ -7,8 +7,8 @@
  *                  price details and acknowledgement.
  *                - Fallback booking: secondary fields used when primary ones
  *                  are blank, unit tower, area fallback, balance floor at 0.
- *                - Booking without dates or co-applicants: CreatedDate
- *                  fallback and blank co-applicant section.
+ *                - Booking without unit or dates: CreatedDate fallback and
+ *                  blank co-applicant section.
  *                - Invalid input: no page, missing, malformed, wrong-object
  *                  and unknown ids.
  *                - Pure helpers: page split rule and formatters.
@@ -18,7 +18,7 @@ private class BookingFormControllerTest {
 
     private static final String FULL_APPLICANT = 'Ravi Kumar';
     private static final String FALLBACK_APPLICANT = 'Meena Iyer';
-    private static final String DATE_FALLBACK_APPLICANT = 'Date Fallback Customer';
+    private static final String NO_UNIT_APPLICANT = 'No Unit Customer';
 
     private static final String HEADING = 'DETAILS OF CO-APPLICANT';
 
@@ -46,7 +46,7 @@ private class BookingFormControllerTest {
             Block1__c = unitTower.Id,
             Saleable_Area_Sft__c = 1250,
             Facing__c = 'East Facing',
-            BHK_Type__c = '3 BHK',
+            BHK_Type__c = '2 BHK',
             GST1__c = 5
         );
         Plot__c fallbackUnit = new Plot__c(
@@ -58,23 +58,14 @@ private class BookingFormControllerTest {
             Saleable_Area_Sft__c = 0,
             Super_built_up_area__c = 1500
         );
-        Plot__c dateUnit = new Plot__c(
-            Project__c = fullProject.Id,
-            Name = 'C-303',
-            Unit_Type__c = 'Apartment',
-            Status__c = 'Available'
-        );
-        insert new List<Plot__c>{ fullUnit, fallbackUnit, dateUnit };
+        insert new List<Plot__c>{ fullUnit, fallbackUnit };
 
-        // Every booking is inserted in the same shape as
-        // postSalesTestDataFactory.createBooking(): unit, Quote, Booking Amount
-        // and Mode Of Payment. The org's "Booking After Create Handler" flow
-        // runs on booking create, passes Quote__c to FieldMapperInvocable as the
-        // required sourceRecordId and creates the booking-amount receipt, so a
-        // booking without these fails the whole insert.
+        // The "Booking After Create Handler" flow runs for every booking with a
+        // unit and requires Quote__c (FieldMapperInvocable sourceRecordId); it
+        // also creates the booking-amount receipt, so Mode_Of_Payment__c is set
+        // the same way postSalesTestDataFactory.createBooking() does.
         Quote__c fullQuote = postSalesTestDataFactory.createQuote(fullProject.Id);
         Quote__c fallbackQuote = postSalesTestDataFactory.createQuote(fallbackProject.Id);
-        Quote__c dateQuote = postSalesTestDataFactory.createQuote(fullProject.Id);
 
         Booking__c fullBooking = new Booking__c(
             Project__c = fullProject.Id,
@@ -123,6 +114,7 @@ private class BookingFormControllerTest {
             Mode_Of_Payment__c = 'UPI',
             Date_of_Booking__c = Date.newInstance(2026, 9, 1),
             Facing__c = 'North',
+            BHK_Type__c = '1 BHK',
 
             First_Applicant_Name__c = FALLBACK_APPLICANT,
             Mobile__c = '9123456780',
@@ -137,16 +129,12 @@ private class BookingFormControllerTest {
             Funding_Type__c = 'Self-Funded',
             Cheque_DD_NEFT_RTGS_No__c = 'CHQ-9876'
         );
-        Booking__c dateFallbackBooking = new Booking__c(
+        Booking__c noUnitBooking = new Booking__c(
             Project__c = fullProject.Id,
-            Plot__c = dateUnit.Id,
-            Quote__c = dateQuote.Id,
             Status__c = 'New',
-            Mode_Of_Payment__c = 'UPI',
-            Booking_Amount__c = 100000,
-            First_Applicant_Name__c = DATE_FALLBACK_APPLICANT
+            First_Applicant_Name__c = NO_UNIT_APPLICANT
         );
-        insert new List<Booking__c>{ fullBooking, fallbackBooking, dateFallbackBooking };
+        insert new List<Booking__c>{ fullBooking, fallbackBooking, noUnitBooking };
 
         insert new List<Co_Applicant__c>{
             new Co_Applicant__c(
@@ -164,7 +152,7 @@ private class BookingFormControllerTest {
             ),
             new Co_Applicant__c(
                 Booking__c = fullBooking.Id,
-                Salutation__c = 'Mr',
+                Salutation__c = 'Dr',
                 Full_Name__c = 'Vikram Singh',
                 Contact_Number__c = '9000000002'
             ),
@@ -230,7 +218,7 @@ private class BookingFormControllerTest {
         Assert.areEqual('A-101', form.flatNo, 'Flat number from unit name');
         Assert.areEqual('1,250 Sft', form.flatArea, 'Saleable area');
         Assert.areEqual('East Facing', form.facing, 'Facing from unit');
-        Assert.areEqual('3 BHK', form.flatConfiguration, 'Configuration from unit BHK type');
+        Assert.areEqual('2 BHK', form.flatConfiguration, 'Configuration from unit BHK type');
 
         Assert.areEqual('Mr. Ravi Kumar', form.applicantName, 'Applicant name with salutation');
         Assert.areEqual('Suresh Kumar', form.applicantFatherName, 'Father / husband name');
@@ -278,7 +266,7 @@ private class BookingFormControllerTest {
         Assert.areEqual('Lane 3, Kondapur, Hyderabad', record.address, 'Permenent_Address__c');
 
         Assert.areEqual(HEADING + ' 3', form.coApplicants[2].heading, 'Numbered heading');
-        Assert.areEqual('Mr. Vikram Singh', form.coApplicants[2].name, 'Oldest record first');
+        Assert.areEqual('Dr. Vikram Singh', form.coApplicants[2].name, 'Oldest record first');
 
         // 3 co-applicants -> [Co1, Co2] then [Co3 + price details]
         Assert.areEqual(2, form.coApplicantPages.size(), 'Two pages after the first applicant');
@@ -331,7 +319,7 @@ private class BookingFormControllerTest {
         Assert.areEqual('Tower B', form.towerName, 'Unit tower (Block1__c) fallback');
         Assert.areEqual('1,500 Sft', form.flatArea, 'Super built-up area when saleable area is 0');
         Assert.areEqual('North', form.facing, 'Booking facing fallback');
-        Assert.areEqual('', form.flatConfiguration, 'No BHK type on unit or booking prints empty');
+        Assert.areEqual('1 BHK', form.flatConfiguration, 'Booking BHK fallback');
 
         Assert.areEqual(FALLBACK_APPLICANT, form.applicantName, 'No salutation');
         Assert.areEqual('9123456780', form.applicantPhone, 'Mobile__c fallback');
@@ -358,15 +346,15 @@ private class BookingFormControllerTest {
         Assert.areEqual('', form.finalPrice, 'Blank flat cost prints empty');
         Assert.areEqual('', form.gstPayable, 'Blank GST amount prints empty');
         Assert.areEqual('', form.loanAmount, 'Blank loan amount prints empty');
-        Assert.isTrue(form.isSelfFunded, 'Self-Funded ticks Self');
-        Assert.isFalse(form.isBankLoan, 'Self-Funded does not tick Bank Loan');
+        Assert.isTrue(form.isSelfFunded, 'Self funding ticks Self');
+        Assert.isFalse(form.isBankLoan, 'Self funding does not tick Bank Loan');
         Assert.areEqual('CHQ-9876', form.chequeNumber, 'Cheque_DD_NEFT_RTGS_No__c fallback');
         Assert.areEqual('', form.bankName, 'Blank bank prints empty');
     }
 
     @IsTest
-    static void bookingWithoutDatesFallsBackToCreatedDate() {
-        Booking__c booking = findBooking(DATE_FALLBACK_APPLICANT);
+    static void bookingWithoutUnitOrDatesFallsBackToCreatedDate() {
+        Booking__c booking = findBooking(NO_UNIT_APPLICANT);
         Datetime createdAt = Datetime.newInstance(2026, 1, 15, 10, 30, 0);
         Test.setCreatedDate(booking.Id, createdAt);
 
@@ -376,11 +364,11 @@ private class BookingFormControllerTest {
 
         Assert.isFalse(form.hasError, 'No error expected: ' + form.errorMessage);
         Assert.areEqual(createdAt.format('dd/MM/yyyy'), form.bookingDate, 'CreatedDate fallback');
-        Assert.areEqual('C-303', form.flatNo, 'Unit name');
-        Assert.areEqual('', form.flatArea, 'Unit without any area prints empty');
-        Assert.areEqual('', form.towerName, 'Unit and booking without tower print empty');
-        Assert.areEqual('', form.flatConfiguration, 'Unit without BHK type prints empty');
-        Assert.areEqual('', form.gstOnBookingAmount, 'Unit without GST % prints empty');
+        Assert.areEqual('', form.flatNo, 'No unit');
+        Assert.areEqual('', form.flatArea, 'No unit area');
+        Assert.areEqual('', form.towerName, 'No tower');
+        Assert.areEqual('', form.bookingAmountPayable, 'No unit project amount');
+        Assert.areEqual('', form.balanceBookingAmount, 'No balance without booking amount');
         Assert.isTrue(form.coApplicants.isEmpty(), 'No co-applicants');
         Assert.areEqual(1, form.coApplicantPages.size(), 'Blank section + price details');
         Assert.areEqual(HEADING, form.coApplicantPages[0].coApplicants[0].heading, 'Blank section heading');

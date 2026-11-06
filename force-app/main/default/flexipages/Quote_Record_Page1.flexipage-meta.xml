@@ -144,6 +144,18 @@
                 <identifier>RecordTower_Lookup__cField</identifier>
             </fieldInstance>
         </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.Lake_Premium__c</fieldItem>
+                <identifier>RecordLake_Premium__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.Piped_Gas__c</fieldItem>
+                <identifier>RecordPiped_Gas__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
         <name>Facet-c62cc08e-73eb-4af5-8a1e-fb99b019b20d</name>
         <type>Facet</type>
     </flexiPageRegions>

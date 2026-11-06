@@ -49,17 +49,17 @@ private class AgreementOfSaleControllerTest {
             Booking_Date__c = Date.today().addDays(-30),
             Agreement_Date__c = Date.newInstance(2026, 3, 15),
             Status__c = 'New',
-            First_Applicant_Name__c = 'Pamulapati Mahesh',
-            Second_Applicant_Name__c = 'Yarra Thireesha',
+            First_Applicant_Name__c = 'Ravi Kumar Sample',
+            Second_Applicant_Name__c = 'Sita Devi Sample',
             salutation_Applicant1__c = 'Mr',
             Relation_Details_Applicant1__c = 'S/o',
-            Son_Daughter_Wife_of1__c = 'Venkateswararao Pamulapati',
+            Son_Daughter_Wife_of__c = 'Mohan Rao Sample',
             Date_of_Birth1__c = Date.today().addYears(-30),
             Designation__c = 'Private Employee',
-            Address__c = 'H.No-1-121, Perecherla, Guntur',
-            Aadhaar_Number__c = '623678716036',
-            PAN_Number1__c = 'CSGPP7659L',
-            Email__c = 'mahesh@example.com',
+            Address__c = 'H.No-1-1, Sample Street, Sample Town',
+            Aadhaar_Number__c = '111122223333',
+            PAN_Number1__c = 'ABCDE1234F',
+            Email__c = 'ravi@example.com',
             Total_Flat_Cost__c = 10513680,
             Base_Price__c = 9513680,
             Price_per_sqft__c = 6259,
@@ -71,15 +71,15 @@ private class AgreementOfSaleControllerTest {
 
         insert new Co_Applicant__c(
             Booking__c = booking.Id,
-            Full_Name__c = 'Yarra Thireesha',
+            Full_Name__c = 'Sita Devi Sample',
             Salutation__c = 'Mrs',
             S_o_D_o_W_o__c = 'W/o',
-            W_o_S_o_C_o_c__c = 'Pamulapati Mahesh',
+            W_o_S_o_C_o_c__c = 'Ravi Kumar Sample',
             Date_of_Birth__c = Date.today().addYears(-28),
-            Address__c = 'H.No-1-121, Perecherla, Guntur',
-            Aadhar_Number__c = '230301486240',
-            PAN_Number__c = 'AVJPY2857K',
-            Email__c = 'thireesha@example.com'
+            Address__c = 'H.No-1-1, Sample Street, Sample Town',
+            Aadhar_Number__c = '444455556666',
+            PAN_Number__c = 'FGHIJ5678K',
+            Email__c = 'sita@example.com'
         );
 
         insert new List<Receipt__c>{
@@ -87,7 +87,7 @@ private class AgreementOfSaleControllerTest {
                 Booking__c = booking.Id,
                 Receipt_Date__c = Date.newInstance(2024, 9, 24),
                 Receipt_Type__c = 'Advance Payment',
-                Cheque_Number__c = '000004',
+                Cheque_Number__c = 'CHQ0001',
                 Amount_received__c = 500000,
                 Approval_Status__c = 'Approved'
             ),
@@ -95,7 +95,7 @@ private class AgreementOfSaleControllerTest {
                 Booking__c = booking.Id,
                 Receipt_Date__c = Date.newInstance(2024, 11, 11),
                 Receipt_Type__c = 'Installment Payment',
-                Payment_Reference_Number__c = '301069395',
+                Payment_Reference_Number__c = 'UTR0002',
                 Amount_received__c = 1581709,
                 Approval_Status__c = 'Approved by Finance Team'
             ),
@@ -145,15 +145,15 @@ private class AgreementOfSaleControllerTest {
         // applicants: primary from the booking-form field set, second from the co-applicant
         System.assertEquals(2, controller.applicants.size());
         System.assert(controller.getHasApplicants());
-        System.assertEquals('SRI. PAMULAPATI MAHESH', controller.applicants[0].getDisplayName());
-        System.assert(controller.applicants[0].getLegalDetails().startsWith('S/O. SRI. VENKATESWARARAO PAMULAPATI, aged about 30 years, Occupation: Private Employee, Resident of H.No-1-121'),
+        System.assertEquals('SRI. RAVI KUMAR SAMPLE', controller.applicants[0].getDisplayName());
+        System.assert(controller.applicants[0].getLegalDetails().startsWith('S/O. SRI. MOHAN RAO SAMPLE, aged about 30 years, Occupation: Private Employee, Resident of H.No-1-1'),
             controller.applicants[0].getLegalDetails());
-        System.assert(controller.applicants[0].getLegalDetails().endsWith('(AADHAAR No. 623678716036 & PAN No. CSGPP7659L)'));
-        System.assertEquals('SMT. YARRA THIREESHA', controller.applicants[1].getDisplayName());
-        System.assert(controller.applicants[1].getLegalDetails().startsWith('W/O. SRI. PAMULAPATI MAHESH, aged about 28 years'));
-        System.assertEquals('SRI. PAMULAPATI MAHESH & SMT. YARRA THIREESHA', controller.buyerNames);
-        System.assertEquals('H.No-1-121, Perecherla, Guntur', controller.getBuyerAddress());
-        System.assertEquals('mahesh@example.com', controller.getBuyerEmail());
+        System.assert(controller.applicants[0].getLegalDetails().endsWith('(AADHAAR No. 111122223333 & PAN No. ABCDE1234F)'));
+        System.assertEquals('SMT. SITA DEVI SAMPLE', controller.applicants[1].getDisplayName());
+        System.assert(controller.applicants[1].getLegalDetails().startsWith('W/O. SRI. RAVI KUMAR SAMPLE, aged about 28 years'));
+        System.assertEquals('SRI. RAVI KUMAR SAMPLE & SMT. SITA DEVI SAMPLE', controller.buyerNames);
+        System.assertEquals('H.No-1-1, Sample Street, Sample Town', controller.getBuyerAddress());
+        System.assertEquals('ravi@example.com', controller.getBuyerEmail());
 
         // selected unit
         System.assert(controller.getHasSelectedUnit());
@@ -192,8 +192,8 @@ private class AgreementOfSaleControllerTest {
         System.assert(controller.getHasReceipts());
         System.assertEquals(2, controller.receiptRows.size());
         System.assertEquals('Advance Payment', controller.receiptRows[0].getMode());
-        System.assertEquals('000004', controller.receiptRows[0].getReferenceId());
-        System.assertEquals('301069395', controller.receiptRows[1].getReferenceId());
+        System.assertEquals('CHQ0001', controller.receiptRows[0].getReferenceId());
+        System.assertEquals('UTR0002', controller.receiptRows[1].getReferenceId());
         System.assertEquals('5,00,000', controller.receiptRows[0].getAmountDisplay());
         System.assertEquals(2081709, controller.totalReceiptAmount);
         System.assertEquals('20,81,709', controller.getFormattedTotalReceiptAmount());
@@ -252,16 +252,16 @@ private class AgreementOfSaleControllerTest {
             Project__c = project.Id,
             Plot__c = unit.Id,
             Status__c = 'New',
-            First_Applicant_Name__c = 'Nagender Bojjawar',
+            First_Applicant_Name__c = 'Arun Sample',
             Salutation__c = 'Mr.',
             S_o_D_o_W_o__c = 'S/o',
-            Son_Daughter_Wife_of1__c = 'Sri. Vijayakumar Bojjawar',
+            Son_Daughter_Wife_of__c = 'Sri. Kiran Sample',
             Date_of_Birth__c = Date.today().addYears(-45),
             Occupation__c = 'Private Employee',
-            Permanent_Address__c = '14-176/2, Ganesh Nagar, Meerpet',
-            Aadhaar__c = '402585380070',
-            PAN_Number__c = 'AENPN6035P',
-            Email1__c = 'naagender.b@example.com',
+            Permanent_Address__c = '12-34/5, Sample Nagar, Samplepet',
+            Aadhaar__c = '777788889999',
+            PAN_Number__c = 'KLMNO9012P',
+            Email1__c = 'arun@example.com',
             Second_Applicant_Name__c = 'Second Person',
             salutation_Applicant2__c = 'Ms',
             Occupation1__c = 'Doctor',
@@ -278,14 +278,14 @@ private class AgreementOfSaleControllerTest {
         Test.stopTest();
 
         System.assertEquals(2, controller.applicants.size());
-        System.assertEquals('SRI. NAGENDER BOJJAWAR', controller.applicants[0].getDisplayName());
-        System.assert(controller.applicants[0].getLegalDetails().startsWith('S/O. SRI. VIJAYAKUMAR BOJJAWAR, aged about 45 years, Occupation: Private Employee, Resident of 14-176/2'),
+        System.assertEquals('SRI. ARUN SAMPLE', controller.applicants[0].getDisplayName());
+        System.assert(controller.applicants[0].getLegalDetails().startsWith('S/O. SRI. KIRAN SAMPLE, aged about 45 years, Occupation: Private Employee, Resident of 12-34/5'),
             controller.applicants[0].getLegalDetails());
         System.assertEquals('KUM. SECOND PERSON', controller.applicants[1].getDisplayName());
         // second applicant with no address of their own inherits the primary address
-        System.assert(controller.applicants[1].getLegalDetails().contains('Occupation: Doctor, Resident of 14-176/2'));
-        System.assertEquals('naagender.b@example.com', controller.getBuyerEmail());
-        System.assertEquals('14-176/2, Ganesh Nagar, Meerpet', controller.getBuyerAddress());
+        System.assert(controller.applicants[1].getLegalDetails().contains('Occupation: Doctor, Resident of 12-34/5'));
+        System.assertEquals('arun@example.com', controller.getBuyerEmail());
+        System.assertEquals('12-34/5, Sample Nagar, Samplepet', controller.getBuyerAddress());
         System.assertEquals('1,15,52,000', controller.getFormattedBasicPrice());
         System.assertEquals('10,00,000', controller.getFormattedAmenitiesAmount());
         System.assertEquals('Two', controller.getSelectedCarParkingDisplay());
@@ -310,5 +310,214 @@ private class AgreementOfSaleControllerTest {
         System.assertEquals('', controller.getAgreementAmountInWords());
         System.assertEquals('None', controller.getSelectedCarParkingDisplay());
         System.assertEquals('Amenities including Infrastructure charges', controller.getAmenitiesDescription());
+    }
+
+    @IsTest
+    static void drizzleBuilderAgreementBuildsPriceBreakUp() {
+        Project__c project = postSalesTestDataFactory.createProject('Ananda The Drizzle');
+        project.Corpus_Charge_Per_Sq_ft__c = 50;
+        project.Maintenance_Per_sq_ft_per_month__c = 3.5;
+        project.Maintenance_Month__c = 24;
+        project.Document_Charges__c = 25000;
+        update project;
+
+        Plot__c unit = new Plot__c(
+            Project__c = project.Id,
+            Name = 'F-306',
+            Unit_Type__c = 'Apartment',
+            Status__c = 'Available',
+            Floor__c = '3',
+            BHK_Type__c = '2 BHK',
+            Facing__c = 'East Facing',
+            Saleable_Area_Sft__c = 1375,
+            Carpet_Area__c = 824.02,
+            Balcony_Area__c = 98.59,
+            Other_Exclusive_Area__c = 35.48,
+            Common_Area_Allotted_to_Association__c = 317.313,
+            External_Wall_Area__c = 65.43,
+            Internal_Wall_Area__c = 34.19,
+            UDS__c = 32.6,
+            North_By__c = 'Open to sky',
+            East_By__c = 'Corridor'
+        );
+        insert unit;
+
+        Quote__c quote = new Quote__c(
+            Price_Per_Sq_Ft__c = 7850,
+            Infrastructure_Charges__c = 625000,
+            Amenities_Car_Parking__c = 250000,
+            GST1__c = 5
+        );
+        insert quote;
+
+        Booking__c booking = new Booking__c(
+            Project__c = project.Id,
+            Plot__c = unit.Id,
+            Quote__c = quote.Id,
+            Status__c = 'New',
+            First_Applicant_Name__c = 'Anil Demo Junior',
+            salutation_Applicant1__c = 'Mr',
+            Relation_Details_Applicant1__c = 'S/o',
+            Son_Daughter_Wife_of__c = 'Suresh Demo Senior',
+            Primary_Applicant_Age__c = 29,
+            Occupation__c = 'Pvt. Employee',
+            Permanent_Address__c = '1-2-3, Flat No: 101, Demo Residency, Demo Nagar, Hyderabad',
+            Aadhaar_Number__c = '123412341234',
+            PAN_Number1__c = 'pqrst3456u',
+            Email__c = 'anil@example.com',
+            Second_Applicant_Name__c = 'Suresh Demo Senior',
+            salutation_Applicant2__c = 'Mr',
+            Relation_Details_Applicant2__c = 'S/o',
+            Son_Daughter_Wife_of1__c = 'Ramesh Demo Elder',
+            Email2__c = 'suresh@example.com',
+            Total_Flat_Cost__c = 11668750,
+            Car_Parking_Selected__c = true,
+            Loan_Bank_Name__c = 'BHFL'
+        );
+        insert booking;
+
+        insert new Receipt__c(
+            Booking__c = booking.Id,
+            Receipt_Date__c = Date.newInstance(2026, 3, 14),
+            Receipt_Type__c = 'Advance Payment',
+            Cheque_Number__c = 'CHQ0003',
+            Amount_received__c = 2452188,
+            Approval_Status__c = 'Approved'
+        );
+
+        Test.startTest();
+        AgreementOfSaleController controller = load(Page.SaleAgreementDrizzil, booking);
+        Test.stopTest();
+
+        System.assert(controller.isBuilderSharePage);
+        System.assertEquals('', controller.getOwnerMismatchMessage());
+        // unit not ticked "Mortgaged to HMDA": the sale agreement omits the mortgage clause
+        System.assert(!controller.getIsMortgagedUnit());
+
+        // allottees in THE DRIZZLE wording
+        System.assertEquals(2, controller.applicants.size());
+        AgreementOfSaleController.ApplicantEntry first = controller.applicants[0];
+        System.assertEquals('MR. ANIL DEMO JUNIOR', first.getDrizzleName());
+        System.assertEquals('MR. ANIL DEMO JUNIOR, S/o. MR. SURESH DEMO SENIOR,', first.getDrizzleNameLine());
+        System.assertEquals('aged about 29 years, Occupation: Pvt. Employee; R/o: 1-2-3, Flat No: 101, Demo Residency, Demo Nagar, Hyderabad.',
+            first.getDrizzleDetails());
+        System.assertEquals('(AADHAR NO: 1234 1234 1234, PAN NO: PQRST3456U).', first.getDrizzleIds());
+        System.assertEquals('MR. SURESH DEMO SENIOR, S/o. MR. RAMESH DEMO ELDER,', controller.applicants[1].getDrizzleNameLine());
+        System.assertEquals('MR. ANIL DEMO JUNIOR & MR. SURESH DEMO SENIOR', controller.getDrizzleBuyerNames());
+        System.assert(controller.getDrizzleBuyerAddress().startsWith('R/o: 1-2-3'));
+        System.assertEquals('anil@example.com & suresh@example.com', controller.getDrizzleBuyerEmails());
+
+        // flat schedule
+        System.assertEquals('ANANDA THE DRIZZLE', controller.getDrizzleProjectName());
+        System.assertEquals('F', controller.getDrizzleBlock());
+        System.assertEquals('F-306', controller.getDrizzleFlatNo());
+        System.assertEquals('THIRD', controller.getDrizzleFloor());
+        System.assertEquals('2BHK', controller.getDrizzleFlatType());
+        System.assertEquals('EAST', controller.getSelectedFacingUpper());
+        System.assertEquals('1375', controller.getDrizzleFlatSize());
+        System.assertEquals('824.02', controller.getDrizzleCarpetArea());
+        System.assertEquals('98.59', controller.getDrizzleBalconyArea());
+        System.assertEquals('35.48', controller.getDrizzleUtilityArea());
+        System.assertEquals('317.313', controller.getDrizzleCommonArea());
+        System.assertEquals('65.43', controller.getDrizzleExternalWall());
+        System.assertEquals('34.19', controller.getDrizzleInternalWall());
+        System.assertEquals('32.60', controller.getDrizzleUds());
+        System.assertEquals('OPEN TO SKY', controller.getDrizzleBoundaryNorth());
+        System.assertEquals('CORRIDOR', controller.getDrizzleBoundaryEast());
+        System.assertEquals('', controller.getDrizzleBoundarySouth());
+        System.assertEquals('', controller.getDrizzleBoundaryWest());
+
+        // price table: basic + club house + parking, 5% GST
+        System.assertEquals(3, controller.drizzlePriceLines.size());
+        AgreementOfSaleController.ChargeLine basic = controller.drizzlePriceLines[0];
+        System.assertEquals('Basic Price', basic.label);
+        System.assertEquals('7850', basic.rateText);
+        System.assertEquals('1,07,93,750', basic.getAmountDisplay());
+        System.assertEquals('5,39,688', basic.getGstDisplay());
+        System.assertEquals('1,13,33,438', basic.getTotalDisplay());
+        System.assertEquals('6,25,000', controller.drizzlePriceLines[1].getAmountDisplay());
+        System.assertEquals('6,56,250', controller.drizzlePriceLines[1].getTotalDisplay());
+        System.assertEquals('Car Parking (1 No.)', controller.drizzlePriceLines[2].label);
+        System.assertEquals('2,62,500', controller.drizzlePriceLines[2].getTotalDisplay());
+        System.assertEquals('1,16,68,750', controller.drizzlePriceTotal.getAmountDisplay());
+        System.assertEquals('5,83,438', controller.drizzlePriceTotal.getGstDisplay());
+        System.assertEquals('1,22,52,188', controller.getDrizzleGrandTotalDisplay());
+        System.assertEquals('Rupees One Crore Twenty Two Lakh Fifty Two Thousand One Hundred Eighty Eight Only',
+            controller.getDrizzleGrandTotalInWords());
+
+        // charges at registration / handover
+        System.assertEquals('Rs. 50/- per SFT', controller.drizzleCorpusLine.rateText);
+        System.assertEquals('68,750', controller.drizzleCorpusLine.getAmountDisplay());
+        System.assertEquals('NA', controller.drizzleCorpusLine.getGstDisplay());
+        System.assertEquals('0', controller.drizzleCorpusLine.getGstOrZeroDisplay());
+        System.assertEquals('Rs. 3.50ps. per SFT per Month for 24 Months', controller.drizzleMaintenanceLine.rateText);
+        System.assertEquals('1,15,500', controller.drizzleMaintenanceLine.getAmountDisplay());
+        System.assertEquals('20,790', controller.drizzleMaintenanceLine.getGstDisplay());
+        System.assertEquals('1,36,290', controller.drizzleMaintenanceLine.getTotalDisplay());
+        System.assertEquals('29,500', controller.drizzleLegalLine.getTotalDisplay());
+        System.assertEquals('2,09,250', controller.drizzleOtherTotal.getAmountDisplay());
+        System.assertEquals('25,290', controller.drizzleOtherTotal.getGstDisplay());
+        System.assertEquals('2,34,540', controller.drizzleOtherTotal.getTotalDisplay());
+        System.assertEquals('50', controller.getDrizzleCorpusRate());
+        System.assertEquals('Rupees Sixty Eight Thousand Seven Hundred Fifty Only', controller.getDrizzleCorpusInWords());
+        System.assertEquals('Maintenance for 24 months @ Rs 3.5 /- per month per Sft', controller.getDrizzleMaintenanceScheduleLabel());
+        System.assertEquals('Corpus Fund @ Rs. 50 /- per sft', controller.getDrizzleCorpusScheduleLabel());
+
+        // receipts and balance (consideration including GST less receipts)
+        System.assertEquals('24,52,188', controller.getFormattedTotalReceiptAmount());
+        System.assertEquals('98,00,000', controller.getDrizzleBalanceDisplay());
+        System.assertEquals('Rupees Ninety Eight Lakh Only', controller.getDrizzleBalanceInWords());
+        System.assertEquals('BHFL', controller.getLoanBankName());
+    }
+
+    @IsTest
+    static void drizzleMortgagePageFlagsLandownerUnitAndSurvivesMissingData() {
+        Booking__c booking = buildBooking('MAGAN SINGH');
+
+        Test.startTest();
+        AgreementOfSaleController controller = load(Page.MortgageAgreementofSaleDrizzle, booking);
+        Test.stopTest();
+
+        System.assert(controller.isBuilderSharePage);
+        System.assert(controller.getOwnerMismatchMessage().contains('MAGAN SINGH'));
+        // the dedicated mortgage page always prints the clause
+        System.assert(controller.getIsMortgagedUnit());
+        // no project rates recorded: the registration / handover charges stay blank
+        System.assertEquals('', controller.drizzleCorpusLine.getAmountDisplay());
+        System.assertEquals('', controller.drizzleCorpusLine.getGstDisplay());
+        System.assertEquals('', controller.drizzleOtherTotal.getAmountDisplay());
+        System.assertEquals('', controller.getDrizzleCorpusRate());
+        System.assertEquals('Corpus Fund', controller.getDrizzleCorpusScheduleLabel());
+        // basic price falls out of the agreed cost; schedule names fall back correctly
+        System.assertEquals('1,05,13,680', controller.drizzlePriceTotal.getAmountDisplay());
+        System.assertEquals('Booking Amount', controller.paymentScheduleRows[0].getInstallmentName());
+        System.assertEquals('SEVENTH', controller.getDrizzleFloor());
+    }
+
+    @IsTest
+    static void saleAgreementPrintsMortgageClauseForMortgagedUnit() {
+        Project__c project = postSalesTestDataFactory.createProject('Ananda The Drizzle');
+        Plot__c unit = new Plot__c(
+            Project__c = project.Id,
+            Name = 'F-307',
+            Unit_Type__c = 'Apartment',
+            Status__c = 'Available',
+            Mortgaged_to_HMDA__c = true
+        );
+        insert unit;
+        Booking__c booking = new Booking__c(
+            Project__c = project.Id,
+            Plot__c = unit.Id,
+            Status__c = 'New',
+            First_Applicant_Name__c = 'Anil Demo Junior',
+            Total_Flat_Cost__c = 1000000
+        );
+        insert booking;
+
+        Test.startTest();
+        AgreementOfSaleController controller = load(Page.SaleAgreementDrizzil, booking);
+        Test.stopTest();
+
+        System.assert(controller.getIsMortgagedUnit());
     }
 }

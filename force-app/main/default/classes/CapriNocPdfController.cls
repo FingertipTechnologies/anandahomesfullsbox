@@ -28,6 +28,9 @@ public with sharing class CapriNocPdfController {
     // ---- current booking (the unit the NOC is raised for)
     public String buyerNames { get; private set; }
     public String buyerMobile { get; private set; }
+    /** " (Mobile: 98...)" or blank - printed straight after the buyer names. */
+    public String buyerMobileSuffix { get; private set; }
+    public String projectAddress { get; private set; }
     public String bankName { get; private set; }
     public String rateText { get; private set; }
     public String amenitiesText { get; private set; }
@@ -150,6 +153,9 @@ public with sharing class CapriNocPdfController {
 
         buyerNames = joinNames(booking);
         buyerMobile = booking.Mobile_Primary__c;
+        buyerMobileSuffix = String.isBlank(buyerMobile) ? '' : ' (Mobile: ' + buyerMobile + ')';
+        projectAddress = booking.Project__r == null || String.isBlank(booking.Project__r.Project_Address__c)
+            ? '' : booking.Project__r.Project_Address__c.trim().removeEnd('.') + '.';
         bankName = String.isNotBlank(booking.Loan_Bank_Name__c) ? booking.Loan_Bank_Name__c : booking.Bank_Name__c;
 
         receiptLineItems = receiptsFor(new Set<Id>{ booking.Id });
@@ -162,6 +168,9 @@ public with sharing class CapriNocPdfController {
 
         rateText = formatIndian(booking.Rate_Per_Sqft__c);
         amenitiesText = formatIndian(booking.Cost_Sheet__r == null ? null : booking.Cost_Sheet__r.Amenities_Charges__c);
+        if (String.isNotBlank(amenitiesText)) {
+            amenitiesText += '/-';
+        }
         considerationText = formatIndian(booking.Total_Flat_Cost__c);
         totalReceivedText = formatIndian(totalReceived);
         balanceText = formatIndian(balanceReceivable);

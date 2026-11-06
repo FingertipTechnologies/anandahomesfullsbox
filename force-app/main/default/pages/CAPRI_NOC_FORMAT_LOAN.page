@@ -34,7 +34,7 @@
             <div class="gap">&#160;</div>
             <p><b>Sub: Request for issue of No objection Certificate with respect to Sale of Flat No
                 {!booking.Plot__r.Name} ({!booking.Plot__r.Saleable_Area_Sft__c} Sq. ft.) in the Mortgaged Property named as
-                &#8220;{!booking.Project__r.Name}&#8221; located at {!booking.Project__r.Project_Address__c}</b></p>
+                &#8220;{!booking.Project__r.Name}&#8221; located at {!projectAddress}</b></p>
             <div class="gap">&#160;</div>
             <p class="left">Dear Sir,</p>
             <div class="gap">&#160;</div>
@@ -48,7 +48,7 @@
                 <tr><td>Date of Allotment</td><td><apex:outputText value="{0,date,dd-MM-yyyy}"><apex:param value="{!booking.Booking_Date__c}"/></apex:outputText></td></tr>
                 <tr><td>Saleable Area in Sq. fts.</td><td>{!booking.Plot__r.Saleable_Area_Sft__c}</td></tr>
                 <tr><td>Rate in Rs. /Sq. Ft.</td><td>{!rateText}/-</td></tr>
-                <tr><td>Amenities &amp; Infrastructure</td><td>{!amenitiesText}/-</td></tr>
+                <tr><td>Amenities &amp; Infrastructure</td><td>{!amenitiesText}</td></tr>
                 <tr><td>Total Sale Consideration</td><td>{!considerationText}/-</td></tr>
                 <tr><td>Amt received in escrow account till date</td><td>{!totalReceivedText}/-</td></tr>
                 <tr><td>Balance Receivables</td><td>{!balanceText}/-</td></tr>

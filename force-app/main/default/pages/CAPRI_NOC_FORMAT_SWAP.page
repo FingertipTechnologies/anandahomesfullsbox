@@ -56,8 +56,7 @@
                 M/s. Capri Global Capital Limited and M/s Ananda Homes dated 28-June-2024.</p>
             <apex:outputPanel layout="none" rendered="{!showSwapNote}">
                 <p class="para" style="text-align:left">Note : <b>{!swapHistory.Old_Plot__r.Name}</b> flat was released from
-                    <b>{!swapCustomerNames}</b> and it is allotted as New booking to <b>{!buyerNames}</b>
-                    <apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(buyerMobile))}">&#160;(Mobile : <b>{!buyerMobile}</b>)</apex:outputPanel></p>
+                    <b>{!swapCustomerNames}</b> and it is allotted as New booking to <b>{!buyerNames}</b>{!buyerMobileSuffix}</p>
             </apex:outputPanel>
             <div style="page-break-inside:avoid">
                 <p><b>For M/s Ananda Homes,</b></p>

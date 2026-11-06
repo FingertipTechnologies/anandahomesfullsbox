@@ -57,8 +57,7 @@
             <p class="para" style="margin-left:36pt;text-indent:-21pt">1.&#160;&#160;&#160;Request mail for cancellation of flat by
                 <b>{!cancellationBuyerNames}</b>.</p>
             <p class="para">Note: <b>{!cancellationBooking.Plot__r.Name}</b> flat was cancelled from
-                <b>{!cancellationBuyerNames}</b> and it is allotted as New Booking to <b>{!buyerNames}</b>
-                <apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(buyerMobile))}">&#160;(Mobile: <b>{!buyerMobile}</b>)</apex:outputPanel>.</p>
+                <b>{!cancellationBuyerNames}</b> and it is allotted as New Booking to <b>{!buyerNames}</b>{!buyerMobileSuffix}.</p>
             <div style="page-break-inside:avoid">
                 <p><b>For M/s. Ananda Homes,</b></p>
                 <div style="height:50pt">&#160;</div>

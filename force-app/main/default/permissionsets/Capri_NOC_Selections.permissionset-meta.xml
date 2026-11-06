@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
-    <description>Field access for the two NOC fields that keep every swap / cancellation selected for a Capri NOC.</description>
+    <description>Field access for the two NOC fields that keep every swap / cancellation selected for a Capri NOC, and for the Swap History fields the Capri swap letter prints.</description>
     <fieldPermissions>
         <editable>true</editable>
         <field>NOC__c.Related_Cancellation_Booking_Ids__c</field>
@@ -9,6 +9,46 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>NOC__c.Related_Swap_History_Ids__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Swap_History__c.Approved_By__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Swap_History__c.Approved_Date__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Swap_History__c.New_Booking__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Swap_History__c.New_Plot__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Swap_History__c.Old_Booking__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Swap_History__c.Old_Plot__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Swap_History__c.Swap_Date__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Swap_History__c.Swap_Reason__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>

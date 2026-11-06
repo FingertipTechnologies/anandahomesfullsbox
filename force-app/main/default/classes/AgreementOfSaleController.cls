@@ -161,6 +161,18 @@ public with sharing class AgreementOfSaleController {
             return line + ', ';
         }
 
+        /**
+         * MAGHAN_SINGH_AGREEMENT_OF_SALE wording (no comma before the relation):
+         * e.g. "SRI. RAVI KUMAR S/O. SRI. MOHAN RAO, " (bold part).
+         */
+        public String getDeedNameRelationLine() {
+            String line = getDisplayName();
+            if (!String.isBlank(relation)) {
+                line += ' ' + relation;
+            }
+            return line + ', ';
+        }
+
         /** e.g. "aged about 30 years, Occupation: Business, Resident of Hyderabad. " */
         public String getDeedDetails() {
             List<String> details = new List<String>();

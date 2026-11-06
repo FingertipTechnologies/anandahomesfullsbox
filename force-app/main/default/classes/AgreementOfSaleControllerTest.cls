@@ -706,4 +706,40 @@ private class AgreementOfSaleControllerTest {
             System.assert(String.isNotBlank(controller.getFormattedBalanceFlatAmount()), 'Balance figure printed');
         }
     }
+
+    // ------------------------------------------- MAGHAN_SINGH_AGREEMENT_OF_SALE
+
+    @IsTest
+    static void maghanPageDeedLineAndPurchasers() {
+        Booking__c booking = buildBooking('MAGAN SINGH');
+        insert new Co_Applicant__c(
+            Booking__c = booking.Id,
+            Salutation__c = 'Mr',
+            Full_Name__c = 'Kiran Extra',
+            S_o_D_o_W_o__c = 'S/o',
+            W_o_S_o_C_o_c__c = 'Ravi Extra',
+            Aadhar_Number__c = '123412341234',
+            PAN_Number__c = 'ABCDE1234F'
+        );
+
+        Test.startTest();
+        AgreementOfSaleController controller = load(Page.MAGHAN_SINGH_AGREEMENT_OF_SALE, booking);
+        List<AgreementOfSaleController.ApplicantEntry> purchasers = controller.getAllApplicants();
+        Test.stopTest();
+
+        System.assertEquals('MAGAN SINGH', controller.ownerName, 'MAGHAN page owner');
+        AgreementOfSaleController.ApplicantEntry kiran = purchasers[purchasers.size() - 1];
+        System.assertEquals('SRI. KIRAN EXTRA S/O. SRI. RAVI EXTRA, ', kiran.getDeedNameRelationLine(),
+            'MAGHAN format: no comma between name and relation');
+        System.assertEquals('SRI. KIRAN EXTRA, S/O. SRI. RAVI EXTRA, ', kiran.getDeedNameLine(),
+            'ARJUN format is unchanged');
+        System.assert(controller.getAllBuyerNames().contains('SRI. KIRAN EXTRA'), 'Co-applicant in the notice names');
+
+        for (AgreementOfSaleController.ApplicantEntry purchaser : purchasers) {
+            if (String.isBlank(purchaser.relation)) {
+                System.assertEquals(purchaser.getDisplayName() + ', ', purchaser.getDeedNameRelationLine(),
+                    'No relation: name followed by a comma');
+            }
+        }
+    }
 }

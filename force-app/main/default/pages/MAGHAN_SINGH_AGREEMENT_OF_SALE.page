@@ -22,8 +22,8 @@ img { border:0; }
 .pagecount:before { content: counter(pages); }
 .c0{text-align:center;padding-bottom:8pt;line-height:12.89pt;font-size:10.45pt;font-family:'Times New Roman', Times, serif}
 .c1{text-align:center;line-height:11.72pt;font-size:9.5pt;font-family:'Times New Roman', Times, serif}
-.c2{font-weight:bold;text-decoration:underline;font-size:13.3pt;font-family:'Times New Roman', Times, serif}
-.c3{text-align:center;line-height:16.41pt;font-size:13.3pt;font-family:'Times New Roman', Times, serif}
+.c2{font-weight:bold;text-decoration:underline;font-size:14pt;font-family:'Times New Roman', Times, serif}
+.c3{text-align:center;line-height:17.25pt;font-size:14pt;font-family:'Times New Roman', Times, serif}
 .c4{text-align:justify;line-height:11.72pt;font-size:9.5pt;font-family:'Times New Roman', Times, serif}
 .c5{font-size:10.45pt;font-family:'Times New Roman', Times, serif}
 .c6{font-weight:bold;font-size:10.45pt;font-family:'Times New Roman', Times, serif}
@@ -84,8 +84,8 @@ img { border:0; }
 .c1p{text-align:justify;text-indent:36pt;padding-bottom:8pt;line-height:14.61pt;font-size:10.45pt;font-family:'Times New Roman', Times, serif}
 .c1q{vertical-align:super;font-size:6.8pt;font-family:'Times New Roman', Times, serif}
 .c1r{text-align:justify;text-indent:36pt;padding-bottom:8pt;line-height:12.89pt;font-size:10.45pt;font-family:'Times New Roman', Times, serif}
-.c1s{font-size:12.02pt;font-family:'Times New Roman', Times, serif}
-.c1t{text-align:justify;text-indent:36pt;padding-bottom:8pt;line-height:16.00pt;font-size:12.02pt;font-family:'Times New Roman', Times, serif}
+.c1s{font-size:10.97pt;font-family:'Times New Roman', Times, serif}
+.c1t{text-align:justify;text-indent:36pt;padding-bottom:8pt;line-height:13.54pt;font-size:10.97pt;font-family:'Times New Roman', Times, serif}
 .c1u{text-align:justify;text-indent:36pt;line-height:12.89pt;font-size:10.45pt;font-family:'Times New Roman', Times, serif}
 .c1v{border-collapse:collapse;table-layout:fixed;width:451.3pt;margin-left:-0.65pt}
 .c1w{height:30pt}
@@ -235,9 +235,9 @@ img { border:0; }
 .c5w{height:35pt}
 .c5x{height:37pt}
 .c5y{text-align:justify;padding-bottom:8pt;line-height:18.75pt;font-size:15.2pt;font-family:'Times New Roman', Times, serif}
-.c5z{font-weight:bold;text-decoration:underline;font-size:15.2pt;font-family:'Times New Roman', Times, serif}
-.c60{text-align:center;padding-bottom:8pt;line-height:18.75pt;font-size:15.2pt;font-family:'Times New Roman', Times, serif}
-.c61{border-collapse:collapse;table-layout:fixed;width:203pt;page-break-inside:avoid;margin-left:-5.4pt}
+.c5z{font-weight:bold;text-decoration:underline;font-size:16pt;font-family:'Times New Roman', Times, serif}
+.c60{text-align:center;padding-bottom:8pt;line-height:19.7pt;font-size:16pt;font-family:'Times New Roman', Times, serif}
+.c61{border-collapse:collapse;table-layout:fixed;width:203pt;page-break-inside:avoid}
 .c62{height:15.75pt}
 .c63{line-height:11.72pt;font-size:9.5pt;font-family:'Times New Roman', Times, serif}
 .c64{border-top:0.5pt solid #000;border-right:0.5pt solid #000;border-bottom:0.5pt solid #000;border-left:0.5pt solid #000;padding:0 5.4pt 0 5.4pt;white-space:nowrap;vertical-align:bottom}
@@ -252,11 +252,12 @@ img { border:0; }
 .c6d{font-style:italic;font-size:10.45pt;font-family:'Times New Roman', Times, serif}
 .c6e{text-align:right;line-height:13.42pt}
 .c6f{line-height:13.42pt}
-.c6g{font-weight:bold;font-size:10.44pt}
+.c6g{font-weight:bold;font-size:12pt}
+.ag-pb{page-break-before:always}
+.ag-label{display:inline-block;width:72pt}
 </style>
 </head>
 <body>
-<apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(ownerMismatchMessage))}"><div style="border:1px solid #c00;color:#c00;padding:4px;margin-bottom:8px;font-size:9pt">{!ownerMismatchMessage}</div></apex:outputPanel>
 <div class="footer"><div class="c6e">Page <span class="c6g"><span class="pagenumber"></span></span> of <span class="c6g"><span class="pagecount"></span></span></div></div>
 <div class="c0">&#160;</div>
 <div class="c0">&#160;</div>
@@ -317,7 +318,7 @@ img { border:0; }
 <div class="cs"><span class="cm">Hereinafter</span><span class="cd"> called the</span><span class="cc"> (DEVELOPER/AGPA HOLDER) </span><span class="cd">which term shall mean and include their legal heirs, executors, successors, representatives&#8217; administrators and assignees etc., of the</span><span class="cc"> ONE PART.</span></div>
 <div class="c1"><span class="ct">IN FAVOUR OF</span></div>
 <div class="cu">&#160;</div>
-<apex:repeat value="{!applicants}" var="applicant"><div class="cv"><span class="c8">{!applicant.sequence}. {!applicant.displayName}</span><span class="c7">, {!applicant.legalDetails}.</span></div></apex:repeat>
+<apex:repeat value="{!allApplicants}" var="applicant"><div class="cv"><span class="c8">{!applicant.sequence}. {!applicant.deedNameRelationLine}</span><span class="c7">{!applicant.deedDetails}</span><span class="c8">{!applicant.deedIds}</span></div></apex:repeat>
 <apex:outputPanel layout="none" rendered="{!NOT(hasApplicants)}">Applicant information is missing.</apex:outputPanel>
 <div class="cv">&#160;</div>
 <div class="c4"><span class="cm">Hereinafter</span><span class="cd"> called the </span><span class="cc">&#8220;VENDEE(S)/ PURCHASER(S)&#8221;</span><span class="cd">, which term shall mean and include all his/her heirs, executors, administrators, legal representatives, nominees and assignees etc., of the </span><span class="cc">OTHER PART</span><span class="cd">.</span></div>
@@ -532,7 +533,7 @@ img { border:0; }
 <div class="c1r"><span class="c5">AND WHEREAS, The Developer/AGPA Holder had registered the Project THE LEGACEY for 11 (eleven) Blocks, with 3 Basements, and Ground Floor, and 22 Upper Floors, 12</span><span class="c1q">th</span><span class="c5"> Block with 3 Cellars, Ground Floor and 5 Upper Floors, Amenities Block-I, 3 Cellars and Ground Floor, 4 Upper Floors, and Amenities Block-II, with 3 Cellars, Ground Floor and 3 Upper Floors,&#160; &#160;under the provisions of the Act with the </span><span class="c6">Telangana Real Estate Regulatory Authority(TSRERA)</span><span class="c5"> at Hyderabad and has been granted </span><span class="c6">registration No.</span><span class="c5"> </span><span class="c6">P02400008615,</span><span class="c5"> dated:07/08/2024.</span></div>
 <div class="c9">&#160;</div>
 <div class="c1n"><span class="c1l">WHEREAS at the time of entering into Registered Development Agreement-cum-GPA vide DocumentNo.110/2021, Dated: 04/08/2021, registered at office of the Tahsildar &amp; Joint Sub-registrar, Gandipet, Ranga Reddy District, Telangana State, it is agreed for construction of G+14 Floors only. But due to the market conditions with the consent of the VENDOR NO.1 to 5 and other Land owners, the </span><span class="c5">AGPA Holder</span><span class="c1l"> being the builder applied and acquired the building permission from HMDA for 11 Blocks with 3 basements with Ground + 22 floors and 12th Block with 3 cellars + Ground + 5 upper floors, Amenities Block-1, 3 Cellars + Ground + 4 upper floors and Amenities Block-2 with 3 Cellars + Ground + 3 upper floors, now in the changed circumstances and increase in the floors and constructed area, the VENDOR NO.1 to 5 will be entitled for </span><span class="c1m">32.75% </span><span class="c1l">and the Developer is entitled to </span><span class="c1m">67.25%</span><span class="c1l"> which will supersede the percentage as agreed in the Registered Development Agreement-cum-GPA bearing Document No.110/202, Dated:04/08/2021 and the same was reduced in the Registered Supplementary Agreement vide Doct.No13649/2023, dated:03-11-2023 registered at Sub-Registrar, Gandipet, Rangareddy District.</span></div>
-<div class="c1t"><span class="c5">WHEREAS the VENDOR NO.2 TO 5 are the sons and daughters of the VENDOR NO.1 and the VENDOR NO.1 TO 5 in consultation of each other came to a conclusion to sell developed area of </span><span class="c6"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!totalOwnerSaleableArea}"/></apex:outputText> Square Feet</span><span class="c5"> for their convenience and necessities, as per the </span><span class="c6">Registered Supplementary Agreement vide Doct. No. 13649/2023,</span><span class="c5"> Dated:03/11/2023 </span><span class="c1s">and made their proposal with the </span><span class="c5">AGPA Holder&#160; </span><span class="c1s"> herein who is the builder of the VENDOR NO.1 TO 5 and the </span><span class="c5">AGPA Holder </span><span class="c1s">herein agreed to purchase the area of <apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!totalOwnerSaleableArea}"/></apex:outputText> square feet for the sale consideration mentioned above. However, the flats allocated against the developed area allocated to vendor no.1 to 5 will be allocated with only one car parking to each flat, the flats which are agreed to be sold is shown in the below mentioned table:</span></div>
+<div class="c1t"><span class="c5">WHEREAS the VENDOR NO.2 TO 5 are the sons and daughters of the VENDOR NO.1 and the VENDOR NO.1 TO 5 in consultation of each other came to a conclusion to sell developed area of </span><span class="c6"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText> Square Feet</span><span class="c5"> for their convenience and necessities, as per the </span><span class="c6">Registered Supplementary Agreement vide Doct. No. 13649/2023,</span><span class="c5"> Dated:03/11/2023 </span><span class="c1s">and made their proposal with the </span><span class="c5">AGPA Holder&#160; </span><span class="c1s"> herein who is the builder of the VENDOR NO.1 TO 5 and the </span><span class="c5">AGPA Holder </span><span class="c1s">herein agreed to purchase the area of <apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText> square feet for the sale consideration mentioned above. However, the flats allocated against the developed area allocated to vendor no.1 to 5 will be allocated with only one car parking to each flat, the flats which are agreed to be sold is shown in the below mentioned table:</span></div>
 <div class="c1u"><span class="c5">WHEREAS, the VENDORS due to their personal and financial necessities, have sold the below-mentioned flats are hereunder to the AGPA Holder.&#160; And the Vendors have empowered the AGPA Holder to sell, transfer, alienate the above said flats to any prospective purchaser or purchasers, which is clearly mentioned in the APGA Document.</span></div>
 <div class="cw">&#160;</div>
 <div style="page-break-inside:avoid"><table class="c1v"><colgroup>
@@ -541,18 +542,18 @@ img { border:0; }
 <tr class="c1w">
 <td class="c1x"><div class="c10"><span class="c6">S. No</span></div></td><td class="c1y"><div class="c10"><span class="c6">TOWER</span></div></td><td class="c1y"><div class="c10"><span class="c6">FLOOR</span></div></td><td class="c1y"><div class="c10"><span class="c6">FLAT NO.</span></div></td><td class="c1y"><div class="c10"><span class="c6">SFT</span></div></td><td class="c1y"><div class="c10"><span class="c6">FACING</span></div></td>
 </tr></table></div>
-<apex:repeat value="{!ownerUnits}" var="entry">
+<apex:outputPanel layout="none" rendered="{!hasSelectedUnit}">
 <div style="page-break-inside:avoid;margin-top:-0.5pt"><table class="c1v"><colgroup>
 <col style="width:38.52pt"/><col style="width:74.78pt"/><col style="width:86.67pt"/><col style="width:65pt"/><col style="width:78pt"/><col style="width:108.34pt"/>
 </colgroup>
 <tr class="c20">
-<td class="c1x"><div class="c10"><span class="c5">{!entry.sequence}</span></div></td><td class="c21"><div class="c10"><span class="c5">{!entry.towerDisplay}</span></div></td><td class="c21"><div class="c10"><span class="c5">{!entry.floorDisplay}</span></div></td><td class="c21"><div class="c10"><span class="c5">{!entry.flatNumber}</span></div></td><td class="c21"><div class="c10"><span class="c5"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!entry.unit.Saleable_Area_Sft__c}"/></apex:outputText></span></div></td><td class="c22"><div class="c10"><span class="c5">{!entry.facingDisplay}</span></div></td>
+<td class="c1x"><div class="c10"><span class="c5">1</span></div></td><td class="c21"><div class="c10"><span class="c5">{!selectedTowerName}</span></div></td><td class="c21"><div class="c10"><span class="c5">{!selectedFloorDisplay}</span></div></td><td class="c21"><div class="c10"><span class="c5">{!selectedFlatNumber}</span></div></td><td class="c21"><div class="c10"><span class="c5"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText></span></div></td><td class="c22"><div class="c10"><span class="c5">{!selectedFacingDisplay}</span></div></td>
 </tr></table></div>
-</apex:repeat>
+</apex:outputPanel>
 <div style="page-break-inside:avoid;margin-top:-0.5pt"><table class="c1v"><colgroup>
 <col style="width:38.52pt"/><col style="width:74.78pt"/><col style="width:86.67pt"/><col style="width:65pt"/><col style="width:78pt"/><col style="width:108.34pt"/>
 </colgroup>
-<tr class="c20"><td class="c1x"><div class="c10">&#160;</div></td><td class="c22"><div class="c10">&#160;</div></td><td class="c21"><div class="c10">&#160;</div></td><td class="c21"><div class="c10"><span class="c6">Total</span></div></td><td class="c21"><div class="c10"><span class="c6"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!totalOwnerSaleableArea}"/></apex:outputText></span></div></td><td class="c22"><div class="c10">&#160;</div></td></tr>
+<tr class="c20"><td class="c1x"><div class="c10">&#160;</div></td><td class="c22"><div class="c10">&#160;</div></td><td class="c21"><div class="c10">&#160;</div></td><td class="c21"><div class="c10"><span class="c6">Total</span></div></td><td class="c21"><div class="c10"><span class="c6"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText></span></div></td><td class="c22"><div class="c10">&#160;</div></td></tr>
 </table></div>
 <div class="c23">&#160;</div>
 <div class="c23"><span class="c5">AND WHEREAS, in accordance with the terms and conditions set out in this Agreement and as mutually agreed upon by and between the Parties, the AGPA Holder hereby agrees to sell and the VENDEE/S hereby agree to purchase the Flat Which is more specifically demarcated as per the Schedule below.</span></div>
@@ -573,7 +574,7 @@ img { border:0; }
 </tr>
 <tr>
 <td class="c1x"><div class="c25"><span class="c8">TOWER</span></div></td>
-<td class="c1y"><div class="c25"><span class="c8">{!selectedTowerDisplay}</span></div></td>
+<td class="c1y"><div class="c25"><span class="c8">{!selectedTowerName}</span></div></td>
 </tr>
 <tr>
 <td class="c1x"><div class="c25"><span class="c8">FLAT NO.</span></div></td>
@@ -633,7 +634,7 @@ img { border:0; }
 <div class="c2c">&#160;</div>
 <div class="c2b">a)<span class="c2d"></span><span class="c5">&#8220;Act&#8221; means the Real Estate (Regulation and Development) Act, 2016 (16 of 2016) and includes Telangana Real Estates (Regulation and Development) Rules, 2017, wherever, the context so requires:</span></div>
 <div class="c2c">&#160;</div>
-<div class="c2b">b)<span class="c2d"></span><span class="c5">&#8220;Agreement&#8221; shall mean this agreement to sell a flat bearing No</span><span class="c6">. </span><span class="c8">{!selectedUnit.Name}</span><span class="c6">, Tower no. </span><span class="c8">{!selectedTowerDisplay}</span><span class="c7">,</span><span class="c5"> </span><span class="c6">square feet </span><span class="c8">{!selectedUnit.Saleable_Area_Sft__c}</span><span class="c6">,</span><span class="c5"> including the schedule hereto, as may be amended from time to time;</span></div>
+<div class="c2b">b)<span class="c2d"></span><span class="c5">&#8220;Agreement&#8221; shall mean this agreement to sell a flat bearing No</span><span class="c6">. </span><span class="c8">{!selectedUnit.Name}</span><span class="c6">, Tower no. </span><span class="c8">{!selectedTowerName}</span><span class="c7">,</span><span class="c5"> </span><span class="c6">square feet </span><span class="c8">{!selectedUnit.Saleable_Area_Sft__c}</span><span class="c6">,</span><span class="c5"> including the schedule hereto, as may be amended from time to time;</span></div>
 <div class="c2c">&#160;</div>
 <div class="c2b">c)<span class="c2e"></span><span class="c5">&#8220;Applicable Law&#8221; means all laws, statutes, regulations, codes, bye-laws, ordinances, treaties, judgments, decrees, directives, rules, guidelines, orders, policies and other requirements of any statutory authority having jurisdiction over the Schedule property which are in effect or as may be amended, modified, enacted or revoked from time-to-time hereafter;</span></div>
 <div class="c2c">&#160;</div>
@@ -691,7 +692,7 @@ img { border:0; }
 <div class="c2l"><span class="c27">THEREFORE, IN CONSIDERATION OF THE MUTUAL REPRESENTATIONS, COVENANTS, ASSURANCES, PROMISES, AND AGREEMENTS CONTAINED HEREIN AND OTHER GOOD AND VALUABLE CONSIDERATION, THE PARTIES AGREE AS FOLLOWS:</span></div>
 <div class="c2m">1.<span class="cb"></span><span class="c27">TERMS:</span></div>
 <div class="c2n">&#160;</div>
-<div class="c2p">1.1<span class="c2o"></span><span class="c5">Subject to the terms and conditions as detailed in this Agreement, the DEVELOPER agrees to sell to the VENDEE/S and the VENDEE/S hereby agrees to purchase the </span><span class="c6">Flat No</span><span class="c8">. {!selectedUnit.Name}</span><span class="c5">, </span><span class="c6">Tower No. </span><span class="c8">{!selectedTowerDisplay}</span><span class="c5">, Area </span><span class="c8">{!selectedUnit.Saleable_Area_Sft__c}</span><span class="c6"> sq. ft</span><span class="c5"> (including common area) for a total consideration of </span><span class="c8">Rs. {!formattedTotalFlatCost}/- ({!agreementAmountInWords})</span><span class="c6"> </span><span class="c5">Which includes amenities and excludes GST, constructed on Schedule A property, Puppalguda Village, Gandipet Mandal, Ranga Reddy District, Telangana State:</span></div>
+<div class="c2p">1.1<span class="c2o"></span><span class="c5">Subject to the terms and conditions as detailed in this Agreement, the DEVELOPER agrees to sell to the VENDEE/S and the VENDEE/S hereby agrees to purchase the </span><span class="c6">Flat No</span><span class="c8">. {!selectedUnit.Name}</span><span class="c5">, </span><span class="c6">Tower No. </span><span class="c8">{!selectedTowerName}</span><span class="c5">, Area </span><span class="c8">{!selectedUnit.Saleable_Area_Sft__c}</span><span class="c6"> sq. ft</span><span class="c5"> (including common area) for a total consideration of </span><span class="c8">Rs. {!formattedTotalFlatCost}/- ({!agreementAmountInWords})</span><span class="c6"> </span><span class="c5">Which includes amenities and excludes GST, constructed on Schedule A property, Puppalguda Village, Gandipet Mandal, Ranga Reddy District, Telangana State:</span></div>
 <div class="c2n">&#160;</div>
 <div style="page-break-inside:avoid"><table class="c2q">
 <colgroup>
@@ -760,7 +761,7 @@ img { border:0; }
 <div class="c3a">&#160;</div>
 <div class="c2p">1.10<span class="c3b"></span><span class="c5">The DEVELOPER agrees to pay all outgoings before transferring the physical possession or transfer of Scheduled Property whichever is earlier, of the flat to the VENDEE/S, which it has collected from the VENDEE/S, for the payment of outgoings (including land cost [either directly or by way of share in the project, ground rent, municipal or other local taxes, charges for water or electricity, maintenance charges, including mortgage loan and interest on mortgages or other encumbrances and such other liabilities payable to competent authorities, banks and financial institutions, which are related to the project). If DEVELOPER fails to pay all or any of the outgoings collected by it from the VENDEE/S or any liability, mortgage loan and interest thereon before transferring the flat to the VENDEE/S or any liability, mortgage loan and interest thereon before transferring the flat to the VENDEE/S, the DEVELOPER agrees to be liable, even after the transfer of the property, to pay such outgoings and penal charges, if any, to the authority or person to whom they are payable and be liable for the cost of any legal proceedings which may be taken there for by such authority or persons.</span></div>
 <div class="c3c">&#160;</div>
-<div class="c3e">1.11<span class="c3d"></span><span class="c5"> VENDEE/S has paid </span><span class="c6">a </span><span class="c5">sum of</span><span class="c6"> </span><span class="c8">Rs. {!formattedTotalReceiptAmount}/- ({!totalReceiptAmountInWords})</span><span class="c6"> </span><span class="c5">as booking amount, excluding GST being part payment towards the total price of the flat at the time of entering this Agreement, the receipt of which the DEVELOPER hereby acknowledges in the table below and the VENDEE/S hereby agrees to pay the remaining price of the flat as prescribed in the Payment Plan (Schedule C) as may be demanded by the DEVELOPER within the time and in the manner specified therein.</span></div>
+<div class="c3e">1.11<span class="c3d"></span><span class="c5"> VENDEE/S has paid </span><span class="c6">a </span><span class="c5">sum of</span><span class="c6"> </span><span class="c8">Rs. {!formattedTotalReceivedFlatAmount}/- ({!totalReceivedFlatAmountInWords})</span><span class="c6"> </span><span class="c5">as booking amount, excluding GST being part payment towards the total price of the flat at the time of entering this Agreement, the receipt of which the DEVELOPER hereby acknowledges in the table below and the VENDEE/S hereby agrees to pay the remaining price of the flat as prescribed in the Payment Plan (Schedule C) as may be demanded by the DEVELOPER within the time and in the manner specified therein.</span></div>
 <div class="c34">&#160;</div>
 <div class="c34">&#160;</div>
 <div style="page-break-inside:avoid"><table class="c3f">
@@ -776,7 +777,7 @@ img { border:0; }
 <td class="c3i"><div class="c3h"><span class="c8">Reference ID</span></div></td>
 <td class="c3i"><div class="c3h"><span class="c8">Amount</span></div></td>
 </tr>
-<apex:repeat value="{!receiptRows}" var="receipt">
+<apex:repeat value="{!flatReceiptRows}" var="receipt">
 <tr class="c3g">
 <td class="c3i"><div class="c3h"><apex:outputText value="{0,date,dd-MM-yyyy}"><apex:param value="{!receipt.receiptDate}"/></apex:outputText></div></td>
 <td class="c3i"><div class="c3h">{!receipt.mode}</div></td>
@@ -784,18 +785,18 @@ img { border:0; }
 <td class="c3i"><div class="c2t">{!receipt.amountDisplay}</div></td>
 </tr>
 </apex:repeat>
-<apex:outputPanel layout="none" rendered="{!NOT(hasReceipts)}">
+<apex:outputPanel layout="none" rendered="{!NOT(hasFlatReceipts)}">
 <tr><td colspan="4" class="c3i"><div class="c3h">No approved receipt records are available for this Booking.</div></td></tr>
 </apex:outputPanel>
 <tr class="c3l">
 <td colspan="3" class="c3i"><div class="c3h"><span class="c8">Total payments </span></div></td>
-<td class="c3i"><div class="c2t"><span class="c8">{!formattedTotalReceiptAmount}/-</span></div></td>
+<td class="c3i"><div class="c2t"><span class="c8">{!formattedFlatReceiptTotal}/-</span></div></td>
 </tr>
 </table></div>
 <div class="c3m">&#160;</div>
 <div class="c3m">&#160;</div>
 <div class="c3m">&#160;</div>
-<div class="c3m"><span class="c6">Balance </span><span class="c8">Rs. {!formattedBalanceAmount}/- ({!balanceAmountInWords})</span><span class="c6"> availing by the way of loan from </span><span class="c8">{!loanBankName}.</span></div>
+<div class="c3m"><span class="c6">Balance </span><span class="c8">Rs. {!formattedBalanceFlatAmount}/- ({!balanceFlatAmountInWords})</span><span class="c6"> availing by the way of loan from </span><span class="c8">{!loanBankName}.</span></div>
 <div class="c3m">&#160;</div>
 <div class="c3m">&#160;</div>
 <div class="c2p">1.12<span class="c3b"></span><span class="c5">The VENDEE/S shall pay the installments as stipulated above within 15 days from the date of notice issued by the DEVELOPER, failing which it shall carry interest at the rate of 24% prescribed in the Rules.</span></div>
@@ -1022,7 +1023,7 @@ img { border:0; }
 <tr>
 <td class="c1x"><div class="cx"><span class="c8">Attention</span></div></td>
 <td class="c1x"><div class="cx"><span class="c8">:</span></div></td>
-<td class="c1x"><div class="cx"><span class="c8">{!buyerNames}</span></div></td>
+<td class="c1x"><div class="cx"><span class="c8">{!allBuyerNames}</span></div></td>
 </tr>
 <tr>
 <td class="c1x"><div class="cx"><span class="c8">Address</span></div></td>
@@ -1073,24 +1074,24 @@ img { border:0; }
 <div class="c4t"><span class="c4i">1)</span></div>
 <div class="c4v">&#160;</div>
 <div class="c4t"><span class="c4i">2)</span></div>
-<div style="page-break-after:always;height:0"></div>
-<div class="c4w"><span class="c27">SCHEDULE A&#8217; PROPERTY</span></div>
+
+<div class="c4w ag-pb"><span class="c27">SCHEDULE A&#8217; PROPERTY</span></div>
 <div class="c23"><span class="c5">All that the property bearing premises the Land in </span><span class="c6">Sy.Nos. 128/1A/2/2, 129/A/1, 129/A/2, 129/AA/1, 129/AA/2, 129/AA/3, 129/E/1, 130/A/1, 130/A/2, 130/A/3/1, 130/A/3/2, 130/A/4, 130/AA/1, 130/AA/2, 130/AA/3, 130/E/1, 130/E/2, 145/1/2, 145/1/1/7, 145/1/1/1/2, 145/1/1/1/1/2, 145/1/1/1/1/1/1, 145/1/1/1/1/1/2, 145/2, 147/A/1, 147/A/2, 147/A/3, 147/AA/1, 147/AA/2, 147/AA/3, 147/E/1, 147/E/2, 148/A/1, 148/A/2, 148/A/3, 148/A/4, 148/AA/1, 148/AA/2, 148/AA/3, 148/E/1, 148/E/2, 148/E/3, 148/E/5, 149/1, 149/2, 149/3, 149/4, 149/5, 149/6, 149/7,,</span><span class="c5"> total admeasuring </span><span class="c6">80704.23</span><span class="c5"> </span><span class="c6">Square yards or equivalent to 67479.02 Square Meters</span><span class="c5">, situated at Puppalguda Village, under Manikonda Municipality, Gandipet Mandal, Ranga Reddy District, Telangana State and bounded as follows:</span></div>
-<div class="c50"><span class="c5">NORTH</span><span class="c4x"></span><span class="c4y"></span><span class="c5">:</span><span class="c4z"></span><span class="c5">Road and Neighbors Properties</span></div>
-<div class="c50"><span class="c5">SOUTH</span><span class="c51"></span><span class="c4y"></span><span class="c5">:</span><span class="c4z"></span><span class="c5">80&#8217;-0&#8217;feet Road</span></div>
-<div class="c50"><span class="c5">EAST</span><span class="c52"></span><span class="c4y"></span><span class="c5">:</span><span class="c4z"></span><span class="c5">Existing Nala</span></div>
-<div class="c50"><span class="c5">WEST</span><span class="c53"></span><span class="c4y"></span><span class="c5">:</span><span class="c4z"></span><span class="c5">30&#8217;-0&#8217; feet Road</span></div>
+<div class="c50"><span class="ag-label"><span class="c5">NORTH</span></span><span class="c5">:</span><span class="c4z"></span><span class="c5">Road and Neighbors Properties</span></div>
+<div class="c50"><span class="ag-label"><span class="c5">SOUTH</span></span><span class="c5">:</span><span class="c4z"></span><span class="c5">80&#8217;-0&#8217;feet Road</span></div>
+<div class="c50"><span class="ag-label"><span class="c5">EAST</span></span><span class="c5">:</span><span class="c4z"></span><span class="c5">Existing Nala</span></div>
+<div class="c50"><span class="ag-label"><span class="c5">WEST</span></span><span class="c5">:</span><span class="c4z"></span><span class="c5">30&#8217;-0&#8217; feet Road</span></div>
 <div class="c23">&#160;</div>
 <div class="c0"><span class="c27">SCHEDULE B&#8217; PROPERTY</span></div>
-<div class="c23"><span class="c5">All that the </span><span class="c8">{!selectedBhkNumber}</span><span class="c6"> BHK Flat No.</span><span class="c8">{!selectedUnit.Name}</span><span class="c6"> (</span><span class="c8">{!selectedFacingDisplay}</span><span class="c6"> Facing)</span><span class="c5"> on </span><span class="c8">{!selectedFloorDisplay}</span><span class="c6"> Floor,</span><span class="c5"> of&#160; </span><span class="c6">Tower-</span><span class="c8">{!selectedTowerDisplay}</span><span class="c7">,</span><span class="c5"> the High Rise Residential Flats known as </span><span class="c6">&#8220;THE LEGACEY&#8221;</span><span class="c5">, with saleable area of </span><span class="c8">{!selectedUnit.Saleable_Area_Sft__c}</span><span class="c6"> Square Feet</span><span class="c5"> (including common areas<apex:outputText value="{!selectedCarParkingClause}"/>), along with proportionate undivided share of land equivalent to </span><span class="c8">{!selectedUnit.UDS__c}</span><span class="c5">, (Out of total land admeasuring 80704.23 Square yards or equivalent to 67479.02 Square Meters), </span><span class="c6">in Sy.Nos. 128/1A/2/2, 129/A/1, 129/A/2, 129/AA/1, 129/AA/2, 129/AA/3, 129/E/1, 130/A/1, 130/A/2, 130/A/3/1, 130/A/3/2, 130/A/4, 130/AA/1, 130/AA/2, 130/AA/3, 130/E/1, 130/E/2, 145/1/2, 145/1/1/7, 145/1/1/1/2, 145/1/1/1/1/2, 145/1/1/1/1/1/1, 145/1/1/1/1/1/2, 145/2, 147/A/1, 147/A/2, 147/A/3, 147/AA/1, 147/AA/2, 147/AA/3, 147/E/1, 147/E/2, 148/A/1, 148/A/2, 148/A/3, 148/A/4, 148/AA/1, 148/AA/2, 148/AA/3, 148/E/1, 148/E/2, 148/E/3, 148/E/5, 149/1, 149/2, 149/3, 149/4, 149/5, 149/6, 149/7,</span><span class="c5">&#160; Situated at </span><span class="c6">PUPPALGUDA VILLAGE</span><span class="c5">, under Manikonda Municipality, Gandipet Mandal, Ranga Reddy District, Telangana State and bounded as follows: </span></div>
-<div class="c50"><span class="c7">NORTH</span><span class="c4x"></span><span class="c4y"></span><span class="c7">: </span><span class="c54"></span><span class="c7">{!selectedUnit.Boundary_North__c}</span></div>
-<div class="c50"><span class="c7">SOUTH</span><span class="c51"></span><span class="c4y"></span><span class="c7">:</span><span class="c4z"></span><span class="c7">{!selectedUnit.Boundary_South__c}</span></div>
-<div class="c50"><span class="c7">EAST</span><span class="c52"></span><span class="c4y"></span><span class="c7">: </span><span class="c54"></span><span class="c7">{!selectedUnit.Boundary_East__c}</span></div>
-<div class="c50"><span class="c7">WEST</span><span class="c53"></span><span class="c4y"></span><span class="c7">: </span><span class="c54"></span><span class="c7">{!selectedUnit.Boundary_West__c}</span></div>
+<div class="c23"><span class="c5">All that the </span><span class="c8">{!selectedBhkNumber}</span><span class="c6"> BHK Flat No.</span><span class="c8">{!selectedUnit.Name}</span><span class="c6"> (</span><span class="c8">{!selectedFacingDisplay}</span><span class="c6"> Facing)</span><span class="c5"> on </span><span class="c8">{!selectedFloorDisplay}</span><span class="c6"> Floor,</span><span class="c5"> of&#160; </span><span class="c6">Tower-</span><span class="c8">{!selectedTowerName}</span><span class="c7">,</span><span class="c5"> the High Rise Residential Flats known as </span><span class="c6">&#8220;THE LEGACEY&#8221;</span><span class="c5">, with saleable area of </span><span class="c8">{!selectedUnit.Saleable_Area_Sft__c}</span><span class="c6"> Square Feet</span><span class="c5"> (including common areas<apex:outputText value="{!selectedCarParkingClause}"/>), along with proportionate undivided share of land equivalent to </span><span class="c8">{!selectedUnit.UDS__c}</span><span class="c5">, (Out of total land admeasuring 80704.23 Square yards or equivalent to 67479.02 Square Meters), </span><span class="c6">in Sy.Nos. 128/1A/2/2, 129/A/1, 129/A/2, 129/AA/1, 129/AA/2, 129/AA/3, 129/E/1, 130/A/1, 130/A/2, 130/A/3/1, 130/A/3/2, 130/A/4, 130/AA/1, 130/AA/2, 130/AA/3, 130/E/1, 130/E/2, 145/1/2, 145/1/1/7, 145/1/1/1/2, 145/1/1/1/1/2, 145/1/1/1/1/1/1, 145/1/1/1/1/1/2, 145/2, 147/A/1, 147/A/2, 147/A/3, 147/AA/1, 147/AA/2, 147/AA/3, 147/E/1, 147/E/2, 148/A/1, 148/A/2, 148/A/3, 148/A/4, 148/AA/1, 148/AA/2, 148/AA/3, 148/E/1, 148/E/2, 148/E/3, 148/E/5, 149/1, 149/2, 149/3, 149/4, 149/5, 149/6, 149/7,</span><span class="c5">&#160; Situated at </span><span class="c6">PUPPALGUDA VILLAGE</span><span class="c5">, under Manikonda Municipality, Gandipet Mandal, Ranga Reddy District, Telangana State and bounded as follows: </span></div>
+<div class="c50"><span class="ag-label"><span class="c7">NORTH</span></span><span class="c7">:</span><span class="c4z"></span><span class="c7">{!selectedUnit.Boundary_North__c}</span></div>
+<div class="c50"><span class="ag-label"><span class="c7">SOUTH</span></span><span class="c7">:</span><span class="c4z"></span><span class="c7">{!selectedUnit.Boundary_South__c}</span></div>
+<div class="c50"><span class="ag-label"><span class="c7">EAST</span></span><span class="c7">:</span><span class="c4z"></span><span class="c7">{!selectedUnit.Boundary_East__c}</span></div>
+<div class="c50"><span class="ag-label"><span class="c7">WEST</span></span><span class="c7">:</span><span class="c4z"></span><span class="c7">{!selectedUnit.Boundary_West__c}</span></div>
 <div class="c2c">&#160;</div>
 <div class="c2c">&#160;</div>
-<div style="page-break-after:always;height:0"></div>
-<div class="c55">&#160;</div>
+
+<div class="c55 ag-pb">&#160;</div>
 <div class="cj">&#160;</div>
 <div class="cj">&#160;</div>
 <div class="cj">&#160;</div>
@@ -1103,8 +1104,8 @@ img { border:0; }
 <div class="c55">&#160;</div>
 <div class="c55">&#160;</div>
 <div class="c55">&#160;</div>
-<div style="page-break-after:always;height:0"></div>
-<div class="c0">&#160;</div>
+
+<div class="c0 ag-pb">&#160;</div>
 <div class="c0">&#160;</div>
 <div class="c0"><span class="c27">SCHEDULE &#8216;C&#8217; Payment Schedule</span></div><div style="page-break-inside:avoid">
 <apex:outputPanel layout="none" rendered="{!hasPaymentSchedules}">
@@ -1135,7 +1136,7 @@ img { border:0; }
 </apex:outputPanel>
 <apex:outputPanel layout="none" rendered="{!NOT(hasPaymentSchedules)}">Payment schedule records are not available for this Booking.</apex:outputPanel>
 </div>
-<div style="page-break-after:always;height:0"></div><div class="c0"><span class="c27">SCHEDULE &#8216;D&#8217; SPECIFICATIONS</span></div>
+<div class="c0 ag-pb"><span class="c27">SCHEDULE &#8216;D&#8217; SPECIFICATIONS</span></div>
 <div style="page-break-inside:avoid"><table class="c5a"><colgroup>
 <col style="width:121.65pt"/>
 <col style="width:329.65pt"/>
@@ -1431,8 +1432,8 @@ img { border:0; }
 </tr>
 </table></td></tr></table></div>
 <div class="c25">&#160;</div>
-<div style="page-break-after:always;height:0"></div>
-<div class="c55">&#160;</div>
+
+<div class="c55 ag-pb">&#160;</div>
 <div class="c0"><span class="c27">SCHEDULE &#8216;E&#8217; SCOPE OF MAINTENANCE</span></div>
 <div class="c68"><span class="c17">&#8226;</span><span class="c18"></span><span class="c5">Security Services.</span></div>
 <div class="c68"><span class="c17">&#8226;</span><span class="c18"></span><span class="c5">Housekeeping and upkeep of all Common Areas (club house excluded).</span></div>

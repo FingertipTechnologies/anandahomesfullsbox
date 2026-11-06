@@ -742,4 +742,46 @@ private class AgreementOfSaleControllerTest {
             }
         }
     }
+
+    @IsTest
+    static void maghanReceiptModeIsPaymentMethod() {
+        Booking__c booking = buildBooking('MAGAN SINGH');
+        insert new List<Receipt__c>{
+            new Receipt__c(
+                Booking__c = booking.Id,
+                Receipt_Date__c = Date.newInstance(2025, 3, 1),
+                Receipt_Type__c = 'Installment Payment',
+                Payment_Method__c = 'Cheque',
+                Payment_Reference_Number__c = 'CHQ7777',
+                Amount_received__c = 10000,
+                Approval_Status__c = 'Approved'
+            ),
+            new Receipt__c(
+                Booking__c = booking.Id,
+                Receipt_Date__c = Date.newInstance(2025, 3, 2),
+                Receipt_Type__c = 'GST Amount',
+                Payment_Method__c = 'Cheque',
+                Payment_Reference_Number__c = 'GST7777',
+                Amount_received__c = 5000,
+                Approval_Status__c = 'Approved'
+            )
+        };
+
+        Test.startTest();
+        AgreementOfSaleController controller = load(Page.MAGHAN_SINGH_AGREEMENT_OF_SALE, booking);
+        Test.stopTest();
+
+        Boolean sawCheque = false;
+        for (AgreementOfSaleController.ReceiptRow row : controller.getFlatReceiptRows()) {
+            System.assertNotEquals('GST Amount', row.getReceiptType(), 'Rows are still filtered by Receipt Type');
+            if (row.getReferenceId() == 'CHQ7777') {
+                System.assertEquals('Cheque', row.getPaymentMethod(), 'Mode = Payment_Method__c');
+                System.assertEquals('Installment Payment', row.getMode(), 'Existing getMode() (ARJUN) unchanged');
+                sawCheque = true;
+            } else {
+                System.assertEquals('', row.getPaymentMethod(), 'Blank Payment Method prints empty');
+            }
+        }
+        System.assert(sawCheque, 'The Cheque receipt is listed');
+    }
 }

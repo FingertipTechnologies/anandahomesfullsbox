@@ -780,7 +780,7 @@ img { border:0; }
 <apex:repeat value="{!flatReceiptRows}" var="receipt">
 <tr class="c3g">
 <td class="c3i"><div class="c3h"><apex:outputText value="{0,date,dd-MM-yyyy}"><apex:param value="{!receipt.receiptDate}"/></apex:outputText></div></td>
-<td class="c3i"><div class="c3h">{!receipt.mode}</div></td>
+<td class="c3i"><div class="c3h">{!receipt.paymentMethod}</div></td>
 <td class="c3i"><div class="c3h">{!receipt.referenceId}</div></td>
 <td class="c3i"><div class="c2t">{!receipt.amountDisplay}</div></td>
 </tr>
@@ -1091,19 +1091,6 @@ img { border:0; }
 <div class="c2c">&#160;</div>
 <div class="c2c">&#160;</div>
 
-<div class="c55 ag-pb">&#160;</div>
-<div class="cj">&#160;</div>
-<div class="cj">&#160;</div>
-<div class="cj">&#160;</div>
-<div class="cj">&#160;</div>
-<div class="cj">&#160;</div>
-<div class="cj">&#160;</div>
-<div class="c55">&#160;</div>
-<div class="c55">&#160;</div>
-<div class="c55">&#160;</div>
-<div class="c55">&#160;</div>
-<div class="c55">&#160;</div>
-<div class="c55">&#160;</div>
 
 <div class="c0 ag-pb">&#160;</div>
 <div class="c0">&#160;</div>

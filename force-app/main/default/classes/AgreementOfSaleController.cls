@@ -403,6 +403,11 @@ public with sharing class AgreementOfSaleController {
             return receipt.Receipt_Type__c;
         }
 
+        /** MAGHAN receipts table "Mode": Receipt__c.Payment_Method__c ('' when blank). */
+        public String getPaymentMethod() {
+            return String.isBlank(receipt.Payment_Method__c) ? '' : receipt.Payment_Method__c;
+        }
+
         public Decimal getAmount() {
             return receipt.Amount_received__c;
         }
@@ -692,7 +697,7 @@ public with sharing class AgreementOfSaleController {
         for (Receipt__c receipt : [
             SELECT Id, Receipt_Date__c, Mode_of_payment__c, Payment_Reference_Number__c,
                    Cheque_Number__c, Check_Transaction_Nmber__c, Amount_received__c,
-                   Receipt_Type__c
+                   Receipt_Type__c, Payment_Method__c
             FROM Receipt__c
             WHERE Booking__c = :bookingId
               AND Approval_Status__c IN :APPROVED_RECEIPT_STATUSES

@@ -33,6 +33,8 @@ private class NOCControllerTest {
             CRM_Manager__c = UserInfo.getUserId()
         );
         insert currentBooking;
+        // Booking automation can clear the CRM Manager on insert; set it again so a NOC can be raised.
+        update new Booking__c(Id = currentBooking.Id, CRM_Manager__c = UserInfo.getUserId());
     }
 
     @isTest

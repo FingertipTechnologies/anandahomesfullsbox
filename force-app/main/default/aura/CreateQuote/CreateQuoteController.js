@@ -285,9 +285,13 @@
             oppPlot.Amenities_Car_Parking__c = plt[i].Amenities_Car_Parking__c;
             oppPlot.Infrastructure_Charges__c = plt[i].Infrastructure_Charges__c;
             if(plt[i].Project__r.Project__c == 'The Drizzle'){
-				  oppPlot.Lake_Premium__c = plt[i].Lake_Premium__c;
+                //alert(JSON.stringify(plt[i]))
+                  oppPlot.Lake_Premium__c = plt[i].Lake_Premium__c;
             oppPlot.Extra_Covered_Car_Parking_Charges__c = plt[i].Extra_Car_Parking__c;
             oppPlot.Piped_Gas__c = plt[i].Piped_Gas__c;
+                oppPlot.Floor_Rise__c = plt[i].Floor_Rise_Charge__c;
+            
+                
            
             }
 
@@ -338,10 +342,11 @@
             var gaspipe = parseFloat(oppPlot.Piped_Gas__c) || 0;
             var extracarparking = parseFloat(oppPlot.Extra_Covered_Car_Parking_Charges__c) || 0;
             var lakePremium = (parseFloat(oppPlot.Lake_Premium__c) || 0) * saleableArea;
+            var floorrisr = (parseFloat(oppPlot.Floor_Rise__c) || 0) * saleableArea;
             
             var flatCost = basicPrice + eastFacing + corner + hiRise + centralCourtYard
                          + meadow + roadside + courtYard + outer + amenities + infrastructure
-            			+gaspipe+extracarparking+	lakePremium;
+            			+gaspipe+extracarparking+	lakePremium+floorrisr;
             
             
             var gstAmount = flatCost * (gstPercentage / 100);
@@ -351,6 +356,11 @@
             component.set('v.eastFacingCalc', eastFacing);
             component.set('v.cornerCalc', corner);
             component.set('v.hiRiseCalc', hiRise);
+            component.set('v.gaspipeCalc', gaspipe);
+            component.set('v.extracarparkingCalc', extracarparking);
+            component.set('v.lakePremiumCalc', lakePremium);
+            component.set('v.floorrisrCalc', floorrisr);
+            
             component.set('v.centralCourtYardCalc', centralCourtYard);
             component.set('v.meadowCalc', meadow);
             component.set('v.roadsideCalc', roadside);

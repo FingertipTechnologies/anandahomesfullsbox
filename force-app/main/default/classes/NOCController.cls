@@ -187,11 +187,15 @@ public with sharing class NOCController {
         noc.Approval_Status__c = 'Pending';
         noc.Approver_1__c = b.CRM_Manager__c;
         noc.Generated_Date__c = Date.today();
+        // The lookups hold the first selection; the *_Ids__c fields keep every selection so the
+        // Capri mail can attach one cancellation / swap letter for each of them.
         if (cancellationIds != null && !cancellationIds.isEmpty()) {
             noc.Related_Cancellation_Booking__c = cancellationIds[0];
+            noc.Related_Cancellation_Booking_Ids__c = String.join(cancellationIds, ',');
         }
         if (swapIds != null && !swapIds.isEmpty()) {
             noc.Related_Swap_History__c = swapIds[0];
+            noc.Related_Swap_History_Ids__c = String.join(swapIds, ',');
         }
 
         insert noc;

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Related_Cancellation_Booking_Ids__c</fullName>
+    <description>Comma-separated Ids of every cancelled Booking selected when the NOC was raised. One CAPRI cancellation letter is attached to the Capri mail for each. Filled by NOCController.createNOC; Related_Cancellation_Booking__c still holds the first one.</description>
+    <label>Related Cancellation Booking Ids</label>
+    <length>5000</length>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>3</visibleLines>
+</CustomField>

@@ -712,7 +712,7 @@ img { border:0; }
 <div class="cc"><span class="ci">NOW THEREFORE THIS AGREEMENT WITNESSES AND IT IS HEREBY AGREED TO BY THE PARTIES HERETO AS FOLLOWS:</span></div>
 <div class="c2m"><span class="cj">1.</span><span class="ck"></span><span class="c6">DEFINITIONS AND INTERPRETATION:</span></div>
 <div class="c2n">&#160;</div>
-<div class="c2o"><span class="cj">1.1.</span><span class="c1x"></span><span class="c6">Definitions:</span><span class="c5"> Unless the context otherwise requires, the following capitalized terms shall have the meaning set forth below:</span></div>
+<div class="c2o"><span class="cj">1.1.</span><span class="c6">Definitions:</span><span class="c5"> Unless the context otherwise requires, the following capitalized terms shall have the meaning set forth below:</span></div>
 <div class="cb">&#160;</div>
 <div class="c2o"><span class="cj">a)</span><span class="c2p"></span><span class="c5">&#8220;Act&#8221; means the Real Estate (Regulation and Development) Act, 2016 (16 of 2016) and includes Telangana Real Estates (Regulation and Development) Rules, 2017, wherever, the context so requires:</span></div>
 <div class="cb">&#160;</div>
@@ -1176,6 +1176,7 @@ img { border:0; }
 <div class="c2z">&#160;</div>
 <div class="cb"><span class="c5">If any provision of this Agreement, shall be determined to be void or unenforceable under the Act or the Rules and Regulations made there under or under other applicable laws, such provisions of this Agreement shall be deemed amended or deleted in so fat as reasonably inconsistent with the purpose of this Agreement and to the extent necessary to confirm to Act or the Rules and Regulations made thereunder or the applicable law, as the case may be, and the remaining provisions of this Agreement shall remain valid and enforceable as applicable at the time of execution of this Agreement.</span></div>
 <div class="cb">&#160;</div>
+<div style="page-break-after: always;"></div>
 <div class="c2z"><span class="c6">26. METHOD OF CALCULATION OF PROPORTIONATE SHARE WHEREVER REFERRED TO IN THE AGREEMENT:</span></div>
 <div class="c2z">&#160;</div>
 <div class="cb"><span class="c5">Wherever in this Agreement, it is stipulated that the VENDEE/S have to make any payment, in common with other VENDEE/S in Project, the same shall be the proportion with the built-up area, balcony area, verandah area, common areas and parking areas of the Schedule B Property, bears to the total built-up area of all the Schedule B property.</span></div>
@@ -1217,17 +1218,7 @@ img { border:0; }
 </tr>
 </table>
 <div class="cf">&#160;</div>
-<div class="cf">&#160;</div>
-<div class="cf">&#160;</div>
-<div class="cf">&#160;</div>
-<div class="cf">&#160;</div>
-<div class="cf">&#160;</div>
-<div class="cf">&#160;</div>
-<div class="cf">&#160;</div>
-<div class="cf">&#160;</div>
-<div class="cf">&#160;</div>
-<div class="cf">&#160;</div>
-<div class="cf">&#160;</div>
+
 <div class="c4k"><span class="cj">ii.</span><span class="c4p"></span><span class="c6">In the case of notice to the VENDEE (S), to:</span></div>
 <table class="c4q">
 <colgroup>
@@ -1254,6 +1245,7 @@ img { border:0; }
 <div class="cb">&#160;</div>
 <div class="cb"><span class="c5">It shall be the duty of the VENDEE/S and the DEVELOPER to inform each other of any change in address subsequent to the execution of this Agreement in the above address by Registered post failing which all communication and letters posted at the above address shall be deemed to have been received by the DEVELOPER or the VENDEE/S, as the case may be.</span></div>
 <div class="cb">&#160;</div>
+<div style="page-break-after: always;"></div>
 <div class="c2z"><span class="c6">30. JOINT VENDEE:</span></div>
 <div class="c2z">&#160;</div>
 <div class="cb"><span class="c5">In case, there are Joint VENDEE/S, all communications shall be sent by the DEVELOPER to the VENDEE/S, whose name appears first and at the address given by him/her which shall for all intents and purposes to consider as properly served on all the VENDEE/S.</span></div>
@@ -1271,22 +1263,13 @@ img { border:0; }
 <div class="c2z">&#160;</div>
 <div class="cb"><span class="c5">All or any disputes arising out or touching upon or in relation to the terms and conditions of this Agreement, including the interpretation and validity of the terms thereof and the respective rights and obligations of the Parties, shall be settled amicably by mutual discussion, failing which the same shall be settled through the adjudicating officer appointed under the Act.</span></div>
 <div class="cb">&#160;</div>
-<div class="cb">&#160;</div>
-<div class="cb">&#160;</div>
-<div class="cb">&#160;</div>
-<div class="cb">&#160;</div>
-<div class="cb">&#160;</div>
-<div class="cb">&#160;</div>
-<div class="cb">&#160;</div>
-<div class="cb">&#160;</div>
-<div class="cb">&#160;</div>
-<div class="cb">&#160;</div>
-<div class="cb">&#160;</div>
+
 <div class="c2z"><span class="c6">34. OTHER TERMS AND CONDITIONS:</span></div>
 <div class="c2z">&#160;</div>
 <div class="cb"><span class="c5">Realization of Payments: All payments shall be subject to their actual realization in the DEVELOPER&#8217;s account. The date of credit into the aforesaid account or the DEVELOPER shall be deemed to be the date of payment of an installment by the VENDEE/S.</span></div>
 <div class="cb"><span class="c5">In WITNESS WHEREOF, parties herein above named have set their respective hands and signed this Agreement for Sale at Hyderabad in the presence of attesting witness, signing as such on the day, first written above.</span></div>
 <div class="c4t">&#160;</div>
+<div style="page-break-after: always;"></div>
 <div class="c4t"><span class="c6">SIGNED AND DELIVERED BY:</span></div>
 <div class="c4t">&#160;</div>
 <div class="c4t"><span class="c5">VENDEE/S:</span></div>
@@ -1342,23 +1325,7 @@ img { border:0; }
 <div class="c57">&#160;</div>
 <div class="c56"><span class="c7">WEST</span><span class="c5a"></span><span class="c1x"></span><span class="c7">: </span><span class="c5b"></span><span class="c7">{!selectedUnit.Boundary_West__c}</span></div>
 <div style="page-break-after:always;height:0"></div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div style="page-break-after:always;height:0"></div>
-<div class="cc">&#160;</div>
-<div class="c4">&#160;</div>
-<div class="c4">&#160;</div>
+
 <div class="c4"><span class="ci">SCHEDULE &#8216;C&#8217; Payment Schedule</span></div>
 <div class="c4">&#160;</div>
 <table class="c5c">
@@ -1595,6 +1562,7 @@ img { border:0; }
 <div class="c62">&#160;</div>
 <div class="cc">&#160;</div>
 <div class="c62">&#160;</div>
+<div style="page-break-after: always;"></div>
 <div class="c6f"><div class="c4"><span class="ci">SCHEDULE &#8216;E&#8217; SCOPE OF MAINTENANCE</span></div>
 <div class="c69">&#8226;<span class="c68"></span><span class="c3z">Security Services.</span></div>
 <div class="c69">&#8226;<span class="c68"></span><span class="c3z">Housekeeping and upkeep of all Common Areas (club house excluded).</span></div>

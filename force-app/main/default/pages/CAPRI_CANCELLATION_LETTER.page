@@ -4,120 +4,65 @@
     <html>
     <head>
         <style type="text/css">
-            @page { size: A4; margin: 18mm 16mm 18mm 16mm; }
-            body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #222; }
-            p { margin: 0 0 10px 0; line-height: 1.4; }
-            .date { text-align: right; }
-            table { width: 100%; border-collapse: collapse; margin: 8px 0 14px 0; }
-            th, td { border: 1px solid #777; padding: 5px; text-align: left; vertical-align: top; }
-            th { background-color: #e9eef5; }
+            /* Layout follows "CAPRI CANCELLATION LETTER.docx"; the top margin leaves room for the letterhead.
+               Add ?relatedId=(cancelled Booking Id) to print a cancellation other than the NOC's first one. */
+            @page { size: A4; margin: 100pt 72pt 40pt 72pt; }
+            body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #000; line-height: 1.25; }
+            p { margin: 0; text-align: left; }
+            p.para { margin: 0 0 10pt 0; text-align: justify; }
+            .gap { height: 12pt; }
+            .right { text-align: right; }
         </style>
     </head>
     <body>
         <apex:outputPanel rendered="{!NOT(ISBLANK(errorMessage))}"><p>{!errorMessage}</p></apex:outputPanel>
-        <apex:outputPanel rendered="{!ISBLANK(errorMessage)}">
-            <p class="date"><b>Date:</b> {!TODAY()}</p>
-            <p>
-                Capri Global Capital Limited<br/>
-                502, Tower A,<br/>
-                Peninsula Business Park,<br/>
-                Senapati Bapat Marg,<br/>
-                Lower Parel, Mumbai 400 013.
-            </p>
-            <p>
-                <b>Subject: Cancellation of Flat No:
-                    <apex:outputText value="{!cancellationBooking.Plot__r.Name}"/>
-                </b>
-            </p>
-            <p>Dear Sir/Madam,</p>
-            <p>
-                With reference to the inventory list provided along with the Loan Agreement between
-                M/s. Capri Global Capital Limited and M/s. Ananda Homes dated 28-Jun-2024, Flat No.
-                <b><apex:outputText value="{!cancellationBooking.Plot__r.Name}"/></b> was a sold unit
-                having area <apex:outputText value="{!cancellationBooking.Plot__r.Saleable_Area_Sft__c}"/> sq. ft.
-            </p>
-            <p>
-                We have received a cancellation request from
-                <b><apex:outputText value="{!cancellationBooking.First_Applicant_Name__c}"/></b>
-                dated
-                <apex:outputText value="{0,date,dd/MM/yyyy}">
-                    <apex:param value="{!cancellationBooking.Cancellation_Date__c}"/>
-                </apex:outputText>
-                for the above flat on account of
-                <apex:outputText value="{!cancellationBooking.Cancellation_Reason__c}"/>.
-            </p>
-            <p>
-                The flat was tentatively allotted to
-                <b><apex:outputText value="{!cancellationBooking.First_Applicant_Name__c}"/></b>.
-                We have neither entered into an Agreement for Sale nor completed registration, and
-                no NOC was obtained for the same.
-            </p>
-            <p>
-                A total amount of
-                <b><apex:outputText value="{0,number,#,##,##0.00}"><apex:param value="{!cancellationTotalReceived}"/></apex:outputText></b>
-                was received. Receipt transaction details are as follows:
-            </p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Receipt Date</th>
-                        <th>Received From</th>
-                        <th>Transaction Reference</th>
-                        <th>Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <apex:repeat value="{!cancellationReceiptLineItems}" var="receipt">
-                        <tr>
-                            <td><apex:outputText value="{0,date,dd/MM/yyyy}"><apex:param value="{!receipt.Receipt__r.Receipt_Date__c}"/></apex:outputText></td>
-                            <td><apex:outputText value="{!receipt.Payment_From__c}"/></td>
-                            <td><apex:outputText value="{!receipt.Cheque_no_Transaction_Number__c}"/></td>
-                            <td><apex:outputText value="{0,number,#,##,##0.00}"><apex:param value="{!receipt.Received_Amount__c}"/></apex:outputText></td>
-                        </tr>
-                    </apex:repeat>
-                </tbody>
-            </table>
-            <p>
-                Details of approved refunds processed for this booking are as follows:
-            </p>
-            <p>
-                Total refunded:
-                <b><apex:outputText value="{0,number,#,##,##0.00}"><apex:param value="{!cancellationTotalRefunded}"/></apex:outputText></b>
-            </p>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Refund Date</th>
-                        <th>Amount</th>
-                        <th>Payment Reference</th>
-                        <th>Transaction Reference</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <apex:repeat value="{!refunds}" var="refund">
-                        <tr>
-                            <td><apex:outputText value="{0,date,dd/MM/yyyy}"><apex:param value="{!refund.Refund_Date__c}"/></apex:outputText></td>
-                            <td><apex:outputText value="{0,number,#,##,##0.00}"><apex:param value="{!refund.Refund_Amount__c}"/></apex:outputText></td>
-                            <td><apex:outputText value="{!refund.Payment_Reference__c}"/></td>
-                            <td><apex:outputText value="{!refund.Transaction_Reference__c}"/></td>
-                        </tr>
-                    </apex:repeat>
-                </tbody>
-            </table>
-            <p>
-                On account of the above cancellation, we confirm that Flat No.
-                <b><apex:outputText value="{!cancellationBooking.Plot__r.Name}"/></b> shall form
-                part of unsold inventory and shall be subject to the same terms applicable to
-                unsold inventory under the loan agreement between M/s. Capri Global Capital Limited
-                and M/s. Ananda Homes.
-            </p>
-            <p>
-                <b>Note:</b> The cancelled unit may be allotted as a new booking as recorded in
-                the related booking information.
-            </p>
-            <p>For M/s. Ananda Homes,</p>
-            <br/><br/>
-            <p>Authorised Signatory</p>
+        <apex:outputPanel rendered="{!AND(ISBLANK(errorMessage), NOT(hasCancellation))}">
+            <p>No cancellation is linked to this NOC.</p>
+        </apex:outputPanel>
+        <apex:outputPanel rendered="{!AND(ISBLANK(errorMessage), hasCancellation)}">
+            <p class="right"><b>Date:&#160;<apex:outputText value="{0,date,dd MMMM, yyyy}"><apex:param value="{!TODAY()}"/></apex:outputText></b></p>
+            <div class="gap">&#160;</div>
+            <div class="gap">&#160;</div>
+            <p>Capri Global Capital Limited</p>
+            <p>502, Tower A,</p>
+            <p>Peninsula Business Park,</p>
+            <p>Senapati Bapat Marg,</p>
+            <p>Lower Parel, Mumbai 400 013.</p>
+            <div class="gap">&#160;</div>
+            <p><b><u>Subject: Cancellation of Flat No: {!cancellationBooking.Plot__r.Name}</u></b></p>
+            <div class="gap">&#160;</div>
+            <p class="para" style="text-align:left">Dear Sir/Madam</p>
+            <p class="para">With reference to inventory list provided along with the loan agreement between
+                M/s. Capri Global Capital Limited and M/s. Ananda Homes dated 28-Jun-24; the flat no.
+                <b>{!cancellationBooking.Plot__r.Name}</b> was sold unit (having area
+                <b>{!cancellationBooking.Plot__r.Saleable_Area_Sft__c}</b> sq.ft.). We have received a request from the
+                <b>{!cancellationBuyerNames}</b> dated&#160;<b><apex:outputText value="{0,date,dd/MM/yyyy}"><apex:param value="{!cancellationRequestDate}"/></apex:outputText></b>
+                stating that they want to cancel the flat <b>{!cancellationBooking.Plot__r.Name}</b> on account of
+                {!cancellationBooking.Cancellation_Reason__c}.</p>
+            <p class="para">Flat No. <b>{!cancellationBooking.Plot__r.Name}</b> was tentatively allotted to
+                <b>{!cancellationBuyerNames}</b> however we have neither entered into agreement to sale nor done the
+                registration, and no NOC was obtained for the same.
+                <apex:outputPanel layout="none" rendered="{!cancellationReceipts.hasReceipts}">
+                    In totality, an amount of <b>Rs. {!cancellationReceipts.totalText}/-</b> was received from
+                    {!cancellationReceipts.modes} No: <b>{!cancellationReceipts.references}</b> Dated:
+                    <b>{!cancellationReceipts.dates}</b><apex:outputPanel layout="none" rendered="{!hasRefunds}">
+                    and the entire amount has been refunded on&#160;<b><apex:outputText value="{0,date,dd-MM-yyyy}"><apex:param value="{!lastRefundDate}"/></apex:outputText></b>
+                    vide Online No: <b>{!refundReferences}</b>, Dated: <b>{!refundDates}</b></apex:outputPanel>.
+                </apex:outputPanel></p>
+            <p class="para">On account of the above cancellation, we confirm that the flat no
+                <b>{!cancellationBooking.Plot__r.Name}</b> shall form part of unsold inventory. Further, the same shall be
+                subject to the same terms which are applicable to unsold inventory as per the loan agreement between
+                M/s. Capri Global Capital Limited and M/s. Ananda Homes dated 28-Jun-24.</p>
+            <p class="para">Attached herewith for your ready reference:</p>
+            <p class="para" style="margin-left:36pt;text-indent:-21pt">1.&#160;&#160;&#160;Request mail for cancellation of flat by
+                <b>{!cancellationBuyerNames}</b>.</p>
+            <p class="para">Note: <b>{!cancellationBooking.Plot__r.Name}</b> flat was cancelled from
+                <b>{!cancellationBuyerNames}</b> and it is allotted as New Booking to <b>{!buyerNames}</b>{!buyerMobileSuffix}.</p>
+            <div style="page-break-inside:avoid">
+                <p><b>For M/s. Ananda Homes,</b></p>
+                <div style="height:50pt">&#160;</div>
+                <p><b>Authorised Signatory</b></p>
+            </div>
         </apex:outputPanel>
     </body>
     </html>

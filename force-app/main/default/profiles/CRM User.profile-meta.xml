@@ -10322,7 +10322,17 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>NOC__c.Related_Cancellation_Booking_Ids__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>NOC__c.Related_Cancellation_Booking__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>NOC__c.Related_Swap_History_Ids__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

@@ -495,12 +495,20 @@
         </itemInstances>
         <itemInstances>
             <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
                 <fieldItem>Record.Extra_Car_Parking__c</fieldItem>
                 <identifier>RecordExtra_Car_Parking__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
             <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
                 <fieldItem>Record.Lake_Premium__c</fieldItem>
                 <identifier>RecordLake_Premium__cField</identifier>
             </fieldInstance>
@@ -567,6 +575,16 @@
                 </fieldInstanceProperties>
                 <fieldItem>Record.Mortgaged_to_HMDA__c</fieldItem>
                 <identifier>RecordMortgaged_to_HMDA_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Piped_Gas__c</fieldItem>
+                <identifier>RecordPiped_Gas_cField</identifier>
             </fieldInstance>
         </itemInstances>
         <name>Facet-7fbb5486-99c3-4e73-963a-ff1c60c8d5e7</name>

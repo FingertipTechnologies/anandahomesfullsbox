@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Mortgaged_to_HMDA__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Tick when this unit is mortgaged to HMDA. THE DRIZZLE Agreement of Sale then prints the HMDA mortgage clause.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Tick when this unit is mortgaged to HMDA. The Agreement of Sale then prints the HMDA mortgage clause.</inlineHelpText>
+    <label>Mortgaged to HMDA</label>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

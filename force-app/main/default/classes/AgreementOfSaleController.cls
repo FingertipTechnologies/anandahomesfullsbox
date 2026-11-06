@@ -584,7 +584,8 @@ public with sharing class AgreementOfSaleController {
                        Covered_Park_Parking__c, LL_Share_Name__c, Share__c,
                        Block1__r.Name, Block__c, Other_Exclusive_Area__c,
                        External_Wall_Area__c, Internal_Wall_Area__c,
-                       North_By__c, South_By__c, East_By__c, West_By__c
+                       North_By__c, South_By__c, East_By__c, West_By__c,
+                       Mortgaged_to_HMDA__c
                 FROM Plot__c
                 WHERE Id = :booking.Plot__c
                 LIMIT 1
@@ -1290,6 +1291,17 @@ public with sharing class AgreementOfSaleController {
     public String getDrizzleCorpusScheduleLabel() {
         String rate = getDrizzleCorpusRate();
         return 'Corpus Fund' + (String.isBlank(rate) ? '' : ' @ Rs. ' + rate + ' /- per sft');
+    }
+
+    /**
+     * True when the HMDA mortgage clause must be printed: the booked unit is ticked
+     * "Mortgaged to HMDA", or the dedicated mortgage agreement page is being rendered.
+     */
+    public Boolean getIsMortgagedUnit() {
+        if (currentPageUrl().contains('MORTGAGEAGREEMENTOFSALEDRIZZLE')) {
+            return true;
+        }
+        return selectedUnit != null && selectedUnit.Mortgaged_to_HMDA__c == true;
     }
 
     /** Block letter, e.g. "F": the Tower lookup, else the Block picklist, else the unit name prefix. */

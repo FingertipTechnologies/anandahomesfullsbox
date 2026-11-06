@@ -391,6 +391,8 @@ private class AgreementOfSaleControllerTest {
 
         System.assert(controller.isBuilderSharePage);
         System.assertEquals('', controller.getOwnerMismatchMessage());
+        // unit not ticked "Mortgaged to HMDA": the sale agreement omits the mortgage clause
+        System.assert(!controller.getIsMortgagedUnit());
 
         // allottees in THE DRIZZLE wording
         System.assertEquals(2, controller.applicants.size());
@@ -478,6 +480,8 @@ private class AgreementOfSaleControllerTest {
 
         System.assert(controller.isBuilderSharePage);
         System.assert(controller.getOwnerMismatchMessage().contains('MAGAN SINGH'));
+        // the dedicated mortgage page always prints the clause
+        System.assert(controller.getIsMortgagedUnit());
         // no project rates recorded: the registration / handover charges stay blank
         System.assertEquals('', controller.drizzleCorpusLine.getAmountDisplay());
         System.assertEquals('', controller.drizzleCorpusLine.getGstDisplay());
@@ -488,5 +492,32 @@ private class AgreementOfSaleControllerTest {
         System.assertEquals('1,05,13,680', controller.drizzlePriceTotal.getAmountDisplay());
         System.assertEquals('Booking Amount', controller.paymentScheduleRows[0].getInstallmentName());
         System.assertEquals('SEVENTH', controller.getDrizzleFloor());
+    }
+
+    @IsTest
+    static void saleAgreementPrintsMortgageClauseForMortgagedUnit() {
+        Project__c project = postSalesTestDataFactory.createProject('Ananda The Drizzle');
+        Plot__c unit = new Plot__c(
+            Project__c = project.Id,
+            Name = 'F-307',
+            Unit_Type__c = 'Apartment',
+            Status__c = 'Available',
+            Mortgaged_to_HMDA__c = true
+        );
+        insert unit;
+        Booking__c booking = new Booking__c(
+            Project__c = project.Id,
+            Plot__c = unit.Id,
+            Status__c = 'New',
+            First_Applicant_Name__c = 'Anil Demo Junior',
+            Total_Flat_Cost__c = 1000000
+        );
+        insert booking;
+
+        Test.startTest();
+        AgreementOfSaleController controller = load(Page.SaleAgreementDrizzil, booking);
+        Test.stopTest();
+
+        System.assert(controller.getIsMortgagedUnit());
     }
 }

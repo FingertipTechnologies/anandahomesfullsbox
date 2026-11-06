@@ -6,14 +6,14 @@ private class CapriNocApprovedEmailInvocableTest {
             Project_Type__c = 'Apartment',
             Interest_Rate__c = 18
         );
-        insert project;
+        insert as system project;
 
         Plot__c plot = new Plot__c(
             Project__c = project.Id,
             Unit_Type__c = 'Apartment',
             Status__c = 'Booked'
         );
-        insert plot;
+        insert as system plot;
 
         Booking__c booking = new Booking__c(
             Project__c = project.Id,
@@ -22,14 +22,14 @@ private class CapriNocApprovedEmailInvocableTest {
             Status__c = 'Booked',
             Capri_Email__c = capriEmail
         );
-        insert booking;
+        insert as system booking;
 
         NOC__c noc = new NOC__c(
             Booking__c = booking.Id,
             NOC_Type__c = 'Capri NOC',
             Approval_Status__c = 'Approved'
         );
-        insert noc;
+        insert as system noc;
         return noc;
     }
 
@@ -95,7 +95,7 @@ private class CapriNocApprovedEmailInvocableTest {
     @isTest
     static void rejectsNonNocRecordId() {
         Account account = new Account(Name = 'Not a NOC');
-        insert account;
+        insert as system account;
         CapriNocApprovedEmailInvocable.Request request =
             new CapriNocApprovedEmailInvocable.Request();
         request.nocId = account.Id;
@@ -116,9 +116,9 @@ private class CapriNocApprovedEmailInvocableTest {
         Project__c project = new Project__c(
             Name = 'CAPRI History Project', Project_Type__c = 'Apartment', Interest_Rate__c = 18
         );
-        insert project;
+        insert as system project;
         Plot__c plot = new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Booked');
-        insert plot;
+        insert as system plot;
 
         List<Booking__c> cancelled = new List<Booking__c>();
         List<Swap_History__c> swaps = new List<Swap_History__c>();
@@ -133,14 +133,14 @@ private class CapriNocApprovedEmailInvocableTest {
                 Old_Plot__c = plot.Id, Swap_Date__c = Date.today().addMonths(-3 - i), Swap_Reason__c = 'Test swap ' + i
             ));
         }
-        insert cancelled;
-        insert swaps;
+        insert as system cancelled;
+        insert as system swaps;
 
         Booking__c booking = new Booking__c(
             Project__c = project.Id, Plot__c = plot.Id, Booking_Date__c = Date.today(),
             Status__c = 'Booked', Capri_Email__c = 'capri@example.com', First_Applicant_Name__c = 'Current Buyer'
         );
-        insert booking;
+        insert as system booking;
 
         NOC__c noc = new NOC__c(Booking__c = booking.Id, NOC_Type__c = 'Capri NOC', Approval_Status__c = status);
         if (selections > 0) {
@@ -155,12 +155,13 @@ private class CapriNocApprovedEmailInvocableTest {
             noc.Related_Cancellation_Booking_Ids__c = String.join(cancellationIds, ',');
             noc.Related_Swap_History_Ids__c = String.join(swapIds, ',');
         }
-        insert noc;
+        insert as system noc;
         return [
             SELECT Id, Name, Approval_Status__c, Related_Cancellation_Booking__c, Related_Swap_History__c,
                    Related_Cancellation_Booking_Ids__c, Related_Swap_History_Ids__c, Booking__c,
                    Booking__r.Capri_Email__c, Booking__r.Unit_NumberFor__c, Booking__r.Project_Name__c
             FROM NOC__c WHERE Id = :noc.Id
+            WITH SYSTEM_MODE
         ];
     }
 
@@ -201,7 +202,7 @@ private class CapriNocApprovedEmailInvocableTest {
     static void approvingCapriNocQueuesTheMail() {
         NOC__c noc = makeNocWithHistory(2, 'Pending');
         Test.startTest();
-        update new NOC__c(Id = noc.Id, Approval_Status__c = 'Approved');
+        update as system new NOC__c(Id = noc.Id, Approval_Status__c = 'Approved');
         Integer queued = Limits.getQueueableJobs();
         Test.stopTest();
         System.assertEquals(1, queued, 'Approval queues the Capri mail');
@@ -210,12 +211,12 @@ private class CapriNocApprovedEmailInvocableTest {
     @isTest
     static void approvalWithoutCapriEmailIsNotBlocked() {
         NOC__c noc = makeNocWithHistory(0, 'Pending');
-        update new Booking__c(Id = noc.Booking__c, Capri_Email__c = null);
+        update as system new Booking__c(Id = noc.Booking__c, Capri_Email__c = null);
         Test.startTest();
-        update new NOC__c(Id = noc.Id, Approval_Status__c = 'Approved');
+        update as system new NOC__c(Id = noc.Id, Approval_Status__c = 'Approved');
         Integer queued = Limits.getQueueableJobs();
         Test.stopTest();
         System.assertEquals(0, queued, 'No Capri email, so nothing is queued');
-        System.assertEquals('Approved', [SELECT Approval_Status__c FROM NOC__c WHERE Id = :noc.Id].Approval_Status__c);
+        System.assertEquals('Approved', [SELECT Approval_Status__c FROM NOC__c WHERE Id = :noc.Id WITH SYSTEM_MODE].Approval_Status__c);
     }
 }

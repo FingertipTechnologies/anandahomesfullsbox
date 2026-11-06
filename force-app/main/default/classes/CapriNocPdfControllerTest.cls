@@ -7,14 +7,14 @@ private class CapriNocPdfControllerTest {
             Project_Type__c = 'Apartment',
             Interest_Rate__c = 18
         );
-        insert project;
+        insert as system project;
 
         Plot__c plot = new Plot__c(
             Project__c = project.Id,
             Unit_Type__c = 'Apartment',
             Status__c = 'Booked'
         );
-        insert plot;
+        insert as system plot;
 
         Booking__c booking = new Booking__c(
             Project__c = project.Id,
@@ -24,13 +24,13 @@ private class CapriNocPdfControllerTest {
             First_Applicant_Name__c = 'CAPRI Test Buyer',
             Total_Flat_Cost__c = 1200000
         );
-        insert booking;
+        insert as system booking;
 
         NOC__c noc = new NOC__c(
             Booking__c = booking.Id,
             NOC_Type__c = 'Capri NOC'
         );
-        insert noc;
+        insert as system noc;
 
         Test.startTest();
         CapriNocPdfController controller = new CapriNocPdfController(
@@ -62,9 +62,9 @@ private class CapriNocPdfControllerTest {
         Project__c project = new Project__c(
             Name = 'CAPRI Related Project', Project_Type__c = 'Apartment', Interest_Rate__c = 18
         );
-        insert project;
+        insert as system project;
         Plot__c plot = new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Booked');
-        insert plot;
+        insert as system plot;
 
         List<Booking__c> cancelled = new List<Booking__c>();
         List<Swap_History__c> swaps = new List<Swap_History__c>();
@@ -80,14 +80,14 @@ private class CapriNocPdfControllerTest {
                 Old_Plot__c = plot.Id, Swap_Date__c = Date.today().addMonths(-3 - i), Swap_Reason__c = 'Swap ' + i
             ));
         }
-        insert cancelled;
-        insert swaps;
+        insert as system cancelled;
+        insert as system swaps;
 
         Booking__c booking = new Booking__c(
             Project__c = project.Id, Plot__c = plot.Id, Booking_Date__c = Date.today(), Status__c = 'Booked',
             First_Applicant_Name__c = 'Current Buyer', Total_Flat_Cost__c = 11173800
         );
-        insert booking;
+        insert as system booking;
 
         NOC__c noc = new NOC__c(
             Booking__c = booking.Id, NOC_Type__c = 'Capri NOC',
@@ -96,11 +96,12 @@ private class CapriNocPdfControllerTest {
             Related_Cancellation_Booking_Ids__c = cancelled[0].Id + ',' + cancelled[1].Id,
             Related_Swap_History_Ids__c = swaps[0].Id + ',' + swaps[1].Id
         );
-        insert noc;
+        insert as system noc;
         noc = [
             SELECT Id, Related_Cancellation_Booking__c, Related_Swap_History__c,
                    Related_Cancellation_Booking_Ids__c, Related_Swap_History_Ids__c
             FROM NOC__c WHERE Id = :noc.Id
+            WITH SYSTEM_MODE
         ];
 
         System.assertEquals(2, CapriNocPdfController.selectedCancellationIds(noc).size());
@@ -149,9 +150,9 @@ private class CapriNocPdfControllerTest {
     @isTest
     static void createNocKeepsEverySelection() {
         Project__c project = new Project__c(Name = 'CAPRI Create Project', Project_Type__c = 'Apartment', Interest_Rate__c = 18);
-        insert project;
+        insert as system project;
         Plot__c plot = new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Booked');
-        insert plot;
+        insert as system plot;
         List<Booking__c> cancelled = new List<Booking__c>();
         List<Swap_History__c> swaps = new List<Swap_History__c>();
         for (Integer i = 0; i < 2; i++) {
@@ -161,13 +162,15 @@ private class CapriNocPdfControllerTest {
             ));
             swaps.add(new Swap_History__c(Old_Plot__c = plot.Id, Swap_Date__c = Date.today().addMonths(-3 - i)));
         }
-        insert cancelled;
-        insert swaps;
+        insert as system cancelled;
+        insert as system swaps;
         Booking__c booking = new Booking__c(
             Project__c = project.Id, Plot__c = plot.Id, Booking_Date__c = Date.today(), Status__c = 'Booked',
             CRM_Manager__c = UserInfo.getUserId()
         );
-        insert booking;
+        insert as system booking;
+        // Booking automation can clear the CRM Manager on insert; set it again so the NOC can be raised.
+        update as system new Booking__c(Id = booking.Id, CRM_Manager__c = UserInfo.getUserId());
 
         Test.startTest();
         Id nocId = NOCController.createNOC(
@@ -181,6 +184,7 @@ private class CapriNocPdfControllerTest {
             SELECT Related_Cancellation_Booking__c, Related_Swap_History__c,
                    Related_Cancellation_Booking_Ids__c, Related_Swap_History_Ids__c
             FROM NOC__c WHERE Id = :nocId
+            WITH SYSTEM_MODE
         ];
         System.assertEquals(cancelled[0].Id, saved.Related_Cancellation_Booking__c);
         System.assertEquals(2, CapriNocPdfController.selectedCancellationIds(saved).size());

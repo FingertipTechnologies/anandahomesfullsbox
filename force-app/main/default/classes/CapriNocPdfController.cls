@@ -107,6 +107,7 @@ public with sharing class CapriNocPdfController {
                    Booking__r.Cost_Sheet__r.Amenities_Charges__c
             FROM NOC__c
             WHERE Id = :nocId
+            WITH SYSTEM_MODE
             LIMIT 1
         ];
 
@@ -174,6 +175,7 @@ public with sharing class CapriNocPdfController {
                    Plot__r.Name, Plot__r.Saleable_Area_Sft__c
             FROM Booking__c
             WHERE Id = :cancellationId
+            WITH SYSTEM_MODE
             LIMIT 1
         ];
         if (cancellationBookings.isEmpty()) {
@@ -191,6 +193,7 @@ public with sharing class CapriNocPdfController {
             FROM Refund__c
             WHERE Booking__c = :cancellationBooking.Id
             AND Status__c = 'Approved'
+            WITH SYSTEM_MODE
             ORDER BY Refund_Date__c ASC
             LIMIT 200
         ];
@@ -227,6 +230,7 @@ public with sharing class CapriNocPdfController {
                    New_Booking__r.Co_Applicant_Name__c, New_Booking__r.Mobile_Primary__c
             FROM Swap_History__c
             WHERE Id = :swapId
+            WITH SYSTEM_MODE
             LIMIT 1
         ];
         if (swapRecords.isEmpty()) {
@@ -267,6 +271,7 @@ public with sharing class CapriNocPdfController {
             WHERE Booking__c IN :bookingIds
             AND Receipt__r.Approval_Status__c = 'Approved'
             AND Receipt__r.Receipt_Status__c = 'Received'
+            WITH SYSTEM_MODE
             ORDER BY Receipt__r.Receipt_Date__c ASC
             LIMIT 200
         ];

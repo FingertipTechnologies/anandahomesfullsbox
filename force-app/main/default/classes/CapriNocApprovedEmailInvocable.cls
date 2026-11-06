@@ -42,6 +42,7 @@ public with sharing class CapriNocApprovedEmailInvocable {
             SELECT Id, Name, Approval_Status__c, Booking__c, Booking__r.Capri_Email__c
             FROM NOC__c
             WHERE Id IN :nocIds
+            WITH SYSTEM_MODE
         ]);
 
         for (Id nocId : nocIds) {
@@ -145,6 +146,7 @@ public with sharing class CapriNocApprovedEmailInvocable {
         for (NOC__c noc : [
             SELECT Id FROM NOC__c
             WHERE Id IN :approvedIds AND Booking__r.Capri_Email__c != null
+            WITH SYSTEM_MODE
         ]) {
             toSend.add(noc.Id);
         }
@@ -187,6 +189,7 @@ public with sharing class CapriNocApprovedEmailInvocable {
                        Booking__r.Project_Name__c
                 FROM NOC__c
                 WHERE Id IN :batchIds
+                WITH SYSTEM_MODE
             ]);
 
             List<Messaging.SingleEmailMessage> messages = new List<Messaging.SingleEmailMessage>();

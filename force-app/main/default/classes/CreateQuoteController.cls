@@ -232,7 +232,7 @@ public without sharing class CreateQuoteController {
             SELECT Id, Project__c, S_No__c, Sequence__c, Name, Tentative_TimeLine__c,
             Payment_Percent__c, Completed_Date__c, Due_Date__c, Status__c , Amount__c
             FROM Master_payment_schedule__c
-            WHERE Project__c = :Project AND Tower__c = :towerId
+            WHERE Project__c = :Project AND Tower__c = :towerId AND Is_Active__c= TRUE
             ORDER BY S_No__c ASC, Sequence__c ASC
         ];
         system.debug('masterSchedules '+masterSchedules);

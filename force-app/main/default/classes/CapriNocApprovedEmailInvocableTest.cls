@@ -199,24 +199,47 @@ private class CapriNocApprovedEmailInvocableTest {
     }
 
     @isTest
-    static void approvingCapriNocQueuesTheMail() {
+    static void approvalAloneDoesNotSendTheMail() {
         NOC__c noc = makeNocWithHistory(2, 'Pending');
         Test.startTest();
         update as system new NOC__c(Id = noc.Id, Approval_Status__c = 'Approved');
         Integer queued = Limits.getQueueableJobs();
         Test.stopTest();
-        System.assertEquals(1, queued, 'Approval queues the Capri mail');
+        System.assertEquals(0, queued, 'The Capri mail is sent only from the button');
     }
 
     @isTest
-    static void approvalWithoutCapriEmailIsNotBlocked() {
-        NOC__c noc = makeNocWithHistory(0, 'Pending');
-        update as system new Booking__c(Id = noc.Booking__c, Capri_Email__c = null);
+    static void previewListsEveryLetter() {
+        NOC__c noc = makeNocWithHistory(2, 'Approved');
+        CapriNocApprovedEmailInvocable.SendPreview preview = CapriNocApprovedEmailInvocable.getSendPreview(noc.Id);
+        System.assertEquals(null, preview.blockedReason);
+        System.assertEquals(5, preview.attachmentNames.size(), 'Loan NOC + 2 swap + 2 cancellation letters');
+        System.assertNotEquals(null, preview.capriEmail);
+    }
+
+    @isTest
+    static void sendButtonQueuesTheMailAndStampsSentDate() {
+        NOC__c noc = makeNocWithHistory(0, 'Approved');
         Test.startTest();
-        update as system new NOC__c(Id = noc.Id, Approval_Status__c = 'Approved');
+        CapriNocApprovedEmailInvocable.sendNow(noc.Id);
         Integer queued = Limits.getQueueableJobs();
         Test.stopTest();
-        System.assertEquals(0, queued, 'No Capri email, so nothing is queued');
-        System.assertEquals('Approved', [SELECT Approval_Status__c FROM NOC__c WHERE Id = :noc.Id WITH SYSTEM_MODE].Approval_Status__c);
+        System.assertEquals(1, queued, 'The button queues the Capri mail');
+        System.assertNotEquals(null, [SELECT Sent_Date__c FROM NOC__c WHERE Id = :noc.Id WITH SYSTEM_MODE].Sent_Date__c);
+    }
+
+    @isTest
+    static void sendButtonIsBlockedUntilApprovedAndEmailPresent() {
+        NOC__c noc = makeNocWithHistory(0, 'Pending');
+        System.assert(CapriNocApprovedEmailInvocable.getSendPreview(noc.Id).blockedReason.contains('approved'));
+        try {
+            CapriNocApprovedEmailInvocable.sendNow(noc.Id);
+            System.assert(false, 'A pending NOC must not be mailed');
+        } catch (AuraHandledException e) {
+            System.assert(e.getMessage().contains('approved'));
+        }
+        update as system new NOC__c(Id = noc.Id, Approval_Status__c = 'Approved');
+        update as system new Booking__c(Id = noc.Booking__c, Capri_Email__c = null);
+        System.assert(CapriNocApprovedEmailInvocable.getSendPreview(noc.Id).blockedReason.contains('Capri Email'));
     }
 }

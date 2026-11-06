@@ -7,9 +7,5 @@
 trigger NOCTrigger on NOC__c (after insert, after update) {
     if (Trigger.isAfter && (Trigger.isInsert || Trigger.isUpdate)) {
         NOCApprovalSyncService.syncToBooking(Trigger.new, Trigger.isUpdate ? Trigger.oldMap : null);
-        if (Trigger.isUpdate) {
-            // Capri NOC approved -> mail the NOC (+ selected swap / cancellation letters) to Capri.
-            CapriNocApprovedEmailInvocable.queueForApprovedNocs(Trigger.new, Trigger.oldMap);
-        }
     }
 }

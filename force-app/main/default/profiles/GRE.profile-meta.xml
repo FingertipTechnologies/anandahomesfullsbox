@@ -2597,6 +2597,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Booking__c.Balance_Flat_Amount__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Booking__c.Balcony_Area_Charges__c</field>
         <readable>false</readable>
     </fieldPermissions>
@@ -4174,6 +4179,11 @@
         <editable>false</editable>
         <field>Booking__c.Total_Receipt_Amount__c</field>
         <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Booking__c.Total_Received_Flat_Amount__c</field>
+        <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>

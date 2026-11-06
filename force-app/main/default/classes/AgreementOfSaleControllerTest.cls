@@ -637,6 +637,73 @@ private class AgreementOfSaleControllerTest {
         System.assertEquals('', controller.getSelectedTowerName(), 'No unit, no tower');
         System.assert(controller.getAllApplicants().isEmpty(), 'No booking, no purchasers');
         System.assertEquals('', controller.getAllBuyerNames(), 'No booking, no notice names');
+        System.assert(!controller.getHasFlatReceipts(), 'No booking, no receipts');
+        System.assertEquals('0', controller.getFormattedFlatReceiptTotal(), 'Empty table totals zero');
+        System.assertEquals('', controller.getFormattedTotalReceivedFlatAmount(), 'No booking, blank paid amount');
+        System.assertEquals('', controller.getTotalReceivedFlatAmountInWords(), 'No booking, blank words');
+        System.assertEquals('', controller.getFormattedBalanceFlatAmount(), 'No booking, blank balance');
+        System.assertEquals('', controller.getBalanceFlatAmountInWords(), 'No booking, blank balance words');
         System.assertEquals(null, AgreementOfSaleController.queryTowerLookupName(null), 'Null unit id');
+    }
+
+    @IsTest
+    static void arjunClause111UsesFlatAmountsAndSkipsGstAndAdditionalCharges() {
+        Booking__c booking = buildBooking('ARJUN SINGH');
+        insert new List<Receipt__c>{
+            new Receipt__c(
+                Booking__c = booking.Id,
+                Receipt_Date__c = Date.newInstance(2025, 2, 1),
+                Receipt_Type__c = 'GST Amount',
+                Payment_Reference_Number__c = 'GST0001',
+                Amount_received__c = 50000,
+                Approval_Status__c = 'Approved'
+            ),
+            new Receipt__c(
+                Booking__c = booking.Id,
+                Receipt_Date__c = Date.newInstance(2025, 2, 2),
+                Receipt_Type__c = 'Additional Charge',
+                Payment_Reference_Number__c = 'ADD0001',
+                Amount_received__c = 25000,
+                Approval_Status__c = 'Approved'
+            )
+        };
+        Booking__c saved = [
+            SELECT Total_Received_Flat_Amount__c, Balance_Flat_Amount__c
+            FROM Booking__c
+            WHERE Id = :booking.Id
+        ];
+
+        Test.startTest();
+        AgreementOfSaleController controller = load(Page.ARJUN_SINGH_AGREEMENT_OF_SALE, booking);
+        Test.stopTest();
+
+        Decimal expectedTotal = 0;
+        for (AgreementOfSaleController.ReceiptRow row : controller.getFlatReceiptRows()) {
+            System.assertNotEquals('GST Amount', row.getReceiptType(), 'GST Amount receipts are not listed');
+            System.assertNotEquals('Additional Charge', row.getReceiptType(), 'Additional Charge receipts are not listed');
+            expectedTotal += row.getAmount() == null ? 0 : row.getAmount();
+        }
+        System.assertEquals(controller.receiptRows.size() - 2, controller.getFlatReceiptRows().size(),
+            'Only the GST Amount and Additional Charge rows are removed');
+        System.assert(controller.getHasFlatReceipts(), 'Approved flat receipts are listed');
+        System.assertEquals(2081709, expectedTotal, 'Approved Advance + Installment receipts');
+        System.assertEquals('20,81,709', controller.getFormattedFlatReceiptTotal(), 'TOTAL AMOUNT = sum of the rows shown');
+
+        System.assertEquals('21,56,709', controller.getFormattedTotalReceiptAmount(),
+            'Existing total used by the other pages still includes GST / Additional Charge receipts');
+
+        // Paid and balance amounts come straight from the new Booking fields.
+        Decimal paid = saved.Total_Received_Flat_Amount__c;
+        Decimal balance = saved.Balance_Flat_Amount__c;
+        System.assertEquals(paid, controller.booking.Total_Received_Flat_Amount__c, 'Paid = Total_Received_Flat_Amount__c');
+        System.assertEquals(balance, controller.booking.Balance_Flat_Amount__c, 'Balance = Balance_Flat_Amount__c');
+        if (paid != null) {
+            System.assert(String.isNotBlank(controller.getFormattedTotalReceivedFlatAmount()), 'Paid figure printed');
+            System.assert(controller.getTotalReceivedFlatAmountInWords().startsWith('Rupees'), 'Paid amount in words');
+        }
+        if (balance != null) {
+            System.assert(controller.getBalanceFlatAmountInWords().startsWith('Rupees'), 'Balance in words');
+            System.assert(String.isNotBlank(controller.getFormattedBalanceFlatAmount()), 'Balance figure printed');
+        }
     }
 }

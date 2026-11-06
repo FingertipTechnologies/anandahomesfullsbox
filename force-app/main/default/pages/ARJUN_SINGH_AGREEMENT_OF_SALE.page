@@ -867,7 +867,7 @@ img { border:0; }
 <div class="cf">&#160;</div>
 <div class="c3k"><span class="cj">1.10</span><span class="c3o"></span><span class="c5">The DEVELOPER agrees to pay all outgoings before transferring the physical possession or transfer of Scheduled Property whichever is earlier, of the flat to the VENDEE/S, which it has collected from the VENDEE/S, for the payment of outgoings (including land cost [either directly or by way of share in the project, ground rent, municipal or other local taxes, charges for water or electricity, maintenance charges, including mortgage loan and interest on mortgages or other encumbrances and such other liabilities payable to competent authorities, banks and financial institutions, which are related to the project). If DEVELOPER fails to pay all or any of the outgoings collected by it from the VENDEE/S or any liability, mortgage loan and interest thereon before transferring the flat to the VENDEE/S or any liability, mortgage loan and interest thereon before transferring the flat to the VENDEE/S, the DEVELOPER agrees to be liable, even after the transfer of the property, to pay such outgoings and penal charges, if any, to the authority or person to whom they are payable and be liable for the cost of any legal proceedings which may be taken there for by such authority or persons.</span></div>
 <div class="c3i">&#160;</div>
-<div class="c3k"><span class="cj">1.11</span><span class="c3p"></span><span class="c5">VENDEE/S has paid a sum of</span><span class="c6"> </span><span class="c8">Rs. {!formattedTotalReceiptAmount}/- ({!totalReceiptAmountInWords})</span><span class="c6"> </span><span class="c5">as booking amount being part payment towards the total price of the flat at the time of entering this Agreement, the receipt of which the DEVELOPER hereby acknowledges in the table below and the VENDEE/S hereby agrees to pay the remaining price of the flat as prescribed in the Payment Plan (Schedule C) as may be demanded by the DEVELOPER within the time and in the manner specified therein.</span></div>
+<div class="c3k"><span class="cj">1.11</span><span class="c3p"></span><span class="c5">VENDEE/S has paid a sum of</span><span class="c6"> </span><span class="c8">Rs. {!formattedTotalReceivedFlatAmount}/- ({!totalReceivedFlatAmountInWords})</span><span class="c6"> </span><span class="c5">as booking amount being part payment towards the total price of the flat at the time of entering this Agreement, the receipt of which the DEVELOPER hereby acknowledges in the table below and the VENDEE/S hereby agrees to pay the remaining price of the flat as prescribed in the Payment Plan (Schedule C) as may be demanded by the DEVELOPER within the time and in the manner specified therein.</span></div>
 <table class="c3q">
 <colgroup>
 <col style="width:82.11pt"/>
@@ -881,7 +881,7 @@ img { border:0; }
 <td class="c15"><div class="c4"><span class="c8">Reference ID</span></div></td>
 <td class="c15"><div class="c4"><span class="c8">Amount</span></div></td>
 </tr>
-<apex:repeat value="{!receiptRows}" var="receipt">
+<apex:repeat value="{!flatReceiptRows}" var="receipt">
 <tr class="c3t">
 <td class="c15"><div class="c4"><apex:outputText value="{0,date,dd-MM-yyyy}"><apex:param value="{!receipt.receiptDate}"/></apex:outputText></div></td>
 <td class="c15"><div class="c4">{!receipt.mode}</div></td>
@@ -889,16 +889,16 @@ img { border:0; }
 <td class="c15"><div class="c38">{!receipt.amountDisplay}</div></td>
 </tr>
 </apex:repeat>
-<apex:outputPanel layout="none" rendered="{!NOT(hasReceipts)}">
+<apex:outputPanel layout="none" rendered="{!NOT(hasFlatReceipts)}">
 <tr class="c3r"><td colspan="4" class="c15"><div class="c4">No approved receipt records are available for this Booking.</div></td></tr>
 </apex:outputPanel>
 <tr class="c3u">
 <td colspan="3" class="c15"><div class="c4"><span class="c8">TOTAL AMOUNT</span></div></td>
-<td class="c15"><div class="c38"><span class="c8">{!formattedTotalReceiptAmount}/-</span></div></td>
+<td class="c15"><div class="c38"><span class="c8">{!formattedFlatReceiptTotal}/-</span></div></td>
 </tr>
 </table>
 <div class="c3i">&#160;</div>
-<div class="c3w"><span class="c6">Balance </span><span class="c8">Rs.</span><span class="c3v"> </span><span class="c8">{!formattedBalanceAmount}/- ({!balanceAmountInWords})</span><span class="c6"> availing by the way of loan from </span><span class="c8">{!loanBankName}.</span></div>
+<div class="c3w"><span class="c6">Balance </span><span class="c8">Rs.</span><span class="c3v"> </span><span class="c8">{!formattedBalanceFlatAmount}/- ({!balanceFlatAmountInWords})</span><span class="c6"> availing by the way of loan from </span><span class="c8">{!loanBankName}.</span></div>
 <div class="c3i">&#160;</div>
 <div class="c3i">&#160;</div>
 <div class="c3k"><span class="cj">1.12</span><span class="c3o"></span><span class="c5">The VENDEE/S shall pay the installments as stipulated above within 15 days from the date of notice issued by the DEVELOPER, failing which it shall carry interest at the rate of 24% prescribed in the Rules.</span></div>

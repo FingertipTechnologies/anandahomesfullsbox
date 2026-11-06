@@ -13,6 +13,14 @@ public with sharing class AgreementOfSaleController {
         'Approved', 'Approved by Finance Team'
     };
 
+    /**
+     * Receipt types that are not flat payments; the same types the
+     * Booking__c.Total_Received_Flat_Amount__c roll-up excludes.
+     */
+    private static final Set<String> NON_FLAT_RECEIPT_TYPES = new Set<String>{
+        'GST Amount', 'Additional Charge'
+    };
+
     /** Page-name fragment -> LL_Share_Name__c picklist value. */
     private static final Map<String, String> PAGE_OWNERS = new Map<String, String>{
         'ARJUN_SINGH_AGREEMENT_OF_SALE'  => 'ARJUN SINGH',
@@ -378,6 +386,14 @@ public with sharing class AgreementOfSaleController {
         public String getAmountDisplay() {
             return formatIndianCurrency(receipt.Amount_received__c);
         }
+
+        public String getReceiptType() {
+            return receipt.Receipt_Type__c;
+        }
+
+        public Decimal getAmount() {
+            return receipt.Amount_received__c;
+        }
     }
 
     public class PaymentScheduleRow {
@@ -531,6 +547,7 @@ public with sharing class AgreementOfSaleController {
                    // pricing
                    Price_per_sqft__c, Basic_Price__c, Base_Price__c, Total_Flat_Cost__c,
                    GST_Amount__c, Total_Schedule_GST__c, Loan_Bank_Name__c,
+                   Total_Received_Flat_Amount__c, Balance_Flat_Amount__c,
                    Quote__r.Basic_Sale_Price_Rs__c,
                    // THE DRIZZLE price break-up
                    Rate_Per_Sqft__c, GST__c, Covered_Park_Parking__c, Car_Parking_Charges__c,
@@ -1066,6 +1083,55 @@ public with sharing class AgreementOfSaleController {
             result.add(entry);
         }
         return result;
+    }
+
+    // Clause 1.11 (flat payments only): the paid / balance amounts come from the
+    // Booking roll-up and formula fields; the receipts table lists the approved
+    // receipts that are not GST Amount / Additional Charge, totalled by its rows.
+
+    private List<ReceiptRow> flatReceiptRows;
+
+    public List<ReceiptRow> getFlatReceiptRows() {
+        if (flatReceiptRows == null) {
+            flatReceiptRows = new List<ReceiptRow>();
+            for (ReceiptRow row : receiptRows) {
+                if (!NON_FLAT_RECEIPT_TYPES.contains(row.getReceiptType())) {
+                    flatReceiptRows.add(row);
+                }
+            }
+        }
+        return flatReceiptRows;
+    }
+
+    public Boolean getHasFlatReceipts() {
+        return !getFlatReceiptRows().isEmpty();
+    }
+
+    /** TOTAL AMOUNT row: sum of the rows shown in the clause 1.11 table. */
+    public String getFormattedFlatReceiptTotal() {
+        Decimal total = 0;
+        for (ReceiptRow row : getFlatReceiptRows()) {
+            total += row.getAmount() == null ? 0 : row.getAmount();
+        }
+        return formatIndianCurrency(total);
+    }
+
+    /** "VENDEE/S has paid a sum of Rs. ..." - Booking__c.Total_Received_Flat_Amount__c. */
+    public String getFormattedTotalReceivedFlatAmount() {
+        return formatIndianCurrency(booking == null ? null : booking.Total_Received_Flat_Amount__c);
+    }
+
+    public String getTotalReceivedFlatAmountInWords() {
+        return amountInWords(booking == null ? null : booking.Total_Received_Flat_Amount__c);
+    }
+
+    /** "Balance Rs. ..." - Booking__c.Balance_Flat_Amount__c. */
+    public String getFormattedBalanceFlatAmount() {
+        return formatIndianCurrency(booking == null ? null : booking.Balance_Flat_Amount__c);
+    }
+
+    public String getBalanceFlatAmountInWords() {
+        return amountInWords(booking == null ? null : booking.Balance_Flat_Amount__c);
     }
 
     private static String joinNames(String firstName, String lastName) {

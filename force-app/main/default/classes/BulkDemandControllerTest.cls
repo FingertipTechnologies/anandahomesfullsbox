@@ -70,6 +70,9 @@ private class BulkDemandControllerTest {
                 Funding_Type__c = 'Prorata', Email__c = EMAIL_PRORATA
             );
             insert prorataBooking;
+            // The booking flow generates schedules from the project's master rows; these tests
+            // use only the single schedule built by hand below.
+            delete [SELECT Id FROM Payment_Schedule__c WHERE Booking__c = :prorataBooking.Id];
 
             insert new Payment_Schedule__c(
                 Booking__c = prorataBooking.Id,
@@ -98,6 +101,9 @@ private class BulkDemandControllerTest {
                 Email__c = EMAIL_PENDING
             );
             insert pendingBooking;
+            // The booking flow generates schedules from the project's master rows; these tests
+            // use only the single schedule built by hand below.
+            delete [SELECT Id FROM Payment_Schedule__c WHERE Booking__c = :pendingBooking.Id];
 
             insert new Payment_Schedule__c(
                 Booking__c = pendingBooking.Id,

@@ -120,39 +120,79 @@ public with sharing class CapriNocApprovedEmailInvocable {
         return attachments;
     }
 
+    /** What the "Send Capri NOC Mail" button shows before sending. */
+    public class SendPreview {
+        @AuraEnabled public String nocName;
+        @AuraEnabled public String capriEmail;
+        @AuraEnabled public List<String> attachmentNames;
+        @AuraEnabled public Datetime lastSentOn;
+        /** Filled when the mail cannot be sent; the button then only shows this reason. */
+        @AuraEnabled public String blockedReason;
+    }
+
     /**
-     * From the NOC trigger: when a Capri NOC becomes Approved, queue the mail to the Capri email on
-     * its booking. NOCs of other types, and bookings without a Capri email, are left alone so the
-     * approval itself is never blocked.
+     * For the "Send Capri NOC Mail" button on the NOC record: who the mail goes to, which letters
+     * it will carry, and the reason when it cannot be sent yet.
      */
-    public static void queueForApprovedNocs(List<NOC__c> newList, Map<Id, NOC__c> oldMap) {
-        if (newList == null || oldMap == null) {
-            return;
-        }
-        Set<Id> approvedIds = new Set<Id>();
-        for (NOC__c noc : newList) {
-            NOC__c old = oldMap.get(noc.Id);
-            if (noc.Approval_Status__c == 'Approved'
-                && old != null && old.Approval_Status__c != 'Approved'
-                && noc.NOC_Type__c == 'Capri NOC'
-                && noc.Booking__c != null) {
-                approvedIds.add(noc.Id);
-            }
-        }
-        if (approvedIds.isEmpty()) {
-            return;
-        }
-        List<Id> toSend = new List<Id>();
-        for (NOC__c noc : [
-            SELECT Id FROM NOC__c
-            WHERE Id IN :approvedIds AND Booking__r.Capri_Email__c != null
+    @AuraEnabled
+    public static SendPreview getSendPreview(Id nocId) {
+        List<NOC__c> nocs = [
+            SELECT Id, Name, NOC_Type__c, Approval_Status__c, Sent_Date__c, Booking__c,
+                   Related_Cancellation_Booking__c, Related_Swap_History__c,
+                   Related_Cancellation_Booking_Ids__c, Related_Swap_History_Ids__c,
+                   Booking__r.Capri_Email__c, Booking__r.Unit_NumberFor__c
+            FROM NOC__c
+            WHERE Id = :nocId
             WITH SYSTEM_MODE
-        ]) {
-            toSend.add(noc.Id);
+        ];
+        SendPreview preview = new SendPreview();
+        preview.attachmentNames = new List<String>();
+        if (nocs.isEmpty()) {
+            preview.blockedReason = 'NOC record not found.';
+            return preview;
         }
-        if (!toSend.isEmpty() && Limits.getQueueableJobs() < Limits.getLimitQueueableJobs()) {
-            System.enqueueJob(new SendApprovedNocEmailQueueable(toSend));
+        NOC__c noc = nocs[0];
+        preview.nocName = noc.Name;
+        preview.lastSentOn = noc.Sent_Date__c;
+        preview.capriEmail = noc.Booking__r == null ? null : noc.Booking__r.Capri_Email__c;
+        if (noc.NOC_Type__c != 'Capri NOC') {
+            preview.blockedReason = 'This is not a Capri NOC, so there is no Capri mail to send.';
+        } else if (noc.Approval_Status__c != 'Approved') {
+            preview.blockedReason = 'The NOC must be approved before it is mailed to Capri.';
+        } else if (noc.Booking__c == null) {
+            preview.blockedReason = 'This NOC is not linked to a Booking.';
+        } else if (String.isBlank(preview.capriEmail)) {
+            preview.blockedReason = 'Enter Capri Email on the Booking before sending the NOC.';
         }
+
+        String unitNumber = noc.Booking__r == null ? null : noc.Booking__r.Unit_NumberFor__c;
+        preview.attachmentNames.add(buildFileName('CAPRI_NOC_Loan', unitNumber, null));
+        Integer swapCount = CapriNocPdfController.selectedSwapIds(noc).size();
+        for (Integer i = 0; i < swapCount; i++) {
+            preview.attachmentNames.add(buildFileName('CAPRI_NOC_Swap', unitNumber, swapCount > 1 ? i + 1 : null));
+        }
+        Integer cancellationCount = CapriNocPdfController.selectedCancellationIds(noc).size();
+        for (Integer i = 0; i < cancellationCount; i++) {
+            preview.attachmentNames.add(
+                buildFileName('CAPRI_Cancellation', unitNumber, cancellationCount > 1 ? i + 1 : null)
+            );
+        }
+        return preview;
+    }
+
+    /**
+     * Sends the Capri mail for one NOC. Called only from the "Send Capri NOC Mail" button: the mail
+     * is never sent automatically on approval.
+     */
+    @AuraEnabled
+    public static void sendNow(Id nocId) {
+        SendPreview preview = getSendPreview(nocId);
+        if (String.isNotBlank(preview.blockedReason)) {
+            AuraHandledException blocked = new AuraHandledException(preview.blockedReason);
+            blocked.setMessage(preview.blockedReason);
+            throw blocked;
+        }
+        System.enqueueJob(new SendApprovedNocEmailQueueable(new List<Id>{ nocId }));
     }
 
     private static String buildFileName(String prefix, String unitNumber, Integer sequence) {
@@ -247,6 +287,13 @@ public with sharing class CapriNocApprovedEmailInvocable {
             if (!errors.isEmpty()) {
                 throw new CapriNocEmailException(String.join(errors, '; '));
             }
+
+            // Record when the mail went out; the send button shows this before a re-send.
+            List<NOC__c> sent = new List<NOC__c>();
+            for (Id sentId : batchIds) {
+                sent.add(new NOC__c(Id = sentId, Sent_Date__c = System.now()));
+            }
+            update as system sent;
 
             if (nocIds.size() > batchSize) {
                 List<Id> remainingIds = new List<Id>();

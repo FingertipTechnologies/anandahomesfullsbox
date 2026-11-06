@@ -212,6 +212,7 @@ img { border:0; }
 .c59{display:inline-block;width:9.87pt}
 .c5a{display:inline-block;width:7.56pt}
 .c5b{display:inline-block;width:30.48pt}
+.c6n{display:inline-block;width:72pt}
 .c5c{border-collapse:collapse;table-layout:fixed;width:451.3pt;margin-left:auto;margin-right:auto}
 .c5d{line-height:25.78pt;font-size:10.45pt;font-family:'Times New Roman', Times, serif}
 .c5e{text-align:right;line-height:25.78pt;font-size:10.45pt;font-family:'Times New Roman', Times, serif}
@@ -239,7 +240,7 @@ img { border:0; }
 .c60{height:35pt}
 .c61{height:37pt}
 .c62{line-height:13.80pt}
-.c63{border-collapse:collapse;table-layout:fixed;width:203pt;page-break-inside:avoid;margin-left:-5.4pt}
+.c63{border-collapse:collapse;table-layout:fixed;width:203pt;page-break-inside:avoid}
 .c64{height:15.75pt}
 .c65{border-collapse:collapse;table-layout:fixed;width:451.3pt}
 .c66{width:207.65pt;padding:0;vertical-align:top;border:none}
@@ -1305,25 +1306,25 @@ img { border:0; }
 <div class="c53">&#160;</div>
 <div class="cf"><span class="c5">All that the property bearing premises the Land in </span><span class="c6">Sy.Nos. 128/1A/2/2, 129/A/1, 129/A/2, 129/AA/1, 129/AA/2, 129/AA/3, 129/E/1, 130/A/1, 130/A/2, 130/A/3/1, 130/A/3/2, 130/A/4, 130/AA/1, 130/AA/2, 130/AA/3, 130/E/1, 130/E/2, 145/1/2, 145/1/1/7, 145/1/1/1/2, 145/1/1/1/1/2, 145/1/1/1/1/1/1, 145/1/1/1/1/1/2, 145/2, 147/A/1, 147/A/2, 147/A/3, 147/AA/1, 147/AA/2, 147/AA/3, 147/E/1, 147/E/2, 148/A/1, 148/A/2, 148/A/3, 148/A/4, 148/AA/1, 148/AA/2, 148/AA/3, 148/E/1, 148/E/2, 148/E/3, 148/E/5, 149/1, 149/2, 149/3, 149/4, 149/5, 149/6, 149/7,,</span><span class="c5"> total admeasuring </span><span class="c6">80704.23</span><span class="c5"> </span><span class="c6">Square yards or equivalent to 67479.02 Square Meters</span><span class="c5">, situated at Puppalguda Village, under Manikonda Municipality, Gandipet Mandal, Ranga Reddy District, Telangana State and bounded as follows:</span></div>
 <div class="cf">&#160;</div>
-<div class="c56"><span class="c5">NORTH</span><span class="c54"></span><span class="c1x"></span><span class="c5">:</span><span class="c55"></span><span class="c5">Road and Neighbors Properties</span></div>
+<div class="c56"><span class="c6n"><span class="c5">NORTH</span></span><span class="c5">:</span><span class="c55"></span><span class="c5">Road and Neighbors Properties</span></div>
 <div class="c57">&#160;</div>
-<div class="c56"><span class="c5">SOUTH</span><span class="c58"></span><span class="c1x"></span><span class="c5">:</span><span class="c55"></span><span class="c5">80&#8217;-0&#8217;feet Road</span></div>
+<div class="c56"><span class="c6n"><span class="c5">SOUTH</span></span><span class="c5">:</span><span class="c55"></span><span class="c5">80&#8217;-0&#8217;feet Road</span></div>
 <div class="c57">&#160;</div>
-<div class="c56"><span class="c5">EAST</span><span class="c59"></span><span class="c1x"></span><span class="c5">:</span><span class="c55"></span><span class="c5">Existing Nala</span></div>
+<div class="c56"><span class="c6n"><span class="c5">EAST</span></span><span class="c5">:</span><span class="c55"></span><span class="c5">Existing Nala</span></div>
 <div class="c57">&#160;</div>
-<div class="c56"><span class="c5">WEST</span><span class="c5a"></span><span class="c1x"></span><span class="c5">:</span><span class="c55"></span><span class="c5">30&#8217;-0&#8217; feet Road</span></div>
+<div class="c56"><span class="c6n"><span class="c5">WEST</span></span><span class="c5">:</span><span class="c55"></span><span class="c5">30&#8217;-0&#8217; feet Road</span></div>
 <div class="cf">&#160;</div>
 <div class="c4"><span class="ci">SCHEDULE B&#8217; PROPERTY</span></div>
 <div class="c4">&#160;</div>
 <div class="cf"><span class="c5">All that the </span><span class="c8">{!selectedBhkNumber}</span><span class="c6"> BHK Flat No.</span><span class="c8">{!selectedUnit.Name}</span><span class="c6"> (</span><span class="c8">{!selectedFacingDisplay}</span><span class="c6"> Facing)</span><span class="c5"> on </span><span class="c8">{!selectedFloorDisplay}</span><span class="c6"> Floor,</span><span class="c5"> of&#160; </span><span class="c6">Tower-</span><span class="c8">{!selectedTowerName}</span><span class="c7">,</span><span class="c5"> the High Rise Residential Flats known as </span><span class="c6">&#8220;THE LEGACEY&#8221;</span><span class="c5">, with saleable area of </span><span class="c8">{!selectedUnit.Saleable_Area_Sft__c}</span><span class="c6"> Square Feet</span><span class="c5"> (including common areas<apex:outputText value="{!selectedCarParkingClause}"/>), along with proportionate undivided share of land equivalent to </span><span class="c8">{!selectedUnit.UDS__c}</span><span class="c6"> Square Yards</span><span class="c5">, (Out of total land admeasuring 80704.23 Square yards or equivalent to 67479.02 Square Meters), </span><span class="c6">in Sy.Nos. 128/1A/2/2, 129/A/1, 129/A/2, 129/AA/1, 129/AA/2, 129/AA/3, 129/E/1, 130/A/1, 130/A/2, 130/A/3/1, 130/A/3/2, 130/A/4, 130/AA/1, 130/AA/2, 130/AA/3, 130/E/1, 130/E/2, 145/1/2, 145/1/1/7, 145/1/1/1/2, 145/1/1/1/1/2, 145/1/1/1/1/1/1, 145/1/1/1/1/1/2, 145/2, 147/A/1, 147/A/2, 147/A/3, 147/AA/1, 147/AA/2, 147/AA/3, 147/E/1, 147/E/2, 148/A/1, 148/A/2, 148/A/3, 148/A/4, 148/AA/1, 148/AA/2, 148/AA/3, 148/E/1, 148/E/2, 148/E/3, 148/E/5, 149/1, 149/2, 149/3, 149/4, 149/5, 149/6, 149/7,</span><span class="c5">&#160; Situated at </span><span class="c6">PUPPALGUDA VILLAGE</span><span class="c5">, under Manikonda Municipality, Gandipet Mandal, Ranga Reddy District, Telangana State and bounded as follows: </span></div>
 <div class="cf">&#160;</div>
-<div class="c56"><span class="c7">NORTH</span><span class="c54"></span><span class="c1x"></span><span class="c7">: </span><span class="c5b"></span><span class="c7">{!selectedUnit.Boundary_North__c}</span></div>
+<div class="c56"><span class="c6n"><span class="c7">NORTH</span></span><span class="c7">:</span><span class="c55"></span><span class="c7">{!selectedUnit.Boundary_North__c}</span></div>
 <div class="c57">&#160;</div>
-<div class="c56"><span class="c7">SOUTH</span><span class="c58"></span><span class="c1x"></span><span class="c7">:</span><span class="c55"></span><span class="c7">{!selectedUnit.Boundary_South__c}</span></div>
+<div class="c56"><span class="c6n"><span class="c7">SOUTH</span></span><span class="c7">:</span><span class="c55"></span><span class="c7">{!selectedUnit.Boundary_South__c}</span></div>
 <div class="c57">&#160;</div>
-<div class="c56"><span class="c7">EAST</span><span class="c59"></span><span class="c1x"></span><span class="c7">: </span><span class="c5b"></span><span class="c7">{!selectedUnit.Boundary_East__c}</span></div>
+<div class="c56"><span class="c6n"><span class="c7">EAST</span></span><span class="c7">:</span><span class="c55"></span><span class="c7">{!selectedUnit.Boundary_East__c}</span></div>
 <div class="c57">&#160;</div>
-<div class="c56"><span class="c7">WEST</span><span class="c5a"></span><span class="c1x"></span><span class="c7">: </span><span class="c5b"></span><span class="c7">{!selectedUnit.Boundary_West__c}</span></div>
+<div class="c56"><span class="c6n"><span class="c7">WEST</span></span><span class="c7">:</span><span class="c55"></span><span class="c7">{!selectedUnit.Boundary_West__c}</span></div>
 <div style="page-break-after:always;height:0"></div>
 
 <div class="c4"><span class="ci">SCHEDULE &#8216;C&#8217; Payment Schedule</span></div>

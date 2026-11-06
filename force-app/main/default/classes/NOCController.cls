@@ -289,7 +289,10 @@ public with sharing class NOCController {
 
         List<NOC__c> nocs = [
             SELECT Id, Name, NOC_Type__c, Approval_Status__c, Mail_Body__c, Sent_Date__c,
-                   Booking__r.Email__c, Booking__r.First_Applicant_Name__c, Booking__r.Name
+                   Related_Cancellation_Booking__c, Related_Swap_History__c,
+                   Related_Cancellation_Booking_Ids__c, Related_Swap_History_Ids__c,
+                   Booking__r.Email__c, Booking__r.First_Applicant_Name__c, Booking__r.Name,
+                   Booking__r.Unit_NumberFor__c
             FROM NOC__c WHERE Id = :nocId LIMIT 1
         ];
         if (nocs.isEmpty()) throw new AuraHandledException('NOC not found.');
@@ -308,8 +311,17 @@ public with sharing class NOCController {
         String body = noc.Mail_Body__c != null ? noc.Mail_Body__c : '';
         email.setHtmlBody(body.replace('\n', '<br/>'));
         email.setSaveAsActivity(true);
+        if (noc.NOC_Type__c == 'Capri NOC') {
+            // Capri NOC mail carries the letters: the current unit's NOC, plus one swap letter and
+            // one cancellation letter for every swap / cancellation selected when it was raised.
+            email.setFileAttachments(CapriNocApprovedEmailInvocable.buildAttachments(noc));
+        }
 
-        Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{ email }, false);
+        Messaging.SendEmailResult[] results =
+            Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{ email }, false);
+        if (!results[0].isSuccess()) {
+            throw new AuraHandledException('The NOC mail could not be sent: ' + results[0].getErrors()[0].getMessage());
+        }
 
         update new NOC__c(Id = noc.Id, Sent_Date__c = Date.today());
     }

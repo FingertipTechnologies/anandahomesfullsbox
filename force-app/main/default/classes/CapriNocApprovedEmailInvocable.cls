@@ -84,8 +84,7 @@ public with sharing class CapriNocApprovedEmailInvocable {
      * every swap selected on the NOC and one cancellation letter for every cancellation selected;
      * with nothing selected only the current unit's NOC goes out.
      */
-    @TestVisible
-    private static List<Messaging.EmailFileAttachment> buildAttachments(NOC__c noc) {
+    public static List<Messaging.EmailFileAttachment> buildAttachments(NOC__c noc) {
         String unitNumber = noc.Booking__r.Unit_NumberFor__c;
         List<Messaging.EmailFileAttachment> attachments = new List<Messaging.EmailFileAttachment>{
             EmailPdfGenerator.generatePdfAttachment(

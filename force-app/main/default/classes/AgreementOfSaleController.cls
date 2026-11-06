@@ -140,6 +140,44 @@ public with sharing class AgreementOfSaleController {
             return String.join(details, ', ');
         }
 
+        // ---- ARJUN_SINGH_AGREEMENT_OF_SALE wording, split by weight as in the deed:
+        // bold "SRI. NAME, S/O. SRI. FATHER, " + regular "aged about .. years,
+        // Occupation: .., Resident of ... " + bold "(AADHAAR No. X & PAN No. Y)".
+
+        /** e.g. "SRI. RAVI KUMAR, S/O. SRI. MOHAN RAO, " (bold part). */
+        public String getDeedNameLine() {
+            String line = getDisplayName();
+            if (!String.isBlank(relation)) {
+                line += ', ' + relation;
+            }
+            return line + ', ';
+        }
+
+        /** e.g. "aged about 30 years, Occupation: Business, Resident of Hyderabad. " */
+        public String getDeedDetails() {
+            List<String> details = new List<String>();
+            if (!String.isBlank(age)) {
+                details.add('aged about ' + age + ' years');
+            }
+            if (!String.isBlank(occupation)) {
+                details.add('Occupation: ' + occupation.trim());
+            }
+            if (!String.isBlank(address)) {
+                details.add((addressPrefix == null ? '' : addressPrefix) + address.trim());
+            }
+            if (details.isEmpty()) {
+                return '';
+            }
+            String text = String.join(details, ', ');
+            return text + (text.endsWith('.') ? ' ' : '. ');
+        }
+
+        /** e.g. "(AADHAAR No. 1234 5678 9012 & PAN No. ABCDE1234F)" (bold part). */
+        public String getDeedIds() {
+            return '(AADHAAR No. ' + (aadhaar == null ? '' : aadhaar.trim()) +
+                ' & PAN No. ' + (pan == null ? '' : pan.trim()) + ')';
+        }
+
         private ApplicantEntry(
             Integer sequence,
             String salutation,
@@ -903,6 +941,130 @@ public with sharing class AgreementOfSaleController {
         }
         return 'Note: the booked unit ' + selectedUnit.Name + ' is tagged with LL Share Name "' +
             unitOwner + '" but this agreement template is for "' + ownerName + '".';
+    }
+
+    // ------------------------------------- ARJUN_SINGH_AGREEMENT_OF_SALE only
+    // Additive getters used only by the ARJUN page, so the other agreement
+    // templates keep printing exactly what they print today.
+
+    private String selectedTowerName;
+    private List<ApplicantEntry> allApplicants;
+
+    /**
+     * Tower name of the booked unit, read from the Plot__c "Tower" lookup
+     * (Tower__c). The relationship is resolved from the field's schema at run
+     * time, so this works whether the org defines Tower__c as a lookup or not.
+     * Falls back to Block1__r.Name, then to the existing name-based tower.
+     */
+    public String getSelectedTowerName() {
+        if (selectedUnit == null) {
+            return '';
+        }
+        if (selectedTowerName == null) {
+            String towerName = queryTowerLookupName(selectedUnit.Id);
+            if (String.isBlank(towerName) && selectedUnit.Block1__r != null) {
+                towerName = selectedUnit.Block1__r.Name;
+            }
+            selectedTowerName = String.isBlank(towerName)
+                ? getSelectedTowerDisplay()
+                : towerName.trim();
+        }
+        return selectedTowerName;
+    }
+
+    @TestVisible
+    private static String queryTowerLookupName(Id unitId) {
+        if (unitId == null) {
+            return null;
+        }
+        Schema.DescribeFieldResult towerField = Plot__c.Tower__c.getDescribe();
+        String relationshipName = towerField.getRelationshipName();
+        if (towerField.getType() != Schema.DisplayType.REFERENCE || String.isBlank(relationshipName)) {
+            return null;
+        }
+        List<Plot__c> units = Database.query(
+            'SELECT ' + relationshipName + '.Name FROM Plot__c WHERE Id = :unitId LIMIT 1'
+        );
+        if (units.isEmpty()) {
+            return null;
+        }
+        SObject tower = units[0].getSObject(relationshipName);
+        Object towerName = tower == null ? null : tower.get('Name');
+        return towerName == null ? null : String.valueOf(towerName);
+    }
+
+    /**
+     * Every purchaser for the IN FAVOUR OF list: the applicants printed today
+     * (first applicant and Second Applicant) followed by each Co_Applicant__c
+     * record of the booking, oldest first, numbered 1..N. A co-applicant whose
+     * name is already printed is not repeated.
+     */
+    public List<ApplicantEntry> getAllApplicants() {
+        if (allApplicants == null) {
+            allApplicants = buildAllApplicants();
+        }
+        return allApplicants;
+    }
+
+    private List<ApplicantEntry> buildAllApplicants() {
+        List<ApplicantEntry> result = new List<ApplicantEntry>(applicants);
+        if (booking == null || booking.Id == null) {
+            return result;
+        }
+
+        Set<String> printedNames = new Set<String>();
+        for (ApplicantEntry entry : result) {
+            printedNames.add(normalizeApplicantName(entry.name));
+        }
+
+        for (Co_Applicant__c coApplicant : [
+            SELECT Full_Name__c, First_Name__c, Last_Name__c, Salutation__c, Date_of_Birth__c,
+                   Occupation__c, S_o_D_o_W_o__c, W_o_S_o_C_o_c__c, Address__c,
+                   Permenent_Address__c, Aadhar_Number__c, PAN_Number__c, Email__c
+            FROM Co_Applicant__c
+            WHERE Booking__c = :booking.Id
+            ORDER BY CreatedDate ASC, Name ASC
+        ]) {
+            String name = firstNonBlank(new List<String>{
+                coApplicant.Full_Name__c,
+                joinNames(coApplicant.First_Name__c, coApplicant.Last_Name__c)
+            });
+            String key = normalizeApplicantName(name);
+            if (String.isBlank(key) || printedNames.contains(key)) {
+                continue;
+            }
+            printedNames.add(key);
+
+            ApplicantEntry entry = new ApplicantEntry(
+                result.size() + 1,
+                formalSalutation(coApplicant.Salutation__c),
+                name,
+                buildRelation(coApplicant.S_o_D_o_W_o__c, coApplicant.W_o_S_o_C_o_c__c),
+                coApplicant.Date_of_Birth__c,
+                coApplicant.Occupation__c,
+                firstNonBlank(new List<String>{
+                    coApplicant.Permenent_Address__c, coApplicant.Address__c, getPrimaryAddress()
+                }),
+                'Resident of ',
+                coApplicant.Aadhar_Number__c,
+                coApplicant.PAN_Number__c,
+                coApplicant.Email__c
+            );
+            entry.rawSalutation = coApplicant.Salutation__c;
+            result.add(entry);
+        }
+        return result;
+    }
+
+    private static String joinNames(String firstName, String lastName) {
+        List<String> parts = new List<String>();
+        if (!String.isBlank(firstName)) {
+            parts.add(firstName.trim());
+        }
+        if (!String.isBlank(lastName)) {
+            parts.add(lastName.trim());
+        }
+        return String.join(parts, ' ');
     }
 
     // ------------------------------------------------------------------ amounts

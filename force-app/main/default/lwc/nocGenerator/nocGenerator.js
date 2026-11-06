@@ -156,7 +156,7 @@ export default class NocGenerator extends NavigationMixin(LightningElement) {
         this.isLoading = true;
         try {
             await sendNOC({ nocId });
-            this.showToast('Sent', 'NOC emailed to the applicant.', 'success');
+            this.showToast('Sent', 'NOC email is being sent.', 'success');
             await refreshApex(this.wiredCtx);
         } catch (error) {
             this.showError(error);

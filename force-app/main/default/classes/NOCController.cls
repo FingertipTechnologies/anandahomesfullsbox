@@ -278,7 +278,8 @@ public with sharing class NOCController {
     }
 
     /**
-     * @description Sends an approved NOC to the booking applicant(s). Only permitted once the
+     * @description Sends an approved NOC: a Capri NOC goes to the booking's Capri Email with its
+     *              letters attached, any other NOC type to the booking applicant(s). Only permitted once the
      *              NOC has been approved by the CRM Manager (BRD §7.40). The booking owner is
      *              intentionally not copied, consistent with the receipt-email rule.
      * @param nocId NOC to send
@@ -301,6 +302,13 @@ public with sharing class NOCController {
         if (noc.Approval_Status__c != 'Approved') {
             throw new AuraHandledException('NOC can only be sent after CRM Manager approval.');
         }
+        if (noc.NOC_Type__c == 'Capri NOC') {
+            // A Capri NOC is a request to Capri, not a mail to the applicant: it goes to the Capri
+            // Email on the booking with the current unit's NOC plus one letter for every swap and
+            // cancellation selected when it was raised (same mail as the button on the NOC record).
+            CapriNocApprovedEmailInvocable.sendNow(noc.Id);
+            return;
+        }
         if (noc.Booking__r == null || String.isBlank(noc.Booking__r.Email__c)) {
             throw new AuraHandledException('No applicant email address on the booking.');
         }
@@ -311,11 +319,6 @@ public with sharing class NOCController {
         String body = noc.Mail_Body__c != null ? noc.Mail_Body__c : '';
         email.setHtmlBody(body.replace('\n', '<br/>'));
         email.setSaveAsActivity(true);
-        if (noc.NOC_Type__c == 'Capri NOC') {
-            // Capri NOC mail carries the letters: the current unit's NOC, plus one swap letter and
-            // one cancellation letter for every swap / cancellation selected when it was raised.
-            email.setFileAttachments(CapriNocApprovedEmailInvocable.buildAttachments(noc));
-        }
 
         Messaging.SendEmailResult[] results =
             Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{ email }, false);

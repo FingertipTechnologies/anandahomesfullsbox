@@ -25,7 +25,7 @@ img { border:0; }
 .c4{font-weight:bold}
 .c5{font-weight:bold;text-decoration:underline}
 .c6{text-align:justify;padding-left:1.25pt;padding-right:1.5pt;text-indent:-1.25pt}
-.c7{border-collapse:collapse;table-layout:fixed;width:466.55pt;margin-left:-0.45pt}
+.c7{border-collapse:collapse;table-layout:fixed;width:450pt;margin-left:0}
 .c8{height:57pt}
 .c9{text-align:center}
 .ca{border-top:none;border-right:none;border-bottom:none;border-left:none;padding:0 5.4pt 0 5.4pt;white-space:nowrap;vertical-align:top}
@@ -33,9 +33,9 @@ img { border:0; }
 .cc{text-align:justify}
 .cd{border-top:none;border-right:none;border-bottom:none;border-left:none;padding:0 5.4pt 0 5.4pt;vertical-align:top}
 .ce{height:71.25pt}
-.cf{border-collapse:collapse;table-layout:fixed;width:466.8pt;margin-left:-0.45pt}
+.cf{border-collapse:collapse;table-layout:fixed;width:450pt;margin-left:0}
 .cg{height:59.85pt}
-.ch{border-collapse:collapse;table-layout:fixed;width:467.3pt;margin-left:-0.45pt}
+.ch{border-collapse:collapse;table-layout:fixed;width:450pt;margin-left:0}
 .ci{border:none}
 .cj{height:59.4pt}
 .ck{height:55.35pt}
@@ -179,7 +179,7 @@ img { border:0; }
 .c4e{border-top:none;border-right:1pt solid #000;border-bottom:1pt solid #000;border-left:1pt solid #000;padding:0 5.4pt 0 5.4pt;vertical-align:middle}
 .c4f{border-top:none;border-right:1pt solid #000;border-bottom:1pt solid #000;border-left:none;padding:0 5.4pt 0 5.4pt;vertical-align:middle}
 .c4g{height:27.95pt}
-.c4h{border-collapse:collapse;table-layout:fixed;width:484.75pt;margin-left:-7.1pt}
+.c4h{border-collapse:collapse;table-layout:fixed;width:450pt;margin-left:0}
 .c4i{height:16.25pt}
 .c4j{height:24.2pt}
 .c4k{height:32.15pt}
@@ -274,7 +274,7 @@ img { border:0; }
 .c71{height:5.65pt}
 .c72{height:12.25pt}
 .c73{text-align:justify;font-size:9.57pt;font-family:Arial, Helvetica, sans-serif}
-.c74{border-collapse:collapse;table-layout:fixed;width:491.95pt;margin-left:-0.7pt}
+.c74{border-collapse:collapse;table-layout:fixed;width:450pt;margin-left:0}
 .c75{height:22.6pt}
 .c76{height:90.55pt}
 .c77{text-align:justify;padding-left:13.95pt}
@@ -286,7 +286,7 @@ img { border:0; }
 .c7d{border-collapse:collapse;table-layout:fixed;width:230.65pt;margin-left:102.6pt}
 .c7e{height:13.45pt}
 .c7f{height:12.75pt}
-.c7g{border-collapse:collapse;table-layout:fixed;width:478.45pt;margin-left:0.25pt}
+.c7g{border-collapse:collapse;table-layout:fixed;width:450pt;margin-left:0}
 .c7h{height:13.85pt}
 .c7i{border-top:none;border-right:0.5pt solid #000;border-bottom:0.5pt solid #000;border-left:0.5pt solid #000;padding:0 5.4pt 0 5.4pt;vertical-align:middle}
 .c7j{height:27.7pt}
@@ -295,11 +295,11 @@ img { border:0; }
 .c7m{border-top:0.5pt solid #000;border-right:0.5pt solid #000000;border-bottom:0.5pt solid #000;border-left:0.5pt solid #000;padding:0 5.4pt 0 5.4pt;vertical-align:middle}
 .c7n{display:inline-block;width:5.16pt}
 .c7o{text-align:justify;padding-left:14pt}
-.c7p{border-collapse:collapse;table-layout:fixed;width:474.2pt;margin-left:-0.7pt}
+.c7p{border-collapse:collapse;table-layout:fixed;width:450pt;margin-left:0}
 .c7q{height:20.15pt}
 .c7r{height:80.8pt}
 .c7s{border-top:none;border-right:none;border-bottom:none;border-left:none;padding:0 5.4pt 0 5.4pt;vertical-align:bottom}
-.c7t{border-collapse:collapse;table-layout:fixed;width:496.15pt;margin-left:auto;margin-right:auto}
+.c7t{border-collapse:collapse;table-layout:fixed;width:450pt;margin-left:auto;margin-right:auto}
 .c7u{height:15.8pt}
 .c7v{border-top:0.5pt solid #000000;border-right:0.5pt solid #000000;border-bottom:0.5pt solid #000000;border-left:0.5pt solid #000000;padding:0 0pt 0 0pt;vertical-align:middle}
 .c7w{height:42.8pt}
@@ -364,9 +364,9 @@ img { border:0; }
 <div>&#160;</div>
 <table class="c7">
 <colgroup>
-<col style="width:29.1pt"/>
-<col style="width:25.35pt"/>
-<col style="width:412.1pt"/>
+<col style="width:28.07pt"/>
+<col style="width:24.45pt"/>
+<col style="width:397.48pt"/>
 </colgroup>
 <tr class="c8">
 <td class="ca"><div class="c9">1</div></td>
@@ -420,9 +420,9 @@ img { border:0; }
 <div>&#160;</div>
 <table class="cf">
 <colgroup>
-<col style="width:29.35pt"/>
-<col style="width:25.35pt"/>
-<col style="width:412.1pt"/>
+<col style="width:28.29pt"/>
+<col style="width:24.44pt"/>
+<col style="width:397.27pt"/>
 </colgroup>
 <tr class="c8">
 <td class="ca"><div class="c9">4</div></td>
@@ -449,10 +449,10 @@ img { border:0; }
 <div style="page-break-after:always;height:0"></div>
 <table class="ch">
 <colgroup>
-<col style="width:29.35pt"/>
-<col style="width:25.35pt"/>
-<col style="width:412.1pt"/>
-<col style="width:0.5pt"/>
+<col style="width:28.26pt"/>
+<col style="width:24.41pt"/>
+<col style="width:396.84pt"/>
+<col style="width:0.48pt"/>
 </colgroup>
 <tr class="c8">
 <td class="ca"><div class="c9">8</div></td>
@@ -1868,9 +1868,9 @@ img { border:0; }
 <div style="page-break-after:always;height:0"></div>
 <table class="cf">
 <colgroup>
-<col style="width:29.35pt"/>
-<col style="width:25.35pt"/>
-<col style="width:412.1pt"/>
+<col style="width:28.29pt"/>
+<col style="width:24.44pt"/>
+<col style="width:397.27pt"/>
 </colgroup>
 <tr class="cw">
 <td class="ca"><div class="c9">217</div></td>
@@ -2318,11 +2318,11 @@ img { border:0; }
 <div style="page-break-after:always;height:0"></div>
 <table class="c4h">
 <colgroup>
-<col style="width:187.55pt"/>
-<col style="width:81.8pt"/>
-<col style="width:70.9pt"/>
-<col style="width:70.2pt"/>
-<col style="width:74.3pt"/>
+<col style="width:174.11pt"/>
+<col style="width:75.94pt"/>
+<col style="width:65.82pt"/>
+<col style="width:65.17pt"/>
+<col style="width:68.97pt"/>
 </colgroup>
 <tr class="c4i">
 <td class="c4b"><div class="c9"><span class="c4">Particulars</span></div></td>
@@ -2812,8 +2812,8 @@ img { border:0; }
 <div>&#160;</div>
 <table class="c74">
 <colgroup>
-<col style="width:257.2pt"/>
-<col style="width:234.75pt"/>
+<col style="width:235.27pt"/>
+<col style="width:214.73pt"/>
 </colgroup>
 <tr class="c75">
 <td class="cd"><div>Witnesse(s)</div>
@@ -3014,11 +3014,11 @@ img { border:0; }
 <div>&#160;</div>
 <table class="c7g">
 <colgroup>
-<col style="width:224.7pt"/>
-<col style="width:59.25pt"/>
-<col style="width:69.3pt"/>
-<col style="width:54.75pt"/>
-<col style="width:70.45pt"/>
+<col style="width:211.34pt"/>
+<col style="width:55.73pt"/>
+<col style="width:65.18pt"/>
+<col style="width:51.49pt"/>
+<col style="width:66.26pt"/>
 </colgroup>
 <tr class="c7h">
 <td rowspan="2" class="c53"><div><span class="c4">Particulars</span></div></td>
@@ -3104,8 +3104,8 @@ img { border:0; }
 <div>&#160;</div>
 <table class="c7p">
 <colgroup>
-<col style="width:247.95pt"/>
-<col style="width:226.25pt"/>
+<col style="width:235.3pt"/>
+<col style="width:214.7pt"/>
 </colgroup>
 <tr class="c7q">
 <td class="cd"><div>Witnesse(s)</div>
@@ -3142,8 +3142,8 @@ img { border:0; }
 <div class="c9"><span class="c4">Specifications of the Apartment</span><br/></div>
 <table class="c7t">
 <colgroup>
-<col style="width:114.25pt"/>
-<col style="width:381.9pt"/>
+<col style="width:103.62pt"/>
+<col style="width:346.38pt"/>
 </colgroup>
 <tr class="c7u">
 <td class="c7v"><div class="c9"><span class="c4">Item</span></div></td>
@@ -3208,8 +3208,8 @@ img { border:0; }
 <div>&#160;</div>
 <table class="c7t">
 <colgroup>
-<col style="width:121.6pt"/>
-<col style="width:374.55pt"/>
+<col style="width:110.29pt"/>
+<col style="width:339.71pt"/>
 </colgroup>
 <tr class="c87">
 <td class="c7v"><div class="c7x">Electrical</div></td>

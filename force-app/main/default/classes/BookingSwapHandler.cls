@@ -178,6 +178,13 @@ public with sharing class BookingSwapHandler {
             newBooking.Sale_Agreement_Approval_Status__c = null;
             newBooking.Cancellation_Approval_Before_Agreement__c = null;
             newBooking.Swapping_Approval_Before_Agreement__c = null;
+            // The quote built for the Swap To Unit when the swap was requested becomes the new
+            // booking's quote; the old booking keeps its original one.
+            Quote__c swapQuote = SwapQuoteService.findOpenSwapQuote(oldBooking.Id, request.newUnitId);
+            Id swapQuoteId = swapQuote == null ? null : swapQuote.Id;
+            if (swapQuoteId != null) {
+                newBooking.Quote__c = swapQuoteId;
+            }
             insert newBooking;
 
             // Step 3: Update old booking - mark as Swapped

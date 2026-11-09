@@ -24,6 +24,8 @@ trigger BookingTrigger on Booking__c (before insert, before update, after insert
                 BookingStageRemarkService.captureForNewBookings(Trigger.new);
             } else if (Trigger.isUpdate) {
                 BookingStageRemarkService.captureForStageChanges(Trigger.new, Trigger.oldMap);
+                // Swap request rejected -> reject its auto-created quote (frees the unit).
+                SwapQuoteService.handleBookingUpdate(Trigger.new, Trigger.oldMap);
             }
         }
     }

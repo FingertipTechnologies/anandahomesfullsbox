@@ -232,6 +232,13 @@ public with sharing class DynamicApprovalService {
             );
         }
 
+        // A swap request carries its own cost sheet: build the quote for the Swap To Unit now,
+        // so the approver sees it and the swapped booking is created against it.
+        if (objectApiName == 'Booking__c'
+            && config.Process_Type__c == SwapQuoteService.SWAP_REQUEST_PROCESS_TYPE) {
+            SwapQuoteService.createForSwapRequest(recordId);
+        }
+
         // Submit for approval
         Approval.ProcessSubmitRequest request = new Approval.ProcessSubmitRequest();
         request.setObjectId(recordId);

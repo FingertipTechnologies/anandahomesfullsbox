@@ -1,5 +1,13 @@
 public class QuoteApprovalTriggerHandler {
 
+    /**
+     * When true, quotes inserted in this transaction are approved outright instead of being routed
+     * through Quote_Approval. Set by SwapQuoteService: a swap quote has no discount and the swap
+     * request itself is what gets approved, so a second manager approval of the quote is skipped.
+     * Unit blocking and block history still apply.
+     */
+    public static Boolean skipApprovalRouting = false;
+
     public static void handleBeforeInsert(List<Quote__c> quotes) {
         mapManagerHierarchy(quotes);
     }
@@ -17,7 +25,9 @@ public class QuoteApprovalTriggerHandler {
         Set<Id> autoApproveIds = new Set<Id>();
         Set<Id> submitIds      = new Set<Id>();
 
-        if (discountFields.isEmpty()) {
+        if (skipApprovalRouting) {
+            autoApproveIds.addAll(quoteIds);
+        } else if (discountFields.isEmpty()) {
             submitIds.addAll(quoteIds);
         } else {
             String quoteSoql = 'SELECT Id, OwnerId, Project__c, ' +

@@ -35,8 +35,9 @@ private class SwapQuoteServiceTest {
         Quote__c q = [SELECT Id, Unit__c, Project1__c, Payment_Type__c, Saleable_Area_Sft__c, Price_Per_Sq_Ft__c,
                              Amenities_Car_Parking__c, Infrastructure_Charges__c, Floor_Rise__c,
                              Extra_Covered_Car_Parking_Charges__c, Apply_Discount__c, Quote_Date__c, Total__c,
-                             Swap_For_Booking__c
+                             Swap_For_Booking__c, Quote_status__c
                       FROM Quote__c WHERE Id = :quoteId];
+        System.assertEquals('Approved', q.Quote_status__c, 'Swap quote is approved outright; the swap request carries the approval');
         System.assertEquals(booking.Swap_To_Plot__c, q.Unit__c, 'Quote is for the Swap To Unit');
         System.assertEquals('Standard', q.Payment_Type__c);
         System.assertEquals(1200, q.Saleable_Area_Sft__c);

@@ -53,7 +53,15 @@ public without sharing class SwapQuoteService {
         }
 
         Quote__c quote = buildQuote(booking, unit);
-        insert quote;   // QuoteTrigger: approval routing, unit -> Blocked, block history
+        // The swap request is what gets approved; the quote is approved outright (no discount).
+        // QuoteTrigger still blocks the unit and writes the block history.
+        Boolean priorSkip = QuoteApprovalTriggerHandler.skipApprovalRouting;
+        QuoteApprovalTriggerHandler.skipApprovalRouting = true;
+        try {
+            insert quote;
+        } finally {
+            QuoteApprovalTriggerHandler.skipApprovalRouting = priorSkip;
+        }
 
         insertCostSheetLines(quote, unit);
         return quote.Id;

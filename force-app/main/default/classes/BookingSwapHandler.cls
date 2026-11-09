@@ -178,6 +178,9 @@ public with sharing class BookingSwapHandler {
             newBooking.Sale_Agreement_Approval_Status__c = null;
             newBooking.Cancellation_Approval_Before_Agreement__c = null;
             newBooking.Swapping_Approval_Before_Agreement__c = null;
+            // The payment schedules are cloned from the old booking below; stop the booking
+            // creation flow from generating a second set from the master schedules.
+            newBooking.Payment_Schedules_Created__c = true;
             // The quote built for the Swap To Unit when the swap was requested becomes the new
             // booking's quote; the old booking keeps its original one.
             Quote__c swapQuote = SwapQuoteService.findOpenSwapQuote(oldBooking.Id, request.newUnitId);

@@ -107,8 +107,11 @@ private class SwapQuoteServiceTest {
         Test.stopTest();
 
         System.assert(results[0].success, results[0].message);
-        Booking__c created = [SELECT Quote__c FROM Booking__c WHERE Id = :results[0].newBookingId];
+        Booking__c created = [SELECT Quote__c, (SELECT Id FROM Payment_Schedules__r) FROM Booking__c WHERE Id = :results[0].newBookingId];
         System.assertEquals(quoteId, created.Quote__c, 'New booking carries the swap quote');
+        Integer oldCount = [SELECT COUNT() FROM Payment_Schedule__c WHERE Booking__c = :booking.Id];
+        System.assertEquals(oldCount, created.Payment_Schedules__r.size(),
+            'The new booking has the cloned schedules only, not a second generated set');
         System.assertNotEquals('Rejected', [SELECT Quote_status__c FROM Quote__c WHERE Id = :quoteId].Quote_status__c,
             'The quote stays as it is, like a quote a booking was created from manually');
     }

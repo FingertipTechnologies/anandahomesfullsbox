@@ -11,7 +11,10 @@
             separationPages: {
                 "ARJUN SINGH": "ARJUN_SINGH_AGREEMENT_OF_SALE",
                 "MAGAN SINGH": "MAGHAN_SINGH_AGREEMENT_OF_SALE",
-                "SURESH SINGH": "SURESH_SINGH_AGREEMENT_OF_SALE"
+                "SURESH SINGH": "SURESH_SINGH_AGREEMENT_OF_SALE",
+                "NAVEEN SINGH": "NAVEEN_SINGH_AGREEMENT_OF_SALE",
+                "NITIN SINGH": "NITIN_SINGH_AGREEMENT_OF_SALE",
+                "BUILDER SHARE": "BUILDER_SHARE_AGREEMENT_OF_SALE"
             }
         },
         "The Drizzle": {

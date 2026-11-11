@@ -161,16 +161,9 @@ public with sharing class AgreementOfSaleController {
             return line + ', ';
         }
 
-        /**
-         * MAGHAN_SINGH_AGREEMENT_OF_SALE wording (no comma before the relation):
-         * e.g. "SRI. RAVI KUMAR S/O. SRI. MOHAN RAO, " (bold part).
-         */
+        /** Same as getDeedNameLine; the name the MAGHAN page was built against. */
         public String getDeedNameRelationLine() {
-            String line = getDisplayName();
-            if (!String.isBlank(relation)) {
-                line += ' ' + relation;
-            }
-            return line + ', ';
+            return getDeedNameLine();
         }
 
         /** e.g. "aged about 30 years, Occupation: Business, Resident of Hyderabad. " */
@@ -374,9 +367,22 @@ public with sharing class AgreementOfSaleController {
             this.receipt = receipt;
         }
 
+        /**
+         * How the money came in (NEFT, Cheque, UPI ...): the receipt's Payment Method, else the
+         * older Mode of Payment field. Never the receipt type (Advance / Installment Payment),
+         * which is what the deed's "Mode" column was wrongly showing.
+         */
+        public String getPaymentMethod() {
+            if (!String.isBlank(receipt.Payment_Method__c)) {
+                return receipt.Payment_Method__c;
+            }
+            return receipt.Mode_of_payment__c;
+        }
+
         public String getMode() {
-            if (!String.isBlank(receipt.Mode_of_payment__c)) {
-                return receipt.Mode_of_payment__c;
+            String method = getPaymentMethod();
+            if (!String.isBlank(method)) {
+                return method;
             }
             return receipt.Receipt_Type__c;
         }
@@ -401,11 +407,6 @@ public with sharing class AgreementOfSaleController {
 
         public String getReceiptType() {
             return receipt.Receipt_Type__c;
-        }
-
-        /** MAGHAN receipts table "Mode": Receipt__c.Payment_Method__c ('' when blank). */
-        public String getPaymentMethod() {
-            return String.isBlank(receipt.Payment_Method__c) ? '' : receipt.Payment_Method__c;
         }
 
         public Decimal getAmount() {
@@ -547,6 +548,7 @@ public with sharing class AgreementOfSaleController {
 
         booking = [
             SELECT Id, Project__c, Plot__c, Car_Parking_Selected__c, No_of_car_parking__c,
+                   BHK_Type__c, Quote__r.BHK_Type__c,
                    First_Applicant_Name__c, Second_Applicant_Name__c,
                    // primary applicant (legacy field set)
                    Salutation__c, Date_of_Birth__c, Occupation__c, Permanent_Address__c,
@@ -651,7 +653,8 @@ public with sharing class AgreementOfSaleController {
                 SELECT Id, Name, Project__r.Name, Plot_Number__c, Tower__c, Tower_Block__c,
                        Floor__c, BHK_Type__c, Facing__c, Carpet_Area__c, Balcony_Area__c,
                        Built_up_area__c, Saleable_Area_Sft__c,
-                       Common_Area_Allotted_to_Association__c, UDS__c,
+                       Common_Area_Allotted_to_Association__c, UDS__c, UDS_Sq_mts__c, Utility_Area__c,
+                       East_North_Facing__c,
                        Boundary_North__c, Boundary_South__c, Boundary_East__c, Boundary_West__c,
                        Covered_Park_Parking__c, LL_Share_Name__c, Share__c,
                        Block1__r.Name, Block__c, Other_Exclusive_Area__c,
@@ -695,9 +698,9 @@ public with sharing class AgreementOfSaleController {
 
     private void loadPaymentRecords(Id bookingId) {
         for (Receipt__c receipt : [
-            SELECT Id, Receipt_Date__c, Mode_of_payment__c, Payment_Reference_Number__c,
+            SELECT Id, Receipt_Date__c, Mode_of_payment__c, Payment_Method__c, Payment_Reference_Number__c,
                    Cheque_Number__c, Check_Transaction_Nmber__c, Amount_received__c,
-                   Receipt_Type__c, Payment_Method__c
+                   Receipt_Type__c
             FROM Receipt__c
             WHERE Booking__c = :bookingId
               AND Approval_Status__c IN :APPROVED_RECEIPT_STATUSES
@@ -1006,6 +1009,19 @@ public with sharing class AgreementOfSaleController {
         return selectedTowerName;
     }
 
+    /**
+     * The tower as the deeds write it after the word "Tower" ("Tower no. 1", "Tower-1"):
+     * the tower name without a leading "Tower" / "T" word, so a tower named "Tower A"
+     * prints "Tower-A" and not "Tower-Tower A".
+     */
+    public String getSelectedTowerLabel() {
+        String name = getSelectedTowerName();
+        if (String.isBlank(name)) {
+            return '';
+        }
+        return name.replaceFirst('(?i)^tower\\s*[-:]?\\s*', '').trim();
+    }
+
     @TestVisible
     private static String queryTowerLookupName(Id unitId) {
         if (unitId == null) {
@@ -1052,6 +1068,33 @@ public with sharing class AgreementOfSaleController {
         return String.join(names, ' & ');
     }
 
+    /** Digits of an Aadhaar number ('' when blank), used to tell namesakes apart. */
+    private static String aadhaarDigits(String aadhaar) {
+        return aadhaar == null ? '' : aadhaar.replaceAll('[^0-9]', '');
+    }
+
+    private static void rememberAadhaar(Map<String, Set<String>> printed, String nameKey, String aadhaar) {
+        if (!printed.containsKey(nameKey)) {
+            printed.put(nameKey, new Set<String>());
+        }
+        printed.get(nameKey).add(aadhaarDigits(aadhaar));
+    }
+
+    /**
+     * A co-applicant is the same person as a purchaser already printed when the
+     * names match and the Aadhaar numbers do not say otherwise (equal, or missing
+     * on either side). Two people who share a name but have different Aadhaar
+     * numbers are both printed.
+     */
+    private static Boolean isSamePurchaser(Map<String, Set<String>> printed, String nameKey, String aadhaar) {
+        if (!printed.containsKey(nameKey)) {
+            return false;
+        }
+        String digits = aadhaarDigits(aadhaar);
+        Set<String> known = printed.get(nameKey);
+        return String.isBlank(digits) || known.contains('') || known.contains(digits);
+    }
+
     private List<ApplicantEntry> buildAllApplicants() {
         List<ApplicantEntry> result = new List<ApplicantEntry>(applicants);
         if (booking == null || booking.Id == null) {
@@ -1059,8 +1102,10 @@ public with sharing class AgreementOfSaleController {
         }
 
         Set<String> printedNames = new Set<String>();
+        Map<String, Set<String>> printedAadhaars = new Map<String, Set<String>>();
         for (ApplicantEntry entry : result) {
             printedNames.add(normalizeApplicantName(entry.name));
+            rememberAadhaar(printedAadhaars, normalizeApplicantName(entry.name), entry.aadhaar);
         }
 
         for (Co_Applicant__c coApplicant : [
@@ -1076,10 +1121,11 @@ public with sharing class AgreementOfSaleController {
                 joinNames(coApplicant.First_Name__c, coApplicant.Last_Name__c)
             });
             String key = normalizeApplicantName(name);
-            if (String.isBlank(key) || printedNames.contains(key)) {
+            if (String.isBlank(key) || isSamePurchaser(printedAadhaars, key, coApplicant.Aadhar_Number__c)) {
                 continue;
             }
             printedNames.add(key);
+            rememberAadhaar(printedAadhaars, key, coApplicant.Aadhar_Number__c);
 
             ApplicantEntry entry = new ApplicantEntry(
                 result.size() + 1,
@@ -1604,11 +1650,19 @@ public with sharing class AgreementOfSaleController {
         return floorValue.toUpperCase();
     }
 
-    /** "2BHK" */
+    /** "2BHK" from BHK Type: the Unit's, else the Booking's, else the Quote's. */
     public String getDrizzleFlatType() {
-        return selectedUnit == null || String.isBlank(selectedUnit.BHK_Type__c)
-            ? ''
-            : selectedUnit.BHK_Type__c.trim().toUpperCase().replace(' BHK', 'BHK');
+        String bhk = firstNonBlank(new List<String>{
+            selectedUnit == null ? null : selectedUnit.BHK_Type__c,
+            booking == null ? null : booking.BHK_Type__c,
+            booking == null || booking.Quote__r == null ? null : booking.Quote__r.BHK_Type__c
+        });
+        return String.isBlank(bhk) ? '' : bhk.trim().toUpperCase().replace(' BHK', 'BHK');
+    }
+
+    /** "East/North" when the Unit carries an East/North Facing charge, otherwise blank. */
+    public String getDrizzleFacing() {
+        return selectedUnit == null || selectedUnit.East_North_Facing__c == null ? '' : 'East/North';
     }
 
     public String getDrizzleFlatSize() {
@@ -1623,9 +1677,11 @@ public with sharing class AgreementOfSaleController {
         return selectedUnit == null ? '' : plainNumber(selectedUnit.Balcony_Area__c);
     }
 
-    /** Utility area is held in "Other Exclusive Area" on the unit. */
+    /** "Utility Area" on the unit; units entered earlier hold it in "Other Exclusive Area". */
     public String getDrizzleUtilityArea() {
-        return selectedUnit == null ? '' : plainNumber(selectedUnit.Other_Exclusive_Area__c);
+        return selectedUnit == null ? '' : plainNumber(selectedUnit.Utility_Area__c != null
+            ? selectedUnit.Utility_Area__c
+            : selectedUnit.Other_Exclusive_Area__c);
     }
 
     public String getDrizzleCommonArea() {
@@ -1640,11 +1696,11 @@ public with sharing class AgreementOfSaleController {
         return selectedUnit == null ? '' : plainNumber(selectedUnit.Internal_Wall_Area__c);
     }
 
-    /** "32.60" */
+    /** "32.60" - Unit "UDS (Sq yards.)" only. */
     public String getDrizzleUds() {
-        return selectedUnit == null || selectedUnit.UDS__c == null
+        return selectedUnit == null || selectedUnit.UDS_Sq_mts__c == null
             ? ''
-            : selectedUnit.UDS__c.setScale(2, System.RoundingMode.HALF_UP).toPlainString();
+            : selectedUnit.UDS_Sq_mts__c.setScale(2, System.RoundingMode.HALF_UP).toPlainString();
     }
 
     public String getDrizzleProjectName() {
@@ -1683,7 +1739,7 @@ public with sharing class AgreementOfSaleController {
     /** "MR. A & MR. B" */
     public String getDrizzleBuyerNames() {
         List<String> names = new List<String>();
-        for (ApplicantEntry applicant : applicants) {
+        for (ApplicantEntry applicant : getAllApplicants()) {
             names.add(applicant.getDrizzleName());
         }
         return String.join(names, ' & ');
@@ -1699,7 +1755,7 @@ public with sharing class AgreementOfSaleController {
     public String getDrizzleBuyerEmails() {
         List<String> emails = new List<String>();
         Set<String> seen = new Set<String>();
-        for (ApplicantEntry applicant : applicants) {
+        for (ApplicantEntry applicant : getAllApplicants()) {
             if (!String.isBlank(applicant.email) && !seen.contains(applicant.email.toLowerCase())) {
                 seen.add(applicant.email.toLowerCase());
                 emails.add(applicant.email.trim());

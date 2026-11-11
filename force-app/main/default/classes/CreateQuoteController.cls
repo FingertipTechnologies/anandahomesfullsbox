@@ -125,7 +125,7 @@ public without sharing class CreateQuoteController {
                        Basic_Sale_Price_Rs__c, Miscellaneous_Charges__c, GST_Amount__c, Total__c,
                        Saleable_Area_Sft__c, East_Facing_Charges__c, Corner_Charges__c, Hi_Rise_Charges__c,
                        Central_Court_Yard_Premium__c, Meadow_Premium__c, Roadside_Premium__c,Lake_Premium__c,Extra_Car_Parking__c,Piped_Gas__c,Floor_Rise_Charge__c,
-                       Court_Yard_Premium__c, Outer_Premium__c, Amenities_Car_Parking__c, Infrastructure_Charges__c
+                       Court_Yard_Premium__c, Outer_Premium__c, Amenities_Car_Parking__c, Infrastructure_Charges__c,PLC__c,East_North_Facing__c
                 FROM Plot__c
                 WHERE Project__r.Name = :allocatedProjectName
                 AND Status__c = 'Available'

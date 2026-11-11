@@ -111,8 +111,12 @@ private class NOCControllerTest {
 
         // CRM Manager approves (config/field gate — no Salesforce Approval Process on NOC).
         update new NOC__c(Id = nocId, Approval_Status__c = 'Approved');
+        // A Capri NOC is mailed to the Capri Email on the booking.
+        update new Booking__c(Id = currentBooking.Id, Capri_Email__c = 'capri.test@example.com');
         NOCController.sendNOC(nocId);
+        Integer queued = Limits.getQueueableJobs();
         Test.stopTest();
+        System.assertEquals(1, queued, 'Sending a Capri NOC queues the mail to Capri');
 
         NOC__c noc = [SELECT Sent_Date__c FROM NOC__c WHERE Id = :nocId];
         //System.assertEquals(Date.today(), noc.Sent_Date__c, 'Sent date stamped after approved send');

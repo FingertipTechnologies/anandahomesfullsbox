@@ -156,6 +156,18 @@
                 <identifier>RecordPiped_Gas__cField</identifier>
             </fieldInstance>
         </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.PLC__c</fieldItem>
+                <identifier>RecordPLC__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.East_North_Facing__c</fieldItem>
+                <identifier>RecordEast_North_Facing__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
         <name>Facet-c62cc08e-73eb-4af5-8a1e-fb99b019b20d</name>
         <type>Facet</type>
     </flexiPageRegions>

@@ -837,6 +837,7 @@ public with sharing class BulkDemandController {
                 : new Map<Id, Payment_Schedule__c>([
                     SELECT Id, Booking__c, Master_Payment_Schedule__c, Milestone_Name__c, S_No__c,
                            Payment_Schedule_Amount_Pending__c, GST_Amount_Pending__c,
+                           Due_Date__c,
                            Payment_Schedule_Amount_Paid__c, GST_Amount_Paid__c,
                            Interest_Pending__c,
                            TDS_Amount_Pending__c, Bank_Flat_Amount__c, Bank_GST_Amount__c,
@@ -1151,6 +1152,9 @@ public with sharing class BulkDemandController {
                             Payment_Schedule__c ps = new Payment_Schedule__c();
                             ps.Id = schedId;
                             ps.Demand_Date__c = Date.today();
+                            if (scheduleMap.get(schedId).Due_Date__c == null) {
+                                ps.Due_Date__c = demandsToInsert[i].Due_Date__c;
+                            }
                             Boolean isBank = sourceMap != null && sourceMap.get(schedId) == true;
                             DemandComponentService.markRaised(ps, request.demandComponent, isBank);
                             schedulesToUpdate.add(ps);

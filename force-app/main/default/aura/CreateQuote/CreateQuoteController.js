@@ -290,6 +290,8 @@
             oppPlot.Extra_Covered_Car_Parking_Charges__c = plt[i].Extra_Car_Parking__c;
             oppPlot.Piped_Gas__c = plt[i].Piped_Gas__c;
                 oppPlot.Floor_Rise__c = plt[i].Floor_Rise_Charge__c;
+             oppPlot.PLC__c = plt[i].PLC__c;
+             oppPlot.East_North_Facing__c = plt[i].East_North_Facing__c;
             
                 
            
@@ -343,10 +345,11 @@
             var extracarparking = parseFloat(oppPlot.Extra_Covered_Car_Parking_Charges__c) || 0;
             var lakePremium = (parseFloat(oppPlot.Lake_Premium__c) || 0) * saleableArea;
             var floorrisr = (parseFloat(oppPlot.Floor_Rise__c) || 0) * saleableArea;
+            var eastNorthFacing = (parseFloat(oppPlot.East_North_Facing__c) || 0) * saleableArea;
             
             var flatCost = basicPrice + eastFacing + corner + hiRise + centralCourtYard
                          + meadow + roadside + courtYard + outer + amenities + infrastructure
-            			+gaspipe+extracarparking+	lakePremium+floorrisr;
+            			+gaspipe+extracarparking+	lakePremium+floorrisr+ eastNorthFacing;
             
             
             var gstAmount = flatCost * (gstPercentage / 100);
@@ -360,6 +363,7 @@
             component.set('v.extracarparkingCalc', extracarparking);
             component.set('v.lakePremiumCalc', lakePremium);
             component.set('v.floorrisrCalc', floorrisr);
+            component.set('v.eastNorthFacingCalc', eastNorthFacing);
             
             component.set('v.centralCourtYardCalc', centralCourtYard);
             component.set('v.meadowCalc', meadow);

@@ -322,7 +322,7 @@ img { border:0; }
 </style>
 </head>
 <body>
-<apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(ownerMismatchMessage))}"><div style="border:1px solid #c00;color:#c00;padding:4px;margin-bottom:8px;font-size:9pt">{!ownerMismatchMessage}</div></apex:outputPanel>
+
 <div class="footer">Page <b><span class="pagenumber"></span></b> of <b><span class="pagecount"></span></b></div>
 <div class="c0">&#160;</div>
 <div class="c0">&#160;</div>
@@ -1952,7 +1952,7 @@ img { border:0; }
 <div style="page-break-after:always;height:0"></div>
 <div class="c9"><span class="c5">AND</span></div>
 <div class="c2f">&#160;</div>
-<apex:repeat value="{!applicants}" var="applicant">
+<apex:repeat value="{!allApplicants}" var="applicant">
 <div class="c2f"><span class="c2g"><b>{!applicant.drizzleNameLine}</b> {!applicant.drizzleDetails}</span></div>
 <div class="c2f"><span class="c2g">{!applicant.drizzleIds}</span></div>
 <div class="c2f">&#160;</div>
@@ -2230,7 +2230,7 @@ img { border:0; }
 </tr>
 <tr class="c3m">
 <td class="c3p"><div class="cc">FACING</div></td>
-<td class="c3q"><div class="cc"><span class="c2h">{!selectedFacingUpper}</span></div></td>
+<td class="c3q"><div class="cc"><span class="c2h">{!drizzleFacing}</span></div></td>
 </tr>
 <tr class="c3m">
 <td class="c3p"><div class="cc">FLAT SIZE </div></td>
@@ -2927,7 +2927,7 @@ img { border:0; }
 </tr>
 <tr class="c7d">
 <td class="c3p"><div class="cc">FACING</div></td>
-<td class="c3q"><div class="cc"><span class="c2h">{!selectedFacingUpper}</span></div></td>
+<td class="c3q"><div class="cc"><span class="c2h">{!drizzleFacing}</span></div></td>
 </tr>
 <tr class="c7d">
 <td class="c3p"><div class="cc">FLAT SIZE </div></td>

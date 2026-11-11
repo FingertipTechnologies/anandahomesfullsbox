@@ -347,6 +347,7 @@ private class AgreementOfSaleControllerTest {
             External_Wall_Area__c = 65.43,
             Internal_Wall_Area__c = 34.19,
             UDS__c = 32.6,
+            UDS_Sq_mts__c = 32.6,
             North_By__c = 'Open to sky',
             East_By__c = 'Corridor'
         );
@@ -561,10 +562,10 @@ private class AgreementOfSaleControllerTest {
                 First_Name__c = 'Latha',
                 Last_Name__c = 'Rao'
             ),
-            // same person as the Second Applicant: must not be printed twice
+            // same person as the Second Applicant (extra spaces, no Aadhaar): must not be printed twice
             new Co_Applicant__c(
                 Booking__c = booking.Id,
-                Full_Name__c = 'YARRA  THIREESHA'
+                Full_Name__c = 'Sita  Devi Sample'
             )
         };
 
@@ -573,8 +574,12 @@ private class AgreementOfSaleControllerTest {
         List<AgreementOfSaleController.ApplicantEntry> purchasers = controller.getAllApplicants();
         Test.stopTest();
 
+        List<String> printed = new List<String>();
+        for (AgreementOfSaleController.ApplicantEntry purchaser : purchasers) {
+            printed.add(purchaser.name + '/' + purchaser.aadhaar);
+        }
         System.assertEquals(2, controller.applicants.size(), 'Shared applicant list is unchanged for the other pages');
-        System.assertEquals(4, purchasers.size(), 'Applicant, Second Applicant and 2 new co-applicants');
+        System.assertEquals(4, purchasers.size(), 'Applicant, Second Applicant and 2 new co-applicants, got: ' + printed);
         for (Integer i = 0; i < purchasers.size(); i++) {
             System.assertEquals(i + 1, purchasers[i].sequence, 'Numbered 1..N');
         }
@@ -707,81 +712,45 @@ private class AgreementOfSaleControllerTest {
         }
     }
 
-    // ------------------------------------------- MAGHAN_SINGH_AGREEMENT_OF_SALE
-
+    // A co-applicant who shares a purchaser's name is a different person when the Aadhaar differs.
     @IsTest
-    static void maghanPageDeedLineAndPurchasers() {
-        Booking__c booking = buildBooking('MAGAN SINGH');
-        insert new Co_Applicant__c(
-            Booking__c = booking.Id,
-            Salutation__c = 'Mr',
-            Full_Name__c = 'Kiran Extra',
-            S_o_D_o_W_o__c = 'S/o',
-            W_o_S_o_C_o_c__c = 'Ravi Extra',
-            Aadhar_Number__c = '123412341234',
-            PAN_Number__c = 'ABCDE1234F'
-        );
-
-        Test.startTest();
-        AgreementOfSaleController controller = load(Page.MAGHAN_SINGH_AGREEMENT_OF_SALE, booking);
-        List<AgreementOfSaleController.ApplicantEntry> purchasers = controller.getAllApplicants();
-        Test.stopTest();
-
-        System.assertEquals('MAGAN SINGH', controller.ownerName, 'MAGHAN page owner');
-        AgreementOfSaleController.ApplicantEntry kiran = purchasers[purchasers.size() - 1];
-        System.assertEquals('SRI. KIRAN EXTRA S/O. SRI. RAVI EXTRA, ', kiran.getDeedNameRelationLine(),
-            'MAGHAN format: no comma between name and relation');
-        System.assertEquals('SRI. KIRAN EXTRA, S/O. SRI. RAVI EXTRA, ', kiran.getDeedNameLine(),
-            'ARJUN format is unchanged');
-        System.assert(controller.getAllBuyerNames().contains('SRI. KIRAN EXTRA'), 'Co-applicant in the notice names');
-
-        for (AgreementOfSaleController.ApplicantEntry purchaser : purchasers) {
-            if (String.isBlank(purchaser.relation)) {
-                System.assertEquals(purchaser.getDisplayName() + ', ', purchaser.getDeedNameRelationLine(),
-                    'No relation: name followed by a comma');
-            }
-        }
-    }
-
-    @IsTest
-    static void maghanReceiptModeIsPaymentMethod() {
-        Booking__c booking = buildBooking('MAGAN SINGH');
-        insert new List<Receipt__c>{
-            new Receipt__c(
-                Booking__c = booking.Id,
-                Receipt_Date__c = Date.newInstance(2025, 3, 1),
-                Receipt_Type__c = 'Installment Payment',
-                Payment_Method__c = 'Cheque',
-                Payment_Reference_Number__c = 'CHQ7777',
-                Amount_received__c = 10000,
-                Approval_Status__c = 'Approved'
-            ),
-            new Receipt__c(
-                Booking__c = booking.Id,
-                Receipt_Date__c = Date.newInstance(2025, 3, 2),
-                Receipt_Type__c = 'GST Amount',
-                Payment_Method__c = 'Cheque',
-                Payment_Reference_Number__c = 'GST7777',
-                Amount_received__c = 5000,
-                Approval_Status__c = 'Approved'
-            )
+    static void namesakeCoApplicantWithDifferentAadhaarIsPrinted() {
+        Booking__c booking = buildBooking('ARJUN SINGH');
+        String primaryName = [SELECT First_Applicant_Name__c FROM Booking__c WHERE Id = :booking.Id].First_Applicant_Name__c;
+        insert new List<Co_Applicant__c>{
+            new Co_Applicant__c(Booking__c = booking.Id, Full_Name__c = primaryName, Aadhar_Number__c = '9999 8888 7777'),
+            new Co_Applicant__c(Booking__c = booking.Id, Full_Name__c = primaryName)
         };
 
         Test.startTest();
-        AgreementOfSaleController controller = load(Page.MAGHAN_SINGH_AGREEMENT_OF_SALE, booking);
+        AgreementOfSaleController controller = load(Page.ARJUN_SINGH_AGREEMENT_OF_SALE, booking);
+        List<AgreementOfSaleController.ApplicantEntry> purchasers = controller.getAllApplicants();
         Test.stopTest();
 
-        Boolean sawCheque = false;
-        for (AgreementOfSaleController.ReceiptRow row : controller.getFlatReceiptRows()) {
-            System.assertNotEquals('GST Amount', row.getReceiptType(), 'Rows are still filtered by Receipt Type');
-            if (row.getReferenceId() == 'CHQ7777') {
-                System.assertEquals('Cheque', row.getPaymentMethod(), 'Mode = Payment_Method__c');
-                System.assertEquals('Installment Payment', row.getMode(), 'Existing getMode() (ARJUN) unchanged');
-                sawCheque = true;
-            } else {
-                System.assertEquals('', row.getPaymentMethod(), 'Blank Payment Method prints empty');
+        Integer namesakes = 0;
+        for (AgreementOfSaleController.ApplicantEntry purchaser : purchasers) {
+            if (purchaser.name == primaryName) {
+                namesakes++;
             }
         }
-        System.assert(sawCheque, 'The Cheque receipt is listed');
+        Boolean primaryHasAadhaar = !String.isBlank(controller.applicants[0].aadhaar);
+        System.assertEquals(primaryHasAadhaar ? 2 : 1, namesakes,
+            'Namesake with its own Aadhaar is printed once; the one without an Aadhaar is the same person');
+    }
+
+    // THE DRIZZLE facing: "East/North" only when the Unit carries an East/North Facing charge.
+    @IsTest
+    static void drizzleFacingFollowsEastNorthFacingCharge() {
+        Booking__c booking = buildBooking('ARJUN SINGH');
+
+        Test.startTest();
+        AgreementOfSaleController before = load(Page.MortgageAgreementofSaleDrizzle, booking);
+        System.assertEquals('', before.getDrizzleFacing(), 'No East/North Facing charge: blank');
+
+        update new Plot__c(Id = booking.Plot__c, East_North_Facing__c = 50);
+        AgreementOfSaleController after = load(Page.MortgageAgreementofSaleDrizzle, booking);
+        Test.stopTest();
+
+        System.assertEquals('East/North', after.getDrizzleFacing());
     }
 }

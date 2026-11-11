@@ -224,7 +224,7 @@ img { border:0; }
 .c5h{height:1pt}
 .c5i{line-height:25.78pt;font-size:10.45pt;font-family:'Times New Roman', Times, serif}
 .c5j{text-align:right;line-height:25.78pt;font-size:10.45pt;font-family:'Times New Roman', Times, serif}
-.c5k{border-collapse:collapse;table-layout:fixed;width:451.3pt;margin-left:auto;margin-right:auto}
+.c5k{border-collapse:collapse;table-layout:fixed;width:451.3pt;margin-left:auto;margin-right:auto;page-break-inside:avoid}
 .c5l{height:20.4pt}
 .c5m{border-top:0.5pt solid #000;border-right:1pt solid #000;border-bottom:0.5pt solid #000;border-left:1pt solid #000;padding:0 5.4pt 0 5.4pt;white-space:nowrap;vertical-align:middle}
 .c5n{border-top:0.5pt solid #000;border-right:1pt solid #000;border-bottom:0.5pt solid #000;border-left:none;padding:0 5.4pt 0 5.4pt;vertical-align:middle}
@@ -1105,7 +1105,7 @@ img { border:0; }
 <td class="c24"><div class="c5j"><span class="c7"><span style="font-family:'Arial Unicode MS'">&#8377;</span> {!formattedTotalScheduleNetAmount}</span></div></td>
 </tr>
 </table></div>
-<div class="c0"><span class="cj">SCHEDULE &#8216;D&#8217; SPECIFICATIONS</span></div>
+<div class="c0" style="margin-top:18pt"><span class="cj">SCHEDULE &#8216;D&#8217; SPECIFICATIONS</span></div>
 <div style="page-break-inside:avoid"><table class="c5k"><colgroup>
 <col style="width:121.65pt"/>
 <col style="width:329.65pt"/>

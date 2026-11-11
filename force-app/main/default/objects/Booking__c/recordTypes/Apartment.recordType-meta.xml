@@ -1173,6 +1173,69 @@
         </values>
     </picklistValues>
     <picklistValues>
+        <picklist>Loan_Bank_Name__c</picklist>
+        <values>
+            <fullName>AXIS</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>BAJAJ</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>BANK OF MAHARASHTRA</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>BHFL</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>CANARA BANK</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>CENTRAL BANK</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>HDFC</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>ICICI BANK</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>IDBI</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>INDIAN BANK</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>NAVI</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>PUNJAB NATIONAL BANK</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>SBI BANK</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>UCO BANK</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>UNION BANK</fullName>
+            <default>false</default>
+        </values>
+    </picklistValues>
+    <picklistValues>
         <picklist>Loan_Status__c</picklist>
         <values>
             <fullName>Approved</fullName>

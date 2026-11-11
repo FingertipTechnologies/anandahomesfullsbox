@@ -3,6 +3,7 @@
     <fullName>All</fullName>
     <columns>NAME</columns>
     <columns>Unit__c</columns>
+    <columns>Project1__c</columns>
     <columns>Total__c</columns>
     <columns>Quote_status__c</columns>
     <filterScope>Everything</filterScope>

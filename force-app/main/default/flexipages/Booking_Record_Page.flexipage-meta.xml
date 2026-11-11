@@ -385,6 +385,18 @@
                 <identifier>RecordNo_of_car_parking__cField</identifier>
             </fieldInstance>
         </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.Total_Received_Flat_Amount__c</fieldItem>
+                <identifier>RecordTotal_Received_Flat_Amount__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.Balance_Flat_Amount__c</fieldItem>
+                <identifier>RecordBalance_Flat_Amount__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
         <name>Facet-9aab23cb-bcdb-46d0-9933-b28d3e66a8f8</name>
         <type>Facet</type>
     </flexiPageRegions>

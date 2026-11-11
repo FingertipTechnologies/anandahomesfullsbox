@@ -35,6 +35,11 @@
                 <default>false</default>
                 <label>NITIN SINGH</label>
             </value>
+            <value>
+                <fullName>BUILDER SHARE</fullName>
+                <default>false</default>
+                <label>BUILDER SHARE</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

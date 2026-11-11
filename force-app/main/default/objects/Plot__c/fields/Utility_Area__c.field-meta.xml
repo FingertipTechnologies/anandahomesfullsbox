@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Utility_Area__c</fullName>
+    <description>Utility area of the unit in SFT. Printed in THE DRIZZLE Agreement of Sale and Sale Deed flat schedule.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Utility area in SFT, printed in THE DRIZZLE Agreement of Sale flat schedule.</inlineHelpText>
+    <label>Utility Area</label>
+    <precision>16</precision>
+    <required>false</required>
+    <scale>3</scale>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

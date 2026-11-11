@@ -46,6 +46,11 @@ private class AgreementOfSaleControllerTest {
         Booking__c booking = new Booking__c(
             Project__c = project.Id,
             Plot__c = bookedUnit.Id,
+            // Required by the org's "Booking After Create Handler" flow (runs on
+            // booking create): Quote__c as sourceRecordId + the booking-amount receipt.
+            Quote__c = postSalesTestDataFactory.createQuote(project.Id).Id,
+            Mode_Of_Payment__c = 'UPI',
+            Booking_Amount__c = 100000,
             Booking_Date__c = Date.today().addDays(-30),
             Agreement_Date__c = Date.newInstance(2026, 3, 15),
             Status__c = 'New',
@@ -251,6 +256,11 @@ private class AgreementOfSaleControllerTest {
         Booking__c booking = new Booking__c(
             Project__c = project.Id,
             Plot__c = unit.Id,
+            // Required by the org's "Booking After Create Handler" flow (runs on
+            // booking create): Quote__c as sourceRecordId + the booking-amount receipt.
+            Quote__c = postSalesTestDataFactory.createQuote(project.Id).Id,
+            Mode_Of_Payment__c = 'UPI',
+            Booking_Amount__c = 100000,
             Status__c = 'New',
             First_Applicant_Name__c = 'Arun Sample',
             Salutation__c = 'Mr.',
@@ -337,6 +347,7 @@ private class AgreementOfSaleControllerTest {
             External_Wall_Area__c = 65.43,
             Internal_Wall_Area__c = 34.19,
             UDS__c = 32.6,
+            UDS_Sq_mts__c = 32.6,
             North_By__c = 'Open to sky',
             East_By__c = 'Corridor'
         );
@@ -354,6 +365,8 @@ private class AgreementOfSaleControllerTest {
             Project__c = project.Id,
             Plot__c = unit.Id,
             Quote__c = quote.Id,
+            Mode_Of_Payment__c = 'UPI',
+            Booking_Amount__c = 100000,
             Status__c = 'New',
             First_Applicant_Name__c = 'Anil Demo Junior',
             salutation_Applicant1__c = 'Mr',
@@ -508,6 +521,11 @@ private class AgreementOfSaleControllerTest {
         Booking__c booking = new Booking__c(
             Project__c = project.Id,
             Plot__c = unit.Id,
+            // Required by the org's "Booking After Create Handler" flow (runs on
+            // booking create): Quote__c as sourceRecordId + the booking-amount receipt.
+            Quote__c = postSalesTestDataFactory.createQuote(project.Id).Id,
+            Mode_Of_Payment__c = 'UPI',
+            Booking_Amount__c = 100000,
             Status__c = 'New',
             First_Applicant_Name__c = 'Anil Demo Junior',
             Total_Flat_Cost__c = 1000000
@@ -519,5 +537,216 @@ private class AgreementOfSaleControllerTest {
         Test.stopTest();
 
         System.assert(controller.getIsMortgagedUnit());
+    }
+
+    // ------------------------------------------- ARJUN_SINGH_AGREEMENT_OF_SALE
+
+    @IsTest
+    static void arjunPageListsEveryCoApplicantOnceInDeedFormat() {
+        Booking__c booking = buildBooking('ARJUN SINGH');
+        insert new List<Co_Applicant__c>{
+            new Co_Applicant__c(
+                Booking__c = booking.Id,
+                Salutation__c = 'Mr',
+                Full_Name__c = 'Kiran Extra',
+                S_o_D_o_W_o__c = 'S/o',
+                W_o_S_o_C_o_c__c = 'Ravi Extra',
+                Date_of_Birth__c = Date.today().addYears(-40),
+                Occupation__c = 'Business',
+                Permenent_Address__c = 'Plot 1, Hyderabad',
+                Aadhar_Number__c = '123412341234',
+                PAN_Number__c = 'ABCDE1234F'
+            ),
+            new Co_Applicant__c(
+                Booking__c = booking.Id,
+                First_Name__c = 'Latha',
+                Last_Name__c = 'Rao'
+            ),
+            // same person as the Second Applicant: must not be printed twice
+            new Co_Applicant__c(
+                Booking__c = booking.Id,
+                Full_Name__c = 'YARRA  THIREESHA'
+            )
+        };
+
+        Test.startTest();
+        AgreementOfSaleController controller = load(Page.ARJUN_SINGH_AGREEMENT_OF_SALE, booking);
+        List<AgreementOfSaleController.ApplicantEntry> purchasers = controller.getAllApplicants();
+        Test.stopTest();
+
+        System.assertEquals(2, controller.applicants.size(), 'Shared applicant list is unchanged for the other pages');
+        System.assertEquals(4, purchasers.size(), 'Applicant, Second Applicant and 2 new co-applicants');
+        for (Integer i = 0; i < purchasers.size(); i++) {
+            System.assertEquals(i + 1, purchasers[i].sequence, 'Numbered 1..N');
+        }
+        System.assertEquals(controller.applicants[1].getDisplayName(), purchasers[1].getDisplayName(), 'Second Applicant keeps its place');
+
+        AgreementOfSaleController.ApplicantEntry kiran = purchasers[2];
+        System.assertEquals('SRI. KIRAN EXTRA, S/O. SRI. RAVI EXTRA, ', kiran.getDeedNameLine());
+        System.assertEquals('aged about 40 years, Occupation: Business, Resident of Plot 1, Hyderabad. ', kiran.getDeedDetails());
+        System.assertEquals('(AADHAAR No. 123412341234 & PAN No. ABCDE1234F)', kiran.getDeedIds());
+
+        AgreementOfSaleController.ApplicantEntry latha = purchasers[3];
+        System.assertEquals('LATHA RAO, ', latha.getDeedNameLine(), 'First + Last name when Full Name is blank');
+        System.assert(latha.getDeedDetails().startsWith('Resident of '), 'Falls back to the primary address');
+        System.assertEquals('(AADHAAR No.  & PAN No. )', latha.getDeedIds(), 'Blank ids print empty');
+        System.assert(controller.getAllApplicants() === purchasers, 'Built once and cached');
+
+        List<String> names = new List<String>();
+        for (AgreementOfSaleController.ApplicantEntry purchaser : purchasers) {
+            names.add(purchaser.getDisplayName());
+        }
+        System.assertEquals(String.join(names, ' & '), controller.getAllBuyerNames(), 'Notice Attention lists every purchaser');
+        System.assert(controller.getAllBuyerNames().contains('SRI. KIRAN EXTRA'), 'Co-applicant in the notice names');
+        System.assert(!controller.buyerNames.contains('KIRAN EXTRA'), 'Shared buyerNames is unchanged for the other pages');
+    }
+
+    @IsTest
+    static void arjunPageTowerComesFromTheUnitTowerLookup() {
+        Booking__c booking = buildBooking('ARJUN SINGH');
+        Schema.DescribeFieldResult towerField = Plot__c.Tower__c.getDescribe();
+        Boolean towerIsBlockLookup = towerField.getType() == Schema.DisplayType.REFERENCE &&
+            towerField.getReferenceTo().contains(Block__c.SObjectType);
+        if (towerIsBlockLookup) {
+            Block__c tower = new Block__c(Name = 'Tower 8', Project__c = booking.Project__c);
+            insert tower;
+            Plot__c unit = new Plot__c(Id = booking.Plot__c);
+            unit.put('Tower__c', tower.Id);
+            update unit;
+        }
+
+        Test.startTest();
+        AgreementOfSaleController controller = load(Page.ARJUN_SINGH_AGREEMENT_OF_SALE, booking);
+        String towerName = controller.getSelectedTowerName();
+        Test.stopTest();
+
+        if (towerIsBlockLookup) {
+            System.assertEquals('Tower 8', towerName, 'Name of the unit Tower lookup record');
+        } else {
+            System.assertEquals(controller.getSelectedTowerDisplay(), towerName, 'Falls back to the existing tower');
+        }
+        System.assertEquals(towerName, controller.getSelectedTowerName(), 'Cached value');
+    }
+
+    @IsTest
+    static void arjunPageGettersAreNullSafeWithoutBooking() {
+        Test.setCurrentPage(Page.ARJUN_SINGH_AGREEMENT_OF_SALE);
+        AgreementOfSaleController controller = new AgreementOfSaleController(
+            new ApexPages.StandardController(new Booking__c())
+        );
+
+        System.assertEquals('', controller.getSelectedTowerName(), 'No unit, no tower');
+        System.assert(controller.getAllApplicants().isEmpty(), 'No booking, no purchasers');
+        System.assertEquals('', controller.getAllBuyerNames(), 'No booking, no notice names');
+        System.assert(!controller.getHasFlatReceipts(), 'No booking, no receipts');
+        System.assertEquals('0', controller.getFormattedFlatReceiptTotal(), 'Empty table totals zero');
+        System.assertEquals('', controller.getFormattedTotalReceivedFlatAmount(), 'No booking, blank paid amount');
+        System.assertEquals('', controller.getTotalReceivedFlatAmountInWords(), 'No booking, blank words');
+        System.assertEquals('', controller.getFormattedBalanceFlatAmount(), 'No booking, blank balance');
+        System.assertEquals('', controller.getBalanceFlatAmountInWords(), 'No booking, blank balance words');
+        System.assertEquals(null, AgreementOfSaleController.queryTowerLookupName(null), 'Null unit id');
+    }
+
+    @IsTest
+    static void arjunClause111UsesFlatAmountsAndSkipsGstAndAdditionalCharges() {
+        Booking__c booking = buildBooking('ARJUN SINGH');
+        insert new List<Receipt__c>{
+            new Receipt__c(
+                Booking__c = booking.Id,
+                Receipt_Date__c = Date.newInstance(2025, 2, 1),
+                Receipt_Type__c = 'GST Amount',
+                Payment_Reference_Number__c = 'GST0001',
+                Amount_received__c = 50000,
+                Approval_Status__c = 'Approved'
+            ),
+            new Receipt__c(
+                Booking__c = booking.Id,
+                Receipt_Date__c = Date.newInstance(2025, 2, 2),
+                Receipt_Type__c = 'Additional Charge',
+                Payment_Reference_Number__c = 'ADD0001',
+                Amount_received__c = 25000,
+                Approval_Status__c = 'Approved'
+            )
+        };
+        Booking__c saved = [
+            SELECT Total_Received_Flat_Amount__c, Balance_Flat_Amount__c
+            FROM Booking__c
+            WHERE Id = :booking.Id
+        ];
+
+        Test.startTest();
+        AgreementOfSaleController controller = load(Page.ARJUN_SINGH_AGREEMENT_OF_SALE, booking);
+        Test.stopTest();
+
+        Decimal expectedTotal = 0;
+        for (AgreementOfSaleController.ReceiptRow row : controller.getFlatReceiptRows()) {
+            System.assertNotEquals('GST Amount', row.getReceiptType(), 'GST Amount receipts are not listed');
+            System.assertNotEquals('Additional Charge', row.getReceiptType(), 'Additional Charge receipts are not listed');
+            expectedTotal += row.getAmount() == null ? 0 : row.getAmount();
+        }
+        System.assertEquals(controller.receiptRows.size() - 2, controller.getFlatReceiptRows().size(),
+            'Only the GST Amount and Additional Charge rows are removed');
+        System.assert(controller.getHasFlatReceipts(), 'Approved flat receipts are listed');
+        System.assertEquals(2081709, expectedTotal, 'Approved Advance + Installment receipts');
+        System.assertEquals('20,81,709', controller.getFormattedFlatReceiptTotal(), 'TOTAL AMOUNT = sum of the rows shown');
+
+        System.assertEquals('21,56,709', controller.getFormattedTotalReceiptAmount(),
+            'Existing total used by the other pages still includes GST / Additional Charge receipts');
+
+        // Paid and balance amounts come straight from the new Booking fields.
+        Decimal paid = saved.Total_Received_Flat_Amount__c;
+        Decimal balance = saved.Balance_Flat_Amount__c;
+        System.assertEquals(paid, controller.booking.Total_Received_Flat_Amount__c, 'Paid = Total_Received_Flat_Amount__c');
+        System.assertEquals(balance, controller.booking.Balance_Flat_Amount__c, 'Balance = Balance_Flat_Amount__c');
+        if (paid != null) {
+            System.assert(String.isNotBlank(controller.getFormattedTotalReceivedFlatAmount()), 'Paid figure printed');
+            System.assert(controller.getTotalReceivedFlatAmountInWords().startsWith('Rupees'), 'Paid amount in words');
+        }
+        if (balance != null) {
+            System.assert(controller.getBalanceFlatAmountInWords().startsWith('Rupees'), 'Balance in words');
+            System.assert(String.isNotBlank(controller.getFormattedBalanceFlatAmount()), 'Balance figure printed');
+        }
+    }
+
+    // A co-applicant who shares a purchaser's name is a different person when the Aadhaar differs.
+    @IsTest
+    static void namesakeCoApplicantWithDifferentAadhaarIsPrinted() {
+        Booking__c booking = buildBooking('ARJUN SINGH');
+        String primaryName = [SELECT First_Applicant_Name__c FROM Booking__c WHERE Id = :booking.Id].First_Applicant_Name__c;
+        insert new List<Co_Applicant__c>{
+            new Co_Applicant__c(Booking__c = booking.Id, Full_Name__c = primaryName, Aadhar_Number__c = '9999 8888 7777'),
+            new Co_Applicant__c(Booking__c = booking.Id, Full_Name__c = primaryName)
+        };
+
+        Test.startTest();
+        AgreementOfSaleController controller = load(Page.ARJUN_SINGH_AGREEMENT_OF_SALE, booking);
+        List<AgreementOfSaleController.ApplicantEntry> purchasers = controller.getAllApplicants();
+        Test.stopTest();
+
+        Integer namesakes = 0;
+        for (AgreementOfSaleController.ApplicantEntry purchaser : purchasers) {
+            if (purchaser.name == primaryName) {
+                namesakes++;
+            }
+        }
+        Boolean primaryHasAadhaar = !String.isBlank(controller.applicants[0].aadhaar);
+        System.assertEquals(primaryHasAadhaar ? 2 : 1, namesakes,
+            'Namesake with its own Aadhaar is printed once; the one without an Aadhaar is the same person');
+    }
+
+    // THE DRIZZLE facing: "East/North" only when the Unit carries an East/North Facing charge.
+    @IsTest
+    static void drizzleFacingFollowsEastNorthFacingCharge() {
+        Booking__c booking = buildBooking('ARJUN SINGH');
+
+        Test.startTest();
+        AgreementOfSaleController before = load(Page.MortgageAgreementofSaleDrizzle, booking);
+        System.assertEquals('', before.getDrizzleFacing(), 'No East/North Facing charge: blank');
+
+        update new Plot__c(Id = booking.Plot__c, East_North_Facing__c = 50);
+        AgreementOfSaleController after = load(Page.MortgageAgreementofSaleDrizzle, booking);
+        Test.stopTest();
+
+        System.assertEquals('East/North', after.getDrizzleFacing());
     }
 }

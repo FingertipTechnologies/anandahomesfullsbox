@@ -658,6 +658,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Block__c.Survey_Number__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Block__c.Tower_ID__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -924,6 +929,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Booking__c.BHK_Type__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Booking__c.Balance_Flat_Amount__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -2504,6 +2514,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Booking__c.Total_Receipt_Amount__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Booking__c.Total_Received_Flat_Amount__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -8018,7 +8033,17 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>NOC__c.Related_Cancellation_Booking_Ids__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>NOC__c.Related_Cancellation_Booking__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>NOC__c.Related_Swap_History_Ids__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -8933,6 +8958,21 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Plot__c.East_North_Facing__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Plot__c.External_Wall_Area__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Plot__c.Extra_Car_Parking__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Plot__c.Facing__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -9008,12 +9048,22 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Plot__c.Internal_Wall_Area__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Plot__c.LL_Share_Name__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
         <field>Plot__c.LO_Dev_Details__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Plot__c.Lake_Premium__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -9063,6 +9113,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Plot__c.Mortgaged_to_HMDA__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Plot__c.Move_in_charges__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -9108,12 +9163,22 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Plot__c.PLC__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Plot__c.Phase_Detail__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
         <field>Plot__c.Piped_Gas__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Plot__c.Plinth_Area__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -9214,6 +9279,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Plot__c.Saleable_Area_Sft__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Plot__c.Series__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -9373,7 +9443,17 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Plot__c.Utility_Area__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Plot__c.View_Charges_per_sqft__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Plot__c.Wall_Area__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -10348,6 +10428,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Quote__c.East_North_Facing__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Quote__c.Extra_Covered_Car_Parking_Charges__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -10423,6 +10508,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Quote__c.Lake_Premium__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Quote__c.Lead_Email__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -10473,7 +10563,17 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Quote__c.PLC__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Quote__c.Payment_Type__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Quote__c.Piped_Gas__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -10594,6 +10694,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Quote__c.Super_Built_Up_Area__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Quote__c.Swap_For_Booking__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

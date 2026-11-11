@@ -36,7 +36,7 @@ public without sharing class BookingController {
     @auraEnabled
     public static String createBook(Booking__c bk, String recId, List<Co_Applicant__c> applicantList) {
         // ✅ CHANGED: SLead__c to CLead
-        Quote__c quoteRecord = [SELECT Id, Unit__c,CLead__c,CLead__r.Lead_source__c,CLead__r.OwnerId FROM Quote__c WHERE Id = :recId LIMIT 1];
+        Quote__c quoteRecord = [SELECT Id, Unit__c,CLead__c,CLead__r.Lead_source__c,CLead__r.OwnerId, Sub_total__c, GST_Amount__c, Total__c FROM Quote__c WHERE Id = :recId LIMIT 1];
         List<Co_Applicant__c> applicantListToInsert = new List<Co_Applicant__c>();
         List<Plot__c> qt = [SELECT Id, Name, Status__c, Project__c, Super_built_up_area__c, Price_Per_Sq_Ft__c, Floor_Rise__c, Premium_Charge__c,
                             Other_Charges__c, Covered_Park_Parking__c, TAXES__c,Block1__c,Block__c FROM Plot__c WHERE Id = :quoteRecord.Unit__c];
@@ -52,6 +52,19 @@ public without sharing class BookingController {
             return 'Project record not found for the given Booking Project.';
         }
         bk.Quote__c = recId;
+        // The payment schedule amounts are Percentage x (Total Flat Cost + GST) of the booking
+        // (PaymentScheduleGeneratorService, run by the "Booking - Generate Payment Schedules" flow on
+        // insert). The booking form does not capture these totals, so take them from the quote.
+        Map<String, Object> bookingValues = bk.getPopulatedFieldsAsMap();
+        if (bookingValues.get('Total_Flat_Cost__c') == null) {
+            bk.Total_Flat_Cost__c = quoteRecord.Sub_total__c;
+        }
+        if (bookingValues.get('GST_Amount__c') == null) {
+            bk.GST_Amount__c = quoteRecord.GST_Amount__c;
+        }
+        if (bookingValues.get('Total_Payable_Amount__c') == null) {
+            bk.Total_Payable_Amount__c = quoteRecord.Total__c;
+        }
         if (qt[0].Status__c == 'Blocked') {
             System.debug('oppPlot: ' + bk);
             //map project level managers to booking fileds

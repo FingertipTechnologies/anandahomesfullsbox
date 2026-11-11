@@ -74,6 +74,13 @@
     <aura:attribute name="amenitiesCalc" type="Decimal" default="0"/>
     <aura:attribute name="infrastructureCalc" type="Decimal" default="0"/>
     <aura:attribute name="flatCost" type="Decimal" default="0"/>
+    
+    
+    <aura:attribute name="gaspipeCalc" type="Decimal" default="0"/>
+    <aura:attribute name="extracarparkingCalc" type="Decimal" default="0"/>
+    <aura:attribute name="lakePremiumCalc" type="Decimal" default="0"/>
+    <aura:attribute name="floorrisrCalc" type="Decimal" default="0"/>
+    <aura:attribute name="eastNorthFacingCalc" type="Decimal" default="0"/>
 
     <aura:handler name="change" value="{!v.searchText1}" action="{!c.searchText1}"></aura:handler>
     <aura:handler name="change" value="{!v.searchText2}" action="{!c.searchText2}"></aura:handler>
@@ -187,6 +194,11 @@
                                         <option text="{!val}" ></option>
                                     </aura:iteration></lightning:select>
                             </div>
+                             <aura:if isTrue="{!v.projectName == 'The Drizzle'}">
+                             <div class="slds-size_4-of-8 slds-p-horizontal_small"  >
+                                        <lightning:input name="PLC__c" type="Text" formatter="Text" step="0.01" disabled="true" label="PLC"  value="{!v.oppPlot.PLC__c}" />
+                                    </div>
+                            </aura:if>
                             
                             <div class="slds-size_4-of-8 slds-p-horizontal_small"  >
                                 <lightning:select class="select" label="Floor" value="{!v.oppPlot.Floor__c}" messageWhenValueMissing="Please select this field" disabled="true">
@@ -211,19 +223,10 @@
                                 <lightning:input name="Price_Per_Sq_Ft__c" type="number" formatter="currency" step="0.01" disabled="true" label="Price Per Sq Ft" value="{!v.oppPlot.Price_Per_Sq_Ft__c}" />
                             </div>
                             <div class="slds-size_4-of-8 slds-p-horizontal_small">
-                                <lightning:input name="East_Facing_Charges__c" type="number" formatter="currency" step="0.01" disabled="true" label="East Facing Charges" value="{!v.oppPlot.East_Facing_Charges__c}" />
-                            </div>
-                            <div class="slds-size_4-of-8 slds-p-horizontal_small">
                                 <lightning:input name="Corner_Charges__c" type="number" formatter="currency" step="0.01" disabled="true" label="Corner Charges" value="{!v.oppPlot.Corner_Charges__c}" />
                             </div>
                             <div class="slds-size_4-of-8 slds-p-horizontal_small">
-                                <lightning:input name="Hi_Rise_Charges__c" type="number" formatter="currency" step="0.01" disabled="true" label="Hi Rise Charges" value="{!v.oppPlot.Hi_Rise_Charges__c}" />
-                            </div>
-                            <div class="slds-size_4-of-8 slds-p-horizontal_small">
                                 <lightning:input name="Central_Court_Yard_Premium__c" type="number" formatter="currency" step="0.01" disabled="true" label="Central Court Yard Premium" value="{!v.oppPlot.Central_Court_Yard_Premium__c}" />
-                            </div>
-                            <div class="slds-size_4-of-8 slds-p-horizontal_small">
-                                <lightning:input name="Meadow_Premium__c" type="number" formatter="currency" step="0.01" disabled="true" label="Meadow Premium" value="{!v.oppPlot.Meadow_Premium__c}" />
                             </div>
                             <div class="slds-size_4-of-8 slds-p-horizontal_small">
                                 <lightning:input name="Roadside_Premium__c" type="number" formatter="currency" step="0.01" disabled="true" label="Roadside Premium" value="{!v.oppPlot.Roadside_Premium__c}" />
@@ -231,9 +234,47 @@
                             <div class="slds-size_4-of-8 slds-p-horizontal_small">
                                 <lightning:input name="Court_Yard_Premium__c" type="number" formatter="currency" step="0.01" disabled="true" label="Court Yard Premium" value="{!v.oppPlot.Court_Yard_Premium__c}" />
                             </div>
-                            <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                             <aura:if isTrue="{!v.projectName == 'The Legacey'}">
+                                     <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="East_Facing_Charges__c" type="number" formatter="currency" step="0.01" disabled="true" label="East Facing Charges" value="{!v.oppPlot.East_Facing_Charges__c}" />
+                            </div>
+                           
+                                  <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="Hi_Rise_Charges__c" type="number" formatter="currency" step="0.01" disabled="true" label="Hi Rise Charges" value="{!v.oppPlot.Hi_Rise_Charges__c}" />
+                            </div>
+                             <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="Meadow_Premium__c" type="number" formatter="currency" step="0.01" disabled="true" label="Meadow Premium" value="{!v.oppPlot.Meadow_Premium__c}" />
+                            </div>
+                                    <div class="slds-size_4-of-8 slds-p-horizontal_small">
                                 <lightning:input name="Outer_Premium__c" type="number" formatter="currency" step="0.01" disabled="true" label="Outer Premium" value="{!v.oppPlot.Outer_Premium__c}" />
                             </div>
+                         
+                          
+
+</aura:if>
+                            
+                             <aura:if isTrue="{!v.projectName == 'The Drizzle'}">
+                                  <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                      <lightning:input name="East_North_Facing__c" type="number" formatter="currency" step="0.01" disabled="true" label="East/North Facing" value="{!v.oppPlot.East_North_Facing__c}" />
+                            </div>
+                           
+                                 <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="Floor_Rise__c" type="number" formatter="currency" step="0.01" disabled="true" label="Floor Rise Charge" value="{!v.oppPlot.Floor_Rise__c}" />
+                            </div>
+                            
+                              <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="Lake_Premium__c" type="number" formatter="currency" step="0.01" disabled="true" label="Lake Premium" value="{!v.oppPlot.Lake_Premium__c}" />
+                            </div>
+                            <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="Extra_Covered_Car_Parking_Charges__c" type="number" formatter="currency" step="0.01" disabled="true" label="Extra Car Parking" value="{!v.oppPlot.Extra_Covered_Car_Parking_Charges__c}" />
+                            </div>
+                                 <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="Piped_Gas__c" type="number" formatter="currency" step="0.01" disabled="true" label="Gas Pipe Line" value="{!v.oppPlot.Piped_Gas__c}" />
+                            </div>
+                            
+                               
+							</aura:if>
+       
                             <div class="slds-size_4-of-8 slds-p-horizontal_small">
                                 <lightning:input name="Amenities_Car_Parking__c" type="number" formatter="currency" step="0.01" disabled="true" label="Amenities With Car Parking" value="{!v.oppPlot.Amenities_Car_Parking__c}" />
                             </div>
@@ -283,28 +324,56 @@
                                 <lightning:input name="basicPriceCalc" type="number" formatter="currency" step="0.1" disabled="true" label="Base Price" value="{!v.basicPriceCalc}" />
                             </div>
                             <div class="slds-size_4-of-8 slds-p-horizontal_small">
-                                <lightning:input name="eastFacingCalc" type="number" formatter="currency" step="0.1" disabled="true" label="East Facing Charges" value="{!v.eastFacingCalc}" />
-                            </div>
-                            <div class="slds-size_4-of-8 slds-p-horizontal_small">
                                 <lightning:input name="cornerCalc" type="number" formatter="currency" step="0.1" disabled="true" label="Corner Charges" value="{!v.cornerCalc}" />
                             </div>
+                            <aura:if isTrue="{!v.projectName == 'The Legacey'}">
+                                 <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="eastFacingCalc" type="number" formatter="currency" step="0.1" disabled="true" label="East Facing Charges" value="{!v.eastFacingCalc}" />
+                            </div>
+                           
+                            
                             <div class="slds-size_4-of-8 slds-p-horizontal_small">
                                 <lightning:input name="hiRiseCalc" type="number" formatter="currency" step="0.1" disabled="true" label="Hi Rise Charges" value="{!v.hiRiseCalc}" />
                             </div>
-                            <div class="slds-size_4-of-8 slds-p-horizontal_small">
-                                <lightning:input name="centralCourtYardCalc" type="number" formatter="currency" step="0.1" disabled="true" label="Central Court Yard Premium" value="{!v.centralCourtYardCalc}" />
-                            </div>
+                            
                             <div class="slds-size_4-of-8 slds-p-horizontal_small">
                                 <lightning:input name="meadowCalc" type="number" formatter="currency" step="0.1" disabled="true" label="Meadow Premium" value="{!v.meadowCalc}" />
+                            </div>
+                                
+                            <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="outerCalc" type="number" formatter="currency" step="0.1" disabled="true" label="Outer Premium" value="{!v.outerCalc}" />
+                            </div>
+                            </aura:if>
+                             <aura:if isTrue="{!v.projectName == 'The Drizzle'}">
+                                  <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                      <lightning:input name="eastNorthFacingCalc" type="number" formatter="currency" step="0.1" disabled="true" label="East/North Facing Charges" value="{!v.eastNorthFacingCalc}" />
+                            </div>
+                           
+                            <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="lakePremium" type="number" formatter="currency" step="0.1" disabled="true" label="Lake Premium" value="{!v.lakePremiumCalc}" />
+                            </div>
+                                 <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="floorrisecharge" type="number" formatter="currency" step="0.1" disabled="true" label="Floor Rise Charges" value="{!v.floorrisrCalc}" />
+                            </div>
+                                 <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="floorrisecharge" type="number" formatter="currency" step="0.1" disabled="true" label="Extra Car Parking Charges" value="{!v.extracarparkingCalc}" />
+                            </div>
+                                 <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="gaspipe" type="number" formatter="currency" step="0.1" disabled="true" label="Gas Pipe Charges" value="{!v.gaspipeCalc}" />
+                            </div>
+
+
+</aura:if>
+                            
+                             
+                            <div class="slds-size_4-of-8 slds-p-horizontal_small">
+                                <lightning:input name="centralCourtYardCalc" type="number" formatter="currency" step="0.1" disabled="true" label="Central Court Yard Premium" value="{!v.centralCourtYardCalc}" />
                             </div>
                             <div class="slds-size_4-of-8 slds-p-horizontal_small">
                                 <lightning:input name="roadsideCalc" type="number" formatter="currency" step="0.1" disabled="true" label="Roadside Premium" value="{!v.roadsideCalc}" />
                             </div>
                             <div class="slds-size_4-of-8 slds-p-horizontal_small">
                                 <lightning:input name="courtYardCalc" type="number" formatter="currency" step="0.1" disabled="true" label="Court Yard Premium" value="{!v.courtYardCalc}" />
-                            </div>
-                            <div class="slds-size_4-of-8 slds-p-horizontal_small">
-                                <lightning:input name="outerCalc" type="number" formatter="currency" step="0.1" disabled="true" label="Outer Premium" value="{!v.outerCalc}" />
                             </div>
                             <div class="slds-size_4-of-8 slds-p-horizontal_small">
                                 <lightning:input name="amenitiesCalc" type="number" formatter="currency" step="0.1" disabled="true" label="Amenities With Car Parking" value="{!v.amenitiesCalc}" />

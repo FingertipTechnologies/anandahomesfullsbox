@@ -94,7 +94,7 @@ public with sharing class PaymentScheduleGeneratorService {
 
         // Build the set of source fields to query (defaults + mapped fields)
         Set<String> sourceFields = new Set<String>{
-            'Id', 'Name', sourceParentField, 'Sequence__c', 'Percentage__c',
+            'Id', 'Name', sourceParentField, 'Sequence__c', 'Percentage__c', 'S_No__c', 'Payment_Percent__c',
             'Payment_Type__c', 'Status__c', 'Is_Active__c',
             'Days_After_Booking__c', 'Days_After_Previous__c',
             'Applicable_For__c', 'Description__c', 'Milestone_Description__c', 'Is_Agreement__c'
@@ -111,7 +111,7 @@ public with sharing class PaymentScheduleGeneratorService {
             + ' FROM Master_Payment_Schedule__c '
             + 'WHERE ' + sourceParentField + ' IN :parentIds '
             + 'AND Is_Active__c = true '
-            + 'ORDER BY Sequence__c ASC';
+            + 'ORDER BY S_No__c ASC NULLS LAST, Sequence__c ASC';
 
         List<Master_Payment_Schedule__c> masterSchedules = Database.query(masterQuery);
         if (masterSchedules.isEmpty()) return;
@@ -159,7 +159,7 @@ public with sharing class PaymentScheduleGeneratorService {
             Date bookingDate = Date.today();
             Decimal applicablePercentageTotal = 0;
             for (Master_Payment_Schedule__c ms : applicableMasters) {
-                applicablePercentageTotal += ms.Percentage__c != null ? ms.Percentage__c : 0;
+                applicablePercentageTotal += masterPercent(ms);
             }
             Boolean percentagesTotalOneHundred = applicablePercentageTotal == 100;
             Decimal totalTds = booking.TDS__c != null
@@ -197,14 +197,14 @@ public with sharing class PaymentScheduleGeneratorService {
                     }
                 } else {
                     // Default mappings when no config
-                    ps.Sequence__c = ms.Sequence__c;
-                    ps.S_No__c = ms.Sequence__c;
-                    ps.Percentage__c = ms.Percentage__c;
+                    ps.Sequence__c = masterSequence(ms);
+                    ps.S_No__c = masterSequence(ms);
+                    ps.Percentage__c = masterPercent(ms);
                    // ps.Milestone_Name__c = ms.Payment_Type__c;
                     ps.Description__c = ms.Description__c;
                 }
 
-                Decimal percentage = ms.Percentage__c != null ? ms.Percentage__c : 0;
+                Decimal percentage = masterPercent(ms);
                 // The milestone's share of the Booking's Total Flat Cost ALREADY includes the 1%
                 // TDS. Split that share into TDS (1%) and the Flat amount (the remaining 99%, which
                 // is what gets split Bank/Customer). GST comes from the Booking's GST Amount.
@@ -404,6 +404,21 @@ public with sharing class PaymentScheduleGeneratorService {
      * Load creation config from Post_Sales_Configuration__c (type = 'Payment Schedule').
      * Returns sourceParentField, bookingParentField, and fieldMappings.
      */
+    /**
+     * @description The master schedule carries two pairs of fields: "S No" / "Payment Percent",
+     *              which users edit in the Tower's Master Payment Schedules list, and the required
+     *              "Sequence" / "Percentage". The user-facing pair wins when it is filled.
+     */
+    private static Decimal masterSequence(Master_Payment_Schedule__c ms) {
+        return ms.S_No__c != null ? ms.S_No__c : ms.Sequence__c;
+    }
+
+    private static Decimal masterPercent(Master_Payment_Schedule__c ms) {
+        if (ms.Payment_Percent__c != null) {
+            return ms.Payment_Percent__c;
+        }
+        return ms.Percentage__c != null ? ms.Percentage__c : 0;
+    }
     private static Map<String, Object> loadCreationConfig() {
         Map<String, Object> config = new Map<String, Object>{
             'sourceParentField' => DEFAULT_SOURCE_PARENT,

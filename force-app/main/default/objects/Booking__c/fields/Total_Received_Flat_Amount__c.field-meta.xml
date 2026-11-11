@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Total_Received_Flat_Amount__c</fullName>
+    <label>Total Received Flat Amount</label>
+    <summarizedField>Receipt__c.Amount_received__c</summarizedField>
+    <summaryFilterItems>
+        <field>Receipt__c.Receipt_Type__c</field>
+        <operation>notEqual</operation>
+        <value>GST Amount</value>
+    </summaryFilterItems>
+    <summaryFilterItems>
+        <field>Receipt__c.Receipt_Type__c</field>
+        <operation>notEqual</operation>
+        <value>Additional Charge</value>
+    </summaryFilterItems>
+    <summaryForeignKey>Receipt__c.Booking__c</summaryForeignKey>
+    <summaryOperation>sum</summaryOperation>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Summary</type>
+</CustomField>

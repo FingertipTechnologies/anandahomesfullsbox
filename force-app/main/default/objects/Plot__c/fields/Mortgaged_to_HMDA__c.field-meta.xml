@@ -3,7 +3,6 @@
     <fullName>Mortgaged_to_HMDA__c</fullName>
     <defaultValue>false</defaultValue>
     <description>Tick when this unit is mortgaged to HMDA. THE DRIZZLE Agreement of Sale then prints the HMDA mortgage clause.</description>
-    <externalId>false</externalId>
     <inlineHelpText>Tick when this unit is mortgaged to HMDA. The Agreement of Sale then prints the HMDA mortgage clause.</inlineHelpText>
     <label>Mortgaged to HMDA</label>
     <trackHistory>false</trackHistory>

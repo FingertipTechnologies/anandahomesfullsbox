@@ -13,6 +13,14 @@ public with sharing class AgreementOfSaleController {
         'Approved', 'Approved by Finance Team'
     };
 
+    /**
+     * Receipt types that are not flat payments; the same types the
+     * Booking__c.Total_Received_Flat_Amount__c roll-up excludes.
+     */
+    private static final Set<String> NON_FLAT_RECEIPT_TYPES = new Set<String>{
+        'GST Amount', 'Additional Charge'
+    };
+
     /** Page-name fragment -> LL_Share_Name__c picklist value. */
     private static final Map<String, String> PAGE_OWNERS = new Map<String, String>{
         'ARJUN_SINGH_AGREEMENT_OF_SALE'  => 'ARJUN SINGH',
@@ -138,6 +146,44 @@ public with sharing class AgreementOfSaleController {
                 ' & PAN No. ' + (pan == null ? '' : pan.trim()) + ')'
             );
             return String.join(details, ', ');
+        }
+
+        // ---- ARJUN_SINGH_AGREEMENT_OF_SALE wording, split by weight as in the deed:
+        // bold "SRI. NAME, S/O. SRI. FATHER, " + regular "aged about .. years,
+        // Occupation: .., Resident of ... " + bold "(AADHAAR No. X & PAN No. Y)".
+
+        /** e.g. "SRI. RAVI KUMAR, S/O. SRI. MOHAN RAO, " (bold part). */
+        public String getDeedNameLine() {
+            String line = getDisplayName();
+            if (!String.isBlank(relation)) {
+                line += ', ' + relation;
+            }
+            return line + ', ';
+        }
+
+        /** e.g. "aged about 30 years, Occupation: Business, Resident of Hyderabad. " */
+        public String getDeedDetails() {
+            List<String> details = new List<String>();
+            if (!String.isBlank(age)) {
+                details.add('aged about ' + age + ' years');
+            }
+            if (!String.isBlank(occupation)) {
+                details.add('Occupation: ' + occupation.trim());
+            }
+            if (!String.isBlank(address)) {
+                details.add((addressPrefix == null ? '' : addressPrefix) + address.trim());
+            }
+            if (details.isEmpty()) {
+                return '';
+            }
+            String text = String.join(details, ', ');
+            return text + (text.endsWith('.') ? ' ' : '. ');
+        }
+
+        /** e.g. "(AADHAAR No. 1234 5678 9012 & PAN No. ABCDE1234F)" (bold part). */
+        public String getDeedIds() {
+            return '(AADHAAR No. ' + (aadhaar == null ? '' : aadhaar.trim()) +
+                ' & PAN No. ' + (pan == null ? '' : pan.trim()) + ')';
         }
 
         private ApplicantEntry(
@@ -340,6 +386,14 @@ public with sharing class AgreementOfSaleController {
         public String getAmountDisplay() {
             return formatIndianCurrency(receipt.Amount_received__c);
         }
+
+        public String getReceiptType() {
+            return receipt.Receipt_Type__c;
+        }
+
+        public Decimal getAmount() {
+            return receipt.Amount_received__c;
+        }
     }
 
     public class PaymentScheduleRow {
@@ -476,6 +530,7 @@ public with sharing class AgreementOfSaleController {
 
         booking = [
             SELECT Id, Project__c, Plot__c, Car_Parking_Selected__c, No_of_car_parking__c,
+                   BHK_Type__c, Quote__r.BHK_Type__c,
                    First_Applicant_Name__c, Second_Applicant_Name__c,
                    // primary applicant (legacy field set)
                    Salutation__c, Date_of_Birth__c, Occupation__c, Permanent_Address__c,
@@ -493,6 +548,7 @@ public with sharing class AgreementOfSaleController {
                    // pricing
                    Price_per_sqft__c, Basic_Price__c, Base_Price__c, Total_Flat_Cost__c,
                    GST_Amount__c, Total_Schedule_GST__c, Loan_Bank_Name__c,
+                   Total_Received_Flat_Amount__c, Balance_Flat_Amount__c,
                    Quote__r.Basic_Sale_Price_Rs__c,
                    // THE DRIZZLE price break-up
                    Rate_Per_Sqft__c, GST__c, Covered_Park_Parking__c, Car_Parking_Charges__c,
@@ -579,7 +635,8 @@ public with sharing class AgreementOfSaleController {
                 SELECT Id, Name, Project__r.Name, Plot_Number__c, Tower__c, Tower_Block__c,
                        Floor__c, BHK_Type__c, Facing__c, Carpet_Area__c, Balcony_Area__c,
                        Built_up_area__c, Saleable_Area_Sft__c,
-                       Common_Area_Allotted_to_Association__c, UDS__c,
+                       Common_Area_Allotted_to_Association__c, UDS__c, UDS_Sq_mts__c, Utility_Area__c,
+                       East_North_Facing__c,
                        Boundary_North__c, Boundary_South__c, Boundary_East__c, Boundary_West__c,
                        Covered_Park_Parking__c, LL_Share_Name__c, Share__c,
                        Block1__r.Name, Block__c, Other_Exclusive_Area__c,
@@ -903,6 +960,221 @@ public with sharing class AgreementOfSaleController {
         }
         return 'Note: the booked unit ' + selectedUnit.Name + ' is tagged with LL Share Name "' +
             unitOwner + '" but this agreement template is for "' + ownerName + '".';
+    }
+
+    // ------------------------------------- ARJUN_SINGH_AGREEMENT_OF_SALE only
+    // Additive getters used only by the ARJUN page, so the other agreement
+    // templates keep printing exactly what they print today.
+
+    private String selectedTowerName;
+    private List<ApplicantEntry> allApplicants;
+
+    /**
+     * Tower name of the booked unit, read from the Plot__c "Tower" lookup
+     * (Tower__c). The relationship is resolved from the field's schema at run
+     * time, so this works whether the org defines Tower__c as a lookup or not.
+     * Falls back to Block1__r.Name, then to the existing name-based tower.
+     */
+    public String getSelectedTowerName() {
+        if (selectedUnit == null) {
+            return '';
+        }
+        if (selectedTowerName == null) {
+            String towerName = queryTowerLookupName(selectedUnit.Id);
+            if (String.isBlank(towerName) && selectedUnit.Block1__r != null) {
+                towerName = selectedUnit.Block1__r.Name;
+            }
+            selectedTowerName = String.isBlank(towerName)
+                ? getSelectedTowerDisplay()
+                : towerName.trim();
+        }
+        return selectedTowerName;
+    }
+
+    @TestVisible
+    private static String queryTowerLookupName(Id unitId) {
+        if (unitId == null) {
+            return null;
+        }
+        Schema.DescribeFieldResult towerField = Plot__c.Tower__c.getDescribe();
+        String relationshipName = towerField.getRelationshipName();
+        if (towerField.getType() != Schema.DisplayType.REFERENCE || String.isBlank(relationshipName)) {
+            return null;
+        }
+        List<Plot__c> units = Database.query(
+            'SELECT ' + relationshipName + '.Name FROM Plot__c WHERE Id = :unitId LIMIT 1'
+        );
+        if (units.isEmpty()) {
+            return null;
+        }
+        SObject tower = units[0].getSObject(relationshipName);
+        Object towerName = tower == null ? null : tower.get('Name');
+        return towerName == null ? null : String.valueOf(towerName);
+    }
+
+    /**
+     * Every purchaser for the IN FAVOUR OF list: the applicants printed today
+     * (first applicant and Second Applicant) followed by each Co_Applicant__c
+     * record of the booking, oldest first, numbered 1..N. A co-applicant whose
+     * name is already printed is not repeated.
+     */
+    public List<ApplicantEntry> getAllApplicants() {
+        if (allApplicants == null) {
+            allApplicants = buildAllApplicants();
+        }
+        return allApplicants;
+    }
+
+    /**
+     * Names for the "notice to the VENDEE (S)" Attention row: every purchaser
+     * from getAllApplicants() joined with " & ", e.g. "SRI. A & SMT. B".
+     */
+    public String getAllBuyerNames() {
+        List<String> names = new List<String>();
+        for (ApplicantEntry entry : getAllApplicants()) {
+            names.add(entry.getDisplayName());
+        }
+        return String.join(names, ' & ');
+    }
+
+    /** Digits of an Aadhaar number ('' when blank), used to tell namesakes apart. */
+    private static String aadhaarDigits(String aadhaar) {
+        return aadhaar == null ? '' : aadhaar.replaceAll('[^0-9]', '');
+    }
+
+    private static void rememberAadhaar(Map<String, Set<String>> printed, String nameKey, String aadhaar) {
+        if (!printed.containsKey(nameKey)) {
+            printed.put(nameKey, new Set<String>());
+        }
+        printed.get(nameKey).add(aadhaarDigits(aadhaar));
+    }
+
+    /**
+     * A co-applicant is the same person as a purchaser already printed when the
+     * names match and the Aadhaar numbers do not say otherwise (equal, or missing
+     * on either side). Two people who share a name but have different Aadhaar
+     * numbers are both printed.
+     */
+    private static Boolean isSamePurchaser(Map<String, Set<String>> printed, String nameKey, String aadhaar) {
+        if (!printed.containsKey(nameKey)) {
+            return false;
+        }
+        String digits = aadhaarDigits(aadhaar);
+        Set<String> known = printed.get(nameKey);
+        return String.isBlank(digits) || known.contains('') || known.contains(digits);
+    }
+
+    private List<ApplicantEntry> buildAllApplicants() {
+        List<ApplicantEntry> result = new List<ApplicantEntry>(applicants);
+        if (booking == null || booking.Id == null) {
+            return result;
+        }
+
+        Set<String> printedNames = new Set<String>();
+        Map<String, Set<String>> printedAadhaars = new Map<String, Set<String>>();
+        for (ApplicantEntry entry : result) {
+            printedNames.add(normalizeApplicantName(entry.name));
+            rememberAadhaar(printedAadhaars, normalizeApplicantName(entry.name), entry.aadhaar);
+        }
+
+        for (Co_Applicant__c coApplicant : [
+            SELECT Full_Name__c, First_Name__c, Last_Name__c, Salutation__c, Date_of_Birth__c,
+                   Occupation__c, S_o_D_o_W_o__c, W_o_S_o_C_o_c__c, Address__c,
+                   Permenent_Address__c, Aadhar_Number__c, PAN_Number__c, Email__c
+            FROM Co_Applicant__c
+            WHERE Booking__c = :booking.Id
+            ORDER BY CreatedDate ASC, Name ASC
+        ]) {
+            String name = firstNonBlank(new List<String>{
+                coApplicant.Full_Name__c,
+                joinNames(coApplicant.First_Name__c, coApplicant.Last_Name__c)
+            });
+            String key = normalizeApplicantName(name);
+            if (String.isBlank(key) || isSamePurchaser(printedAadhaars, key, coApplicant.Aadhar_Number__c)) {
+                continue;
+            }
+            printedNames.add(key);
+            rememberAadhaar(printedAadhaars, key, coApplicant.Aadhar_Number__c);
+
+            ApplicantEntry entry = new ApplicantEntry(
+                result.size() + 1,
+                formalSalutation(coApplicant.Salutation__c),
+                name,
+                buildRelation(coApplicant.S_o_D_o_W_o__c, coApplicant.W_o_S_o_C_o_c__c),
+                coApplicant.Date_of_Birth__c,
+                coApplicant.Occupation__c,
+                firstNonBlank(new List<String>{
+                    coApplicant.Permenent_Address__c, coApplicant.Address__c, getPrimaryAddress()
+                }),
+                'Resident of ',
+                coApplicant.Aadhar_Number__c,
+                coApplicant.PAN_Number__c,
+                coApplicant.Email__c
+            );
+            entry.rawSalutation = coApplicant.Salutation__c;
+            result.add(entry);
+        }
+        return result;
+    }
+
+    // Clause 1.11 (flat payments only): the paid / balance amounts come from the
+    // Booking roll-up and formula fields; the receipts table lists the approved
+    // receipts that are not GST Amount / Additional Charge, totalled by its rows.
+
+    private List<ReceiptRow> flatReceiptRows;
+
+    public List<ReceiptRow> getFlatReceiptRows() {
+        if (flatReceiptRows == null) {
+            flatReceiptRows = new List<ReceiptRow>();
+            for (ReceiptRow row : receiptRows) {
+                if (!NON_FLAT_RECEIPT_TYPES.contains(row.getReceiptType())) {
+                    flatReceiptRows.add(row);
+                }
+            }
+        }
+        return flatReceiptRows;
+    }
+
+    public Boolean getHasFlatReceipts() {
+        return !getFlatReceiptRows().isEmpty();
+    }
+
+    /** TOTAL AMOUNT row: sum of the rows shown in the clause 1.11 table. */
+    public String getFormattedFlatReceiptTotal() {
+        Decimal total = 0;
+        for (ReceiptRow row : getFlatReceiptRows()) {
+            total += row.getAmount() == null ? 0 : row.getAmount();
+        }
+        return formatIndianCurrency(total);
+    }
+
+    /** "VENDEE/S has paid a sum of Rs. ..." - Booking__c.Total_Received_Flat_Amount__c. */
+    public String getFormattedTotalReceivedFlatAmount() {
+        return formatIndianCurrency(booking == null ? null : booking.Total_Received_Flat_Amount__c);
+    }
+
+    public String getTotalReceivedFlatAmountInWords() {
+        return amountInWords(booking == null ? null : booking.Total_Received_Flat_Amount__c);
+    }
+
+    /** "Balance Rs. ..." - Booking__c.Balance_Flat_Amount__c. */
+    public String getFormattedBalanceFlatAmount() {
+        return formatIndianCurrency(booking == null ? null : booking.Balance_Flat_Amount__c);
+    }
+
+    public String getBalanceFlatAmountInWords() {
+        return amountInWords(booking == null ? null : booking.Balance_Flat_Amount__c);
+    }
+
+    private static String joinNames(String firstName, String lastName) {
+        List<String> parts = new List<String>();
+        if (!String.isBlank(firstName)) {
+            parts.add(firstName.trim());
+        }
+        if (!String.isBlank(lastName)) {
+            parts.add(lastName.trim());
+        }
+        return String.join(parts, ' ');
     }
 
     // ------------------------------------------------------------------ amounts
@@ -1347,11 +1619,19 @@ public with sharing class AgreementOfSaleController {
         return floorValue.toUpperCase();
     }
 
-    /** "2BHK" */
+    /** "2BHK" from BHK Type: the Unit's, else the Booking's, else the Quote's. */
     public String getDrizzleFlatType() {
-        return selectedUnit == null || String.isBlank(selectedUnit.BHK_Type__c)
-            ? ''
-            : selectedUnit.BHK_Type__c.trim().toUpperCase().replace(' BHK', 'BHK');
+        String bhk = firstNonBlank(new List<String>{
+            selectedUnit == null ? null : selectedUnit.BHK_Type__c,
+            booking == null ? null : booking.BHK_Type__c,
+            booking == null || booking.Quote__r == null ? null : booking.Quote__r.BHK_Type__c
+        });
+        return String.isBlank(bhk) ? '' : bhk.trim().toUpperCase().replace(' BHK', 'BHK');
+    }
+
+    /** "East/North" when the Unit carries an East/North Facing charge, otherwise blank. */
+    public String getDrizzleFacing() {
+        return selectedUnit == null || selectedUnit.East_North_Facing__c == null ? '' : 'East/North';
     }
 
     public String getDrizzleFlatSize() {
@@ -1366,9 +1646,11 @@ public with sharing class AgreementOfSaleController {
         return selectedUnit == null ? '' : plainNumber(selectedUnit.Balcony_Area__c);
     }
 
-    /** Utility area is held in "Other Exclusive Area" on the unit. */
+    /** "Utility Area" on the unit; units entered earlier hold it in "Other Exclusive Area". */
     public String getDrizzleUtilityArea() {
-        return selectedUnit == null ? '' : plainNumber(selectedUnit.Other_Exclusive_Area__c);
+        return selectedUnit == null ? '' : plainNumber(selectedUnit.Utility_Area__c != null
+            ? selectedUnit.Utility_Area__c
+            : selectedUnit.Other_Exclusive_Area__c);
     }
 
     public String getDrizzleCommonArea() {
@@ -1383,11 +1665,11 @@ public with sharing class AgreementOfSaleController {
         return selectedUnit == null ? '' : plainNumber(selectedUnit.Internal_Wall_Area__c);
     }
 
-    /** "32.60" */
+    /** "32.60" - Unit "UDS (Sq yards.)" only. */
     public String getDrizzleUds() {
-        return selectedUnit == null || selectedUnit.UDS__c == null
+        return selectedUnit == null || selectedUnit.UDS_Sq_mts__c == null
             ? ''
-            : selectedUnit.UDS__c.setScale(2, System.RoundingMode.HALF_UP).toPlainString();
+            : selectedUnit.UDS_Sq_mts__c.setScale(2, System.RoundingMode.HALF_UP).toPlainString();
     }
 
     public String getDrizzleProjectName() {
@@ -1426,7 +1708,7 @@ public with sharing class AgreementOfSaleController {
     /** "MR. A & MR. B" */
     public String getDrizzleBuyerNames() {
         List<String> names = new List<String>();
-        for (ApplicantEntry applicant : applicants) {
+        for (ApplicantEntry applicant : getAllApplicants()) {
             names.add(applicant.getDrizzleName());
         }
         return String.join(names, ' & ');
@@ -1442,7 +1724,7 @@ public with sharing class AgreementOfSaleController {
     public String getDrizzleBuyerEmails() {
         List<String> emails = new List<String>();
         Set<String> seen = new Set<String>();
-        for (ApplicantEntry applicant : applicants) {
+        for (ApplicantEntry applicant : getAllApplicants()) {
             if (!String.isBlank(applicant.email) && !seen.contains(applicant.email.toLowerCase())) {
                 seen.add(applicant.email.toLowerCase());
                 emails.add(applicant.email.trim());

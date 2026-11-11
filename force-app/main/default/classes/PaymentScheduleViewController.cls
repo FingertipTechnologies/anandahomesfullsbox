@@ -19,6 +19,7 @@ public with sharing class PaymentScheduleViewController {
     public class PaymentScheduleWrapper {
         @AuraEnabled public Id id { get; set; }
         @AuraEnabled public String name { get; set; }
+        @AuraEnabled public Decimal serialNumber { get; set; }
         @AuraEnabled public String milestoneName { get; set; }
         @AuraEnabled public String status { get; set; }
         @AuraEnabled public Decimal amount { get; set; }
@@ -138,7 +139,7 @@ public with sharing class PaymentScheduleViewController {
             
             // Query all Payment Schedules
             List<Payment_Schedule__c> schedules = [
-                SELECT Id, Name, Milestone_Name__c, Master_Payment_Schedule__r.Name,
+                SELECT Id, Name, S_No__c, Sequence__c, Milestone_Name__c, Master_Payment_Schedule__r.Name,
                        Master_Payment_Schedule__r.Payment_Type__c,
                        Status__c, Demand_Raised__c,
                        Bank_Demand_Raised__c, Customer_Demand_Raised__c,
@@ -172,6 +173,7 @@ public with sharing class PaymentScheduleViewController {
                 PaymentScheduleWrapper wrapper = new PaymentScheduleWrapper();
                 wrapper.id = schedule.Id;
                 wrapper.name = schedule.Name != null ? schedule.Name : '';
+                wrapper.serialNumber = schedule.S_No__c != null ? schedule.S_No__c : schedule.Sequence__c;
                 wrapper.milestoneName = String.isNotBlank(schedule.Milestone_Name__c)
                     ? schedule.Milestone_Name__c
                     : (schedule.Master_Payment_Schedule__r != null
@@ -438,6 +440,7 @@ public with sharing class PaymentScheduleViewController {
         Decimal latestSequence;
         Boolean allBank = true;
         List<Payment_Schedule__c> schedulesToMarkDemanded = new List<Payment_Schedule__c>();
+        Set<Id> schedulesMissingDueDate = new Set<Id>();
         for (Payment_Schedule__c ps : schedules) {
             if (DemandComponentService.isTimeBasedSchedule(ps)) continue;
             Boolean isBank = ps.Booking__r.Funding_Type__c != null
@@ -482,14 +485,7 @@ public with sharing class PaymentScheduleViewController {
             upd.Demand_Date__c = Date.today();
             DemandComponentService.markRaised(upd, demandComponent, isBank);
             schedulesToMarkDemanded.add(upd);
-        }
-
-        if (DemandComponentService.includesFlat(demandComponent)) {
-            totalTdsAmount = totalTdsAmount.setScale(0, System.RoundingMode.HALF_UP);
-            totalFlatAmount = Math.max(
-                0,
-                totalPending - totalGstAmount - totalTdsAmount
-            );
+            if (ps.Due_Date__c == null) schedulesMissingDueDate.add(ps.Id);
         }
 
         if (useAmountOverrides == true) {
@@ -560,6 +556,11 @@ public with sharing class PaymentScheduleViewController {
         demand.Demand_Component__c = demandComponent;
         demand.Demand_Date__c = Date.today();
         demand.Due_Date__c = firstDueDate != null ? firstDueDate : Date.today().addDays(30);
+        for (Payment_Schedule__c scheduleUpdate : schedulesToMarkDemanded) {
+            if (schedulesMissingDueDate.contains(scheduleUpdate.Id)) {
+                scheduleUpdate.Due_Date__c = demand.Due_Date__c;
+            }
+        }
         // 'Individual Demand' is the active picklist value matching a one-off,
         // booking-scoped demand. PostSalesConstants.DEMAND_TYPE_AUTO maps to
         // 'Auto Demand' which is intentionally inactive on the picklist.

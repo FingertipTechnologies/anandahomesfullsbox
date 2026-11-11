@@ -5,7 +5,7 @@
     <head>
         <style type="text/css">
             /* Layout follows "CAPRI NOC FORMAT LOAN.docx"; the top margin leaves room for the letterhead. */
-            @page { size: A4; margin: 150pt 72pt 45pt 64pt; }
+            @page { size: A4; margin: 25pt 72pt 45pt 64pt; }
             body { font-family: 'Times New Roman', Times, serif; font-size: 10pt; color: #000; line-height: 1.2; }
             p { margin: 0; text-align: justify; }
             .gap { height: 11pt; }

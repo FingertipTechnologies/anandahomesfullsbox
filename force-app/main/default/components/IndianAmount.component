@@ -1,0 +1,25 @@
+<apex:component >
+    <!--
+        Prints a whole-rupee amount with Indian digit grouping, e.g. 29388690 -> 2,93,88,690.
+        dashIfZero="true" prints "-" for a blank or zero amount (as on the Drizzle cost estimation sheet).
+        No controller: the grouping is done with formula functions so it also works in renderAs="pdf".
+    -->
+    <apex:attribute name="value" type="Decimal" description="Amount to print (rounded to whole rupees)." />
+    <apex:attribute name="dashIfZero" type="Boolean" default="false" description="Print - when the amount is blank or zero." />
+    <apex:outputText value="{!IF(ROUND(NULLVALUE(value, 0), 0) = 0,
+            IF(dashIfZero, '-', '0'),
+            IF(0 > value, '-', '') &
+            IF(ROUND(ABS(value), 0) >= 10000000,
+                TEXT(FLOOR(ROUND(ABS(value), 0) / 10000000)) & ',' &
+                LPAD(TEXT(FLOOR(MOD(ROUND(ABS(value), 0), 10000000) / 100000)), 2, '0') & ',' &
+                LPAD(TEXT(FLOOR(MOD(ROUND(ABS(value), 0), 100000) / 1000)), 2, '0') & ',' &
+                LPAD(TEXT(MOD(ROUND(ABS(value), 0), 1000)), 3, '0'),
+            IF(ROUND(ABS(value), 0) >= 100000,
+                TEXT(FLOOR(ROUND(ABS(value), 0) / 100000)) & ',' &
+                LPAD(TEXT(FLOOR(MOD(ROUND(ABS(value), 0), 100000) / 1000)), 2, '0') & ',' &
+                LPAD(TEXT(MOD(ROUND(ABS(value), 0), 1000)), 3, '0'),
+            IF(ROUND(ABS(value), 0) >= 1000,
+                TEXT(FLOOR(ROUND(ABS(value), 0) / 1000)) & ',' &
+                LPAD(TEXT(MOD(ROUND(ABS(value), 0), 1000)), 3, '0'),
+                TEXT(ROUND(ABS(value), 0))))))}" />
+</apex:component>

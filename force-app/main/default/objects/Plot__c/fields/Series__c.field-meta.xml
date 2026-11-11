@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Series__c</fullName>
+    <description>Series of the flat within the tower (e.g. 04 for flat 504), printed in THE DRIZZLE booking form.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Series of the flat within the tower, printed in THE DRIZZLE booking form.</inlineHelpText>
+    <label>Series</label>
+    <length>50</length>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

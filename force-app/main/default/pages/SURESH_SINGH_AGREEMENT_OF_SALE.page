@@ -272,7 +272,6 @@ img { border:0; }
 </style>
 </head>
 <body>
-<apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(ownerMismatchMessage))}"><div style="border:1px solid #c00;color:#c00;padding:4px;margin-bottom:8px;font-size:9pt">{!ownerMismatchMessage}</div></apex:outputPanel>
 <div class="footer"><div class="c6q">Page <span class="c6s"><span class="pagenumber"></span></span> of <span class="c6s"><span class="pagecount"></span></span></div></div>
 <div class="c0 ag-tight">&#160;</div>
 <div class="c2"><span class="c1">AGREEMENT OF SALE</span></div>

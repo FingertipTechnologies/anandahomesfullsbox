@@ -17,7 +17,6 @@
 </style>
 </head>
 <body>
-<apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(ownerMismatchMessage))}"><div style="border:1px solid #c00;color:#c00;padding:4px;margin-bottom:8px;font-size:9pt">{!ownerMismatchMessage}</div></apex:outputPanel>
 <p style="margin:0pt 0 0pt 0;text-align:center"><b><u><span style="font-size:14pt;">AGREEMENT OF SALE</span></u></b></p>
 <p style="margin:0">&#160;</p>
 <p style="margin:0pt 0 8pt 0;text-align:justify;text-indent:36pt">This <b>AGREEMENT OF SALE </b>is made and executed on this the&#160;<apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,dd}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText> day of&#160;<apex:outputText value="{0,date,MMMM yyyy}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">______ day of ____________</apex:outputPanel><b></b>, at Ranga Reddy District, Telangana State, by and between: -</p>

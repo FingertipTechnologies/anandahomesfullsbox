@@ -161,6 +161,11 @@ public with sharing class AgreementOfSaleController {
             return line + ', ';
         }
 
+        /** Same as getDeedNameLine; the name the MAGHAN page was built against. */
+        public String getDeedNameRelationLine() {
+            return getDeedNameLine();
+        }
+
         /** e.g. "aged about 30 years, Occupation: Business, Resident of Hyderabad. " */
         public String getDeedDetails() {
             List<String> details = new List<String>();
@@ -362,9 +367,22 @@ public with sharing class AgreementOfSaleController {
             this.receipt = receipt;
         }
 
+        /**
+         * How the money came in (NEFT, Cheque, UPI ...): the receipt's Payment Method, else the
+         * older Mode of Payment field. Never the receipt type (Advance / Installment Payment),
+         * which is what the deed's "Mode" column was wrongly showing.
+         */
+        public String getPaymentMethod() {
+            if (!String.isBlank(receipt.Payment_Method__c)) {
+                return receipt.Payment_Method__c;
+            }
+            return receipt.Mode_of_payment__c;
+        }
+
         public String getMode() {
-            if (!String.isBlank(receipt.Mode_of_payment__c)) {
-                return receipt.Mode_of_payment__c;
+            String method = getPaymentMethod();
+            if (!String.isBlank(method)) {
+                return method;
             }
             return receipt.Receipt_Type__c;
         }
@@ -680,7 +698,7 @@ public with sharing class AgreementOfSaleController {
 
     private void loadPaymentRecords(Id bookingId) {
         for (Receipt__c receipt : [
-            SELECT Id, Receipt_Date__c, Mode_of_payment__c, Payment_Reference_Number__c,
+            SELECT Id, Receipt_Date__c, Mode_of_payment__c, Payment_Method__c, Payment_Reference_Number__c,
                    Cheque_Number__c, Check_Transaction_Nmber__c, Amount_received__c,
                    Receipt_Type__c
             FROM Receipt__c

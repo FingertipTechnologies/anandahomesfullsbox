@@ -14,9 +14,13 @@ div { margin:0; }
 table { margin:0; page-break-inside:auto; border-spacing:0; }
 tr { page-break-inside:avoid; }
 td { word-wrap:break-word; }
-td div { page-break-inside:auto; }
+td div { page-break-inside:avoid; }
 img { border:0; }
 .footer { position: running(footer); }
+/* blank lines carry no extra space-after; clause headings stay with their text */
+.ag-tight{padding-bottom:0}
+.ag-label{display:inline-block;width:72pt}
+.c2v{page-break-after:avoid}
 .header { position: running(header); }
 .pagenumber:before { content: counter(page); }
 .pagecount:before { content: counter(pages); }
@@ -93,7 +97,7 @@ img { border:0; }
 .c1y{text-align:justify;text-indent:36pt;padding-bottom:8pt;line-height:14.83pt;font-size:12.02pt;font-family:'Times New Roman', Times, serif}
 .c1z{text-align:justify;text-indent:36pt;line-height:14.83pt;font-size:12.02pt;font-family:'Times New Roman', Times, serif}
 .c20{text-align:justify;text-indent:36pt;line-height:4.69pt;font-size:3.8pt;font-family:'Times New Roman', Times, serif}
-.c21{border-collapse:collapse;table-layout:fixed;width:451.3pt;page-break-inside:avoid;margin-left:-10pt}
+.c21{border-collapse:collapse;table-layout:fixed;width:451.3pt;page-break-inside:avoid;margin-left:auto;margin-right:auto}
 .c22{height:30pt}
 .c23{border-top:0.5pt solid #000;border-right:0.5pt solid #000;border-bottom:0.5pt solid #000;border-left:0.5pt solid #000;padding:0 5.4pt 0 5.4pt;vertical-align:top}
 .c24{border-top:0.5pt solid #000;border-right:0.5pt solid #000;border-bottom:0.5pt solid #000;border-left:0.5pt solid #000;padding:0 5.4pt 0 5.4pt;vertical-align:middle}
@@ -246,7 +250,7 @@ img { border:0; }
 .c67{height:37pt}
 .c68{text-align:justify;padding-bottom:8pt;line-height:18.75pt;font-size:15.2pt;font-family:'Times New Roman', Times, serif}
 .c69{text-align:center;padding-bottom:8pt;line-height:18.75pt;font-size:15.2pt;font-family:'Times New Roman', Times, serif}
-.c6a{border-collapse:collapse;table-layout:fixed;width:203pt;page-break-inside:avoid;margin-left:-5.4pt}
+.c6a{border-collapse:collapse;table-layout:fixed;width:203pt;page-break-inside:avoid}
 .c6b{height:15.75pt}
 .c6c{font-size:9.5pt;font-family:'Times New Roman', Times, serif}
 .c6d{line-height:11.72pt;font-size:9.5pt;font-family:'Times New Roman', Times, serif}
@@ -270,72 +274,31 @@ img { border:0; }
 <body>
 <apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(ownerMismatchMessage))}"><div style="border:1px solid #c00;color:#c00;padding:4px;margin-bottom:8px;font-size:9pt">{!ownerMismatchMessage}</div></apex:outputPanel>
 <div class="footer"><div class="c6q">Page <span class="c6s"><span class="pagenumber"></span></span> of <span class="c6s"><span class="pagecount"></span></span></div></div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
+<div class="c0 ag-tight">&#160;</div>
 <div class="c2"><span class="c1">AGREEMENT OF SALE</span></div>
-<div class="c3">&#160;</div>
+<div class="c3 ag-tight">&#160;</div>
 <div class="c8"><span class="c4">This </span><span class="c5">AGREEMENT OF SALE </span><span class="c4">is made and executed on this the </span><span class="c6"><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,dd}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">____</apex:outputPanel></span><span class="c4"> day of</span><span class="c5"> </span><span class="c7"><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,MMMM yyyy}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">____________ ______</apex:outputPanel></span><span class="c4">, at Ranga Reddy District, Telangana State, by and between: </span></div>
 <div class="ca"><span class="c5">1).</span><span class="c9"></span><span class="c5">SRI K. SURESH SINGH, S/o. Late SRI DHAN SINGH,</span><span class="c4"> aged about 53 years, Occupation: Business, Resident of H.No.12-1-325/E, Asif Nagar, Near Dattatreya Nagar, Hyderabad-500028, Telangana State. (Aadhar No.5705 3649 6318 &amp; PAN No. DUIPS3658K) herein after called as Vendor 1.</span></div>
 <div class="cc"><span class="c5">2)</span><span class="c4"> </span><span class="cb"></span><span class="c5">SRI</span><span class="c4"> </span><span class="c5">K. ASHWIN SINGH</span><span class="c4">, </span><span class="c5">S/o. SURESH SINGH</span><span class="c4">, aged about 25 years, Occupation: Student, Resident of H.No.12-1-325/E, Asif Nagar, Near Dattatreya Nagar, Hyderabad-500028, Telangana State. (Aadhaar No.5322 7123 0757 &amp; PAN No. EMSK9040Q) herein after called as Vendor 2.</span></div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
-<div class="cc">&#160;</div>
+<div class="cc ag-tight">&#160;</div>
 <div class="cc"><span class="c5">3)</span><span class="c4">&#160; </span><span class="cd"></span><span class="c5">SRI K. HRITHIK SINGH</span><span class="c4">, </span><span class="c5">S/O. SURESH SINGH</span><span class="c4">, aged about 23 years, Occupation: Student, Resident of H.No.12-1-325/E, Asif Nagar, Near Dattatreya Nagar, Hyderabad-500028, Telangana State. (Aadhaar No.6541 7093 5984 &amp; PAN No. HVJPK8423C) here in after called as Vendor 3.</span></div>
 <div class="ch"><span class="ce">REPRESENTED BY THEIR AGREEMENT OF SALE-CUM-G.P.A. HOLDER: </span><span class="c5">- M/s. ANANDA HOMES</span><span class="c4">, (</span><span class="cf">pan</span><span class="c4"> No. ABFFA6591E), having its Registered Office at Flat No. A1, Vista Residency, Road No.4, Plot Nos.81 &amp; 82, Block-D, Sector-I, Alkaapoor Township, Manikonda Village, Gandipet Mandal, Ranga Reddy District, Telangana State-500089, Represented by its Managing Partner: </span><span class="cg">Sri. P.V. Sreenivasulu, S/o. Sri. P. C. V. Ramanaiah</span><span class="c4">, aged about 51 years, Occupation: Business, Resident of Neknampur Village, Gandipet Mandal, Ranga Reddy District, Telangana State-500 089 (AADHAAR No.7420 0525 3319, PAN No. ACNPP9239K).</span></div>
 <div class="ch"><span class="c4">(Vide </span><span class="c5">A.G.P.A. Registered as Document No.577 of 2025, </span><span class="c4">Book-I, dated: 10/01/2025, Registered at S.R.O. Gandipet, Ranga Reddy District, Telangana State).</span></div>
 <div class="ci"><span class="cg">Hereinafter</span><span class="c4"> called the</span><span class="c5"> (DEVELOPER/AGPA HOLDER) </span><span class="c4">which term shall mean and include their legal heirs, executors, successors, representatives&#8217; administrators and assignees etc., of the</span><span class="c5"> ONE PART.</span></div>
 <div class="ck"><span class="cj">IN FAVOUR OF</span></div>
-<div class="cl">&#160;</div>
-<apex:repeat value="{!applicants}" var="applicant"><div class="cn">{!applicant.sequence}.<span class="cm"></span><span class="c7">{!applicant.displayName}, {!applicant.legalDetails}.</span></div></apex:repeat>
-<div class="co">&#160;</div>
+<div class="cl ag-tight">&#160;</div>
+<apex:repeat value="{!allApplicants}" var="applicant"><div class="cn">{!applicant.sequence}.<span class="cm"></span><span class="c7">{!applicant.deedNameLine}</span><span class="c6">{!applicant.deedDetails}</span><span class="c7">{!applicant.deedIds}</span></div></apex:repeat>
+<div class="co ag-tight">&#160;</div>
 <apex:outputPanel layout="none" rendered="{!NOT(hasApplicants)}">Applicant information is missing.</apex:outputPanel>
 <div class="cp"><span class="cg">Hereinafter</span><span class="c4"> called the </span><span class="c5">&#8220;VENDEE(S)/</span><span class="c4"> </span><span class="c5">ALLOTTEE</span><span class="c4"> </span><span class="c5">/</span><span class="c4"> </span><span class="c5">PURCHASE&#8221;</span><span class="c4">, which term shall mean and include all his/her heirs, executors, administrators, legal representatives, nominees and assignees etc., of the </span><span class="c5">OTHER PART</span><span class="c4">.</span></div>
-<div class="cq">&#160;</div>
+<div class="cq ag-tight">&#160;</div>
 <div class="c8"><span class="c4">WHEREAS the father of the Vendor no.1 herein late Dhan Singh having share in the land in Sy.No.127, 129, 130, 133, 134, 145, 147, 148 &amp; 149 total admeasuring Ac.21 : 19 guntas, situated at Puppalguda Village, Rajendra Nagar Mandal, presently in Gandipet Mandal, Ranga Reddy District, Telangana State.</span></div>
-<div class="cr">&#160;</div>
+<div class="cr ag-tight">&#160;</div>
 <div class="ci"><span class="c4">&#160; &#160; &#160; &#160; &#160;WHEREAS&#160; late Dhan Singh during his life time filed a suit for partition and separate possession claiming in the&#160; respect of land in Sy.127, 129, 130, 133, 134, 145, 147, 148 &amp; 149 admeasuring Ac.21 : 19 guntas,&#160; situated at Puppalguda Village, presently in Gandipet Mandal, Ranga Reddy District, vide O.S.No.473 of 2000 on the file of Hon'ble IV Additional Senior Civil Judge (FTC), Ranga Reddy District at&#160; L.B. Nagar against the Satyanarayana Singh and Ramesh Singh and the said suit was&#160; dismissed in the year 2009.&#160; &#160;after due contest Aggrieved by the said Judgment Dhan Singh preferred appeal before the Hon&#8217;ble High Court of Telangana vide A.S.No.552 of 2009.&#160; During pending of the appeal Dhan Singh, Satyanarayana Singh and Ramesh Singh were died and their legal heirs have brought on record and thereafter due to the intervention of the family elders and well-wishers the matter has been settled between the parties amicably and accordingly all the parties entered into a memorandum of compromise dated 14-08-2020 and the same has been filed in A.S.No.552 of 2009 before the Hon&#8217;ble High Court of Telangana in the compromise the vendor No.1 along with his brothers Arjun Singh and Sudheer Singh herein got the land admeasuring Ac.05:17 guntas out of the total extent of land admeasuring Ac.21:19 guntas, in Sy.Nos 127, 129, 130, 133, 134, 145, 147, 148 &amp; 149 situated at Puppalguda Village, Gandipet Mandal, Ranga Reddy District.</span></div>
 <div class="ci"><span class="c4">WHEREAS late Satyanarayana Singh during the pendency of the partition suit vide O.S.No.473 of 2000 entered into a Registered deed of Exchange vide Doct.no.9130 of 2004 dated 29-11-2004 with Mr. B. Vijay and four others, who are the owners of the land in Sy.No.128/1, admeasuring Ac.1 : 02 guntas, situated at Puppalguda Village, Gandipet Mandal, Ranga Reddy District, purchased the said land in the Auction conducted by the Government vide proceedings no.LC2/7279/2003 dated 20-09-2003.&#160; In the said exchange deed late Satyanarayana Singh had exchanged the land by giving the land admeasuring Ac.00 : 15.5 guntas, out of his share of land admeasuring Ac.00 : 18 guntas in Sy.No.127, situated at Puppalguda Village, Rajendra Nagar Mandal, presently in Gandipet Mandal, Ranga Reddy District, by taking the land admeasuring Ac.00:15.5 guntas, out of Ac.01:02 guntas, in Sy.No.128/1, situated at Puppalguda Village, Gandipet Mandal, Ranga Reddy District with the distinct boundaries. </span></div>
-<div class="cs">&#160;</div>
+<div class="cs ag-tight">&#160;</div>
 <div class="c8"><span class="c4">WHEREAS late Satyanarayana Singh also entered into another deed of exchange vide Doc.No.57 of 2006 dated 02-01-2006 with one K.Rama Krishna Reddy S/o. K.Ram Reddy by exchanging the land by giving 597 Sq. Yards of land in Sy.No.127, 129 and 130 situated at Puppalguda Village, Rajendra Nagar Mandal, presently in Gandipet Mandal, Ranga Reddy District by taking the land admeasuring 600 Sy.yards, in Sy.No.128/3, situated at Puppalguda Village, Gandipet Mandal, Ranga Reddy District with the distinct boundaries.</span></div>
-<div class="ci">&#160;</div>
+<div class="ci ag-tight">&#160;</div>
 <div class="c8"><span class="c4">WHEREAS after exchange of the land the total extent of the land admeasuring Ac.21:19 guntas, falls in the respective survey numbers as follows: </span></div>
 <div style="page-break-inside:avoid"><table class="ct">
 <colgroup>
@@ -404,16 +367,16 @@ img { border:0; }
 <td class="cz"><div class="c0"><span class="c4">Ac. 6 : 28 Gts</span></div></td>
 </tr>
 <tr class="cx">
-<td class="cy"><div class="c0">&#160;</div></td>
+<td class="cy"><div class="c0 ag-tight">&#160;</div></td>
 <td class="cz"><div class="c0"><span class="c5">Total Extent</span></div></td>
 <td class="cz"><div class="c0"><span class="c5">Ac.21 : 19 Gts</span></div></td>
 </tr>
 </table></div>
-<div class="c8">&#160;</div>
+<div class="c8 ag-tight">&#160;</div>
 <div class="c8"><span class="c4">WHEREAS, after entering into compromise the parties in the appeal case vide A.S.No.552 of 2009 entered into Memorandum of Understanding-cum-family Settlement deed dated 17-08-2020 for division of lands by dividing the survey numbers and its extent of the land by all the shareholders.</span></div>
 <div class="c8"><span class="c4">WHEREAS in the said Memorandum of Understanding -cum -Family Settlement Deed dated:17-08-2020, the VENDOR NO.1 along with his brothers who are all the children of Late Dhan Singh got the land in Sy.No.130 admeasuring Ac.01:09 gts,in Sy.No.145 admeasuring Ac.00: 20 gts, in Sy.No.147 admeasuring Ac.00:11gts, in Sy.No.148 admeasuring Ac.03:02 gts and in Sy.No.149 admeasuring Ac.00:15 gts, total admeasuring&#160; Ac.05:17 gts, situated at Puppalguda Village, Gandipet Mandal, Ranga Reddy District.</span></div>
 <div class="c8"><span class="c4">WHEREAS, the VENDOR NO.1 along with his brothers who are all children of late Dhan Singh became the absolute owners and peaceful possessors of the property of land in Survey No.130, 145, 147, 148 &amp; 149,</span><span class="c5"> </span><span class="c4">total extent of land admeasuring Ac.05:17 Guntas, situated at Puppalguda Village, Under Manikonda Municipality, Gandipet Mandal, Ranga Reddy District, Telangana State, by virtue of&#160; Memorandum of compromise decree passed in A.S.No.552 of 2009 before the Hon'ble High Court of Telangana, at Hyderabad and subsequently got mutated their names in the revenue records vide proceedings No: B/387/2020 Dated: 27-08-2020 by the Tahsildar, Gandipet Mandal, Ranga Reddy District.&#160; The shares allotted to the respective parties mentioned as follows: </span></div>
-<div class="c8">&#160;</div>
+<div class="c8 ag-tight">&#160;</div>
 <div style="page-break-inside:avoid"><table class="c10">
 <colgroup>
 <col style="width:36.6pt"/>
@@ -479,7 +442,7 @@ img { border:0; }
 <div class="ci"><span class="c4"> </span></div>
 <div class="c8"><span class="c4">WHEREAS the VENDOR NO.1 herein as per mutation process&#160; got share in the land in Sy.No.130, 145, 147, 148 &amp; 149 admeasuring Ac.1:32 guntas by virtue of succession from ancestral family property situated at Puppalguda Village, Gandipet Mandal, Ranga Reddy District, Telangana State and&#160; as per compromise decree in A.S.No.552 of 2009 before The Hon'ble High Court for The State Of Telangana, at Hyderabad and subsequently got mutated their names in the revenue records vide proceedings No: B/387/2020, Dated:27-08-2020 by the Tahsildar, Gandipet Mandal, Ranga Reddy District. Which is clearly mentioned in the below table:</span></div>
 <div class="c8"><span class="c4">Thus, the VENDOR NO.1 have obtained Pattedar Pass Book No. T05070070208, Khata No.60196 for an extent of Ac.01-09 Gts., situated in Puppalguda Village, Gandipet Mandal, Ranga Reddy District, Telangana State as per the details given in the below table.</span></div>
-<div class="c8">&#160;</div>
+<div class="c8 ag-tight">&#160;</div>
 <div style="page-break-inside:avoid"><table class="c13">
 <colgroup>
 <col style="width:41.6pt"/>
@@ -497,26 +460,26 @@ img { border:0; }
 <td class="c16"><div class="c15"><span class="c4">1.</span></div></td>
 <td class="c16"><div class="c15"><span class="c4">Sri. Suresh Singh,</span></div>
 <div class="c19"><span class="c4">S/o. Late Dhan Singh</span></div></td>
-<td class="c16"><div class="c17">&#160;</div>
+<td class="c16"><div class="c17 ag-tight">&#160;</div>
 <div class="c17"><span class="c4">147/E/1</span></div>
 <div class="c1a"><span class="c4">148/AA/3</span></div>
 <div class="c1b"><span class="c4">148/E/1</span></div>
 <div class="c1b"><span class="c4">149/6</span></div>
-<div class="c1b">&#160;</div>
+<div class="c1b ag-tight">&#160;</div>
 <div class="c1b"><span class="c5">Total</span></div></td>
-<td class="c16"><div class="c1c">&#160;</div>
+<td class="c16"><div class="c1c ag-tight">&#160;</div>
 <div class="c1c"><span class="c4">0-03</span></div>
 <div class="c1d"><span class="c4">0-23</span></div>
 <div class="c1e"><span class="c4">0-18</span></div>
 <div class="c1e"><span class="c4">0-05</span></div>
-<div class="c1e">&#160;</div>
+<div class="c1e ag-tight">&#160;</div>
 <div class="c1b"><span class="c5">Ac.1-09gts.</span></div></td>
 </tr>
 </table></div>
-<div class="ci">&#160;</div>
+<div class="ci ag-tight">&#160;</div>
 <div class="c1f"><span class="c4">Whereas the VENDOR NO.1 by consenting all his family members for more advantage and comfort, with an intention to derive a better advantage approached the VENDEE herein, as the VENDEE herein is a well experienced builder, for development of a Residential Complex in the locality and the VENDOR NO.1 to 3 entered into Registered Development Agreement-cum-GPA, Dated:13/08/2021 registered as Document No.131/2021 registered in the office of the Tahsildar &amp; Joint Sub Registrar, Gandipet, Ranga Reddy District, in respect of land bearing Survey No.147/E/1, 148/AA/3, 148/E/1 &amp; 149/6 totally admeasuring Ac.1-09 gts., situated at Puppalguda Village, Gandipet Mandal, under Manikonda Municipality, Ranga Reddy District. </span></div>
 <div class="c1g"><span class="c4">Whereas VENDOR No.1 have obtained another extent of Land through Succession and got it mutated and added into their Pass Book No.</span><span class="c5"> T05070070208,</span><span class="c4"> Khata No.</span><span class="c5">60196 </span><span class="c4">as per the details given below:</span></div>
-<div class="c1h">&#160;</div>
+<div class="c1h ag-tight">&#160;</div>
 <div style="page-break-inside:avoid"><table class="c13">
 <colgroup>
 <col style="width:41.6pt"/>
@@ -534,46 +497,35 @@ img { border:0; }
 <td class="c16"><div class="c15"><span class="c4">1.</span></div></td>
 <td class="c16"><div class="c15"><span class="c4">Sri.Suresh Singh,</span></div>
 <div class="c19"><span class="c4">S/o.Late Dhan Singh</span></div></td>
-<td class="c16"><div class="c17">&#160;</div>
+<td class="c16"><div class="c17 ag-tight">&#160;</div>
 <div class="c17"><span class="c4">130/AA/3</span></div>
 <div class="c1a"><span class="c4">130/E/1</span></div>
 <div class="c1b"><span class="c4">145/1/1/1/1/1/2, </span></div>
 <div class="c1b"><span class="c5">Total</span></div></td>
-<td class="c16"><div class="c1c">&#160;</div>
+<td class="c16"><div class="c1c ag-tight">&#160;</div>
 <div class="c1c"><span class="c4">0-07</span></div>
 <div class="c1d"><span class="c4">0-09</span></div>
 <div class="c1e"><span class="c4">0-07</span></div>
-<div class="c1e">&#160;</div>
+<div class="c1e ag-tight">&#160;</div>
 <div class="c1b"><span class="c5">Ac.0.23 gts.</span></div></td>
 </tr>
 </table></div>
-<div class="c1i">&#160;</div>
+<div class="c1i ag-tight">&#160;</div>
 <div class="c1i"><span class="c1j">Whereas the VENDOR No.1 with consent of all the family members entered into the Registered Development Agreement-cum-GPA registered as Document No.9017/2023, Dated:2/12/2023, registered in the office of the Sub Registrar, Gandipet, Ranga Reddy District, in respect of land bearing Survey No.130/AA/3, 130/E/1 &amp; 145/1/1/1/1/1/2, totally admeasuring Ac.0.23 gts., situated at PUPPALGUDA VILLAGE, Gandipet Mandal, under Manikonda Municipality, Ranga Reddy District, Whereas the VENDOR No.1 with consent of all the family members have decided to give the schedule mentioned property shown in the above table to an Extent of Ac.0-23 Gts to the Vendee /Attorney herein in continuation of earlier DAGPA Doct. No.131/2021 Dt.13/08/2021 executed by VENDOR No.1 to 3 in favour of Developer for more advantage, comfort and convenient of the transaction of development of the schedule mentioned property and, in a time bound programme and with an intention to derive a better advantage.</span></div>
-<div class="c1k">&#160;</div>
+<div class="c1k ag-tight">&#160;</div>
 <div class="c1i"><span class="c1l"></span><span class="c1j">Whereas as per the Registered Development Agreement-cum-GPA Doct.No.131/2021, only apportionment of percentage in the constructed area have been mentioned i.e., 35.5% to the VENDOR No.1 to 3 64.5% to the Developer / AGPA Holder. Whereas the VENDOR 1 has also applied for conversion of land from agriculture to non-agriculture to the Tahsildar, Gandipet Mandal, Ranga Reddy District, in respect of land bearing Survey No&#8217;s. 130/AA/3, 130/E/1 &amp; 145/1/1/1/1/1/2, 147/E/1, 148/AA/3, 148/E/1 &amp; 149/6, totally admeasuring Ac.1.32 gts., situated at Puppalguda Village, Gandipet Mandal, Ranga Reddy District. The Tahsildar, Gandipet Mandal, accorded permission for conversion of agriculture land to non-agriculture vide </span><span class="c1m">Proceedings No.2300512242,</span><span class="c1j"> Dated:11/07/2023.</span></div>
-<div class="c1n">&#160;</div>
+<div class="c1n ag-tight">&#160;</div>
 <div class="c1p"><span class="c1j">WHEREAS the AGPA Holder herein has also entered several Development Agreements-cum-GPAs in respect of adjacent lands belongs to other owners. The AGPA Holder being the Developer of the land has obtained HMDA approved plan for 11Blocks with 3 basements + Ground + 22 floors and 12</span><span class="c1o">th</span><span class="c1j"> Block with 3 cellars + Ground + 5 upper floors, Amenities Block-1, 3 Cellars + Ground + 4 upper floors and Amenities Block-2 with 3 Cellars + Ground+3 upper floors in Survey No.128/P, 129, 130/P, 145, 147, 147/P, 148 and 149, to an extent of </span><span class="c1m">73,240.67 Sq. Meters </span><span class="c1j">or </span><span class="c1m">Ac: 18.04 gts</span><span class="c1j">, situated at Puppalguda Village, Gandipet Mandal, Rangareddy District, by virtue of Permission </span><span class="c1m">No. 01722/SKP/PLG/HMDA/2022, </span><span class="c1j">Dated:25/06/2024,</span><span class="c4">and the project was named as </span><span class="c5">&#8220;THE LEGACEY</span><span class="c4">&#8221; In the process of getting the above HMDA permissions, an area to the extent of </span><span class="c5">5761.65 Sq. Meters</span><span class="c4"> equivalent to </span><span class="c5">6890.88 Square Yards</span><span class="c4">, out of the entire extent of </span><span class="c5">73240.67 Sq. Meters</span><span class="c4"> equivalent to </span><span class="c5">87595.11 Sq. Yards</span><span class="c4"> is gifted for widening of Road, which is registered in favor of The Commissioner, Manikonda Municipality vide Registered </span><span class="c5">Gift Deed Document No: 16083/2023, </span><span class="c4">Dated:29/12/2023,</span><span class="c5"> </span><span class="c4">registered at S.R.O., Gandipet. Hence, M/s. Ananda Homes &amp; Others is developing the project in the extent of 67479.02 Sq. Meters Equivalent to 80704.23 Sq. Yards (after adjusting the area under road widening and considering the physical availability) referred to as the Total Property and is described in details in the Schedule A hereto, and the same is accepted by all the Land Owners in this project including the VENDORS NO.1 TO 3.</span></div>
 <div class="c8"><span class="c4">AND WHEREAS, The Developer / AGPA holder had registered the Project&#160; THE LEGACEY for 11 (eleven) Blocks, with 3 Basements, and Ground Floor, and 22 Upper Floors, 12</span><span class="c1q">th</span><span class="c4"> Block with 3 Cellars, Ground Floor and 5 Upper Floors, Amenities Block-I, 3 Cellars and Ground Floor, 4 Upper Floors, and Amenities Block-II, with 3 Cellars, Ground Floor and 3 Upper Floors,&#160; &#160;under the provisions of the Act with the </span><span class="c5">Telangana Real Estate Regulatory Authority(TSRERA)</span><span class="c4"> at Hyderabad and has been granted </span><span class="c5">registration No.</span><span class="c4"> </span><span class="c5">P02400008615,</span><span class="c4"> dated:07/08/2024.</span></div>
-<div class="c1r">&#160;</div>
+<div class="c1r ag-tight">&#160;</div>
 <div class="c1i"><span class="c1j">Whereas the VENDOR No.1 with consent of all the family members entered into the Registered Development Agreement-cum-GPA registered as Document No.9017/2023, Dated:2/12/2023, registered in the office of the Sub Registrar, Gandipet, Ranga Reddy District, in respect of land bearing Survey No.130/AA/3, 130/E/1 &amp; 145/1/1/1/1/1/2, totally admeasuring Ac.0.23 gts., situated at PUPPALGUDA VILLAGE, Gandipet Mandal, under Manikonda Municipality, Ranga Reddy District, Whereas the VENDOR No.1 with consent of all the family members have decided to give the schedule mentioned property shown in the above table to an Extent of Ac.0-23 Gts to the Vendee /Attorney herein in continuation of earlier DAGPA Doct. No.131/2021 Dated:13/08/2021 executed by VENDOR No.1 to 3 in favor of Developer for more advantage, comfort and convenient of the transaction of development of the schedule mentioned property and, in a time bound programme and with an intention to derive a better advantage.</span></div>
-<div class="c1i">&#160;</div>
-<div class="c1s">&#160;</div>
+<div class="c1i ag-tight">&#160;</div>
 <div class="c1i"><span class="c1j">WHEREAS at the time of entering into Registered Development Agreement-cum-GPA vide&#160; being the builder applied and acquired the building permission from HMDA for 11 Blocks with 3 basements with Ground + 22 floors and 12th Block with 3 cellars + Ground + 5 upper floors, Amenities Block-1, 3 Cellars + Ground + 4 upper floors and Amenities Block-2 with 3 Cellars + Ground + 3 upper floors, now in the changed circumstances and increase in the floors and constructed area, the VENDOR NO.1 to 3 will be entitled for </span><span class="c1m">32.75% </span><span class="c1j">and the Developer is entitled to </span><span class="c1m">67.25%</span><span class="c1j"> which will supersede the percentage as agreed in the Registered Development Agreement-cum-GPA bearing Document No.131/2021, Dated:13/08/2021 and the same was reduced in the Registered Supplementary Agreement vide Doct.No16081/2023,dated:29/12/2023, registered at Sub-Registrar, Gandipet, Rangareddy District.</span></div>
 <div class="cp"><span class="c1t"></span><span class="c4">Whereas the Vendees of this agreement have given consent to the Developer to purchase TDR from third parties and to raise 2 upper floors over and above Ground+22nd floor i.e. the 23rd&#160; and 24th&#160; floors and the same shall be the exclusive property of the Developer wherein they will not have any right to claim any share of whatsoever nature and further the Vendee have also agreed to share the Proportionate undivided share of land among the floors and flats of all Ground + 22 floors they have no objection of whatsoever nature.</span></div>
-<div class="c1u">&#160;</div>
-<div class="c1y"><span class="c4">WHEREAS the VENDOR NO.2 TO 3 are the sons of the VENDOR NO.1 and the VENDOR NO.1 TO 3 in consultation of each other came to a conclusion to sell developed area of </span><span class="c1v"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!totalOwnerSaleableArea}"/></apex:outputText> square feet</span><span class="c1w"> </span><span class="c5"> Square Feet</span><span class="c4"> for their convenience and necessities, as per the </span><span class="c5">Registered Supplementary Agreement vide Doct.No.16081/2023,</span><span class="c4"> Dated:29/12/2023, </span><span class="c1w">and made their proposal with the Developer / AGPA Holder herein who is the builder of the VENDOR NO.1 TO 3 and the Developer / AGPA Holder herein agreed to purchase the area of </span><span class="c1x"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!totalOwnerSaleableArea}"/></apex:outputText></span><span class="c1w"> square feet for the sale consideration mentioned above. However, the flats allocated against the developed area allocated to vendor no.1 to 3 will be allocated with only one car parking to each flat, the flats which are agreed to be sold is shown in the below mentioned table:</span></div>
+<div class="c1u ag-tight">&#160;</div>
+<div class="c1y"><span class="c4">WHEREAS the VENDOR NO.2 TO 3 are the sons of the VENDOR NO.1 and the VENDOR NO.1 TO 3 in consultation of each other came to a conclusion to sell developed area of </span><span class="c1v"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText> square feet</span><span class="c1w"> </span><span class="c5"> Square Feet</span><span class="c4"> for their convenience and necessities, as per the </span><span class="c5">Registered Supplementary Agreement vide Doct.No.16081/2023,</span><span class="c4"> Dated:29/12/2023, </span><span class="c1w">and made their proposal with the Developer / AGPA Holder herein who is the builder of the VENDOR NO.1 TO 3 and the Developer / AGPA Holder herein agreed to purchase the area of </span><span class="c1x"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText></span><span class="c1w"> square feet for the sale consideration mentioned above. However, the flats allocated against the developed area allocated to vendor no.1 to 3 will be allocated with only one car parking to each flat, the flats which are agreed to be sold is shown in the below mentioned table:</span></div>
 <div class="c1z"><span class="c1w">WHEREAS, the VENDORS due to their personal and financial necessities, have sold the below - mentioned flats are hereunder to the AGPA Holder.&#160; And the Vendors have empowered the AGPA Holder to sell, transfer, alienate the above said flats to any prospective purchaser or purchasers, which is clearly mentioned in the APGA Document.</span></div>
-<div class="c1z">&#160;</div>
-<div class="c1z">&#160;</div>
-<div class="c1z">&#160;</div>
-<div class="c1z">&#160;</div>
-<div class="c1z">&#160;</div>
-<div class="c1z">&#160;</div>
-<div class="c1z">&#160;</div>
-<div class="c1z">&#160;</div>
-<div class="c1z">&#160;</div>
-<div class="c1z">&#160;</div>
-<div class="c20">&#160;</div>
+<div class="c1z ag-tight">&#160;</div>
 <div style="page-break-inside:avoid"><table class="c21">
 <colgroup>
 <col style="width:40.86pt"/>
@@ -593,28 +545,28 @@ img { border:0; }
 <td class="c24"><div class="c0"><span class="c5">SFT</span></div></td>
 <td class="c24"><div class="c0"><span class="c5">FACING</span></div></td>
 </tr>
-<apex:repeat value="{!ownerUnits}" var="entry">
+<apex:outputPanel layout="none" rendered="{!hasSelectedUnit}">
 <tr class="c22">
-<td class="c23"><div class="c0"><span class="c6">{!entry.sequence}</span></div></td>
+<td class="c23"><div class="c0"><span class="c6">1</span></div></td>
 <td class="c23"><div class="c25"><span class="c6">{!ownerDisplayName}</span></div></td>
-<td class="c24"><div class="c0"><span class="c6">{!entry.towerDisplay}</span></div></td>
-<td class="c24"><div class="c0"><span class="c6">{!entry.floorDisplay}</span></div></td>
-<td class="c24"><div class="c0"><span class="c6">{!entry.flatNumber}</span></div></td>
-<td class="c24"><div class="c0"><span class="c6"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!entry.unit.Saleable_Area_Sft__c}"/></apex:outputText></span></div></td>
-<td class="c24"><div class="c0"><span class="c6">{!entry.facingDisplay}</span></div></td>
+<td class="c24"><div class="c0"><span class="c6">{!selectedTowerName}</span></div></td>
+<td class="c24"><div class="c0"><span class="c6">{!selectedFloorDisplay}</span></div></td>
+<td class="c24"><div class="c0"><span class="c6">{!selectedFlatNumber}</span></div></td>
+<td class="c24"><div class="c0"><span class="c6"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText></span></div></td>
+<td class="c24"><div class="c0"><span class="c6">{!selectedFacingDisplay}</span></div></td>
 </tr>
-</apex:repeat>
+</apex:outputPanel>
 <tr class="c27">
-<td class="c23"><div class="c0">&#160;</div></td>
-<td class="c28"><div class="c0">&#160;</div></td>
-<td class="c28"><div class="c0">&#160;</div></td>
-<td class="c28"><div class="c0">&#160;</div></td>
+<td class="c23"><div class="c0 ag-tight">&#160;</div></td>
+<td class="c28"><div class="c0 ag-tight">&#160;</div></td>
+<td class="c28"><div class="c0 ag-tight">&#160;</div></td>
+<td class="c28"><div class="c0 ag-tight">&#160;</div></td>
 <td class="c28"><div class="c0"><span class="c7">Total</span></div></td>
-<td class="c28"><div class="c0"><span class="c7"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!totalOwnerSaleableArea}"/></apex:outputText></span></div></td>
-<td class="c28"><div class="c0">&#160;</div></td>
+<td class="c28"><div class="c0"><span class="c7"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText></span></div></td>
+<td class="c28"><div class="c0 ag-tight">&#160;</div></td>
 </tr>
 </table></div>
-<div class="cq">&#160;</div>
+<div class="cq ag-tight">&#160;</div>
 <div class="ci"><span class="c4">AND WHEREAS, In accordance with the terms and conditions set out in this Agreement and as mutually agreed upon by and between the Parties, the Vendor hereby agrees to sell and the VENDEE/S hereby agree to purchase the Flat Which is more specifically demarcated as per the Schedule below.</span></div>
 <div style="page-break-inside:avoid"><table class="c2b">
 <colgroup>
@@ -627,7 +579,7 @@ img { border:0; }
 </tr>
 <tr class="c2c">
 <td class="c24"><div class="c2d"><span class="c7">TOWER</span></div></td>
-<td class="c24"><div class="c2d"><span class="c7">{!selectedTowerDisplay}</span></div></td>
+<td class="c24"><div class="c2d"><span class="c7">{!selectedTowerName}</span></div></td>
 </tr>
 <tr class="c2c">
 <td class="c24"><div class="c2d"><span class="c7">FLAT NO.</span></div></td>
@@ -678,69 +630,61 @@ img { border:0; }
 <td class="c24"><div class="c2d"><span class="c7"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.UDS__c}"/></apex:outputText> SQ. YDS</span></div></td>
 </tr>
 </table><apex:outputPanel layout="none" rendered="{!NOT(hasSelectedUnit)}">Selected unit data is missing from this Booking.</apex:outputPanel></div>
-<div class="c2g">&#160;</div>
+<div class="c2g ag-tight">&#160;</div>
 <div class="ci"><span class="c4">AND WHEREAS, this agreement shall be construed, interpreted and applied in accordance with, and shall be governed by the laws applicable in India. The courts at Hyderabad shall have the sole and exclusive jurisdiction to entertain any dispute or suit arising out of or in relation to this agreement.</span></div>
-<div class="ci">&#160;</div>
-<div class="ci">&#160;</div>
-<div class="ci">&#160;</div>
-<div class="ci">&#160;</div>
-<div class="ci">&#160;</div>
-<div class="ci">&#160;</div>
-<div class="ci">&#160;</div>
-<div class="ci">&#160;</div>
+<div class="ci ag-tight">&#160;</div>
 <div class="c0"><span class="cj">NOW THEREFORE THIS AGREEMENT WITNESSES AND IT IS HEREBY AGREED TO BY THE PARTIES HERETO AS FOLLOWS:</span></div>
 <div class="c2h">1.<span class="cm"></span><span class="c5">DEFINITIONS AND INTERPRETATION:</span></div>
-<div class="c2i">&#160;</div>
+<div class="c2i ag-tight">&#160;</div>
 <div class="c2k">1.1.<span class="c2j"></span><span class="c5">Definitions:</span><span class="c4"> Unless the context otherwise requires, the following capitalized terms shall have the meaning set forth below:</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">a)<span class="c2l"></span><span class="c4">&#8220;Act&#8221; means the Real Estate (Regulation and Development) Act, 2016 (16 of 2016) and includes Telangana Real Estates (Regulation and Development) Rules, 2017, wherever, the context so requires:</span></div>
-<div class="ch">&#160;</div>
-<div class="c2k">b)<span class="c2l"></span><span class="c4">&#8220;Agreement&#8221; shall mean this agreement to sell a flat bearing No</span><span class="c5">. </span><span class="c7">{!selectedUnit.Name}</span><span class="c5">, Tower no. {!selectedTowerDisplay}</span><span class="c6">,</span><span class="c4"> </span><span class="c5">square feet </span><span class="c7">{!selectedUnit.Saleable_Area_Sft__c}</span><span class="c5">,</span><span class="c4"> including the schedule hereto, as may be amended from time to time;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
+<div class="c2k">b)<span class="c2l"></span><span class="c4">&#8220;Agreement&#8221; shall mean this agreement to sell a flat bearing No</span><span class="c5">. </span><span class="c7">{!selectedUnit.Name}</span><span class="c5">, Tower no. {!selectedTowerName}</span><span class="c6">,</span><span class="c4"> </span><span class="c5">square feet </span><span class="c7">{!selectedUnit.Saleable_Area_Sft__c}</span><span class="c5">,</span><span class="c4"> including the schedule hereto, as may be amended from time to time;</span></div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">c)<span class="c2m"></span><span class="c4">&#8220;Applicable Law&#8221; means all laws, statutes, regulations, codes, bye-laws, ordinances, treaties, judgments, decrees, directives, rules, guidelines, orders, policies and other requirements of any statutory authority having jurisdiction over the Schedule property which are in effect or as may be amended, modified, enacted or revoked from time-to-time hereafter;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">d)<span class="c2l"></span><span class="c4">&#8220;Association or Association of Owners Association&#8221; shall all mean the same, being the Association of Owners in Ananda Homes to be formed by the Owners, in respect of the Project in accordance with law;</span></div>
-<div class="ch">&#160;</div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2n">e)<span class="c2l"></span><span class="c4">&#8220;Appropriate Government&#8221; means the Government of Telangana;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">f)<span class="c2o"></span><span class="c4">&#8220;Carpet Area&#8221; shall mean the net useable floor area of the flat, excluding the area covered by the external walls, areas under services shafts, exclusive balcony or verandah area and exclusive open terrace area, but includes the area covered by the internal partition walls of the flat;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">g)<span class="c2l"></span><span class="c4">&#8220;Commencement Certificate&#8221; shall mean the licensee and building plan sanctioned by the Commissioner HMDA, Hyderabad for construction of the flats on the Schedule Property vide letter No. 01722/SKP/Plg/HMDA/2022 dated:25/06/2024.</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">h)<span class="c2l"></span><span class="c4">&#8220;Common Areas and Common Amenities and Facilities of the Project&#8221; shall mean the entire Schedule Property and all other areas as defined in Section 2(n) of the Act and the common amenities and facilities being provided in the Project, to this Agreement;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2n">i)<span class="c2p"></span><span class="c4">&#8220;Development&#8221; means the development of the Schedule property undertaken by the Developer;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">j)<span class="c2p"></span><span class="c4">&#8220;Force Majeure&#8221; shall mean the occurrence of one or more of the following events: War, flood, drought, fire, cyclone, earthquake, any other calamity caused by nature or any court stay or government order or any other reason affecting the regular development of the Project;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">k)<span class="c2m"></span><span class="c4">&#8220;Interest&#8221; means the rate of interest payable by the Vendee/s and or the Developer, as the case may be in terms of this Agreement which is to be calculated at prevailing interest rate of State Bank of India highest marginal cost of lending rate (MCLR) plus 2 %.</span></div>
 <div class="c2k">l)<span class="c2p"></span><span class="c4">&#8220;Rules&#8221; means the Telangana Real Estate (Regulation and Development) (General) Rules, 2017, made under the Real Estate (Regulation and Development) Act, 2016;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">m)<span class="c2q"></span><span class="c4">&#8220;Regulations&#8221; means the regulations made under the Real Estate (Regulation and Development Act, 2016;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2n">n)<span class="c2l"></span><span class="c4">&#8220;Section&#8221; means a Section of the Act.</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">o)<span class="c2l"></span><span class="c4">&#8220;Project&#8221; means the multi-storied residential buildings, being 11 (eleven) Towers/Blocks, with 3 Basements, and Ground Floor, and 22 Upper Floors, 12</span><span class="c1q">th</span><span class="c4"> Tower/Block with 3 Cellars, Ground Floor and 5 Upper Floors, Amenities Tower/Block-I, 3 Cellars and Ground Floor, 4 Upper Floors, and Amenities Tower/Block-II, with 3 Cellars, Ground Floor and 3 Upper Floors, being constructed on the Schedule Property and registered under the Act before the Telangana Real Estate Regulatory Authority as project, namely, &#8220;THE LEGACEY&#8221;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">p)<span class="c2l"></span><span class="c5">&#8220;</span><span class="c4">Developer/AGPA holder&#8221; shall mean M/s. Ananda Homes Represented by its Managing Partner: SRI. P.V. SREENIVASULU;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2n">q)<span class="c2l"></span><span class="c4">&#8220;Owners&#8221; shall mean any owner or owners of flats in the Project;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">r)<span class="c2r"></span><span class="c4">&#8220;Sale Deed&#8221; shall mean the Deed of Sale to be executed by the Developer, for legally conveying the absolute right, title and interest in the Schedule Property on the terms and conditions contained therein under the Scheme;</span></div>
-<div class="c2s">&#160;</div>
+<div class="c2s ag-tight">&#160;</div>
 <div class="c2n">s)<span class="c2m"></span><span class="c4">&#8220;Schedule B&#8221; shall mean the floor plan of the flat agreed to be sold to the Vendee/s;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">t)<span class="c2o"></span><span class="c4">&#8220;Schedule C&#8221; is the Payment plan according to which the Vendee/s shall make the payment towards the purchase of Schedule B Property;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">u)<span class="c2l"></span><span class="c4">&#8220;Statutory Payments&#8221; shall mean statutory charges including goods and service tax (&#8216;GST&#8217;) as applicable from time to time, which will be payable by the Vendee/s in addition to the Sale consideration, cost of construction and other cost charges and expenses, under this Agreement;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">v)<span class="c2m"></span><span class="c4">&#8220;Saleable Area&#8221; of any residential Flat shall mean the carpet area plus Verandah/balcony/terrace area which are exclusively meant for the Vendee plus proportionate share of common area and any other area as agreed between the Developer and the Vendee in this Agreement of Sale for which the proportionate cost will be collected from the Vendee/s; and </span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">w)<span class="c2t"></span><span class="c4">&#8220;Total Price&#8221; means the price of the flat on the saleable area of the Flat and as agreed between the Parties;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2n">x)<span class="c2m"></span><span class="c4">&#8220;Booking Amount&#8221; the amount paid prior to upon execution of the Agreement of Sale;</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2n">y)<span class="c2m"></span><span class="c4">&#8220;Date of Booking&#8221; means the date as reflected under the Booking Form.</span></div>
 <div class="c2u"><span class="c5">1.2 Interpretation</span></div>
 <div class="c2u"><span class="c4">a) Any word or phrase defined in the body of this Agreement as opposed to being defined in Clause 1.1 above shall have the meaning assigned to it in such definition throughout this Agreement, unless the contrary is expressly stated or the contrary clearly appears from the context.</span></div>
@@ -755,9 +699,9 @@ img { border:0; }
 <div class="c2u"><span class="c4">In this Agreement, (including the Recitals above) unless the context clearly indicates a contrary intention, a word or an expression, which denotes a natural person shall include an artificial person (and vice versa) any one gender shall include the other genders, the singular shall include the plural (and vice versa).</span></div>
 <div class="c2u"><span class="cj">THEREFORE, IN CONSIDERATION OF THE MUTUAL REPRESENTATIONS, COVENANTS, ASSURANCES, PROMISES, AND AGREEMENTS CONTAINED HEREIN AND OTHER GOOD AND VALUABLE CONSIDERATION, THE PARTIES AGREE AS FOLLOWS:</span></div>
 <div class="c2v">1.<span class="cm"></span><span class="cj">TERMS:</span></div>
-<div class="c2w">&#160;</div>
-<div class="c2y">1.1<span class="c2x"></span><span class="c4">Subject to the terms and conditions as detailed in this Agreement, the DEVELOPER agrees to sell to the VENDEE/S and the VENDEE/S hereby agrees to purchase the </span><span class="c5">Flat No. </span><span class="c7">{!selectedUnit.Name}</span><span class="c6">,</span><span class="c4"> </span><span class="c5">Tower No. </span><span class="c7">{!selectedTowerDisplay}</span><span class="c4">, Area </span><span class="c7">{!selectedUnit.Saleable_Area_Sft__c}</span><span class="c5"> sq. ft</span><span class="c4"> (including common area) for a total consideration of </span><span class="c7">Rs. {!formattedTotalFlatCost}/- ({!agreementAmountInWords})</span><span class="c5"> </span><span class="c4">Which includes amenities and excludes GST, constructed on Schedule A property, Puppalguda Village, Gandipet Mandal, Ranga Reddy District, Telangana State:</span></div>
-<div class="c2w">&#160;</div>
+<div class="c2w ag-tight">&#160;</div>
+<div class="c2y">1.1<span class="c2x"></span><span class="c4">Subject to the terms and conditions as detailed in this Agreement, the DEVELOPER agrees to sell to the VENDEE/S and the VENDEE/S hereby agrees to purchase the </span><span class="c5">Flat No. </span><span class="c7">{!selectedUnit.Name}</span><span class="c6">,</span><span class="c4"> </span><span class="c5">Tower No. </span><span class="c7">{!selectedTowerName}</span><span class="c4">, Area </span><span class="c7">{!selectedUnit.Saleable_Area_Sft__c}</span><span class="c5"> sq. ft</span><span class="c4"> (including common area) for a total consideration of </span><span class="c7">Rs. {!formattedTotalFlatCost}/- ({!agreementAmountInWords})</span><span class="c5"> </span><span class="c4">Which includes amenities and excludes GST, constructed on Schedule A property, Puppalguda Village, Gandipet Mandal, Ranga Reddy District, Telangana State:</span></div>
+<div class="c2w ag-tight">&#160;</div>
 <div style="page-break-inside:avoid"><table class="c2z">
 <colgroup>
 <col style="width:169pt"/>
@@ -785,54 +729,48 @@ img { border:0; }
 <td class="c24"><div class="c33"><span class="c7">{!formattedTotalFlatCost}</span></div></td>
 </tr>
 </table></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c36"><span class="cj">GST:</span></div>
 <div class="c37"><span class="c4">1.&#160; 5% on Sale Consideration</span></div>
 <div class="c37"><span class="c4">2.&#160; 18% on Maintenance, Move in, legal &amp; documentation charges</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="ch"><span class="c4">Explanation:</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c39">(i)<span class="c38"></span><span class="c4">The Total Price above includes the booking amount paid by the VENDEE/S to the DEVELOPER towards the Flat;</span></div>
-<div class="c3a">&#160;</div>
+<div class="c3a ag-tight">&#160;</div>
 <div class="c39">(ii)<span class="c3b"></span><span class="c4">The Total Price above includes taxes( consisting of tax paid or payable by the DEVELOPER by way of Cess or any other similar taxes which may be levied, in connection with the construction of the Project payable by the DEVELOPER, by whatever name called up to the date of handing over the possession of the flat to the Association and the project or the competent authority, as the case may be, after obtaining the completion certificate: Provided that in case there is any change/modification in taxes, the subsequent amount payable by the VENDEE to the DEVELOPER shall be increased/reduced based on such change/modification: Provided further that if there is any increase in the taxes after the expiry of the scheduled date of completion of the project as per registration with the Authority, which shall include the extension of registration, if any, granted to the said project by the Authority, as per the Act, the same shall not be charged from the VENDEE/S provided that Stamp Duty, Registration fee, mutation charges, shall be paid by the VENDEE/S as per actual over and above the total price. </span></div>
-<div class="c3a">&#160;</div>
+<div class="c3a ag-tight">&#160;</div>
 <div class="c39">(iii)<span class="c3c"></span><span class="c4">The DEVELOPER shall periodically intimate in writing to the VENDEE/S, the amount payable as mentioned in Schedule C and the VENDEE/S shall make payment demanded by the DEVELOPER within the time and in the manner specified therein. </span></div>
-<div class="c2s">&#160;</div>
+<div class="c2s ag-tight">&#160;</div>
 <div class="c39">(iv)<span class="c3d"></span><span class="c4">The Total price of Flat includes undivided share price of land, construction of not only the Flat but also the Common areas, internal development charges, external development charges, taxes, cost of providing electric wiring, electrical connectivity to the flat, lift, Internal water line and plumbing, finishing with paint,&#160; doors, flooring, windows, fire detection and firefighting equipment (as per law) in the common areas, maintenance charges as per para 11, etc. and includes cost for providing all other facilities, amenities and specifications to be provided as per the agreement within the Flat and the Project;</span></div>
-<div class="c3a">&#160;</div>
-<div class="c3a">&#160;</div>
-<div class="c3a">&#160;</div>
-<div class="c3a">&#160;</div>
-<div class="c3a">&#160;</div>
+<div class="c3a ag-tight">&#160;</div>
 <div class="c2y">1.2<span class="c2x"></span><span class="c4"> The VENDEE/S hereby agree to become a member of the Society or&#160; &#160; Association so formed by all the tenement owners of THE LEGACEY Project and the VENDEE/S agree to contribute 4/-. per sft for maintenance charges with 18% GST to the DEVELOPER and for Association for period of 2 years and which can be extendable and for Corpus fund 50/- per sft </span></div>
-<div class="c3e">&#160;</div>
+<div class="c3e ag-tight">&#160;</div>
 <div class="c2y">1.3<span class="c2x"></span><span class="c4"> The Total Price is escalation-free, however, in case the VENDEE/S agree to pay the escalation charges is due to increase on account of development charges payable to the competent authority and/or any other increase in charges which may be levied or imposed by the competent authority from time to time. The DEVELOPER undertakes and agrees that while raising a demand on the VENDEE/S for increase in development charges, cost/charges, imposed by the competent authorities, the DEVELOPER shall enclose the said notification/order/charges imposed by the competent authorities, the DEVELOPER shall enclose the said notification/order/rule/regulation to that effect along with the demand letter being issued to the VENDEE/S.</span></div>
-<div class="c3e">&#160;</div>
+<div class="c3e ag-tight">&#160;</div>
 <div class="c2y">1.4<span class="c2x"></span><span class="c4"> The VENDEE/S shall make the payment as per the payment plan as set out hereunder shall be as per Schedule &#8220;C&#8221; plan.</span></div>
-<div class="c3f">&#160;</div>
+<div class="c3f ag-tight">&#160;</div>
 <div class="c2y">1.5<span class="c2x"></span><span class="c4"> The DEVELOPER may allow, in its sole discretion, a rebate for early payments of installments payable by the VENDEE/S by discounting such early payments 12% per annum for the period by which the respective installment has been prepone. The provision for allowing rebate and such rate of rebate shall not be subject to any revision/withdrawal, once granted to VENDEE/S by the DEVELOPER.</span></div>
-<div class="c3f">&#160;</div>
+<div class="c3f ag-tight">&#160;</div>
 <div class="c2y">1.6<span class="c2x"></span><span class="c4">It is agreed that the DEVELOPER shall not make any additions and alterations in the sanctioned plans and specifications, with such modifications as may be been made by the Developer as may be deemed fit and in the nature of the Project and the nature of fixtures, fittings and amenities described herein in Schedule &#8216;D&#8217; in respect of the flat as the case may be, without the previous written consent of the VENDEE/S as per the provisions of the Act. Provided that the DEVELOPER may make such minor additions/deductions or alterations as may be required by the VENDEE/S, or such minor changes or alterations as per the provisions of the Act, on such terms as may be agreed without any deduction in the sales receivables to the DEVELOPER by the VENDEE/S. The DEVELOPER shall not be liable for any manufacturing or other defects of any branded inputs or fixtures or services of any third party mentioned in the schedule/annexure to this Agreement, unless it results in structural defects. The Association of VENDEE/S shall take responsibility for proper safety, maintenance (including continuance of annual maintenance/insurance contracts/agreements) and upkeep of all the fixtures, equipment and machinery provided by the DEVELOPER for which the DEVELOPER shall not be liable after handing over.</span></div>
-<div class="co">&#160;</div>
+<div class="co ag-tight">&#160;</div>
 <div class="c2y">1.7<span class="c2x"></span><span class="c4">It is agreed between the parties that in the event of there being any modifications to the Floor Plan attached to this Agreement, the same shall be duly intimated to the Vendee by the Developer and the Vendee shall raise any objections to the same, within a period of 7 days from the date of such intimation after which period, it shall be deemed that the Vendee has accepted the modifications proposed.</span></div>
-<div class="co">&#160;</div>
-<div class="co">&#160;</div>
-<div class="co">&#160;</div>
+<div class="co ag-tight">&#160;</div>
 <div class="c2y">1.8<span class="c2x"></span><span class="c4">The DEVELOPER shall confirm to the final carpet and saleable area that has been allotted to the VENDEE/S after the construction of the Building is complete and the occupancy certificate is granted by the competent authority, by furnishing details of the changes, if any, in the built-up area or the Saleable area. The total price payable for the built up or saleable area shall be recalculated upon confirmation by the DEVELOPER. If there is reduction in the built-up area or the Saleable area then the DEVELOPER shall refund the excess money paid by the VENDEE/S within forty-five days with annual interest at the rate prescribed in the Rules, from the date when such an excess amount was paid by the VENDEE/S</span><span class="c5">. </span><span class="c4">If there is any increase in the built-up area or the Saleable area, which is not more than three percent of the built-up area of the flat, allotted to the VENDEE/S as per the next milestone of the Payment plan as provided in Schedule C. All these monetary adjustments shall be made at the same rate per square feet as agreed in para 1.1 of this Agreement.</span></div>
-<div class="c2s">&#160;</div>
+<div class="c2s ag-tight">&#160;</div>
 <div class="c2y">1.9<span class="c2x"></span><span class="c4">Subject to para 9.3, the VENDEE/S agree and acknowledge, the VENDEE/S shall have the right to the Flat Schedule B Property as mentioned below subject the VENDEE/S making the payments as per schedule and on payment of total sale consideration.</span></div>
-<div class="c2s">&#160;</div>
+<div class="c2s ag-tight">&#160;</div>
 <div class="c3g">(i)<span class="c38"></span><span class="c4">The VENDEE/S shall have exclusive ownership of their respective schedule flat.</span></div>
-<div class="c3h">&#160;</div>
+<div class="c3h ag-tight">&#160;</div>
 <div class="c3i">(ii)<span class="c3b"></span><span class="c4">The VENDEE/S shall also have undivided proportionate share in the common areas. Since the share of the VENDEE/S in the common areas is undivided and cannot be divided or separated, the VENDEE/S shall use the common areas along with other occupants, maintenance staff, etc. without causing any inconvenience or hindrance to them. It is clarified that the DEVELOPER shall hand over the common areas to the Association of VENDEE/S after duly obtaining the completion certificate from the competent authority as provided in the Act;</span></div>
-<div class="c3h">&#160;</div>
+<div class="c3h ag-tight">&#160;</div>
 <div class="c3i">(iii)<span class="c3c"></span><span class="c4">That the computation of the price of the flat includes recovery of price of land, construction of [not only the flat but also] the Common areas, internal development charges, external development charges, taxes, cost of providing electric wiring, electrical connectivity to the flat, lift, Internal water line and plumbing, finishing with paint, granite, tiles, doors, windows, fire detection and firefighting equipment (as per law) in the common areas, maintenance charges as per the agreement within the [Flat].</span></div>
-<div class="c3h">&#160;</div>
+<div class="c3h ag-tight">&#160;</div>
 <div class="c3i">(iv)<span class="c3d"></span><span class="c4">The VENDEE/S have the right to visit their Flat on prior intimation of at least 3 working days to the DEVELPOR / Authorized person to assess the extent of development of his /her Flat</span><span class="c5">. </span><span class="c4">It is made clear by the DEVELOPER and the VENDEE/S agree that the Flat Schedule B Property along with parking space treated as a single indivisible unit for all purposes. It is agreed that the Project is an independent, self-contained Project covering the said Land and is not a part of any other project or zone and shall not form a part of and/or linked/combined with any other project in its vicinity or otherwise except for the purpose of integration of infrastructure for the benefit of the VENDEE/S. It is clarified that Project&#8217;s facilities and amenities shall be available only for the use and enjoyment of the VENDEE/S of the Project.</span></div>
-<div class="c3j">&#160;</div>
+<div class="c3j ag-tight">&#160;</div>
 <div class="c2y">1.10<span class="c3k"></span><span class="c4">The DEVELOPER agrees to pay all outgoings before transferring the physical possession or transfer of Scheduled Property whichever is earlier, of the flat to the VENDEE/S, which it has collected from the VENDEE/S, for the payment of outgoings (including land cost [either directly or by way of share in the project, ground rent, municipal or other local taxes, charges for water or electricity, maintenance charges, including mortgage loan and interest on mortgages or other encumbrances and such other liabilities payable to competent authorities, banks and financial institutions, which are related to the project). If DEVELOPER fails to pay all or any of the outgoings collected by it from the VENDEE/S or any liability, mortgage loan and interest thereon before transferring the flat to the VENDEE/S or any liability, mortgage loan and interest thereon before transferring the flat to the VENDEE/S, the DEVELOPER agrees to be liable, even after the transfer of the property, to pay such outgoings and penal charges, if any, to the authority or person to whom they are payable and be liable for the cost of any legal proceedings which may be taken there for by such authority or persons.</span></div>
-<div class="c3l">&#160;</div>
-<div class="c2y">1.11<span class="c3m"></span><span class="c4"> VENDEE/S has paid </span><span class="c5">a sum of </span><span class="c7">Rs. {!formattedTotalReceiptAmount}/- ({!totalReceiptAmountInWords})</span><span class="c5"> </span><span class="c4">as booking amount, excluding GST being part payment towards the total price of the flat at the time of entering this Agreement, the receipt of which the DEVELOPER hereby acknowledges in the table below and the VENDEE/S hereby agrees to pay the remaining price of the flat as prescribed in the Payment Plan (Schedule C) as may be demanded by the DEVELOPER within the time and in the manner specified therein.</span></div>
+<div class="c3l ag-tight">&#160;</div>
+<div class="c2y">1.11<span class="c3m"></span><span class="c4"> VENDEE/S has paid </span><span class="c5">a sum of </span><span class="c7">Rs. {!formattedTotalReceivedFlatAmount}/- ({!totalReceivedFlatAmountInWords})</span><span class="c5"> </span><span class="c4">as booking amount, excluding GST being part payment towards the total price of the flat at the time of entering this Agreement, the receipt of which the DEVELOPER hereby acknowledges in the table below and the VENDEE/S hereby agrees to pay the remaining price of the flat as prescribed in the Payment Plan (Schedule C) as may be demanded by the DEVELOPER within the time and in the manner specified therein.</span></div>
 <div style="page-break-inside:avoid"><table class="c3n">
 <colgroup>
 <col style="width:82.06pt"/>
@@ -846,72 +784,65 @@ img { border:0; }
 <td class="c3p"><div class="ck"><span class="c7">Reference ID</span></div></td>
 <td class="c3p"><div class="ck"><span class="c7">Amount</span></div></td>
 </tr>
-<apex:repeat value="{!receiptRows}" var="receipt">
+<apex:repeat value="{!flatReceiptRows}" var="receipt">
 <tr class="c3o">
 <td class="c3q"><div class="ck"><apex:outputText value="{0,date,dd-MMM-yy}"><apex:param value="{!receipt.receiptDate}"/></apex:outputText></div></td>
-<td class="c3p"><div class="ck">{!receipt.mode}</div></td>
+<td class="c3p"><div class="ck">{!receipt.paymentMethod}</div></td>
 <td class="c3q"><div class="ck">{!receipt.referenceId}</div></td>
 <td class="c3p"><div class="c33">{!receipt.amountDisplay}</div></td>
 </tr>
 </apex:repeat>
 <tr class="c3t">
 <td colspan="3" class="c3p"><div class="ck"><span class="c7">Total payments </span></div></td>
-<td class="c3p"><div class="c33"><span class="c7">{!formattedTotalReceiptAmount}</span></div></td>
+<td class="c3p"><div class="c33"><span class="c7">{!formattedFlatReceiptTotal}/-</span></div></td>
 </tr>
 </table></div>
-<div class="c3u">&#160;</div>
-<div class="c3u">&#160;</div>
-<div class="c3v"><span class="c5">Balance </span><span class="c7">Rs. {!formattedBalanceAmount}/- ({!balanceAmountInWords})</span><span class="c5"> availing by the way of loan from </span><span class="c7">{!loanBankName}</span></div>
-<div class="c3v">&#160;</div>
+<div class="c3u ag-tight">&#160;</div>
+<div class="c3v"><span class="c5">Balance </span><span class="c7">Rs. {!formattedBalanceFlatAmount}/- ({!balanceFlatAmountInWords})</span><span class="c5"> availing by the way of loan from </span><span class="c7">{!loanBankName}</span></div>
+<div class="c3v ag-tight">&#160;</div>
 <div class="c2y">1.12<span class="c3k"></span><span class="c4">The VENDEE/S shall pay the installments as stipulated above within 15 days from the date of notice issued by the DEVELOPER, failing which it shall carry interest at the rate of 24% prescribed in the Rules.</span></div>
-<div class="c3w">&#160;</div>
+<div class="c3w ag-tight">&#160;</div>
 <div class="c2y">1.13<span class="c3k"></span><span class="c4">The VENDEE/S shall issue post-dated cheques for all installments as per the payment schedule given above irrespective of mode of funding, i.e. self/bank finance. The VENDEE/S unconditionally agree to sign the disbursement forms of respective banks in advance along with this agreement and handover such papers to the </span></div>
-<div class="ci">&#160;</div>
-<div class="ci">&#160;</div>
-<div class="ci">&#160;</div>
-<div class="ci">&#160;</div>
+<div class="ci ag-tight">&#160;</div>
 <div class="c2y">1.14<span class="c3k"></span><span class="c4">DEVELOPER enabling the DEVELOPER to submit with respective banks for release of payments avoiding delay in releasing installment amounts without any hindrance and the DEVELOPER hereby undertakes and confirms to the VENDEE/S that the said disbursal from the Demand Letter from the DEVELOPER will be submitted with respective banks of prior intimation of at least 7 days from the date of attaining such milestone/landmark of construction progress.</span></div>
-<div class="c2s">&#160;</div>
+<div class="c2s ag-tight">&#160;</div>
 <div class="c2v">2.<span class="cm"></span><span class="c5">MODE OF PAYMENT</span></div>
 <div class="ch"><span class="c4">Subject to the terms of the Agreement and the DEVELOPER abiding by the construction milestones, the VENDEE/S shall make all payments, on written demand by the DEVELOPER, within the stipulated time as mentioned in the payment plan through A/c Payee cheque/demand draft/banker&#8217;s cheque or online payment in below mentioned account </span><span class="c5">Account bearing A/c. Nos 322205002425</span><span class="c4"> in favor of </span><span class="c5">M/s. ANANDA HOMES</span><span class="c4">, </span><span class="c5">Bank: ICICI BANK, Branch: MANIKONDA, IFSC: ICIC0003222.</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2v">3.<span class="cm"></span><span class="c5">COMPLAINCE OF LAWS RELATING TO REMITTANCES</span></div>
 <div class="ch"><span class="c4">3.1 The VENDEE/S, if residents outside India, shall be solely responsible for complying with necessary formalities as laid down in Foreign Exchange Management Act, 1999, Reserve Bank of India Act, 1934, and the Rules and Regulations made there-under or any statutory amendment(s) modification(s) made thereof and all other applicable laws including that of remittance of payment acquisition/sale/transfer of immovable properties in India, etc. and provide the DEVELOPER with such permission, approvals which would enable the DEVELOPER to fulfill its obligations under this Agreement. Any refund, transfer of security, if provided in terms of the Agreement shall be made in accordance with the provisions of Foreign Exchange Management Act, 1999, or statutory enactments or amendments thereof and the Rules and Regulations of the Reserve Bank of India or any other applicable law. The VENDEE/S understand and agree that in the event of any failure on his/her part to comply with the applicable guidelines issued by the Reserve Bank of India, he/she may be liable for any action under the Foreign Exchange Management Act, 1999, or other laws as applicable, as amended from time to time.</span></div>
-<div class="c3x">&#160;</div>
+<div class="c3x ag-tight">&#160;</div>
 <div class="ch"><span class="c4">3.2 The DEVELOPER accepts no responsibility in regard to matters specified in Para 3.1, above. The VENDEE/S shall keep the DEVELOPER fully indemnified and harmless in this regard. Whenever there is any change in the residential status of the VENDEE/S subsequent to the signing of this Agreement, it shall be the sole responsibility of the VENDEE/S to intimate the same in writing to the DEVELOPER immediately and comply with necessary formalities if any under the applicable laws. The DEVELOPER shall not be responsible towards any third-party making payment/remittances on behalf of any VENDEE/S and such third party shall not have any right in the application/allotment of the said flat applied herein in any way and the DEVELOPER shall be issuing the payment receipts in favor of the VENDEE/S only.</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2v">4.<span class="cm"></span><span class="c5">ADJUSTMENT/APPROPRIATION OF PAYMENTS:</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="ch"><span class="c4">The VENDEE/S authorizes the DEVELOPER to adjust/appropriate all payments made by him/her under any head(s) of dues against lawful outstanding of the VENDEE/S against the [Flat], if any, in his/her name and the VENDEE/S undertakes not to object/demand/direct the DEVELOPER to adjust his payments in any manner.</span></div>
-<div class="ch">&#160;</div>
-<div class="ch">&#160;</div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2v">5.<span class="cm"></span><span class="c5">TIME IS ESSENCE:</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="ch"><span class="c4">The DEVELOPER shall abide by the time schedule for completing the project as disclosed at the time of registration of the project with the Authority and towards handing over the [Flats] to the VENDEE/S and the common areas to the association of VENDEE/S or the competent authority, as the case may be subject to the VENDEE/S make the payments as per the schedule mentioned above.</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2v">6.<span class="cm"></span><span class="c5">CONSTRUCTION OF THE FLAT:</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="ch"><span class="c4">The VENDEE/S have seen the sanction plan, specifications, amenities and facilities of the Schedule B Property and accepted floor plan, payment plan and the specifications, amenities and facilities (annexed along with this Agreement) which has been approved by the competent authority, as represented by the DEVELOPER. The DEVELOPER shall develop the Project in accordance with the said sanction plan or the modified plan, floor plans and specifications, amenities and facilities</span><span class="c5">. </span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2v">7.<span class="cm"></span><span class="c5">POSSESSION OF THE FLAT/PLOT:</span></div>
-<div class="c2w">&#160;</div>
+<div class="c2w ag-tight">&#160;</div>
 <div class="c3y"><span class="c4">7.1 Schedule for possession of the said [Flat]: The DEVELOPER agrees and understands that timely delivery of possession of the Schedule B property to the VENDEE/S and the common areas to the Association of VENDEE/S or competent authority, as the case may be, is the essence of the Agreement. The DEVELOPER assures to hand over possession of the Schedule B property of the project by June-2028&#8217; and with a grace period of 6 months unless there is a delay or failure due to war, flood, drought, fire, cyclone, earthquake, or any other calamity caused by nature or any Court stay or government order affecting the regular development of the real estate project (&#8220;Force Majeure&#8221;). If, however, the completion of the Project is delayed due to Force Majeure conditions then the VENDEE/S agree that the DEVELOPER shall be entitled to the extension of time and delivery of possession of the Schedule B property, provided that such Force Majeure conditions are not of nature which make it impossible for the contract to be implemented. The VENDEE/S agree and confirm that, in the event it becomes impossible for the DEVELOPER to implement the project due to Force Majeure conditions, then this agreement shall stand terminated and the DEVELOPER shall refund to the VENDEE, the entire amount received by the DEVELOPER from this agreement within 90 days from that date. The DEVELOPER shall intimate the VENDEE/S about such termination at least thirty days prior to such termination. After refund of the money paid to the VENDEE/S, the VENDEE/S agree that he/she shall not have any rights, claims, etc. against the DEVELOPER and that the DEVELOPER shall be released and discharged from all its obligations and liabilities under this Agreement.</span></div>
 <div class="cl"><span class="c4">7.2 Procedure for taking possession &#8211; The Developers/Promoters (i) upon applying for and upon the completion of the period prescribed for issuing the Occupancy Certificate under applicable building laws; or (ii) after obtaining the Occupancy Certificate from the competent authority, shall offer in writing the possession of the Apartment, to the Vendee, who has paid all the amounts in terms of this Agreement. The Vendee shall take possession within two months from the date of the said notice. The Vendee shall be liable to pay property tax from the date of the Registration of the Sale Deed in favour of the Vendee or Occupancy Certificate whichever is earlier. </span></div>
-<div class="cl">&#160;</div>
-<div class="cl">&#160;</div>
+<div class="cl ag-tight">&#160;</div>
 <div class="cl"><span class="c4">If the Vendee fails to take delivery within the time specified in the notice referred to in Clause 7.2 above, he shall be liable for payment of all on goings including maintenance charges, water and electricity charges, Corpus Fund etc. from the date of notice. The Vendee, after taking possession or in accordance with Clause 7.2, agrees to pay the maintenance charges as determined by the Developers/Association of Vendees.</span></div>
-<div class="cp">&#160;</div>
+<div class="cp ag-tight">&#160;</div>
 <div class="ch"><span class="c4">7.3 Failure of VENDEE/S to take possession of Flat/Schedule B property &#8211; Upon receiving a written intimation from the DEVELOPER as per Para 7.2, the VENDEE/S shall take possession of the Flat from the documentation as prescribed in this Agreement, and the DEVELOPER shall give possession of the flat to the VENDEE/S. In case, the VENDEE/S fails to take possession within the time provided in para 7.2, such VENDEE/S shall continue to be liable to pay maintenance charges as specified in para 7.2.</span></div>
 <div class="ch"><span class="c4">7.4</span><span class="c5"> </span><span class="c4">Possession by the VENDEE/S- After obtaining the occupancy certificate and handing over physical possession of the flat to the VENDEE/S, it shall be the responsibility of the DEVELOPER to hand over the necessary documents and plans, including common areas, to the Association of VENDEE/S or the competent authority, as the case may be, as per the local laws. [Provided that, in absence of any local law, the DEVELOPER shall handover the necessary documents and plans, including common areas, to the Association of VENDEE/S or the competent authority, as the case may be, within thirty days after obtaining the completion certificate]. Whereas it is made clear, that the VENDEE(S) / Purchaser shall be permitted for house-warming of his/her Flat subject to the payment/clearance of all the pending amounts due to the Developer and after obtaining No-Objection Certificate from Developer/Builder only.</span></div>
 <div class="cl"><span class="c4">7.5 Cancellation by VENDEE/S &#8211; The Vendee shall have the right to cancel/withdraw his allotment in the Project only as provided in the Act.</span></div>
-<div class="cl">&#160;</div>
+<div class="cl ag-tight">&#160;</div>
 <div class="cl"><span class="c4">Provided that, where the Vendee proposes to cancel/withdraw from the Project without any fault of the Developer/AGPA holder, the Developer/AGPA holder herein is entitled to deduct an amount of 10% of Total Sale Consideration towards penal charges or compensation/ damages from the amount collected by Developers /Promoters.&#160; &#160;</span></div>
-<div class="c2d">&#160;</div>
+<div class="c2d ag-tight">&#160;</div>
 <div class="cl"><span class="c4">The balance amount of money paid by the Vendee shall be returned by the&#160; &#160;Developer/AGPA holder to the Vendee within three months of such cancellation or at the time that the Developer/AGPA holder are able to resell the said Apartment to another purchaser, whichever is later.</span></div>
-<div class="cp">&#160;</div>
+<div class="cp ag-tight">&#160;</div>
 <div class="cp"><span class="c4">&#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;7.6 Transfer rights by Vendee(s)/Purchaser(s):</span></div>
-<div class="c3z">&#160;</div>
+<div class="c3z ag-tight">&#160;</div>
 <div class="ch"><span class="c4">The Vendee(s)/Purchaser(s) is/are not allowed to sell / re-sell /transfer/ alienate his rights or assign or otherwise nominate a third party in any manner whatsoever till Two years from the date of Agreement of sale or the project is completed in full, whichever is later.</span></div>
 <div class="ch"><span class="c4">The Vendee shall have the right to nominate one blood relative in whose name the Sale Deed for the Apartment can be registered instead of the Vendee, prior to the registration of the Sale Deed. This is limited to only a one-time nomination.</span></div>
 <div class="ch"><span class="c4">The Vendee hereby declares that he/she/they will not be entering into any kind of conveyances with third parties with respect to their apartment before the expiry of 24 months from the date of Agreement of Sale. In the event that, the Vendee seeks to transfer his rights concerning the Apartment at any time prior to the registration of the Sale Deed, he can only do so after the stipulated period of 24 months as mentioned here. The Vendee shall not sell the Apartment at any price lower than the prevailing base price of the Developer/AGPA holder for such Apartment and pay an amount of Rs. 150/- per SFT to the Developer/AGPA holder and obtain a No-objection Certificate from the Developer/AGPA holder with respect to such sale by executing required documentation between the Developer/AGPA holder, the Vendee and the third party. Any third party will be bound by the same condition in the event he intends to sell the Apartment. The third party that steps in as a result of such sale shall execute the relevant agreements in the same format as were executed by the Vendees with the Company and shall have all the obligations towards the Developer/AGPA holder as the Vendee had in the first instance.</span></div>
@@ -931,29 +862,29 @@ img { border:0; }
 <div class="co"><span class="c4">(x) The Developers/Promoters has duly paid and shall continue to pay and discharge all governmental dues, rates, charges and taxes and other monies, levies, impositions, premiums, damages and/or penalties and other outgoings, whatsoever, payable with respect to the said Project to the competent Authorities till the completion certificate has been issued and possession of Total Apartment Complex or building Complex, as the case may be, along with Common Areas (equipped with all the specifications, amenities and facilities) has been handed over to the Association of Vendees or the competent authority, as the case may be. However, any property tax attracted to the Vendee shall be borne by the Vendee only </span></div>
 <div class="co"><span class="c4">(xi) No notice from the Government or any other local body or authority or any legislative enactment, government ordinance, order, notification (including any notice for acquisition or requisition of the said property) has been received by or served upon the DEVELOPER in respect of the said Land and/or the Project except those disclosed on the title report.</span></div>
 <div class="c44">8.2<span class="c2x"></span><span class="c4">The VENDEE/S with intention to bring all persons into whatsoever hands the Flat may come, hereby covenants with the DEVELOPER as follows:</span></div>
-<div class="c45">&#160;</div>
+<div class="c45 ag-tight">&#160;</div>
 <div class="c46">(i)<span class="c38"></span><span class="c4">To maintain the Flat as the VENDEE/S own cost in good and tenantable repair and condition from the date that of possession of the Flat is taken and shall not suffer to be done anything in or to the building in which the Flat is taken and shall not do or suffer to be done anything in or to the building in which the Flat is situated which may be against the rules, regulations or bye-laws or change/alter or make addition in or to the building in which the Flat is situated and the Flat itself or any part thereof without the consent of the local authorities, if required.</span></div>
-<div class="c47">&#160;</div>
+<div class="c47 ag-tight">&#160;</div>
 <div class="c46">(ii)<span class="c3b"></span><span class="c4">Not to store in the Flat, any goods, which are hazardous, combustible or dangerous nature or are so heavy as to damage the construction or structure of the building in which the Flat is situated or storing of which goods is objected to by the concerned local or other authority and shall take care while carrying heavy packages which may damage or likely to damage the staircases, common passages or any other structure of the building in which the Flat is situated, including the entrances of the building in which the Flat is situated and in case any damage is caused to the building in which the Flat is situated or the Flat on account of negligence or default of the VENDEE/S in this behalf, the VENDEE/S shall be liable for the consequences of the breach.</span></div>
-<div class="c48">&#160;</div>
+<div class="c48 ag-tight">&#160;</div>
 <div class="c46">(iii)<span class="c3c"></span><span class="c4">To carry out at his own cost all internal repairs to the said Flat/Flat and maintain the Flat in the same condition, state and order in which it was delivered by the DEVELOPER to the VENDEE/S and shall not do or suffer to be done anything in or to the building in which the Flat is situated or the Flat which may be contrary to the rules and regulations and bye-laws of the concerned local authority or other public authority. In the event of the VENDEE/S committing any act in contravention of the above provision, the VENDEE/S shall be responsible and liable for the consequences thereof to the concerned local authority and/or other public authority.</span></div>
-<div class="c2s">&#160;</div>
+<div class="c2s ag-tight">&#160;</div>
 <div class="c46">(iv)<span class="c3d"></span><span class="c4">Not to demolish or cause to be demolished the Flat or any part thereof, not at any time make or cause to be made any addition or alteration of whatever nature in or to the Flat or any part thereof, nor any alteration in the elevation and outside color scheme of the building in which the Flat is situated and shall keep the portion, sewers, drains and pipes in the Flat and the appurtenances thereto in good tenantable repair and condition, and in particular, so as to support shelter and protect the other parts of the building in which the Flat is situated and shall not chisel or in any other manner cause damage to columns, beams, walls, slabs or RCC Pardi or other structural members in the Flat without the prior written permission of the DEVELOPER and/or the Society or the Limited Company.</span></div>
-<div class="c2s">&#160;</div>
+<div class="c2s ag-tight">&#160;</div>
 <div class="c46">(v)<span class="c49"></span><span class="c4">Not to make any additional modifications to the Flat that may be visible from the outside which shall include without limitation putting of any Grills, walls or temporary structures and it is specifically agreed that in the event of any default by the Vendee, the Developer or the Society, as the case may be whoever are managing the common areas shall be entitled to remove the same and recover the costs from the Vendee.</span></div>
-<div class="c2s">&#160;</div>
+<div class="c2s ag-tight">&#160;</div>
 <div class="c46">(vi)<span class="c3d"></span><span class="c4">Not to do or permit to be done any act or thing which may render void or voidable any insurance of the project land and the building in which the Flat is situated or any part thereof or whereby any increased premium shall become payable in respect of the insurance.</span></div>
-<div class="c2s">&#160;</div>
+<div class="c2s ag-tight">&#160;</div>
 <div class="c46">(vii)<span class="c4a"></span><span class="c4">Not to throw dirt, rubbish, rags, garbage or other refuse or permit the same to be thrown from the said Flat in the compound or any portion of the project land and the building in which the Flat is situated.</span></div>
-<div class="c2s">&#160;</div>
+<div class="c2s ag-tight">&#160;</div>
 <div class="c46">(viii)<span class="c4b"></span><span class="c4">Pay to the DEVELOPER within fifteen days of demand by the DEVELOPER, his share of security deposit demanded by the concerned local authority or Government for giving water, electricity, or any other service connection to the building in which the Flat is situated.</span></div>
-<div class="c2s">&#160;</div>
+<div class="c2s ag-tight">&#160;</div>
 <div class="c46">(ix)<span class="c3d"></span><span class="c4">To bear and pay increase in the local taxes, water charges, insurance and such other levies, if any, which are imposed by the concerned local authority and/or Government and/or other public authority, on account of change of user of the Flat by the VENDEE/S for any purposes other than for the purpose for which it is sold.</span></div>
-<div class="c48">&#160;</div>
+<div class="c48 ag-tight">&#160;</div>
 <div class="c46">(x)<span class="c49"></span><span class="c4">The VENDEE/S shall observe and perform all the rules and regulations which the Society or the Limited Company or Apex Body or Federation or Association may adopt at its inception and the additions, alterations or amendments thereof that may be made from time to time for protection and maintenance of the said building and the Flats therein and for the observance and performance of the Building rules, regulations and Bye-laws for the time being of the concerned local authority and of Government and other public bodies. The VENDEE/S shall also observe and perform all the stipulations and conditions laid down by the Society/Limited Company/Apex Body/Federation/Association regarding the occupancy and use of the Flat in the Building and shall pay and contribute regularly and punctually towards the taxes, expenses or other out-goings in accordance with the terms of this Agreement.</span></div>
-<div class="c2s">&#160;</div>
+<div class="c2s ag-tight">&#160;</div>
 <div class="c46">(xi)<span class="c3d"></span><span class="c4">Till a conveyance of the common areas, services and amenities of the building/project in which the Flat is situated is executed in favour of Society/Association and till all the total built-up area/units are sold off, the VENDEE/S shall permit the PROMOTER and their surveyors and agents, with or without workmen and others, at all reasonable times, to enter into and upon the said buildings or any part thereof to view and examine the state and condition thereof.</span></div>
-<div class="c2s">&#160;</div>
+<div class="c2s ag-tight">&#160;</div>
 <div class="c46">(xii)<span class="c4a"></span><span class="c4">To pay the applicable Property Tax to GHMC / HMDA / such other statutory authority as may be applicable from, the date of registration of the Flat by the Developer to the Vendee, within the period specified.</span></div>
 <div class="ci"><span class="c5">9.EVENTS OF DEFAULTS AND CONSEQUENCES</span></div>
 <div class="ch"><span class="c4">9.1 Subject to the Force Majeure clause, the DEVELOPER shall be considered under a condition of default, in the following events:</span></div>
@@ -1006,8 +937,7 @@ img { border:0; }
 <div class="ch"><span class="c4">15.14. It is agreed between the parties that the Area shown in the Schedule B as a Verandah</span><span class="c5"> </span><span class="c4">area attached to the entrance of the Flat shall be for the exclusive utilization of the VENDEE/S and no third parties shall be allowed to utilize the same without the express authorization of the VENDEE/S. However, it is specifically agreed by the VENDEES that this &#8220;Sit-Out&#8221; area shall not be covered or barricaded in any manner. Provided that, in the event that the VENDEE/S are particularly of the intent to cover / barricade the area, the same may be permitted by the Owners&#8217; Association that is in charge of the maintenance of the Project, on collection of a sum of not less than Rs. 20,00,000/- (Rupees Twenty Lakhs only), as may be stipulated by the Association and all and any such amounts received shall be remitted into the Corpus Account of the Project, for being utilized as such, for such purposes that the Corpus amounts may be utilized.</span></div>
 <div class="ch"><span class="c4">Planter boxes and windows are staggered and positioned differently for each Flat and they will be fixed as per the architectural elevation design.</span></div>
 <div class="ch"><span class="c4">15.15 Plants to be planted in the planted box will be defined by the DEVELOPER and has to be strictly followed by the VENDEE/S.</span></div>
-<div class="ch">&#160;</div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="ci"><span class="c5">16.COMPLIANCE OF LAWS, NOTIFICATIONS ETC.BY PARTIES:</span></div>
 <div class="ch"><span class="c4">The Parties are entering into this Agreement for the allotment of a Schedule B Property with the full knowledge of all laws, rules, regulations, notifications applicable to the project.</span></div>
 <div class="ci"><span class="c5">17.ADDITIONAL CONSTRUCTIONS:</span></div>
@@ -1018,7 +948,7 @@ img { border:0; }
 <div class="ch"><span class="c4">19.1 The Parties hereby agree that in case the VENDEE/S are availing a housing loan/loan from any bank/Financial institution/Non-Banking Financial Corporation Financier (the &#8220;Bank&#8221;), a Tri-partite Agreement, as per the draft provided by the Bank and agreed by the DEVELOPER shall be executed by and between the Bank, the DEVELOPER and the VENDEE/S. In any event, the VENDEE/S will finance the margin money, and the loan will be paid directly from the Bank to the DEVELOPER. The VENDEE/S acknowledge that the VENDEE/S obligation to pay the total sale consideration as mentioned in this Agreement shall be independent and exclusive liability, which is independent of the bank loan obtained by the VENDEE/S, such that, if the VENDEE/S are unable to obtain a bank loan or having obtained a bank loan, the Bank is not disbursing the money, the VENDEE/S SHALL be independently liable to pay the sale consideration to the DEVELOPER. The DEVELOPER shall not be responsible in any way if the VENDEE/S do not succeed in receiving a loan from the Bank.</span></div>
 <div class="ch"><span class="c4">19.2. The building is named and called as </span><span class="c5">&#8220;THE LEGACEY&#8221; </span><span class="c4">and the DEVELOPER can erect display boards/name boards as per their commercial and branding requirements on a permanent basis. The name board of the builders will be displayed permanently at the site and the VENDEE/S have no objection to the same.</span></div>
 <div class="cl"><span class="c4">19.3 </span><span class="c4e">Whereas the Vendee was clearly informed and acknowledges that the Developer has applied for permission to construct two additional floors, i.e., the 23rd and 24th floors, above the sanctioned Ground + 22 floors, by utilizing Transferable Development Rights (TDR) purchased by the Developer.&#160; The Vendee agrees that the said additional floors (23rd and 24th floors), shall be the exclusive property of the Developer, and the Vendee shall have no right, title, interest, or claim of any nature whatsoever in respect thereof. The Vendee further has no objection to the allocation and distribution of the proportionate undivided share of land among the purchasers/owners of the sanctioned Ground + 22 floors, as may be finalized upon approval of the revised plan by the competent authority. The Vendee undertakes to sign and furnish all documents required by competent authorities, for obtaining approvals, sanctions, for the said additional floors, without objection to the developer.</span></div>
-<div class="cl">&#160;</div>
+<div class="cl ag-tight">&#160;</div>
 <div class="ch"><span class="c4">19.4 The VENDEE/S will not be allowed to start interior works until the construction of flat is totally constructed and completed. Once, the flat is handed over to the VENDEE/S for interiors means and includes that the flat is fully finished and formalities of handover is complete, irrespective of whether or not the flat is ready for living. Interiors will be allowed only after handing over/taking over of the Flat. The Interiors shall be done between 8.00 AM to 7.00 PM only. THE VENDEE/S has to pay a penalty to the society for interiors done beyond 4 months of handing over.</span></div>
 <div class="ch"><span class="c4">19.5 The Developer/Promoter reserves the right to maintain the common areas of the community for initial two years from the date of commencement of pre-paid maintenance. The commencement date will be notified either by the Developer or its nominee at an appropriate time. The purchaser hereby agrees to pay an amount of Rs.96/- per Sq. Ft. Plus 18% GST for the saleable area as maintenance charges for maintenance of common areas for the period of two (2) years. The Water charges are NOT included in the said maintenance charges. (payable on demand made by the developer, normally '3' months before handing over). During the execution of interiors, the purchaser/s hereby agree/s to pay the fixed one-time Move in charges @ Rs.25,000/- Plus 18% GST; towards clearance of debris, Fixed Electricity charges during for 3 Months from the date of Possession, thereafter the charges for Electricity shall be applicable based on units consumed as per the electric meter reading. The Vendee(s)/Purchaser(s) also agrees to pay Rs. 2/- per Sq. Ft. plus 18% GST of the saleable area per month, on monthly basis, towards interim maintenance of common areas and utilities, till such time of commencement of pre-paid maintenance for two years. This interim maintenance is payable irrespective of completion of interior works and all these payments shall be made either in the name of developer or its nominee. The VENDEE/S shall pay an amount of Rs. 25,000/- plus 18% GST towards legal and documentation charges plus applicable taxes at the time of execution of Sale Deed Registration.</span></div>
 <div class="ch"><span class="c4">If any water problem arises due to insufficient depth of the present bore well, the VENDEE(S) hereby agreed to share proportionately the expenses/cost incurred for increasing the depth of the present Bore-well or for digging new Bore-well. The Developer will not be responsible for the same and all the Flat Owners of the building shall collectively bear the same.</span></div>
@@ -1028,7 +958,7 @@ img { border:0; }
 <div class="ci"><span class="c5">20. The DEVELOPER shall take the following steps to enable formation of an Association of VENDEE/S under S.11(4)(e) of the Act:</span></div>
 <div class="ch"><span class="c4">With respect to a real estate project, the DEVELOPER shall submit an application to the Registrar for registration of the Association of VENDEE/S as a society under the Telangana/A.P Societies Registration Act, 2001 (as applicable to the state of Telangana), within two months from the date on which the occupation certificate in respect of such project is issued and a minimum of sixty per cent of the total VENDEE/S in such a project have taken possession and the DEVELOPER has received the full consideration from such VENDEE/S. All the VENDEE/S on payment of full consideration shall become members of such Association of VENDEE/S formed by the DEVELOPER applications, petitions, for forming an association.</span></div>
 <div class="c2k">a)<span class="c2l"></span><span class="c4">The Association will have to be formed as per the above clause, however, the decision with regard to continuation of maintenance by the PROMOTER/DEVELOPER, will be at that point of time vest with the Association. If the DEVELOPER fails to form the Association of VENDEE/S, the Authority shall by an order direct the DEVELOPER to apply for formation of such Association or may authorize the VENDEE/S to apply for the formation of the said Association.</span></div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2k">b)<span class="c2l"></span><span class="c4">Notwithstanding any other rule, after conveying the title to the Association of VENDEE/S under S.17, the DEVELOPER shall continue to have the rights and entitlement to advertise, market, book, sell or offer to sell or allot to person to purchase any flat or building or plot which is still not sold or allotted and shall be deemed to have been allowed to do so by the Association of DEVELOPER without any restriction or entry of the building and development of common areas.</span></div>
 <div class="c2u"><span class="c5">21. ENTIRE AGREEMENT:</span></div>
 <div class="ch"><span class="c4">This Agreement along with its schedules, constitutes the entire Agreement between the parties with respect to the subject-matter hereof and supersedes any and all understandings, any other agreements, allotment letter, correspondences, arrangements, whether written or oral, if any, between the Parties in regard to the said Schedule B Property, as the case may be.</span></div>
@@ -1039,8 +969,7 @@ img { border:0; }
 <div class="c2u"><span class="c5">24. WAIVER NOT A LIMITATION TO ENFORCE:</span></div>
 <div class="ch"><span class="c4">24.1 The DEVELOPER may, at its sole option and discretion, without prejudice to its rights as set out in this Agreement, waive the breach by the VENDEE/S in not making the payments as per the Payment Plan [Schedule C] including waiving the payment of interest for delayed payment. It is made clear and so agreed by the VENDEE/S that exercise of discretion by the DEVELOPER in the case of one VENDEE shall not be construed to be a precedent and/or binding on the DEVELOPER to exercise such discretion in the case of other VENDEE/S.</span></div>
 <div class="ch"><span class="c4">24.2 Failure on the part of the Parties to enforce at any time or for any period of time the provisions hereof shall not be construed to be a waiver of any provisions or of the right thereafter to enforce each and every provision.</span></div>
-<div class="ch">&#160;</div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2u"><span class="c5">25.SEVERABILITY:</span></div>
 <div class="ch"><span class="c4">If any provision of this Agreement, shall be determined to be void or unenforceable under the Act or the Rules and Regulations made there under or under other applicable laws, such provisions of this Agreement shall be deemed amended or deleted in so fat as reasonably inconsistent with the purpose of this Agreement and to the extent necessary to confirm to Act or the Rules and Regulations made thereunder or the applicable law, as the case may be, and the remaining provisions of this Agreement shall remain valid and enforceable as applicable at the time of execution of this Agreement.</span></div>
 <div class="c2u"><span class="c5">26. METHOD OF CALCULATION OF PROPORTIONATE SHARE WHEREVER REFERRED TO IN THE AGREEMENT:</span></div>
@@ -1052,7 +981,7 @@ img { border:0; }
 <div class="c2u"><span class="c5">29.NOTICES:</span></div>
 <div class="ch"><span class="c4">That all notices to be served on the VENDEE/S and the DEVELOPER as contemplated by this Agreement shall be deemed to have been duly served if sent to the VENDEE/S or the DEVELOPER by registered post at their respective addresses specified below:</span></div>
 <div class="c4g">i.<span class="c4f"></span><span class="c5">In the case of notice to the /Developers/AGPA Holder:</span></div>
-<div class="c4h">&#160;</div>
+<div class="c4h ag-tight">&#160;</div>
 <div style="page-break-inside:avoid"><table class="c4i">
 <colgroup>
 <col style="width:66.5pt"/>
@@ -1075,12 +1004,7 @@ img { border:0; }
 <td class="c31"><div class="c4l"><span class="c5">info@anandahomes.co.in</span></div></td>
 </tr>
 </table></div>
-<div class="c3j">&#160;</div>
-<div class="c3j">&#160;</div>
-<div class="c3j">&#160;</div>
-<div class="c3j">&#160;</div>
-<div class="c3j">&#160;</div>
-<div class="c3j">&#160;</div>
+<div class="c3j ag-tight">&#160;</div>
 <div class="c4g">ii.<span class="c4o"></span><span class="c5">In the case of notice to the VENDEE (S), to:</span></div>
 <div style="page-break-inside:avoid"><table class="c4p">
 <colgroup>
@@ -1091,7 +1015,7 @@ img { border:0; }
 <tr>
 <td class="c23"><div class="c4k"><span class="c7">Attention</span></div></td>
 <td class="c23"><div class="c4k"><span class="c7">:</span></div></td>
-<td class="c23"><div class="c4q"><span class="c7">{!buyerNames}</span></div></td>
+<td class="c23"><div class="c4q"><span class="c7">{!allBuyerNames}</span></div></td>
 </tr>
 <tr>
 <td class="c23"><div class="c4k"><span class="c7">Address</span></div></td>
@@ -1104,7 +1028,7 @@ img { border:0; }
 <td class="c23"><div class="c4k"><span class="c7">{!buyerEmail}</span></div></td>
 </tr>
 </table></div>
-<div class="c4r">&#160;</div>
+<div class="c4r ag-tight">&#160;</div>
 <div class="ch"><span class="c4">It shall be the duty of the VENDEE/S and the DEVELOPER to inform each other of any change in address subsequent to the execution of this Agreement in the above address by Registered post failing which all communication and letters posted at the above address shall be deemed to have been received by the DEVELOPER or the VENDEE/S, as the case may be.</span></div>
 <div class="c2u"><span class="c5">30. JOINT VENDEE:</span></div>
 <div class="ch"><span class="c4">In case, there are Joint VENDEE/S, all communications shall be sent by the DEVELOPER to the VENDEE/S, whose name appears first and at the address given by him/her which shall for all intents and purposes to consider as properly served on all the VENDEE/S.</span></div>
@@ -1114,40 +1038,29 @@ img { border:0; }
 <div class="ch"><span class="c4">That the right and obligations of the parties under or arising out of this Agreement shall be construed and enforced in accordance with the Act and the Rules and Regulations made thereunder including other applicable laws of India for the time being in force.</span></div>
 <div class="c2u"><span class="c5">33. DISPUTE RESOLUTION:</span></div>
 <div class="ch"><span class="c4">All or any disputes arising out or touching upon or in relation to the terms and conditions of this Agreement, including the interpretation and validity of the terms thereof and the respective rights and obligations of the Parties, shall be settled amicably by mutual discussion, failing which the same shall be settled through the adjudicating officer appointed under the Act.</span></div>
-<div class="ch">&#160;</div>
-<div class="ch">&#160;</div>
-<div class="ch">&#160;</div>
-<div class="ch">&#160;</div>
-<div class="ch">&#160;</div>
-<div class="ch">&#160;</div>
-<div class="ch">&#160;</div>
-<div class="ch">&#160;</div>
-<div class="ch">&#160;</div>
+<div class="ch ag-tight">&#160;</div>
 <div class="c2u"><span class="c5">34. OTHER TERMS AND CONDITIONS:</span></div>
 <div class="ch"><span class="c4">Realization of Payments: All payments shall be subject to their actual realization in the DEVELOPER&#8217;s account. The date of credit into the aforesaid account or the DEVELOPER shall be deemed to be the date of payment of an installment by the VENDEE/S.</span></div>
 <div class="ch"><span class="c4">In WITNESS WHEREOF, parties herein above named have set their respective hands and signed this Agreement for Sale at Hyderabad in the presence of attesting witness, signing as such on the day, first written above.</span></div>
 <div class="c4t"><span class="c4s">SIGNED AND DELIVERED BY:</span></div>
 <div class="c4t"><span class="c4u">VENDEE/S:</span></div>
 <div class="c4w">(1)<span class="c4v"></span><span class="c4u">Signature: &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;.</span></div>
-<div class="c4x">&#160;</div>
+<div class="c4x ag-tight">&#160;</div>
 <div class="c4y"><span class="c4u">Name: &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;.</span></div>
-<div class="c4y">&#160;</div>
+<div class="c4y ag-tight">&#160;</div>
 <div class="c50">(2)<span class="c4z"></span><span class="c4u">Signature: &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;.</span></div>
-<div class="c51">&#160;</div>
+<div class="c51 ag-tight">&#160;</div>
 <div class="c4y"><span class="c4u">Name: &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;.</span></div>
-<div class="c4y">&#160;</div>
+<div class="c4y ag-tight">&#160;</div>
 <div class="c52"><span class="c4s">SIGNED AND DELIVERED BY THE NAMED AGREEMENT OF SALE CUM POWER OF ATTORNEY HOLDER ON BEHALF OF ALL THE 3 VENDORS NAMED HEREIN:</span></div>
 <div class="c53">1.<span class="cm"></span><span class="c4u">Signature: (AGPA HOLDER): &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;.</span></div>
-<div class="c54">&#160;</div>
-<div class="c55">&#160;</div>
+<div class="c54 ag-tight">&#160;</div>
 <div class="c55"><span class="c4u">At &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;on&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;in the presence of:</span></div>
-<div class="c56">&#160;</div>
-<div class="c55">&#160;</div>
-<div class="c55">&#160;</div>
+<div class="c56 ag-tight">&#160;</div>
 <div class="c55"><span class="c4u">WITNESSES:</span></div>
-<div class="c55">&#160;</div>
+<div class="c55 ag-tight">&#160;</div>
 <div class="c55"><span class="c4u">1)</span></div>
-<div class="c57">&#160;</div>
+<div class="c57 ag-tight">&#160;</div>
 <div class="c55"><span class="c4u">2)</span></div>
 <div style="page-break-after:always;height:0"></div>
 <div class="c58"><span class="cj">SCHEDULE A&#8217; PROPERTY</span></div>
@@ -1156,33 +1069,19 @@ img { border:0; }
 <div class="c5b"><span class="c4">SOUTH</span><span class="c5c"></span><span class="c1l"></span><span class="c4">:</span><span class="c5a"></span><span class="c4">80&#8217;-0&#8217;feet Road</span></div>
 <div class="c5b"><span class="c4">EAST</span><span class="c5d"></span><span class="c1l"></span><span class="c4">:</span><span class="c5a"></span><span class="c4">Existing Nala</span></div>
 <div class="c5b"><span class="c4">WEST</span><span class="c5e"></span><span class="c1l"></span><span class="c4">:</span><span class="c5a"></span><span class="c4">30&#8217;-0&#8217; feet Road</span></div>
-<div class="ci">&#160;</div>
+<div class="ci ag-tight">&#160;</div>
 <div class="c0"><span class="cj">SCHEDULE B&#8217; PROPERTY</span></div>
-<div class="ci"><span class="c4">All that the </span><span class="c7">{!selectedBhkNumber}</span><span class="c5"> BHK Flat No. </span><span class="c7">{!selectedUnit.Name}</span><span class="c5"> (</span><span class="c7">{!selectedFacingDisplay}</span><span class="c5"> Facing)</span><span class="c4"> on </span><span class="c7">{!selectedFloorDisplay}</span><span class="c5"> Floor,</span><span class="c4"> of&#160; </span><span class="c5">Tower-</span><span class="c7">{!selectedTowerDisplay}</span><span class="c6">,</span><span class="c4"> the High Rise Residential Flats known as </span><span class="c5">&#8220;THE LEGACEY&#8221;</span><span class="c4">, with saleable area of </span><span class="c7">{!selectedUnit.Saleable_Area_Sft__c}</span><span class="c4"> </span><span class="c5">Square Feet</span><span class="c4"> (including common areas<apex:outputText value="{!selectedCarParkingClause}"/>), along with proportionate undivided share of land equivalent to </span><span class="c7">{!selectedUnit.UDS__c}</span><span class="c5"> Square Yards</span><span class="c4">, (Out of total land admeasuring 80704.23 Square yards or equivalent to 67479.02 Square Meters), </span><span class="c5">in Sy.Nos. 128/1A/2/2, 129/A/1, 129/A/2, 129/AA/1, 129/AA/2, 129/AA/3, 129/E/1, 130/A/1, 130/A/2, 130/A/3/1, 130/A/3/2, 130/A/4, 130/AA/1, 130/AA/2, 130/AA/3, 130/E/1, 130/E/2, 145/1/2, 145/1/1/7, 145/1/1/1/2, 145/1/1/1/1/2, 145/1/1/1/1/1/1, 145/1/1/1/1/1/2, 145/2, 147/A/1, 147/A/2, 147/A/3, 147/AA/1, 147/AA/2, 147/AA/3, 147/E/1, 147/E/2, 148/A/1, 148/A/2, 148/A/3, 148/A/4, 148/AA/1, 148/AA/2, 148/AA/3, 148/E/1, 148/E/2, 148/E/3, 148/E/5, 149/1, 149/2, 149/3, 149/4, 149/5, 149/6, 149/7,</span><span class="c4">&#160; Situated at </span><span class="c5">PUPPALGUDA VILLAGE</span><span class="c4">, under Manikonda Municipality, Gandipet Mandal, Ranga Reddy District, Telangana State and bounded as follows: </span></div>
-<div class="ci">&#160;</div>
-<div class="c5b"><span class="c6">NORTH</span><span class="c59"></span><span class="c1l"></span><span class="c6">: </span><span class="c5f"></span><span class="c6">{!selectedUnit.Boundary_North__c}</span></div>
-<div class="c5b"><span class="c6">SOUTH</span><span class="c5c"></span><span class="c1l"></span><span class="c6">:</span><span class="c5a"></span><span class="c6">{!selectedUnit.Boundary_South__c}</span></div>
-<div class="c5b"><span class="c6">EAST</span><span class="c5d"></span><span class="c1l"></span><span class="c6">: </span><span class="c5f"></span><span class="c6">{!selectedUnit.Boundary_East__c}</span></div>
-<div class="c5b"><span class="c6">WEST</span><span class="c5e"></span><span class="c1l"></span><span class="c6">: </span><span class="c5f"></span><span class="c6">{!selectedUnit.Boundary_West__c}</span></div>
-<div class="ch">&#160;</div>
-<div class="ch">&#160;</div>
+<div class="ci"><span class="c4">All that the </span><span class="c7">{!selectedBhkNumber}</span><span class="c5"> BHK Flat No. </span><span class="c7">{!selectedUnit.Name}</span><span class="c5"> (</span><span class="c7">{!selectedFacingDisplay}</span><span class="c5"> Facing)</span><span class="c4"> on </span><span class="c7">{!selectedFloorDisplay}</span><span class="c5"> Floor,</span><span class="c4"> of&#160; </span><span class="c5">Tower-</span><span class="c7">{!selectedTowerName}</span><span class="c6">,</span><span class="c4"> the High Rise Residential Flats known as </span><span class="c5">&#8220;THE LEGACEY&#8221;</span><span class="c4">, with saleable area of </span><span class="c7">{!selectedUnit.Saleable_Area_Sft__c}</span><span class="c4"> </span><span class="c5">Square Feet</span><span class="c4"> (including common areas<apex:outputText value="{!selectedCarParkingClause}"/>), along with proportionate undivided share of land equivalent to </span><span class="c7">{!selectedUnit.UDS__c}</span><span class="c5"> Square Yards</span><span class="c4">, (Out of total land admeasuring 80704.23 Square yards or equivalent to 67479.02 Square Meters), </span><span class="c5">in Sy.Nos. 128/1A/2/2, 129/A/1, 129/A/2, 129/AA/1, 129/AA/2, 129/AA/3, 129/E/1, 130/A/1, 130/A/2, 130/A/3/1, 130/A/3/2, 130/A/4, 130/AA/1, 130/AA/2, 130/AA/3, 130/E/1, 130/E/2, 145/1/2, 145/1/1/7, 145/1/1/1/2, 145/1/1/1/1/2, 145/1/1/1/1/1/1, 145/1/1/1/1/1/2, 145/2, 147/A/1, 147/A/2, 147/A/3, 147/AA/1, 147/AA/2, 147/AA/3, 147/E/1, 147/E/2, 148/A/1, 148/A/2, 148/A/3, 148/A/4, 148/AA/1, 148/AA/2, 148/AA/3, 148/E/1, 148/E/2, 148/E/3, 148/E/5, 149/1, 149/2, 149/3, 149/4, 149/5, 149/6, 149/7,</span><span class="c4">&#160; Situated at </span><span class="c5">PUPPALGUDA VILLAGE</span><span class="c4">, under Manikonda Municipality, Gandipet Mandal, Ranga Reddy District, Telangana State and bounded as follows: </span></div>
+<div class="ci ag-tight">&#160;</div>
+<div class="c5b"><span class="ag-label"><span class="c6">NORTH</span></span><span class="c6">:&#160;&#160;{!selectedUnit.Boundary_North__c}</span></div>
+<div class="c5b"><span class="ag-label"><span class="c6">SOUTH</span></span><span class="c6">:&#160;&#160;{!selectedUnit.Boundary_South__c}</span></div>
+<div class="c5b"><span class="ag-label"><span class="c6">EAST</span></span><span class="c6">:&#160;&#160;{!selectedUnit.Boundary_East__c}</span></div>
+<div class="c5b"><span class="ag-label"><span class="c6">WEST</span></span><span class="c6">:&#160;&#160;{!selectedUnit.Boundary_West__c}</span></div>
+<div class="ch ag-tight">&#160;</div>
 <div style="page-break-after:always;height:0"></div>
-<div class="c25">&#160;</div>
-<div class="c4l">&#160;</div>
-<div class="c4l">&#160;</div>
-<div class="c4l">&#160;</div>
-<div class="c4l">&#160;</div>
-<div class="c4l">&#160;</div>
-<div class="c4l">&#160;</div>
-<div class="c25">&#160;</div>
-<div class="c25">&#160;</div>
-<div class="c25">&#160;</div>
-<div class="c25">&#160;</div>
-<div class="c25">&#160;</div>
-<div class="c25">&#160;</div>
+<div class="c25 ag-tight">&#160;</div>
 <div style="page-break-after:always;height:0"></div>
-<div class="c0">&#160;</div>
-<div class="c0">&#160;</div>
+<div class="c0 ag-tight">&#160;</div>
 <div class="c0"><span class="cj">SCHEDULE &#8216;C&#8217; Payment Schedule</span></div>
 <div style="page-break-inside:avoid"><table class="c5g"><colgroup>
 <col style="width:243.11pt"/>
@@ -1224,7 +1123,7 @@ img { border:0; }
 <td class="c5p"><div class="c2d"><span class="c4">Super Structure</span></div></td>
 <td class="c5q"><div class="c2d"><span class="c4">A load bearing structure constructed of reinforced cement concrete and aluminum form work with high strength RCC wall (Except Tower - 12).</span></div>
 <div class="c2d"><span class="c5">TOWER &#8211; 12 : AAC Block Masonry in cement mortar.</span></div>
-<div class="c2d">&#160;</div></td>
+<div class="c2d ag-tight">&#160;</div></td>
 </tr>
 </table></div>
 <div style="page-break-inside:avoid"><table class="c5k"><colgroup>
@@ -1408,11 +1307,11 @@ img { border:0; }
 <td class="c24"><div class="c2d"><span class="c4">A reputed sound proof generator will provide 100% power backup for common areas, as well as Light &amp; Fan points in the hall, bedrooms &amp; Kitchen.</span></div></td>
 </tr>
 </table></div>
-<div class="c0">&#160;</div>
+<div class="c0 ag-tight">&#160;</div>
 <div class="ci"><span class="c4">&#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;</span></div>
-<div class="c68">&#160;</div>
+<div class="c68 ag-tight">&#160;</div>
 <div class="c69"><span class="c1">AMENITIES</span></div>
-<div class="c2d">&#160;</div>
+<div class="c2d ag-tight">&#160;</div>
 <div style="page-break-inside:avoid"><table class="c6f"><tr><td class="c6g"><table class="c6a">
 <colgroup>
 <col style="width:203pt"/>
@@ -1506,9 +1405,9 @@ img { border:0; }
 <td class="c6e"><div class="c6d"><span class="c6c">LAWN</span></div></td>
 </tr>
 </table></td></tr></table></div>
-<div class="c2d">&#160;</div>
+<div class="c2d ag-tight">&#160;</div>
 <div style="page-break-after:always;height:0"></div>
-<div class="c25">&#160;</div>
+<div class="c25 ag-tight">&#160;</div>
 <div class="c0"><span class="cj">SCHEDULE &#8216;E&#8217; SCOPE OF MAINTENANCE</span></div>
 <div class="c6k"><span class="c6i">&#8226;</span><span class="c6j"></span><span class="c4">Security Services.</span></div>
 <div class="c6k"><span class="c6i">&#8226;</span><span class="c6j"></span><span class="c4">Housekeeping and upkeep of all Common Areas (club house excluded).</span></div>

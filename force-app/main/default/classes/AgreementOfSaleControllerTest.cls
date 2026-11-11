@@ -562,10 +562,10 @@ private class AgreementOfSaleControllerTest {
                 First_Name__c = 'Latha',
                 Last_Name__c = 'Rao'
             ),
-            // same person as the Second Applicant: must not be printed twice
+            // same person as the Second Applicant (extra spaces, no Aadhaar): must not be printed twice
             new Co_Applicant__c(
                 Booking__c = booking.Id,
-                Full_Name__c = 'YARRA  THIREESHA'
+                Full_Name__c = 'Sita  Devi Sample'
             )
         };
 
@@ -574,8 +574,12 @@ private class AgreementOfSaleControllerTest {
         List<AgreementOfSaleController.ApplicantEntry> purchasers = controller.getAllApplicants();
         Test.stopTest();
 
+        List<String> printed = new List<String>();
+        for (AgreementOfSaleController.ApplicantEntry purchaser : purchasers) {
+            printed.add(purchaser.name + '/' + purchaser.aadhaar);
+        }
         System.assertEquals(2, controller.applicants.size(), 'Shared applicant list is unchanged for the other pages');
-        System.assertEquals(4, purchasers.size(), 'Applicant, Second Applicant and 2 new co-applicants');
+        System.assertEquals(4, purchasers.size(), 'Applicant, Second Applicant and 2 new co-applicants, got: ' + printed);
         for (Integer i = 0; i < purchasers.size(); i++) {
             System.assertEquals(i + 1, purchasers[i].sequence, 'Numbered 1..N');
         }

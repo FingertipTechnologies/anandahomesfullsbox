@@ -26,10 +26,6 @@ public with sharing class BookingFormController {
     private static final String DATE_FORMAT = 'dd/MM/yyyy';
     private static final String AREA_SUFFIX = ' Sft';
     private static final String CURRENCY_PREFIX = 'Rs. ';
-    private static final Decimal ONE_LAKH = 100000;
-    /** Amount in a Plot__c.Booking_Amount__c label, e.g. "3" in "3bhk – 3 lakhs". */
-    private static final Pattern LAKH_AMOUNT = Pattern.compile('(?i)(\\d+(?:\\.\\d+)?)\\s*(?:lakh|lac)');
-    private static final Pattern PLAIN_AMOUNT = Pattern.compile('^\\d+(?:\\.\\d+)?$');
 
     private static final String CO_APPLICANT_HEADING = 'DETAILS OF CO-APPLICANT';
     /** Co-applicant sections that fit on one page, above the price details. */
@@ -51,6 +47,10 @@ public with sharing class BookingFormController {
     public String flatArea { get; private set; }
     public String facing { get; private set; }
     public String flatConfiguration { get; private set; }
+    /** THE DRIZZLE form: Unit Floor, Series and PLC. */
+    public String floorName { get; private set; }
+    public String seriesName { get; private set; }
+    public String plcName { get; private set; }
 
     // ---------------------------------------------------------------------
     // First applicant
@@ -64,6 +64,7 @@ public with sharing class BookingFormController {
     public String applicantAadhar { get; private set; }
     public String applicantPAN { get; private set; }
     public String applicantAddress { get; private set; }
+    public String applicantCompany { get; private set; }
 
     // ---------------------------------------------------------------------
     // Co-applicants
@@ -91,12 +92,18 @@ public with sharing class BookingFormController {
     public String loanAmount { get; private set; }
     public Boolean isSelfFunded { get; private set; }
     public Boolean isBankLoan { get; private set; }
+    /** THE DRIZZLE form: Flat Cost + GST, the first instalment (incl. GST) and the balance after the advance. */
+    public String totalCost { get; private set; }
+    public String flatBookingAmountPayable { get; private set; }
+    public String balanceFlatAmount { get; private set; }
 
     // ---------------------------------------------------------------------
     // Acknowledgement
     // ---------------------------------------------------------------------
     public String chequeNumber { get; private set; }
     public String bankName { get; private set; }
+    /** Booking__c.Loan_Bank_Name__c ("IF LOAN AVAILED - NAME OF THE BANK"). */
+    public String loanBankName { get; private set; }
 
     public String errorMessage { get; private set; }
 
@@ -140,6 +147,9 @@ public with sharing class BookingFormController {
         flatArea = '';
         facing = '';
         flatConfiguration = '';
+        floorName = '';
+        seriesName = '';
+        plcName = '';
 
         applicantName = '';
         applicantFatherName = '';
@@ -150,6 +160,7 @@ public with sharing class BookingFormController {
         applicantAadhar = '';
         applicantPAN = '';
         applicantAddress = '';
+        applicantCompany = '';
 
         coApplicants = new List<CoApplicant>();
         coApplicantPages = buildCoApplicantPages(coApplicants);
@@ -164,9 +175,13 @@ public with sharing class BookingFormController {
         loanAmount = '';
         isSelfFunded = false;
         isBankLoan = false;
+        totalCost = '';
+        flatBookingAmountPayable = '';
+        balanceFlatAmount = '';
 
         chequeNumber = '';
         bankName = '';
+        loanBankName = '';
 
         errorMessage = '';
     }
@@ -220,10 +235,11 @@ public with sharing class BookingFormController {
             SELECT Id, Name, Booking_Date__c, Date_of_Booking__c, CreatedDate,
                    Facing__c, BHK_Type__c,
                    Block__r.Name,
-                   Plot__r.Name, Plot__r.Booking_Amount__c,
+                   Plot__r.Name, Plot__r.Project__r.Booking_Amount__c, Plot__r.GST1__c,
                    Plot__r.Saleable_Area_Sft__c, Plot__r.Super_built_up_area__c,
                    Plot__r.Built_up_area__c, Plot__r.Facing__c,
                    Plot__r.BHK_Type__c, Plot__r.Tower__c, Plot__r.Block1__r.Name,
+                   Plot__r.Floor__c, Plot__r.Series__c, Plot__r.PLC__c, Quote__r.BHK_Type__c,
 
                    salutation_Applicant1__c, First_Applicant_Name__c,
                    Son_Daughter_Wife_of__c, Mobile_Primary__c, Mobile__c,
@@ -232,6 +248,7 @@ public with sharing class BookingFormController {
                    Aadhaar_Number__c, Aadhaar__c, PAN_Number1__c, PAN_Number__c,
                    Address__c, Permanent_Address__c,
                    Communication_address__c, Correspondence_Address__c,
+                   Name_of_Company__c, Name_of_Company1__c,
 
                    salutation_Applicant2__c, Second_Applicant_Name__c,
                    Son_Daughter_Wife_of1__c, Mobile_Primary1__c, Email2__c,
@@ -243,7 +260,7 @@ public with sharing class BookingFormController {
                    Booking_Amount__c, TDS__c,
                    Funding_Type__c, Loan_Sanctioned_Amount__c,
                    Cheque_Transaction_No__c, Cheque_DD_NEFT_RTGS_No__c,
-                   Bank_Name__c
+                   Bank_Name__c, Loan_Bank_Name__c
             FROM Booking__c
             WHERE Id = :bookingId
             LIMIT 1
@@ -256,9 +273,9 @@ public with sharing class BookingFormController {
     private static List<SObject> queryCoApplicants(Id bookingId) {
         List<Co_Applicant__c> coApplicants = [
             SELECT Id, Salutation__c, Full_Name__c, First_Name__c, Last_Name__c,
-                   W_o_S_o_C_o_c__c, Contact_Number__c, Mobile__c, Email__c,
+                   W_o_S_o_C_o_c__c, Contact_Number__c, Email__c,
                    Date_of_Birth__c, Occupation__c, Aadhar_Number__c,
-                   PAN_Number__c, Permenent_Address__c, Address__c
+                   PAN_Number__c, Permenent_Address__c, Address__c, Name_of_Company__c
             FROM Co_Applicant__c
             WHERE Booking__c = :bookingId
             ORDER BY CreatedDate ASC, Name ASC
@@ -299,8 +316,12 @@ public with sharing class BookingFormController {
         });
         flatConfiguration = firstNonBlank(new List<String>{
             textOf(unit, 'BHK_Type__c'),
-            textOf(booking, 'BHK_Type__c')
+            textOf(booking, 'BHK_Type__c'),
+            textOf(parentOf(booking, 'Quote__r'), 'BHK_Type__c')
         });
+        floorName = textOf(unit, 'Floor__c');
+        seriesName = textOf(unit, 'Series__c');
+        plcName = textOf(unit, 'PLC__c');
     }
 
     private void mapApplicant(Booking__c booking) {
@@ -319,6 +340,7 @@ public with sharing class BookingFormController {
             'Address__c', 'Permanent_Address__c',
             'Communication_address__c', 'Correspondence_Address__c'
         });
+        applicantCompany = textOf(booking, 'Name_of_Company__c');
     }
 
     /**
@@ -362,6 +384,7 @@ public with sharing class BookingFormController {
         co.address = firstText(booking, new List<String>{
             'Permanent_Address1__c', 'Communication_address1__c'
         });
+        co.company = textOf(booking, 'Name_of_Company1__c');
         return co;
     }
 
@@ -377,13 +400,14 @@ public with sharing class BookingFormController {
         CoApplicant co = new CoApplicant();
         co.name = withSalutation(textOf(record, 'Salutation__c'), fullName);
         co.fatherName = textOf(record, 'W_o_S_o_C_o_c__c');
-        co.phone = firstText(record, new List<String>{ 'Contact_Number__c', 'Mobile__c' });
+        co.phone = textOf(record, 'Contact_Number__c');
         co.email = textOf(record, 'Email__c');
         co.dob = textOf(record, 'Date_of_Birth__c');
         co.occupation = textOf(record, 'Occupation__c');
         co.aadhar = textOf(record, 'Aadhar_Number__c');
         co.pan = textOf(record, 'PAN_Number__c');
         co.address = firstText(record, new List<String>{ 'Permenent_Address__c', 'Address__c' });
+        co.company = textOf(record, 'Name_of_Company__c');
         return co;
     }
 
@@ -431,19 +455,18 @@ public with sharing class BookingFormController {
 
     /**
      * @description Price details are read straight from the records:
-     *                - Booking Amount Payable : Plot__c.Booking_Amount__c (picklist,
-     *                                           e.g. "3bhk – 3 lakhs" = Rs. 3,00,000)
+     *                - Booking Amount Payable : Project__c.Booking_Amount__c (unit's project)
      *                - Everything else        : Booking__c Financial Summary /
      *                                           New Stage fields
      *              Only the two lines that have no field are derived:
      *                - Balance Booking Amount = Booking Amount Payable - Advance Paid
-     *                - GST On Booking Amount  = Booking Amount Payable x GST %
+     *                - GST On Booking Amount  = Booking Amount Payable x Plot__c.GST1__c %
      */
     private void mapPriceDetails(Booking__c booking) {
         Decimal flatCost = decimalOf(booking, 'Total_Flat_Cost__c');
         Decimal gstAmount = decimalOf(booking, 'GST_Amount__c');
-        String plotBookingAmount = textOf(parentOf(booking, 'Plot__r'), 'Booking_Amount__c');
-        Decimal bookingAmount = parseLakhAmount(plotBookingAmount);
+        SObject unit = parentOf(booking, 'Plot__r');
+        Decimal bookingAmount = decimalOf(parentOf(unit, 'Project__r'), 'Booking_Amount__c');
         Decimal advance = decimalOf(booking, 'Booking_Amount__c');
 
         Decimal balance = null;
@@ -453,37 +476,46 @@ public with sharing class BookingFormController {
         }
 
         finalPrice = formatAmount(flatCost);
-        // Shows the picklist label as-is if it holds no recognisable amount.
-        bookingAmountPayable = bookingAmount != null
-            ? formatAmount(bookingAmount)
-            : plotBookingAmount;
+        bookingAmountPayable = formatAmount(bookingAmount);
         advancePaid = formatAmount(advance);
         balanceBookingAmount = formatAmount(balance);
         tdsPayable = formatAmount(decimalOf(booking, 'TDS__c'));
         gstPayable = formatAmount(gstAmount);
         gstOnBookingAmount = formatAmount(
-            percentOf(bookingAmount, gstPercentOf(booking, flatCost, gstAmount))
+            percentOf(bookingAmount, decimalOf(unit, 'GST1__c'))
         );
         loanAmount = formatAmount(decimalOf(booking, 'Loan_Sanctioned_Amount__c'));
 
         String fundingType = textOf(booking, 'Funding_Type__c').toLowerCase();
         isSelfFunded = SELF_FUNDING_TYPES.contains(fundingType);
         isBankLoan = LOAN_FUNDING_TYPES.contains(fundingType);
+
+        // THE DRIZZLE form: Total = Flat Cost + GST; Flat Booking Amount Payable (incl. GST) is the
+        // first instalment of the booking's payment schedule (else the project's booking amount);
+        // Balance Flat Amount Payable = Total - Initial Booking Amount Paid.
+        Decimal total = flatCost == null && gstAmount == null
+            ? null
+            : (flatCost == null ? 0 : flatCost) + (gstAmount == null ? 0 : gstAmount);
+        Decimal firstInstalment = firstScheduleAmount(booking.Id);
+        Decimal payable = firstInstalment != null ? firstInstalment : bookingAmount;
+        Decimal balanceFlat = total == null ? null : total - (advance == null ? 0 : advance);
+
+        totalCost = formatAmount(total);
+        flatBookingAmountPayable = formatAmount(payable);
+        balanceFlatAmount = formatAmount(balanceFlat == null ? null : (balanceFlat > 0 ? balanceFlat : 0));
     }
 
-    /**
-     * @description GST % from Booking__c.GST__c; when blank, the booking's own
-     *              rate GST_Amount__c / Total_Flat_Cost__c x 100.
-     */
-    private static Decimal gstPercentOf(Booking__c booking, Decimal flatCost, Decimal gstAmount) {
-        Decimal gstPercent = decimalOf(booking, 'GST__c');
-        if (gstPercent != null) {
-            return gstPercent;
-        }
-        if (flatCost == null || flatCost == 0 || gstAmount == null) {
-            return null;
-        }
-        return gstAmount * 100 / flatCost;
+    /** Amount of the booking's first payment schedule line (lowest S No), or null when there is none. */
+    private static Decimal firstScheduleAmount(Id bookingId) {
+        List<Payment_Schedule__c> lines = [
+            SELECT Payment_Schedule_Amount__c
+            FROM Payment_Schedule__c
+            WHERE Booking__c = :bookingId AND Payment_Schedule_Amount__c != null
+            ORDER BY S_No__c ASC NULLS LAST, CreatedDate ASC
+            LIMIT 1
+        ];
+        List<SObject> readable = stripInaccessible(lines);
+        return readable.isEmpty() ? null : decimalOf(readable[0], 'Payment_Schedule_Amount__c');
     }
 
     private void mapAcknowledgement(Booking__c booking) {
@@ -491,6 +523,7 @@ public with sharing class BookingFormController {
             'Cheque_Transaction_No__c', 'Cheque_DD_NEFT_RTGS_No__c'
         });
         bankName = textOf(booking, 'Bank_Name__c');
+        loanBankName = textOf(booking, 'Loan_Bank_Name__c');
     }
 
     // =====================================================================
@@ -638,24 +671,6 @@ public with sharing class BookingFormController {
             + String.valueOf(value.year());
     }
 
-    /**
-     * @description Converts a Plot__c.Booking_Amount__c picklist label to rupees:
-     *              "3bhk – 3 lakhs" -> 300000, "2.5 lakh" -> 250000,
-     *              "300000" -> 300000. Returns null when no amount is found.
-     */
-    @TestVisible
-    private static Decimal parseLakhAmount(String label) {
-        if (String.isBlank(label)) {
-            return null;
-        }
-        Matcher lakhMatch = LAKH_AMOUNT.matcher(label);
-        if (lakhMatch.find()) {
-            return Decimal.valueOf(lakhMatch.group(1)) * ONE_LAKH;
-        }
-        String digits = label.replaceAll('[,\\s]', '');
-        return PLAIN_AMOUNT.matcher(digits).matches() ? Decimal.valueOf(digits) : null;
-    }
-
     @TestVisible
     private static String formatArea(Decimal area) {
         if (area == null) {
@@ -728,6 +743,7 @@ public with sharing class BookingFormController {
         public String aadhar { get; set; }
         public String pan { get; set; }
         public String address { get; set; }
+        public String company { get; set; }
         /** True for the first section on a page (no top gap). */
         public Boolean isFirstOnPage { get; set; }
 
@@ -742,6 +758,7 @@ public with sharing class BookingFormController {
             aadhar = '';
             pan = '';
             address = '';
+            company = '';
             isFirstOnPage = false;
         }
     }

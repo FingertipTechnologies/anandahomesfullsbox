@@ -2,10 +2,11 @@
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>UDS_Sq_mts__c</fullName>
     <externalId>false</externalId>
+    <inlineHelpText>Undivided share of land in Square Yards, printed in the Agreement of Sale and Sale Deed.</inlineHelpText>
     <label>UDS (Sq yards.)</label>
     <precision>18</precision>
     <required>false</required>
-    <scale>0</scale>
+    <scale>2</scale>
     <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Number</type>

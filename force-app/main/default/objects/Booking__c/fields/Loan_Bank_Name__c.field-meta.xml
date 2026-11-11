@@ -1,12 +1,89 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Loan_Bank_Name__c</fullName>
-    <externalId>false</externalId>
     <label>Loan Bank Name</label>
-    <length>255</length>
     <required>false</required>
     <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>
-    <type>Text</type>
-    <unique>false</unique>
+    <type>Picklist</type>
+    <valueSet>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>BHFL</fullName>
+                <default>false</default>
+                <label>BHFL</label>
+            </value>
+            <value>
+                <fullName>ICICI BANK</fullName>
+                <default>false</default>
+                <label>ICICI BANK</label>
+            </value>
+            <value>
+                <fullName>IDBI</fullName>
+                <default>false</default>
+                <label>IDBI</label>
+            </value>
+            <value>
+                <fullName>INDIAN BANK</fullName>
+                <default>false</default>
+                <label>INDIAN BANK</label>
+            </value>
+            <value>
+                <fullName>HDFC</fullName>
+                <default>false</default>
+                <label>HDFC</label>
+            </value>
+            <value>
+                <fullName>NAVI</fullName>
+                <default>false</default>
+                <label>NAVI</label>
+            </value>
+            <value>
+                <fullName>UCO BANK</fullName>
+                <default>false</default>
+                <label>UCO BANK</label>
+            </value>
+            <value>
+                <fullName>UNION BANK</fullName>
+                <default>false</default>
+                <label>UNION BANK</label>
+            </value>
+            <value>
+                <fullName>BANK OF MAHARASHTRA</fullName>
+                <default>false</default>
+                <label>BANK OF MAHARASHTRA</label>
+            </value>
+            <value>
+                <fullName>CENTRAL BANK</fullName>
+                <default>false</default>
+                <label>CENTRAL BANK</label>
+            </value>
+            <value>
+                <fullName>CANARA BANK</fullName>
+                <default>false</default>
+                <label>CANARA BANK</label>
+            </value>
+            <value>
+                <fullName>SBI BANK</fullName>
+                <default>false</default>
+                <label>SBI BANK</label>
+            </value>
+            <value>
+                <fullName>PUNJAB NATIONAL BANK</fullName>
+                <default>false</default>
+                <label>PUNJAB NATIONAL BANK</label>
+            </value>
+            <value>
+                <fullName>AXIS</fullName>
+                <default>false</default>
+                <label>AXIS</label>
+            </value>
+            <value>
+                <fullName>BAJAJ</fullName>
+                <default>false</default>
+                <label>BAJAJ</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
 </CustomField>

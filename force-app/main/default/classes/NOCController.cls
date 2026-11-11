@@ -187,11 +187,15 @@ public with sharing class NOCController {
         noc.Approval_Status__c = 'Pending';
         noc.Approver_1__c = b.CRM_Manager__c;
         noc.Generated_Date__c = Date.today();
+        // The lookups hold the first selection; the *_Ids__c fields keep every selection so the
+        // Capri mail can attach one cancellation / swap letter for each of them.
         if (cancellationIds != null && !cancellationIds.isEmpty()) {
             noc.Related_Cancellation_Booking__c = cancellationIds[0];
+            noc.Related_Cancellation_Booking_Ids__c = String.join(cancellationIds, ',');
         }
         if (swapIds != null && !swapIds.isEmpty()) {
             noc.Related_Swap_History__c = swapIds[0];
+            noc.Related_Swap_History_Ids__c = String.join(swapIds, ',');
         }
 
         insert noc;
@@ -274,7 +278,8 @@ public with sharing class NOCController {
     }
 
     /**
-     * @description Sends an approved NOC to the booking applicant(s). Only permitted once the
+     * @description Sends an approved NOC: a Capri NOC goes to the booking's Capri Email with its
+     *              letters attached, any other NOC type to the booking applicant(s). Only permitted once the
      *              NOC has been approved by the CRM Manager (BRD §7.40). The booking owner is
      *              intentionally not copied, consistent with the receipt-email rule.
      * @param nocId NOC to send
@@ -285,7 +290,10 @@ public with sharing class NOCController {
 
         List<NOC__c> nocs = [
             SELECT Id, Name, NOC_Type__c, Approval_Status__c, Mail_Body__c, Sent_Date__c,
-                   Booking__r.Email__c, Booking__r.First_Applicant_Name__c, Booking__r.Name
+                   Related_Cancellation_Booking__c, Related_Swap_History__c,
+                   Related_Cancellation_Booking_Ids__c, Related_Swap_History_Ids__c,
+                   Booking__r.Email__c, Booking__r.First_Applicant_Name__c, Booking__r.Name,
+                   Booking__r.Unit_NumberFor__c
             FROM NOC__c WHERE Id = :nocId LIMIT 1
         ];
         if (nocs.isEmpty()) throw new AuraHandledException('NOC not found.');
@@ -293,6 +301,13 @@ public with sharing class NOCController {
 
         if (noc.Approval_Status__c != 'Approved') {
             throw new AuraHandledException('NOC can only be sent after CRM Manager approval.');
+        }
+        if (noc.NOC_Type__c == 'Capri NOC') {
+            // A Capri NOC is a request to Capri, not a mail to the applicant: it goes to the Capri
+            // Email on the booking with the current unit's NOC plus one letter for every swap and
+            // cancellation selected when it was raised (same mail as the button on the NOC record).
+            CapriNocApprovedEmailInvocable.sendNow(noc.Id);
+            return;
         }
         if (noc.Booking__r == null || String.isBlank(noc.Booking__r.Email__c)) {
             throw new AuraHandledException('No applicant email address on the booking.');
@@ -305,7 +320,11 @@ public with sharing class NOCController {
         email.setHtmlBody(body.replace('\n', '<br/>'));
         email.setSaveAsActivity(true);
 
-        Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{ email }, false);
+        Messaging.SendEmailResult[] results =
+            Messaging.sendEmail(new List<Messaging.SingleEmailMessage>{ email }, false);
+        if (!results[0].isSuccess()) {
+            throw new AuraHandledException('The NOC mail could not be sent: ' + results[0].getErrors()[0].getMessage());
+        }
 
         update new NOC__c(Id = noc.Id, Sent_Date__c = Date.today());
     }

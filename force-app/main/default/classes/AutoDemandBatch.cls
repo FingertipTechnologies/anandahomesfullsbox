@@ -48,7 +48,7 @@ public with sharing class AutoDemandBatch implements Database.Batchable<SObject>
             SELECT Id, Booking__c, Booking__r.Project__c, Booking__r.Name,
                    Booking__r.Funding_Type__c,
                    Booking__r.Project__r.Legacy_Split_Demand_Receipt__c,
-                   Pending_Amount__c, Payment_Schedule_Amount_Pending__c,
+                   Pending_Amount__c, Payment_Schedule_Amount_Pending__c, Due_Date__c,
                    GST_Amount_Pending__c, TDS_Amount_Pending__c,
                    Interest_Pending__c, Milestone_Name__c, Sequence__c
             FROM Payment_Schedule__c
@@ -81,6 +81,7 @@ public with sharing class AutoDemandBatch implements Database.Batchable<SObject>
 
             // Group schedules by booking for demand creation
             Map<Id, List<Payment_Schedule__c>> schedulesByBooking = new Map<Id, List<Payment_Schedule__c>>();
+            Map<Id, Payment_Schedule__c> scopeScheduleById = new Map<Id, Payment_Schedule__c>(scope);
             for (Payment_Schedule__c ps : scope) {
                 if (!schedulesByBooking.containsKey(ps.Booking__c)) {
                     schedulesByBooking.put(ps.Booking__c, new List<Payment_Schedule__c>());
@@ -204,6 +205,9 @@ public with sharing class AutoDemandBatch implements Database.Batchable<SObject>
                                 ? schedulesToUpdate.get(schedId)
                                 : new Payment_Schedule__c(Id = schedId);
                             ps.Demand_Date__c = demandDate;
+                            if (scopeScheduleById.get(schedId).Due_Date__c == null) {
+                                ps.Due_Date__c = demandsToInsert[i].Due_Date__c;
+                            }
                             DemandComponentService.markRaised(ps, indexToComponent.get(i), false);
                             schedulesToUpdate.put(schedId, ps);
                         }

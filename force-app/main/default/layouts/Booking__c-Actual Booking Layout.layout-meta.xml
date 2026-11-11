@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Layout xmlns="http://soap.sforce.com/2006/04/metadata">
-    <excludeButtons>GenerateKnowledge</excludeButtons>
-    <excludeButtons>OpenSlackRecordChannel</excludeButtons>
     <excludeButtons>SmartFillEnrich</excludeButtons>
     <layoutSections>
         <customLabel>false</customLabel>
@@ -144,11 +142,15 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Readonly</behavior>
-                <field>Total_Receipt_Amount__c</field>
+                <field>Total_Received_Flat_Amount__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Readonly</behavior>
-                <field>Total__c</field>
+                <field>Balance_Flat_Amount__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>Total_Receipt_Amount__c</field>
             </layoutItems>
             <layoutItems>
                 <behavior>Readonly</behavior>
@@ -171,6 +173,10 @@
             <layoutItems>
                 <behavior>Readonly</behavior>
                 <field>Total_Amount_Pending__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>Total__c</field>
             </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>

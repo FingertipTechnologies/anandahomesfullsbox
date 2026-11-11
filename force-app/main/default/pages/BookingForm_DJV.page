@@ -1,0 +1,677 @@
+<apex:page controller="BookingFormController"
+    renderAs="pdf"
+    showHeader="false"
+    sidebar="false"
+    standardStylesheets="false"
+    applyHtmlTag="false"
+    applyBodyTag="false"
+    contentType="application/pdf#DrizzleJVBookingForm.pdf">
+<!--
+    THE DRIZZLE JV - Booking Form (PDF)
+    Layout follows "DJV BOOKING FORM 26 May 2025.pdf": logos of Ananda Homes, The Drizzle and Prosper in
+    the header and Bay Hills, The Ozone Heights and Poetree in the footer of every page.
+    Dynamic values come from BookingFormController (shared with BookingForm_LEGACY); page parameter
+    "id" = Booking__c Id. Flat details come from the booked Unit (Floor, BHK Type, Series, PLC).
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<style type="text/css">
+
+@page {
+    size: A4 portrait;
+    margin: 34mm 10mm 30mm 10mm;
+    @top-center { content: element(pageHeader); }
+    @bottom-center { content: element(pageFooter); }
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: sans-serif;
+    font-size: 9.5pt;
+    color: #333333;
+    line-height: 1.35;
+}
+
+.page {
+    page-break-after: always;
+}
+
+.page-last {
+    page-break-after: auto;
+}
+
+/* HEADER / FOOTER (printed on every page) */
+
+#pageHeader {
+    position: running(pageHeader);
+    width: 190mm;
+}
+
+#pageFooter {
+    position: running(pageFooter);
+    width: 190mm;
+}
+
+.logo-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.logo-table td {
+    width: 33%;
+    text-align: center;
+    vertical-align: middle;
+    padding: 0 2mm;
+}
+
+.logo-table td.left { text-align: left; }
+.logo-table td.right { text-align: right; }
+
+.logo-table img.hdr { height: 18mm; width: auto; }
+.logo-table img.hdr-wide { height: 14mm; width: auto; }
+.logo-table img.ftr { height: 14mm; width: auto; }
+
+.header-rule {
+    border-bottom: 1.2pt solid #E0E0E0;
+    margin-top: 2mm;
+}
+
+.footer-rule {
+    border-top: 1.2pt solid #E0E0E0;
+    margin-bottom: 2mm;
+}
+
+/* TITLES */
+
+.page-title {
+    text-align: center;
+    font-size: 13.5pt;
+    font-weight: bold;
+    color: #1A237E;
+    text-decoration: underline;
+    margin: 0 0 4mm 0;
+}
+
+.sub-title {
+    text-align: center;
+    font-size: 11pt;
+    font-weight: bold;
+    color: #333333;
+    text-decoration: underline;
+    margin: 0 0 4mm 0;
+}
+
+/* FORM TABLES */
+
+.form-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    margin-bottom: 5mm;
+    page-break-inside: avoid;
+}
+
+.form-table th {
+    background-color: #F3F4F6;
+    color: #1A237E;
+    font-size: 10pt;
+    font-weight: bold;
+    text-align: center;
+    padding: 2mm 2.5mm;
+    border: 0.6pt solid #333333;
+}
+
+.form-table td {
+    padding: 1.8mm 2.5mm;
+    border: 0.6pt solid #333333;
+    vertical-align: middle;
+    font-size: 9.3pt;
+    word-wrap: break-word;
+}
+
+.form-table td.label-cell {
+    font-weight: bold;
+    background-color: #FAFAFA;
+}
+
+.form-table td.value-cell {
+    color: #111111;
+}
+
+.form-table .note {
+    font-size: 8pt;
+    font-weight: normal;
+    color: #555555;
+}
+
+/* Column widths */
+
+.flat-table td.label-cell { width: 22%; }
+.flat-table td.value-cell { width: 28%; }
+
+.applicant-table td.label-cell { width: 36%; }
+.applicant-table td.value-cell { width: 64%; }
+
+.price-table td.label-cell { width: 44%; }
+
+.loan-table td.label-cell { width: 44%; }
+
+.row-tall td {
+    height: 9mm;
+}
+
+/* CHECKBOX */
+
+.checkbox {
+    display: inline-block;
+    width: 3.2mm;
+    height: 3.2mm;
+    border: 0.6pt solid #333333;
+    font-size: 7pt;
+    font-weight: bold;
+    line-height: 3.2mm;
+    text-align: center;
+    vertical-align: middle;
+    color: #111111;
+    margin-left: 1.5mm;
+}
+
+/* SIGNATURES */
+
+.signature-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    page-break-inside: avoid;
+}
+
+.signature-table td {
+    width: 50%;
+    text-align: center;
+    vertical-align: bottom;
+    font-size: 9pt;
+    padding: 0 3mm;
+}
+
+.signature-label {
+    font-weight: bold;
+    padding-bottom: 11mm;
+}
+
+.signature-name {
+    font-size: 9pt;
+}
+
+.signature-name .sig-value {
+    display: inline-block;
+    min-width: 45mm;
+    border-bottom: 0.5pt solid #777777;
+    color: #111111;
+    text-align: center;
+}
+
+/* TERMS */
+
+.terms-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.terms-table td {
+    font-size: 9.4pt;
+    vertical-align: top;
+    line-height: 1.45;
+    padding-bottom: 3.2mm;
+    text-align: justify;
+}
+
+.term-bullet {
+    width: 6mm;
+    color: #1A237E;
+    font-weight: bold;
+    text-align: left;
+}
+
+.note-text {
+    text-align: center;
+    font-weight: bold;
+    text-decoration: underline;
+    font-size: 9.5pt;
+    margin-top: 4mm;
+}
+
+.error-banner {
+    margin-bottom: 3mm;
+    padding: 1.5mm 3mm;
+    border: 0.5pt solid #C23934;
+    color: #C23934;
+    font-size: 8.5pt;
+    text-align: center;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- Header and footer logos, repeated by the PDF renderer on every page -->
+<div id="pageHeader">
+    <table class="logo-table">
+        <tr>
+            <td class="left"><apex:image styleClass="hdr" url="{!$Resource.Ananda_Home_New_Logo}" alt="Ananda Homes"/></td>
+            <td><apex:image styleClass="hdr" url="{!$Resource.Drizzle_Logo}" alt="The Drizzle - Live Amazing @Narsingi"/></td>
+            <td class="right"><apex:image styleClass="hdr-wide" url="{!$Resource.Prosper_Logo}" alt="Prosper - Together with Innovation"/></td>
+        </tr>
+    </table>
+    <div class="header-rule"></div>
+</div>
+<div id="pageFooter">
+    <div class="footer-rule"></div>
+    <table class="logo-table">
+        <tr>
+            <td class="left"><apex:image styleClass="ftr" url="{!$Resource.Bay_Hills_Logo}" alt="Bay Hills"/></td>
+            <td><apex:image styleClass="ftr" url="{!$Resource.Ozone_Logo}" alt="The Ozone Heights"/></td>
+            <td class="right"><apex:image styleClass="ftr" url="{!$Resource.Poetree_Logo}" alt="Poetree"/></td>
+        </tr>
+    </table>
+</div>
+
+<!-- ===================================== -->
+<!-- PAGE 1 - FLAT DETAILS AND APPLICANT   -->
+<!-- ===================================== -->
+
+<div class="page">
+
+    <apex:outputPanel layout="block"
+                      styleClass="error-banner"
+                      rendered="{!hasError}">
+        <apex:outputText value="{!errorMessage}"/>
+    </apex:outputPanel>
+
+    <div class="page-title">BOOKING FORM</div>
+
+    <!-- FLAT DETAILS -->
+    <table class="form-table flat-table">
+        <tr>
+            <th colspan="4">FLAT DETAILS</th>
+        </tr>
+        <tr class="row-tall">
+            <td class="label-cell">DATE OF BOOKING</td>
+            <td class="value-cell"><apex:outputText value="{!bookingDate}"/>&#160;</td>
+            <td class="label-cell">FLAT NO.</td>
+            <td class="value-cell"><apex:outputText value="{!flatNo}"/>&#160;</td>
+        </tr>
+        <tr class="row-tall">
+            <td class="label-cell">BLOCK</td>
+            <td class="value-cell"><apex:outputText value="{!towerName}"/>&#160;</td>
+            <td class="label-cell">FLAT AREA</td>
+            <td class="value-cell"><apex:outputText value="{!flatArea}"/>&#160;</td>
+        </tr>
+        <tr class="row-tall">
+            <td class="label-cell">FLOOR</td>
+            <td class="value-cell"><apex:outputText value="{!floorName}"/>&#160;</td>
+            <td class="label-cell">FLAT TYPE</td>
+            <td class="value-cell"><apex:outputText value="{!flatConfiguration}"/>&#160;</td>
+        </tr>
+        <tr class="row-tall">
+            <td class="label-cell">SERIES</td>
+            <td class="value-cell"><apex:outputText value="{!seriesName}"/>&#160;</td>
+            <td class="label-cell">PLCs</td>
+            <td class="value-cell"><apex:outputText value="{!plcName}"/>&#160;</td>
+        </tr>
+    </table>
+
+    <!-- DETAILS OF APPLICANT -->
+    <table class="form-table applicant-table">
+        <tr>
+            <th colspan="2">DETAILS OF APPLICANT</th>
+        </tr>
+        <tr class="row-tall">
+            <td class="label-cell">NAME</td>
+            <td class="value-cell"><apex:outputText value="{!applicantName}"/>&#160;</td>
+        </tr>
+        <tr class="row-tall">
+            <td class="label-cell">FATHER's / HUSBAND's NAME</td>
+            <td class="value-cell"><apex:outputText value="{!applicantFatherName}"/>&#160;</td>
+        </tr>
+        <tr class="row-tall">
+            <td class="label-cell">COMPLETE ADDRESS<br/>
+                <span class="note">(This address will be used in AOS)</span></td>
+            <td class="value-cell"><apex:outputText value="{!applicantAddress}"/>&#160;</td>
+        </tr>
+        <tr class="row-tall">
+            <td class="label-cell">CONTACT NUMBER</td>
+            <td class="value-cell"><apex:outputText value="{!applicantPhone}"/>&#160;</td>
+        </tr>
+        <tr class="row-tall">
+            <td class="label-cell">EMAIL ID</td>
+            <td class="value-cell"><apex:outputText value="{!applicantEmail}"/>&#160;</td>
+        </tr>
+        <tr class="row-tall">
+            <td class="label-cell">DATE OF BIRTH</td>
+            <td class="value-cell"><apex:outputText value="{!applicantDOB}"/>&#160;</td>
+        </tr>
+        <tr class="row-tall">
+            <td class="label-cell">OCCUPATION</td>
+            <td class="value-cell"><apex:outputText value="{!applicantOccupation}"/>&#160;</td>
+        </tr>
+        <tr class="row-tall">
+            <td class="label-cell">COMPANY DETAILS</td>
+            <td class="value-cell"><apex:outputText value="{!applicantCompany}"/>&#160;</td>
+        </tr>
+        <tr class="row-tall">
+            <td class="label-cell">AADHAR CARD NO.</td>
+            <td class="value-cell"><apex:outputText value="{!applicantAadhar}"/>&#160;</td>
+        </tr>
+        <tr class="row-tall">
+            <td class="label-cell">PAN CARD NO.</td>
+            <td class="value-cell"><apex:outputText value="{!applicantPAN}"/>&#160;</td>
+        </tr>
+    </table>
+
+    <!-- Signature -->
+    <table class="signature-table" style="margin-top:14mm;">
+        <tr>
+            <td class="signature-label">SIGNATURE OF PURCHASER</td>
+            <td class="signature-label">SIGNATURE (For THE DRIZZLE JV)</td>
+        </tr>
+        <tr>
+            <td class="signature-name">
+                (Name: <span class="sig-value"><apex:outputText value="{!applicantName}"/>&#160;</span> )
+            </td>
+            <td class="signature-name">
+                (Name: <span class="sig-value">&#160;</span> )
+            </td>
+        </tr>
+    </table>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- PAGE 2 - CO-APPLICANTS, PRICE AND     -->
+<!--          PAYMENT, LOAN DETAILS        -->
+<!--  Co-applicant pages are laid out by   -->
+<!--  the controller (coApplicantPages).   -->
+<!-- ===================================== -->
+
+<apex:repeat value="{!coApplicantPages}" var="pg">
+
+    <div class="page">
+
+        <!-- One section per co-applicant on this page -->
+        <apex:repeat value="{!pg.coApplicants}" var="co">
+
+            <table class="form-table applicant-table"
+                   style="margin-top:{!IF(co.isFirstOnPage, '0', '6mm')};">
+                <tr>
+                    <th colspan="2"><apex:outputText value="{!co.heading}"/></th>
+                </tr>
+                <tr class="row-tall">
+                    <td class="label-cell">NAME</td>
+                    <td class="value-cell"><apex:outputText value="{!co.name}"/>&#160;</td>
+                </tr>
+                <tr class="row-tall">
+                    <td class="label-cell">FATHER's / HUSBAND's NAME</td>
+                    <td class="value-cell"><apex:outputText value="{!co.fatherName}"/>&#160;</td>
+                </tr>
+                <tr class="row-tall">
+                    <td class="label-cell">COMPLETE ADDRESS<br/>
+                        <span class="note">(This address will be used in AOS)</span></td>
+                    <td class="value-cell"><apex:outputText value="{!co.address}"/>&#160;</td>
+                </tr>
+                <tr class="row-tall">
+                    <td class="label-cell">CONTACT NUMBER</td>
+                    <td class="value-cell"><apex:outputText value="{!co.phone}"/>&#160;</td>
+                </tr>
+                <tr class="row-tall">
+                    <td class="label-cell">EMAIL ID</td>
+                    <td class="value-cell"><apex:outputText value="{!co.email}"/>&#160;</td>
+                </tr>
+                <tr class="row-tall">
+                    <td class="label-cell">DATE OF BIRTH</td>
+                    <td class="value-cell"><apex:outputText value="{!co.dob}"/>&#160;</td>
+                </tr>
+                <tr class="row-tall">
+                    <td class="label-cell">OCCUPATION</td>
+                    <td class="value-cell"><apex:outputText value="{!co.occupation}"/>&#160;</td>
+                </tr>
+                <tr class="row-tall">
+                    <td class="label-cell">COMPANY DETAILS</td>
+                    <td class="value-cell"><apex:outputText value="{!co.company}"/>&#160;</td>
+                </tr>
+                <tr class="row-tall">
+                    <td class="label-cell">AADHAR CARD NO.</td>
+                    <td class="value-cell"><apex:outputText value="{!co.aadhar}"/>&#160;</td>
+                </tr>
+                <tr class="row-tall">
+                    <td class="label-cell">PAN CARD NO.</td>
+                    <td class="value-cell"><apex:outputText value="{!co.pan}"/>&#160;</td>
+                </tr>
+            </table>
+
+        </apex:repeat>
+
+        <!-- Price, payment and loan details only on the last page -->
+        <apex:outputPanel layout="none" rendered="{!pg.showPriceDetails}">
+
+            <!-- PRICE AND PAYMENT DETAILS -->
+            <table class="form-table price-table"
+                   style="margin-top:{!IF(pg.hasCoApplicants, '2mm', '0')};">
+                <tr>
+                    <th colspan="3">PRICE &amp; PAYMENT DETAILS</th>
+                </tr>
+                <tr>
+                    <th style="width:44%;">FLAT COST</th>
+                    <th style="width:28%;">GST</th>
+                    <th style="width:28%;">TOTAL</th>
+                </tr>
+                <tr class="row-tall">
+                    <td class="value-cell" style="text-align:center;"><apex:outputText value="{!finalPrice}"/>&#160;</td>
+                    <td class="value-cell" style="text-align:center;"><apex:outputText value="{!gstPayable}"/>&#160;</td>
+                    <td class="value-cell" style="text-align:center;"><apex:outputText value="{!totalCost}"/>&#160;</td>
+                </tr>
+                <tr class="row-tall">
+                    <td class="label-cell">FLAT BOOKING AMOUNT PAYABLE<br/>(INCLUDING GST)</td>
+                    <td class="value-cell" colspan="2"><apex:outputText value="{!flatBookingAmountPayable}"/>&#160;</td>
+                </tr>
+                <tr class="row-tall">
+                    <td class="label-cell">INITIAL BOOKING AMOUNT PAID</td>
+                    <td class="value-cell" colspan="2"><apex:outputText value="{!advancePaid}"/>&#160;</td>
+                </tr>
+                <tr class="row-tall">
+                    <td class="label-cell">BALANCE FLAT AMOUNT PAYABLE<br/>(INCLUDING 1% TDS)</td>
+                    <td class="value-cell" colspan="2"><apex:outputText value="{!balanceFlatAmount}"/>&#160;</td>
+                </tr>
+            </table>
+
+            <!-- LOAN DETAILS -->
+            <table class="form-table loan-table">
+                <tr>
+                    <th colspan="2">LOAN DETAILS</th>
+                </tr>
+                <tr class="row-tall">
+                    <td class="label-cell">PAYMENT MODE</td>
+                    <td class="value-cell" style="text-align:center;">
+                        SELF
+                        <span class="checkbox"><apex:outputText value="X" rendered="{!isSelfFunded}"/>&#160;</span>
+                        <span style="margin:0 6mm;">/</span>
+                        LOAN
+                        <span class="checkbox"><apex:outputText value="X" rendered="{!isBankLoan}"/>&#160;</span>
+                    </td>
+                </tr>
+                <tr class="row-tall">
+                    <td class="label-cell">IF LOAN AVAILED - NAME OF THE BANK</td>
+                    <td class="value-cell"><apex:outputText value="{!loanBankName}"/>&#160;</td>
+                </tr>
+                <tr class="row-tall">
+                    <td class="label-cell">LOAN AMOUNT (Rs.)</td>
+                    <td class="value-cell"><apex:outputText value="{!loanAmount}"/>&#160;</td>
+                </tr>
+            </table>
+
+            <!-- Signature -->
+            <table class="signature-table" style="margin-top:10mm;">
+                <tr>
+                    <td class="signature-label">SIGNATURE OF PURCHASER</td>
+                    <td class="signature-label">SIGNATURE (For THE DRIZZLE JV)</td>
+                </tr>
+                <tr>
+                    <td class="signature-name">
+                        (Name: <span class="sig-value"><apex:outputText value="{!applicantName}"/>&#160;</span> )
+                    </td>
+                    <td class="signature-name">
+                        (Name: <span class="sig-value">&#160;</span> )
+                    </td>
+                </tr>
+            </table>
+
+        </apex:outputPanel>
+
+    </div>
+
+</apex:repeat>
+
+
+<!-- ===================================== -->
+<!-- PAGE 3 - TERMS AND CONDITIONS         -->
+<!-- ===================================== -->
+
+<div class="page">
+
+    <div class="page-title">TERMS &amp; CONDITIONS</div>
+
+    <table class="terms-table">
+        <tr>
+            <td class="term-bullet">&#10148;</td>
+            <td>No Changes/Modifications/Additional works shall be entertained as per the company norms.</td>
+        </tr>
+        <tr>
+            <td class="term-bullet">&#10148;</td>
+            <td>External and plumbing related modifications/changes are not allowed.</td>
+        </tr>
+        <tr>
+            <td class="term-bullet">&#10148;</td>
+            <td>Request you to adhere to the payment schedule as per the Price Sheet. In case, you fail to meet
+                the above mentioned payment schedule, the builder reserves every right to increase the cost as
+                per the existing market price.</td>
+        </tr>
+        <tr>
+            <td class="term-bullet">&#10148;</td>
+            <td>The builder does not hold any responsibility for rejection of loan from Banker.</td>
+        </tr>
+        <tr>
+            <td class="term-bullet">&#10148;</td>
+            <td>We look forward for a mutual co-operation and request you to extend your support for a smooth
+                transaction.</td>
+        </tr>
+        <tr>
+            <td class="term-bullet">&#10148;</td>
+            <td>After handing over process gets completed from the builder, purchaser may start his/her
+                interior works.</td>
+        </tr>
+        <tr>
+            <td class="term-bullet">&#10148;</td>
+            <td>Kitchen Platform, Sink and Wall daddoing to Customer's cost.</td>
+        </tr>
+    </table>
+
+    <!-- Signature -->
+    <table class="signature-table" style="margin-top:120mm;">
+        <tr>
+            <td class="signature-label">SIGNATURE OF PURCHASER</td>
+            <td class="signature-label">SIGNATURE (For THE DRIZZLE JV)</td>
+        </tr>
+        <tr>
+            <td class="signature-name">
+                (Name: <span class="sig-value"><apex:outputText value="{!applicantName}"/>&#160;</span> )
+            </td>
+            <td class="signature-name">
+                (Name: <span class="sig-value">&#160;</span> )
+            </td>
+        </tr>
+    </table>
+
+</div>
+
+
+<!-- ===================================== -->
+<!-- PAGE 4 - ANNEXURE                     -->
+<!-- ===================================== -->
+
+<div class="page page-last">
+
+    <div class="page-title">ANNEXURE</div>
+    <div class="sub-title">TO WHOMSOEVER IT MAY CONCERN</div>
+
+    <table class="terms-table">
+        <tr>
+            <td class="term-bullet">&#10148;</td>
+            <td>Buyer must pay Legal &amp; Documentation Charges, Corpus Fund, Club House Infrastructure Charges
+                and Maintenance etc. for the purchased flat as per Builder Guidelines.</td>
+        </tr>
+        <tr>
+            <td class="term-bullet">&#10148;</td>
+            <td>Buyer must pay applicable GST Payments as per prevailing dates for the purchased flat as per
+                Builder Guidelines.</td>
+        </tr>
+        <tr>
+            <td class="term-bullet">&#10148;</td>
+            <td>Flats purchased either through Marketing Agent / Channel Partner / Broker / Investors -
+                Registration Process &amp; Related Procedures must be strictly routed through builder and as per
+                given guidelines by Builder.</td>
+        </tr>
+        <tr>
+            <td class="term-bullet">&#10148;</td>
+            <td>Buyers must coordinate either with our CRM Department or Management only for
+                confirmed/realistic dates of Flat Possession/Handing Over's.</td>
+        </tr>
+        <tr>
+            <td class="term-bullet">&#10148;</td>
+            <td>Channel Partners / Brokers / Marketing Agents are not authorized to collect money on behalf of
+                the company and issue any receipts. In case any customer/buyer does such transactions, builder
+                is neither accountable nor responsible for such fraudulent transactions.</td>
+        </tr>
+        <tr>
+            <td class="term-bullet">&#10148;</td>
+            <td>Buyer will be intimated either at the time of purchase or during construction work progress or
+                during possession/handover on additional amounts payable if any, subject to the collective
+                decision taken by association for the welfare of the community, until project is officially
+                handed over to the Association Board Members.</td>
+        </tr>
+        <tr>
+            <td class="term-bullet">&#10148;</td>
+            <td>Investor/Buyer who purchases flats through Marketing Agent / Channel Partner / Broker /
+                Investors should acknowledge the Price Sheet generated by our in-house sales team.</td>
+        </tr>
+        <tr>
+            <td class="term-bullet">&#10148;</td>
+            <td>Customizations are not entertained.</td>
+        </tr>
+    </table>
+
+    <div class="note-text">NOTE: Listed above are applicable for all our on-going and upcoming projects</div>
+
+    <!-- Signature -->
+    <table class="signature-table" style="margin-top:70mm;">
+        <tr>
+            <td class="signature-label">SIGNATURE OF PURCHASER</td>
+            <td class="signature-label">SIGNATURE (For THE DRIZZLE JV)</td>
+        </tr>
+        <tr>
+            <td class="signature-name">
+                (Name: <span class="sig-value"><apex:outputText value="{!applicantName}"/>&#160;</span> )
+            </td>
+            <td class="signature-name">
+                (Name: <span class="sig-value">&#160;</span> )
+            </td>
+        </tr>
+    </table>
+
+</div>
+
+</body>
+</html>
+</apex:page>

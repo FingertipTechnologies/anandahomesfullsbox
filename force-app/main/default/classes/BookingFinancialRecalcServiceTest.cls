@@ -181,9 +181,10 @@ private class BookingFinancialRecalcServiceTest {
             Base_Amount__c = 142857,
             GST_Amount__c = 7143
         ));
-        insert lineItems;
-
+        // Fresh limits from here: the set-up above (booking, schedule and two receipts, each with
+        // its own automation) already uses most of the query limit.
         Test.startTest();
+        insert lineItems;
         BookingFinancialRecalcService.recalculateForBookings(new Set<Id>{ booking.Id });
         Test.stopTest();
 

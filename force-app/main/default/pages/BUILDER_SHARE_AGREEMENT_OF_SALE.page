@@ -1,4 +1,4 @@
-<apex:page renderAs="pdf" showHeader="false" sidebar="false" standardStylesheets="false" applyHtmlTag="false" applyBodyTag="false">
+<apex:page standardController="Booking__c" extensions="AgreementOfSaleController" renderAs="pdf" showHeader="false" sidebar="false" standardStylesheets="false" applyHtmlTag="false" applyBodyTag="false">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>Builder Share - Agreement of Sale</title>
@@ -39,9 +39,10 @@
 </style>
 </head>
 <body>
+<apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(ownerMismatchMessage))}"><div style="border:1px solid #c00;color:#c00;padding:4px;margin-bottom:8px;font-size:9pt">{!ownerMismatchMessage}</div></apex:outputPanel>
 <div class="doc">
 <h1 class="title">AGREEMENT OF SALE</h1>
-<p>This Agreement of Sale is executed on this _____day of ________________2025, by and between:</p>
+<p>This Agreement of Sale is executed on this&#160;<apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,dd}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText> day of&#160;<apex:outputText value="{0,date,MMMM yyyy}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">_____ day of ________________</apex:outputPanel>, by and between:</p>
 <p>SRI. K. RAVI SINGH, S/O. LATE SRI. SATYANARAYANA SINGH, aged about 74 years, Occupation: Business, Resident of 12-1-325, Asif Nagar, Near Dattatreya Nagar, Hyderabad- 500028, Telangana (Aadhar No.3870 6323 2079 &amp; PAN No. BQSPS0433A) hereinafter referred to as the VENDOR NO. 1, which term wherever it occurs in this Agreement, unless repugnant to the context thereof shall mean and include the Vendor No. 1 and all his heirs, representatives, agents, successors and predecessors in interest etc, as the case may be.</p>
 <p>SRI. K. MAGAN SINGH, S/O. LATE K.SATYANARAYANA SINGH, aged about 72 years, Occupation: Business, Resident of 12-1-325/D, Dattatreya Nagar, Asif Nagar, Hyderabad, Telangana State- 500028 (Aadhar Card No.6046 3231 7974 &amp; PAN No.ANFPM1588D) hereinafter referred to as the VENDOR NO. 2, which term wherever it occurs in this Agreement, unless repugnant to the context thereof shall mean and include the Vendor No. 2 and all his heirs, representatives, agents, successors and predecessors in interest etc, as the case may be.</p>
 <p>SRI K. SARDAR SINGH, S/O. LATE K. SATYANARAYANA SINGH, aged about 66 years, Occupation: Business, Resident of H.No.12-1-325/B, Dattatreya Nagar, Asif Nagar, Hyderabad-500028 (Aadhar Card No.7902 3277 2353 &amp; PAN No. AZVPK2112P). hereinafter referred to as the VENDOR NO. 3, which term wherever it occurs in this Agreement, unless repugnant to the context thereof shall mean and include the Vendor No. 3 and all his heirs, representatives, agents, successors and predecessors in interest etc, as the case may be.</p>
@@ -61,7 +62,10 @@
 <p>M/s. ANANDA HOMES (PAN No. ABFFA6591E), Represented by its Managing Partner: Sri P.V. SREENIVASULU, S/o. Late Sri P.C.V RAMANAIAH, aged about 51 years, Occupation: Business, having their Registered office at Flat No. A1, Vista Residency, on Plot No.81 and 82, Block-D, Sector-I, Alkaapoor Township, Manikonda, Hyderabad, Telangana State – 500089. (Aadhar No.7420 0525 3319, PAN No. ACNPP9239K)</p>
 <p>(Hereinafter referred to as the DEVELOPER or the Party of the SECOND PART or the SECOND PARTY (which term(s) shall mean and include all its Shareholders, Directors, Managers, Successors, heirs, executors, administrators, legal representatives, assignees, etc. as the case may be) of the SECOND PART.</p>
 <p class="c b">IN FAVOUR OF</p>
-<p>SRI. _________________________, S/O. SRI. _____________________________, aged about____ years, Occupation: _____________________, Resident of ___________________________________________  (AADHAAR No. _____________________ &amp; PAN No. ______________________)</p>
+<apex:repeat value="{!applicants}" var="applicant">
+<p><b>{!applicant.displayName},</b> {!applicant.legalDetails}</p>
+</apex:repeat>
+<apex:outputPanel layout="none" rendered="{!NOT(hasApplicants)}"><p>Applicant information is missing.</p></apex:outputPanel>
 <p>Hereinafter referred to as the “VENDEE (S)” (which expression shall unless repugnant to the context or meaning thereof be deemed to mean and include his/her/their successor-in-interest and permitted assigns).</p>
 <p>WHEREAS the VENDOR No. 1 (Sri.Ravi Singh) being the absolute owner and possessor of open land admeasuring an extent of Ac.1.34 Gts, in Survey No. 147/A/1, an extent of Ac.0.03 Gts., in Survey No. 148/A/1, an extent of Ac.0.31 Gts., in Survey No.149/1, an extent of Ac.1.00 Gts., Dharani Pattadar Pass Book No.T05070070205, KhataNo.60191, issued Tahsildar, Gandipet. Ranga Reddy District. Telangana State, NALA Proceedings No.2300806314, Dated:26.10.2023 issued by Competent Authority &amp; Tahsildar, Gandipet Mandal, Ranga Reddy District, Telangana State.</p>
 <p>AND WHEREAS the VENDOR No.2 (Sri.Magan Singh) being the absolute owner and possessor of open land admeasuring an extent of Ac.3.12 Guntas, in Survey No.149/2, Dharani Pattadar Pass Book No.T05070070210,Khata No.60192, issued Tahsildar, Gandipet. Ranga Reddy District. Telangana State, NALA Proceedings No.2300806776, Dated:26/10/2023. (for Ac.3.12 gts only) issued by Competent Authority &amp; Tahsildar, Gandipet Mandal, Ranga Reddy District, Telangana State.</p>
@@ -116,10 +120,10 @@
 <p>The Vendee agrees that the said additional floors (23rd and 24th floors), shall be the exclusive property of the Developer, and the Vendee shall have no right, title, interest, or claim of any nature whatsoever in respect thereof.</p>
 <p>The Vendee further has no objection to the allocation and distribution of the proportionate undivided share of land among the purchasers/owners of the sanctioned Ground + 22 floors, as may be finalized upon approval of the revised plan by the competent authority.</p>
 <p>The Vendee undertakes to sign and furnish all documents required by competent authorities, for obtaining approvals, sanctions, for the said additional floors, without objection to the developer.</p>
-<p>AND WHEREAS, The Developer had obtained the sanctioned building plan, specifications and approvals for the Project including Tower ___ from HMDA, Hyderabad.</p>
+<p>AND WHEREAS, The Developer had obtained the sanctioned building plan, specifications and approvals for the Project including Tower {!selectedTowerDisplay} from HMDA, Hyderabad.</p>
 <p>AND WHEREAS, The Developer agrees and undertakes that it shall not make any changes to these approved plans except in strict compliance with S.14 of the Act, other laws as applicable and as agreed under this Agreement.</p>
-<p>AND WHEREAS, Flat No.  __________  in Tower No. __, admeasuring an extent of ______ Sft, is falling to the share of the Developer and accordingly, the Vendors herein have agreed to sell and the Vendee, agreed to purchase the said flat for a total consideration of Rs. ___________/- (Rupees ____________________________________  Only)</p>
-<p>AND WHEREAS, The VENDEE/S having verified the title and having satisfied himself/herself/themselves/itself about their right and ownership and the authority of DEVELOPER to develop the Schedule Property, has/have applied for in the Project vide RERA registration number referred in above, Flat No. _________, Tower No. ___, in the Project under this sale agreement has fallen to the share of the developer.</p>
+<p>AND WHEREAS, Flat No. {!selectedFlatLabel} in Tower No. {!selectedTowerDisplay}, admeasuring an extent of&#160;<apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText> Sft, is falling to the share of the Developer and accordingly, the Vendors herein have agreed to sell and the Vendee, agreed to purchase the said flat for a total consideration of Rs. {!formattedTotalFlatCost}/- ({!agreementAmountInWords})</p>
+<p>AND WHEREAS, The VENDEE/S having verified the title and having satisfied himself/herself/themselves/itself about their right and ownership and the authority of DEVELOPER to develop the Schedule Property, has/have applied for in the Project vide RERA registration number referred in above, Flat No. {!selectedFlatLabel}, Tower No. {!selectedTowerDisplay}, in the Project under this sale agreement has fallen to the share of the developer.</p>
 <p>AND WHEREAS, The Parties have gone through all the terms and conditions set out in this Agreement and understood the mutual rights and obligations detailed herein.</p>
 <p>AND WHEREAS, The Developer has fully disclosed all facts relating to their right, title and interest in respect of the Schedule Property and this agreement constitutes and represents the entire agreement between the parties and cancels and supersedes all prior arrangements, agreements or understandings, negotiations and discussions, if any; whether oral or writing, between the parties on the subject matter hereof, or in respect of any matters dealt with herein and on such basis, the Vendee has/have accepted and unconditionally agreed and entered this Agreement of Sale with free will and consent and without any coercion or whatsoever;</p>
 <p>AND WHEREAS, The Parties hereby confirm that they are signing this Agreement with full knowledge of all the laws, rules, regulations, notifications, etc. applicable to the Project;</p>
@@ -128,67 +132,68 @@
 <table>
 <tr>
 <th>PROJECT</th>
-<th>THE LEGACEY</th>
+<th>{!selectedUnit.Project__r.Name}</th>
 </tr>
 <tr>
 <th>TOWER</th>
-<td>&#160;</td>
+<td>{!selectedTowerDisplay}</td>
 </tr>
 <tr>
 <th>FLAT NO.</th>
-<td>&#160;</td>
+<td>{!selectedFlatLabel}</td>
 </tr>
 <tr>
 <th>FLOOR</th>
-<td>&#160;</td>
+<td>{!selectedFloorDisplay} Floor</td>
 </tr>
 <tr>
 <th>FLAT TYPE</th>
-<td>&#160;</td>
+<td>{!selectedUnit.BHK_Type__c}</td>
 </tr>
 <tr>
 <th>FACING</th>
-<td>&#160;</td>
+<td>{!selectedFacingUpper}</td>
 </tr>
 <tr>
 <th>CARPET AREA</th>
-<th>SQ. FT</th>
+<td><apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Carpet_Area__c}"/></apex:outputText> SQ. FT</td>
 </tr>
 <tr>
 <th>BALCONY &amp; UTILITY AREA</th>
-<th>SQ. FT</th>
+<td><apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Balcony_Area__c}"/></apex:outputText> SQ. FT</td>
 </tr>
 <tr>
 <th>WALL AREA</th>
-<th>SQ. FT</th>
+<td><apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedWallArea}"/></apex:outputText> SQ. FT</td>
 </tr>
 <tr>
 <th>PLINTH AREA</th>
-<th>SQ. FT</th>
+<td><apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Built_up_area__c}"/></apex:outputText> SQ. FT</td>
 </tr>
 <tr>
 <th>COMMON AREA</th>
-<th>SQ. FT</th>
+<td><apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Common_Area_Allotted_to_Association__c}"/></apex:outputText> SQ. FT</td>
 </tr>
 <tr>
 <th>FLAT SIZE</th>
-<th>SQ. FT</th>
+<td><apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText> SQ. FT</td>
 </tr>
 <tr>
 <th>CAR PARKING</th>
-<td>&#160;</td>
+<td><apex:outputText value="{!UPPER(selectedCarParkingDisplay)}"/></td>
 </tr>
 <tr>
 <th>UDS</th>
-<th>SQ. YDS</th>
+<td><apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.UDS__c}"/></apex:outputText> SQ. YDS</td>
 </tr>
 </table>
+<apex:outputPanel layout="none" rendered="{!NOT(hasSelectedUnit)}"><p>Selected unit data is missing from this Booking.</p></apex:outputPanel>
 <p>AND WHEREAS, this agreement shall be construed, interpreted and applied in accordance with, and shall be governed by the laws applicable in India. The courts at Hyderabad shall have the sole and exclusive jurisdiction to entertain any dispute or suit arising out of or in relation to this agreement.</p>
 <p class="c b">NOW THEREFORE THIS AGREEMENT WITNESSES AND IT IS HEREBY AGREED TO BY THE PARTIES HERETO AS FOLLOWS:</p>
 <p class="sec">DEFINITIONS AND INTERPRETATION:</p>
 <p>Definitions: Unless the context otherwise requires, the following capitalized terms shall have the meaning set forth below:</p>
 <p>“Act” means the Real Estate (Regulation and Development) Act, 2016 (16 of 2016) and includes Telangana Real Estates (Regulation and Development) Rules, 2017, wherever, the context so requires:</p>
-<p>“Agreement” shall mean this agreement to sell a flat bearing No. _______, Tower no. __, square feet _______, including the schedule hereto, as may be amended from time to time;</p>
+<p>“Agreement” shall mean this agreement to sell a flat bearing No. {!selectedFlatLabel}, Tower no. {!selectedTowerDisplay}, square feet&#160;<apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText>, including the schedule hereto, as may be amended from time to time;</p>
 <p>“Applicable Law” means all laws, statutes, regulations, codes, bye-laws, ordinances, treaties, judgments, decrees, directives, rules, guidelines, orders, policies and other requirements of any statutory authority having jurisdiction over the Schedule property which are in effect or as may be amended, modified, enacted or revoked from time-to-time hereafter;</p>
 <p>“Association or Association of Owners Association” shall all mean the same, being the Association of Owners in Ananda Homes to be formed by the Owners, in respect of the Project in accordance with law;</p>
 <p>“Appropriate Government” means the Government of Telangana;</p>
@@ -225,7 +230,7 @@
 <p>In this Agreement, (including the Recitals above) unless the context clearly indicates a contrary intention, a word or an expression, which denotes a natural person shall include an artificial person (and vice versa) any one gender shall include the other genders, the singular shall include the plural (and vice versa).</p>
 <p class="b">THEREFORE, IN CONSIDERATION OF THE MUTUAL REPRESENTATIONS, COVENANTS, ASSURANCES, PROMISES, AND AGREEMENTS CONTAINED HEREIN AND OTHER GOOD AND VALUABLE CONSIDERATION, THE PARTIES AGREE AS FOLLOWS:</p>
 <p class="b">TERMS:</p>
-<p>Subject to the terms and conditions as detailed in this Agreement, the DEVELOPER agrees to sell to the VENDEE/S and the VENDEE/S hereby agrees to purchase the Flat No. ________, Tower No. _, Area __________ sq. ft (including common area) for a total consideration of Rs.____________/- (Rupees __________________________  Only) Which includes amenities and excludes GST, constructed on Schedule A property, Puppalguda Village, Gandipet Mandal, Ranga Reddy District, Telangana State:</p>
+<p>Subject to the terms and conditions as detailed in this Agreement, the DEVELOPER agrees to sell to the VENDEE/S and the VENDEE/S hereby agrees to purchase the Flat No. {!selectedFlatLabel}, Tower No. {!selectedTowerDisplay}, Area&#160;<apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText> sq. ft (including common area) for a total consideration of Rs. {!formattedTotalFlatCost}/- ({!agreementAmountInWords}) Which includes amenities and excludes GST, constructed on Schedule A property, Puppalguda Village, Gandipet Mandal, Ranga Reddy District, Telangana State:</p>
 <table>
 <tr>
 <th>Particulars</th>
@@ -234,21 +239,21 @@
 </tr>
 <tr>
 <th>Basic Price</th>
-<td>&#160;</td>
-<td>&#160;</td>
+<td>{!formattedPricePerSquareFoot}</td>
+<td>{!formattedBasicPrice}</td>
 </tr>
 <tr>
-<th>Amenities including One car parking &amp; Infrastructure charges</th>
+<th>{!amenitiesDescription}</th>
 <td>&#160;</td>
-<td>&#160;</td>
+<td>{!formattedAmenitiesAmount}</td>
 </tr>
 <tr>
 <th>Total</th>
 <th>&#160;</th>
-<th>/-</th>
+<th>{!formattedTotalFlatCost}/-</th>
 </tr>
 </table>
-<p>The applicable GST for total sale consideration is Rs. ________/- (Rupees ________________________ Only)</p>
+<p>The applicable GST for total sale consideration is Rs. {!formattedGstAmount}/- ({!gstAmountInWords})</p>
 <p>Explanation:</p>
 <p>The Total Price above includes the booking amount paid by the VENDEE/S to the DEVELOPER towards the Flat;</p>
 <p>The Total Price above includes taxes( consisting of tax paid or payable by the DEVELOPER by way of GST and Cess or any other similar taxes which may be levied, in connection with the construction of the Project payable by the DEVELOPER, by whatever name called up to the date of handing over the possession of the flat to the Association and the project or the competent authority, as the case may be, after obtaining the completion certificate: Provided that in case there is any change/modification in taxes, the subsequent amount payable by the VENDEE to the DEVELOPER shall be increased/reduced based on such change/modification: Provided further that if there is any increase in the taxes after the expiry of the scheduled date of completion of the project as per registration with the Authority, which shall include the extension of registration, if any, granted to the said project by the Authority, as per the Act, the same shall not be charged from the VENDEE/S provided that Stamp Duty, Registration fee, mutation charges, shall be paid by the VENDEE/S as per actual over and above the total price.</p>
@@ -267,7 +272,7 @@
 <p>That the computation of the price of the flat includes recovery of price of land, construction of [not only the flat but also] the Common areas, internal development charges, external development charges, taxes, cost of providing electric wiring, electrical connectivity to the flat, lift, Internal water line and plumbing, finishing with paint, granite, tiles, doors, windows, fire detection and firefighting equipment (as per law) in the common areas, maintenance charges as per the agreement within the [Flat].</p>
 <p>The VENDEE/S have the right to visit their Flat on prior intimation of at least 3 working days to the DEVELPOR / Authorized person to assess the extent of development of his /her Flat. It is made clear by the DEVELOPER and the VENDEE/S agree that the Flat Schedule B Property along with parking space treated as a single indivisible unit for all purposes. It is agreed that the Project is an independent, self-contained Project covering the said Land and is not a part of any other project or zone and shall not form a part of and/or linked/combined with any other project in its vicinity or otherwise except for the purpose of integration of infrastructure for the benefit of the VENDEE/S. It is clarified that Project’s facilities and amenities shall be available only for the use and enjoyment of the VENDEE/S of the Project.</p>
 <p>The DEVELOPER agrees to pay all outgoings before transferring the physical possession or transfer of Scheduled Property whichever is earlier, of the flat to the VENDEE/S, which it has collected from the VENDEE/S, for the payment of outgoings (including land cost [either directly or by way of share in the project, ground rent, municipal or other local taxes, charges for water or electricity, maintenance charges, including mortgage loan and interest on mortgages or other encumbrances and such other liabilities payable to competent authorities, banks and financial institutions, which are related to the project). If DEVELOPER fails to pay all or any of the outgoings collected by it from the VENDEE/S or any liability, mortgage loan and interest thereon before transferring the flat to the VENDEE/S or any liability, mortgage loan and interest thereon before transferring the flat to the VENDEE/S, the DEVELOPER agrees to be liable, even after the transfer of the property, to pay such outgoings and penal charges, if any, to the authority or person to whom they are payable and be liable for the cost of any legal proceedings which may be taken there for by such authority or persons.</p>
-<p>VENDEE/S has paid a sum of Rs. ______________/- (Rupees ______________  Only) as booking amount, excluding GST being part payment towards the total price of the flat at the time of entering this Agreement, the receipt of which the DEVELOPER hereby acknowledges in the table below and the VENDEE/S hereby agrees to pay the remaining price of the flat as prescribed in the Payment Plan (Schedule C) as may be demanded by the DEVELOPER within the time and in the manner specified therein.</p>
+<p>VENDEE/S has paid a sum of Rs. {!formattedTotalReceiptAmount}/- ({!totalReceiptAmountInWords}) as booking amount, excluding GST being part payment towards the total price of the flat at the time of entering this Agreement, the receipt of which the DEVELOPER hereby acknowledges in the table below and the VENDEE/S hereby agrees to pay the remaining price of the flat as prescribed in the Payment Plan (Schedule C) as may be demanded by the DEVELOPER within the time and in the manner specified therein.</p>
 <table>
 <tr>
 <th>Date</th>
@@ -275,42 +280,21 @@
 <th>Reference ID</th>
 <th>Amount</th>
 </tr>
+<apex:repeat value="{!receiptRows}" var="receipt">
 <tr>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
+<td><apex:outputText value="{0,date,dd-MMM-yy}"><apex:param value="{!receipt.receiptDate}"/></apex:outputText></td>
+<td>{!receipt.mode}</td>
+<td>{!receipt.referenceId}</td>
+<td>{!receipt.amountDisplay}</td>
 </tr>
-<tr>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
+</apex:repeat>
+<apex:outputPanel layout="none" rendered="{!NOT(hasReceipts)}"><tr><td colspan="4">No approved receipt records are available for this Booking.</td></tr></apex:outputPanel>
 <tr>
 <th colspan="3">Total payments</th>
-<th>/-</th>
+<th>{!formattedTotalReceiptAmount}/-</th>
 </tr>
 </table>
-<p class="b">Balance Rs. ____________/- (Rupees _______________________________ Only) availing by the way of loan from ICICI BANK.</p>
+<p class="b">Balance Rs. {!formattedBalanceAmount}/- ({!balanceAmountInWords}) availing by the way of loan from {!loanBankName}.</p>
 <p>The VENDEE/S shall pay the installments as stipulated above within 15 days from the date of notice issued by the DEVELOPER, failing which it shall carry interest at the rate of 24% prescribed in the Rules.</p>
 <p>The VENDEE/S shall issue post-dated cheques for all installments as per the payment schedule given above irrespective of mode of funding, i.e. self/bank finance. The VENDEE/S unconditionally agree  to sign the disbursement forms of respective banks in advance along with this agreement and handover such papers to the DEVELOPER enabling the DEVELOPER to submit with respective banks for release of payments avoiding delay in releasing installment amounts without any hindrance and the DEVELOPER hereby undertakes and confirms to the VENDEE/S that the said disbursal from the Demand Letter from the DEVELOPER will be submitted with respective banks of prior intimation of at least 7 days from the date of attaining such milestone/landmark of construction progress.</p>
 <p class="sec">MODE OF PAYMENT</p>
@@ -477,17 +461,17 @@
 <tr>
 <th>Attention</th>
 <th>:</th>
-<th>&#160;</th>
+<th>{!buyerNames}</th>
 </tr>
 <tr>
 <th>Address</th>
 <th>:</th>
-<td>&#160;</td>
+<td>{!buyerAddress}</td>
 </tr>
 <tr>
 <th>E mail</th>
 <th>:</th>
-<td>&#160;</td>
+<td>{!buyerEmail}</td>
 </tr>
 </table>
 <p>It shall be the duty of the VENDEE/S and the DEVELOPER to inform each other of any change in address subsequent to the execution of this Agreement in the above address by Registered post failing which all communication and letters posted at the above address shall be deemed to have been received by the DEVELOPER or the VENDEE/S, as the case may be.</p>
@@ -525,12 +509,12 @@
 <tr><th class="lbl">WEST</th><td>30’-0’ feet Road</td></tr>
 </table>
 <p class="sch">SCHEDULE B’ PROPERTY</p>
-<p>All that the ___ BHK Flat No._____________ (______ Facing) on _____ Floor, of  Tower-__, the High Rise Residential Flats known as “THE LEGACEY”, with saleable area of __________ Square Feet (including common areas and One Car Parking), along with proportionate undivided share of land equivalent to _________ Square Yards, (Out of total land admeasuring 80704.23 Square yards or equivalent to 67479.02 Square Meters), in Sy.Nos. 128/1A/2/2, 129/A/1, 129/A/2, 129/AA/1, 129/AA/2, 129/AA/3, 129/E/1, 130/A/1, 130/A/2, 130/A/3/1, 130/A/3/2, 130/A/4, 130/AA/1, 130/AA/2, 130/AA/3, 130/E/1, 130/E/2, 145/1/2, 145/1/1/7, 145/1/1/1/2, 145/1/1/1/1/2, 145/1/1/1/1/1/1, 145/1/1/1/1/1/2, 145/2, 147/A/1, 147/A/2, 147/A/3, 147/AA/1, 147/AA/2, 147/AA/3, 147/E/1, 147/E/2, 148/A/1, 148/A/2, 148/A/3, 148/A/4, 148/AA/1, 148/AA/2, 148/AA/3, 148/E/1, 148/E/2, 148/E/3, 148/E/5, 149/1, 149/2, 149/3, 149/4, 149/5, 149/6, 149/7,  Situated at PUPPALGUDA VILLAGE, under Manikonda Municipality, Gandipet Mandal, Ranga Reddy District, Telangana State and bounded as follows:</p>
+<p>All that the {!selectedBhkNumber} BHK Flat No.{!selectedFlatLabel} ({!selectedFacingUpper} Facing) on {!selectedFloorDisplay} Floor, of Tower-{!selectedTowerDisplay}, the High Rise Residential Flats known as “THE LEGACEY”, with saleable area of&#160;<apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText> Square Feet (including common areas{!selectedCarParkingClause}), along with proportionate undivided share of land equivalent to&#160;<apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.UDS__c}"/></apex:outputText> Square Yards, (Out of total land admeasuring 80704.23 Square yards or equivalent to 67479.02 Square Meters), in Sy.Nos. 128/1A/2/2, 129/A/1, 129/A/2, 129/AA/1, 129/AA/2, 129/AA/3, 129/E/1, 130/A/1, 130/A/2, 130/A/3/1, 130/A/3/2, 130/A/4, 130/AA/1, 130/AA/2, 130/AA/3, 130/E/1, 130/E/2, 145/1/2, 145/1/1/7, 145/1/1/1/2, 145/1/1/1/1/2, 145/1/1/1/1/1/1, 145/1/1/1/1/1/2, 145/2, 147/A/1, 147/A/2, 147/A/3, 147/AA/1, 147/AA/2, 147/AA/3, 147/E/1, 147/E/2, 148/A/1, 148/A/2, 148/A/3, 148/A/4, 148/AA/1, 148/AA/2, 148/AA/3, 148/E/1, 148/E/2, 148/E/3, 148/E/5, 149/1, 149/2, 149/3, 149/4, 149/5, 149/6, 149/7,  Situated at PUPPALGUDA VILLAGE, under Manikonda Municipality, Gandipet Mandal, Ranga Reddy District, Telangana State and bounded as follows:</p>
 <table class="bound">
-<tr><th class="lbl">NORTH</th><td>&#160;</td></tr>
-<tr><th class="lbl">SOUTH</th><td>&#160;</td></tr>
-<tr><th class="lbl">EAST</th><td>&#160;</td></tr>
-<tr><th class="lbl">WEST</th><td>&#160;</td></tr>
+<tr><th class="lbl">NORTH</th><td>{!selectedUnit.Boundary_North__c}</td></tr>
+<tr><th class="lbl">SOUTH</th><td>{!selectedUnit.Boundary_South__c}</td></tr>
+<tr><th class="lbl">EAST</th><td>{!selectedUnit.Boundary_East__c}</td></tr>
+<tr><th class="lbl">WEST</th><td>{!selectedUnit.Boundary_West__c}</td></tr>
 </table>
 <p class="sch">SCHEDULE ‘C’ Payment Schedule</p>
 <table>
@@ -541,124 +525,22 @@
 <th>GST (5%)</th>
 <th>NET AMOUNT</th>
 </tr>
+<apex:repeat value="{!paymentScheduleRows}" var="schedule">
 <tr>
-<td>Booking Amount</td>
-<td>20%</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
+<td>{!schedule.installmentName}</td>
+<td><apex:outputText value="{0,number,0.##}"><apex:param value="{!schedule.percentage}"/></apex:outputText>%</td>
+<td>Rs. {!schedule.flatCostDisplay}</td>
+<td>Rs. {!schedule.gstAmountDisplay}</td>
+<td>Rs. {!schedule.netAmountDisplay}</td>
 </tr>
-<tr>
-<td>Within 15 Days From The Date Of Booking</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>On Completion Of Excavation Of Respective Tower</td>
-<td>10%</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>On Completion Of Footing Works Of Respective Tower</td>
-<td>6%</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>On Completion Transfer Slab Of 1&amp; 2 Towers</td>
-<td>5%</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>On Completion Transfer Slab Of 6 &amp; 8 Towers</td>
-<td>5%</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>On Completion 7th Floor Slab Of 1 &amp;2 Towers</td>
-<td>7%</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>On Completion 14th Floor Slab Of 1 &amp; 2 Towers</td>
-<td>5%</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>On Completion 22nd Floor Slab Of 1 &amp; 2 Towers</td>
-<td>5%</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>On Completion 7th Floor Slab Of 8 &amp; 6 Towers</td>
-<td>7%</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>On Completion 14th Floor Slab Of 8 &amp; 6 Towers</td>
-<td>5%</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>On Completion 22nd Floor Slab Of 8 &amp; 6 Tower</td>
-<td>5%</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>On Completion 7th Floor Slab Of 5th Tower</td>
-<td>7%</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>On Completion 14th Floor Slab Of 5th Tower</td>
-<td>5%</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>On Completion 22nd Floor Slab Of 5th Tower</td>
-<td>5%</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
-<tr>
-<td>Handover Or Registration Whichever Is Earlier</td>
-<td>3%</td>
-<td>&#160;</td>
-<td>&#160;</td>
-<td>&#160;</td>
-</tr>
+</apex:repeat>
+<apex:outputPanel layout="none" rendered="{!NOT(hasPaymentSchedules)}"><tr><td colspan="5">No payment schedule records are available for this Booking.</td></tr></apex:outputPanel>
 <tr>
 <th>TOTAL FLAT COST INCLUDING GST</th>
-<td>&#160;</td>
-<td>/-</td>
-<td>/-</td>
-<td>/-</td>
+<td><apex:outputText value="{0,number,0.##}"><apex:param value="{!totalSchedulePercentage}"/></apex:outputText>%</td>
+<td>Rs. {!formattedTotalScheduleFlatCost}/-</td>
+<td>Rs. {!formattedTotalScheduleGst}/-</td>
+<td>Rs. {!formattedTotalScheduleNetAmount}/-</td>
 </tr>
 </table>
 <p class="sch">SCHEDULE ‘D’ SPECIFICATIONS</p>

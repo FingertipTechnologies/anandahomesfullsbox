@@ -1,4 +1,4 @@
-<apex:page standardController="Booking__c" renderAs="pdf" showHeader="false" sidebar="false" standardStylesheets="false" applyHtmlTag="false" applyBodyTag="false">
+<apex:page standardController="Booking__c" extensions="DrizzleSaleDeedController" renderAs="pdf" showHeader="false" sidebar="false" standardStylesheets="false" applyHtmlTag="false" applyBodyTag="false">
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
@@ -117,8 +117,8 @@ img { border:0; }
 .c2o{text-align:center;font-family:Arial, Helvetica, sans-serif}
 .c2p{font-family:Arial, Helvetica, sans-serif}
 .c2q{text-align:justify;padding-left:36pt;font-family:Arial, Helvetica, sans-serif}
-.c2r{font-weight:bold;font-family:Arial, Helvetica, sans-serif;background-color:#FFFF00}
-.c2s{font-family:Arial, Helvetica, sans-serif;background-color:#FFFF00}
+.c2r{font-weight:bold;font-family:Arial, Helvetica, sans-serif}
+.c2s{font-family:Arial, Helvetica, sans-serif}
 .c2t{text-align:justify;padding-left:21.3pt;font-family:Arial, Helvetica, sans-serif}
 .c2u{text-align:justify;font-family:Arial, Helvetica, sans-serif}
 .c2v{text-align:justify;text-indent:36pt;font-size:9.57pt;font-family:Arial, Helvetica, sans-serif}
@@ -151,10 +151,10 @@ img { border:0; }
 .c3m{border-top:none;border-right:none;border-bottom:none;border-left:none;padding:0 5.4pt 0 5.4pt;white-space:nowrap;vertical-align:middle}
 .c3n{text-align:justify;font-size:6.09pt;font-family:Arial, Helvetica, sans-serif}
 .c3o{font-weight:bold;text-decoration:underline;font-size:9.57pt;font-family:Arial, Helvetica, sans-serif;text-transform:uppercase}
-.c3p{font-weight:bold;font-size:9.57pt;font-family:Arial, Helvetica, sans-serif;background-color:#FFFF00}
+.c3p{font-weight:bold;font-size:9.57pt;font-family:Arial, Helvetica, sans-serif}
 .c3q{border-collapse:collapse;table-layout:fixed;width:235.6pt;margin-left:auto;margin-right:auto}
 .c3r{height:12.65pt}
-.c3s{font-size:9.57pt;font-family:Arial, Helvetica, sans-serif;background-color:#FFFF00}
+.c3s{font-size:9.57pt;font-family:Arial, Helvetica, sans-serif}
 .c3t{border-top:none;border-right:0.5pt solid #000;border-bottom:0.5pt solid #000;border-left:none;padding:0 5.4pt 0 5.4pt;white-space:nowrap;vertical-align:bottom}
 .c3u{height:12.05pt}
 .c3v{height:13.25pt}
@@ -196,8 +196,8 @@ img { border:0; }
 .c4v{border-collapse:collapse;table-layout:fixed;width:254.95pt;margin-left:102.6pt}
 .c4w{height:13.15pt}
 .c4x{text-align:justify}
-.c4y{background-color:#FFFF00}
-.c4z{font-weight:bold;background-color:#FFFF00}
+.c4y{font-weight:normal}
+.c4z{font-weight:bold}
 .c50{height:12.45pt}
 .c51{height:13.8pt}
 .c52{text-align:center}
@@ -216,8 +216,8 @@ img { border:0; }
 .c5f{height:25.5pt}
 .c5g{font-weight:bold;font-family:Arial, Helvetica, sans-serif}
 .c5h{text-align:justify;padding-bottom:1pt;font-size:9.57pt;font-family:Arial, Helvetica, sans-serif}
-.c5i{font-weight:bold;font-size:8.7pt;font-family:Arial, Helvetica, sans-serif;background-color:#FFFF00}
-.c5j{font-size:8.7pt;font-family:Arial, Helvetica, sans-serif;background-color:#FFFF00}
+.c5i{font-weight:bold;font-size:8.7pt;font-family:Arial, Helvetica, sans-serif}
+.c5j{font-size:8.7pt;font-family:Arial, Helvetica, sans-serif}
 .c5k{text-align:justify;padding-left:72pt;text-indent:-72pt;font-size:8.7pt;font-family:Arial, Helvetica, sans-serif}
 .c5l{text-align:justify;padding-left:72pt;font-size:8.7pt;font-family:Arial, Helvetica, sans-serif}
 .c5m{text-align:justify;padding-left:360pt;font-size:8.7pt;font-family:Arial, Helvetica, sans-serif}
@@ -1829,9 +1829,10 @@ img { border:0; }
 <div class="c2o">&#160;</div>
 <div class="c2o"><span class="c2p">AND</span></div>
 <div class="c2q">&#160;</div>
-<div class="c2t"><span class="c2r">MR. NISHANT GOEL, S/o. MR. VIJAY PAL GOEL </span><span class="c2s">aged about 34 years</span><span class="c2r">, </span><span class="c2s">Occupation: Govt. Employee; R/o: 266, PUDA Enclave 1, Near Mini Secretariat, Patiala, Punjab-147001. </span><br/><span class="c2r">(AADHAR NO:2279 5579 9895, PAN NO: AWZPG8204D).</span></div>
-<div class="c2t">&#160;</div>
-<div class="c2t"><span class="c2r">MRS. NANCY GOEL, W/o. MR. NISHANT GOEL, </span><span class="c2s">aged about 33 years</span><span class="c2r">, </span><span class="c2s">Occupation: Self- Employed; R/o: 266, PUDA Enclave 1, Near Mini Secretariat, Putiala, Punjab-147001. </span><br/><span class="c2r">(AADHAR NO:8009 8480 6100, PAN NO: BZLPM9156J).</span></div>
+<apex:repeat value="{!vendees}" var="v">
+<div class="c2t"><span class="c2r"><apex:outputText value="{!v.nameLine}"/>, </span><span class="c2s"><apex:outputText value="{!v.ageText}"/></span><span class="c2r">, </span><span class="c2s">Occupation: <apex:outputText value="{!v.occupation}"/>; R/o: <apex:outputText value="{!v.address}"/>. </span><br/><span class="c2r">(AADHAR NO: <apex:outputText value="{!v.aadhar}"/>, PAN NO: <apex:outputText value="{!v.pan}"/>).</span></div>
+<apex:outputPanel layout="none" rendered="{!NOT(v.isLast)}"><div class="c2t">&#160;</div></apex:outputPanel>
+</apex:repeat>
 <div class="c2u">&#160;</div>
 <div class="cb"><span class="c3">Hereinafter called as the </span><span class="c4">&#8220;VENDEE(S)" </span><span class="c3">which expression shall mean and include all their heirs, executors, administrators, assignees etc., of the </span><span class="c4">SECOND PART</span></div>
 <div class="cb">&#160;</div>
@@ -2386,7 +2387,7 @@ img { border:0; }
 <div class="c3n">&#160;</div>
 <div class="cb"><span class="c3">The Flat which is being sold through this document comes under the share of the </span><span class="c3o">&#8220;VENDOR/Developer&#8221;</span><span class="c3"> herein.</span></div>
 <div class="cb">&#160;</div>
-<div class="cb"><span class="c3">WHEREAS, the </span><span class="c3o">&#8220;VENDOR/Developer&#8221;</span><span class="c3"> hereby agreed and offered to sell the flat (details as given below) for a total sale consideration of </span><span class="c3p">Rs.89,77,500/- (Rupees Eighty-Nine Lakh Seventy-Seven Thousand Five Hundred only)</span><span class="c4"> </span><span class="c3">including amenities and the VENDEE(S) has agreed to purchase the same for the said sale consideration.</span></div>
+<div class="cb"><span class="c3">WHEREAS, the </span><span class="c3o">&#8220;VENDOR/Developer&#8221;</span><span class="c3"> hereby agreed and offered to sell the flat (details as given below) for a total sale consideration of </span><span class="c3p">Rs.<apex:outputText value="{!considerationAmount}"/>/- (<apex:outputText value="{!considerationWords}"/>)</span><span class="c4"> </span><span class="c3">including amenities and the VENDEE(S) has agreed to purchase the same for the said sale consideration.</span></div>
 <div class="cb">&#160;</div>
 <table class="c3q">
 <colgroup>
@@ -2395,70 +2396,70 @@ img { border:0; }
 </colgroup>
 <tr class="c3r">
 <td class="c30"><div class="cb"><span class="c3">PROJECT</span></div></td>
-<td class="c37"><div class="cb"><span class="c3s">ANANDA THE DRIZZLE</span></div></td>
+<td class="c37"><div class="cb"><span class="c3s"><apex:outputText value="{!projectName}"/></span></div></td>
 </tr>
 <tr class="c3r">
 <td class="c39"><div class="cb"><span class="c3">BLOCK</span></div></td>
-<td class="c3l"><div class="cb"><span class="c3p">F</span></div></td>
+<td class="c3l"><div class="cb"><span class="c3p"><apex:outputText value="{!blockName}"/></span></div></td>
 </tr>
 <tr class="c3r">
 <td class="c39"><div class="cb"><span class="c3">FLAT NO.</span></div></td>
-<td class="c3l"><div class="cb"><span class="c3p">F-309</span></div></td>
+<td class="c3l"><div class="cb"><span class="c3p"><apex:outputText value="{!flatNo}"/></span></div></td>
 </tr>
 <tr class="c3r">
 <td class="c39"><div class="cb"><span class="c3">FLOOR</span></div></td>
-<td class="c3l"><div class="cb"><span class="c3s">THIRD</span></div></td>
+<td class="c3l"><div class="cb"><span class="c3s"><apex:outputText value="{!floorName}"/></span></div></td>
 </tr>
 <tr class="c3r">
 <td class="c39"><div class="cb"><span class="c3">FLAT TYPE</span></div></td>
-<td class="c3l"><div class="cb"><span class="c3s">3 BHK</span></div></td>
+<td class="c3l"><div class="cb"><span class="c3s"><apex:outputText value="{!flatType}"/></span></div></td>
 </tr>
 <tr class="c3r">
 <td class="c39"><div class="cb"><span class="c3">FACING</span></div></td>
-<td class="c3l"><div class="cb"><span class="c3s">WEST</span></div></td>
+<td class="c3l"><div class="cb"><span class="c3s"><apex:outputText value="{!facingName}"/></span></div></td>
 </tr>
 <tr class="c3r">
 <td class="c39"><div class="cb"><span class="c3">FLAT SIZE </span></div></td>
-<td class="c3t"><div class="c3"><span class="c3p">1995 SFT</span></div></td>
+<td class="c3t"><div class="c3"><span class="c3p"><apex:outputText value="{!flatSize}"/></span></div></td>
 </tr>
 <tr class="c3r">
 <td class="c39"><div class="cb"><span class="c3">CARPET AREA</span></div></td>
-<td class="c3t"><div class="c3"><span class="c3s">1200.43 SFT</span></div></td>
+<td class="c3t"><div class="c3"><span class="c3s"><apex:outputText value="{!carpetArea}"/></span></div></td>
 </tr>
 <tr class="c3r">
 <td class="c39"><div class="cb"><span class="c3">BALCONY AREA</span></div></td>
-<td class="c3t"><div class="c3"><span class="c3s">158.01 SFT</span></div></td>
+<td class="c3t"><div class="c3"><span class="c3s"><apex:outputText value="{!balconyArea}"/></span></div></td>
 </tr>
 <tr class="c3r">
 <td class="c39"><div class="cb"><span class="c3">UTILITY AREA</span></div></td>
-<td class="c3t"><div class="c3"><span class="c3s">44.72 SFT</span></div></td>
+<td class="c3t"><div class="c3"><span class="c3s"><apex:outputText value="{!utilityArea}"/></span></div></td>
 </tr>
 <tr class="c3r">
 <td class="c39"><div class="cb"><span class="c3">COMMON AREA</span></div></td>
-<td class="c3t"><div class="c3"><span class="c3s">460.383 SFT</span></div></td>
+<td class="c3t"><div class="c3"><span class="c3s"><apex:outputText value="{!commonArea}"/></span></div></td>
 </tr>
 <tr class="c3u">
 <td class="c39"><div class="cb"><span class="c3">EXTERNAL WALL</span></div></td>
-<td class="c3t"><div class="c3"><span class="c3s">76.66 SFT</span></div></td>
+<td class="c3t"><div class="c3"><span class="c3s"><apex:outputText value="{!externalWall}"/></span></div></td>
 </tr>
 <tr class="c3v">
 <td class="c39"><div class="cb"><span class="c3">INTERNAL WALL</span></div></td>
-<td class="c3t"><div class="c3"><span class="c3s">54.79 SFT</span></div></td>
+<td class="c3t"><div class="c3"><span class="c3s"><apex:outputText value="{!internalWall}"/></span></div></td>
 </tr>
 <tr class="c3r">
 <td class="c39"><div class="cb"><span class="c3">CAR PARKING</span></div></td>
-<td class="c3t"><div class="c3"><span class="c3s">TWO</span></div></td>
+<td class="c3t"><div class="c3"><span class="c3s"><apex:outputText value="{!carParkingName}"/></span></div></td>
 </tr>
 <tr class="c3r">
 <td class="c39"><div class="cb"><span class="c3">UDS</span></div></td>
-<td class="c3t"><div class="c3"><span class="c3p">47.30 Sq. Yds</span></div></td>
+<td class="c3t"><div class="c3"><span class="c3p"><apex:outputText value="{!udsArea}"/></span></div></td>
 </tr>
 </table>
 <div class="cb">&#160;</div>
 <div style="page-break-after:always;height:0"></div>
 <div class="cb"><span class="c2i">NOW THIS DEED OF SALE WITNESSETH AS FOLLOWS</span><span class="c4">: -</span></div>
 <div class="c3">&#160;</div>
-<div class="cb"><span class="c3">THAT</span><span class="c4"> </span><span class="c3">in pursuance of the aforesaid offer and acceptance the VENDEE(S) has paid the entire sale consideration of </span><span class="c3p">Rs.89,77,500/- (Rupees Eighty-Nine Lakh Seventy-Seven Thousand Five Hundred only)</span><span class="c4"> </span><span class="c3">to the Vendor (Developer) in the following manners:</span></div>
+<div class="cb"><span class="c3">THAT</span><span class="c4"> </span><span class="c3">in pursuance of the aforesaid offer and acceptance the VENDEE(S) has paid the entire sale consideration of </span><span class="c3p">Rs.<apex:outputText value="{!considerationAmount}"/>/- (<apex:outputText value="{!considerationWords}"/>)</span><span class="c4"> </span><span class="c3">to the Vendor (Developer) in the following manners:</span></div>
 <div class="cb">&#160;</div>
 <table class="c3w">
 <colgroup>
@@ -2473,39 +2474,22 @@ img { border:0; }
 <td class="c3z"><div class="c40"><span class="c4">CHEQUE/REFERENCE NO</span></div></td>
 <td class="c3z"><div class="c41"><span class="c4">AMOUNT</span></div></td>
 </tr>
+<apex:repeat value="{!paymentEntries}" var="entry">
 <tr class="c42">
-<td class="c44"><div class="c43"><span class="c3s">23-01-2026</span></div></td>
-<td class="c45"><div class="c8"><span class="c3s">CHEQUE</span></div></td>
-<td class="c45"><div class="c8"><span class="c3s">358226</span></div></td>
-<td class="c45"><div class="c8"><span class="c3s">24,75,000</span></div></td>
+<td class="c44"><div class="c43"><span class="c3s"><apex:outputText value="{!entry.dateText}"/></span></div></td>
+<td class="c45"><div class="c8"><span class="c3s"><apex:outputText value="{!entry.mode}"/></span></div></td>
+<td class="c45"><div class="c8"><span class="c3s"><apex:outputText value="{!entry.reference}"/></span></div></td>
+<td class="c45"><div class="c8"><span class="c3s"><apex:outputText value="{!entry.amountText}"/></span></div></td>
 </tr>
+</apex:repeat>
+<apex:outputPanel layout="none" rendered="{!NOT(hasPaymentEntries)}">
 <tr class="c42">
-<td class="c44"><div class="c43"><span class="c3s">01-02-2026</span></div></td>
-<td class="c45"><div class="c8"><span class="c3s">ONLINE</span></div></td>
-<td class="c45"><div class="c8"><span class="c3s">TDS CHALLAN: &#8221;02953&#8221;</span></div></td>
-<td class="c45"><div class="c8"><span class="c3s">25,000</span></div></td>
+<td colspan="4" class="c45"><div class="c8"><span class="c3s">No approved and received payments are recorded for this booking.</span></div></td>
 </tr>
-<tr class="c42">
-<td class="c44"><div class="c43"><span class="c3s">12-02-2026</span></div></td>
-<td class="c45"><div class="c8"><span class="c3s">ONLINE SBI LOAN DISBURSEMENT</span></div></td>
-<td class="c45"><div class="c8"><span class="c3s">NEFT/SBIN326043123411</span></div></td>
-<td class="c45"><div class="c8"><span class="c3s">50,00,000</span></div></td>
-</tr>
-<tr class="c42">
-<td class="c44"><div class="c43"><span class="c3s">20-02-2026</span></div></td>
-<td class="c45"><div class="c8"><span class="c3s">CHEQUE</span></div></td>
-<td class="c45"><div class="c8"><span class="c3s">358227</span></div></td>
-<td class="c45"><div class="c8"><span class="c3s">14,12,725</span></div></td>
-</tr>
-<tr class="c42">
-<td class="c44"><div class="c43"><span class="c3s">21-02-2026</span></div></td>
-<td class="c45"><div class="c8"><span class="c3s">ONLINE</span></div></td>
-<td class="c45"><div class="c8"><span class="c3s">TDS CHALLAN: &#8221;07381&#8221;</span></div></td>
-<td class="c45"><div class="c8"><span class="c3s">64,775</span></div></td>
-</tr>
+</apex:outputPanel>
 <tr class="c46">
 <td colspan="3" class="c3z"><div class="ca"><span class="c4">Total Received Rs.</span></div></td>
-<td class="c3z"><div class="c8"><span class="c3p">89,77,500/-</span></div></td>
+<td class="c3z"><div class="c8"><span class="c3p"><apex:outputText value="{!totalReceived}"/></span></div></td>
 </tr>
 </table>
 <div class="cb"><span class="c3">And the </span><span class="c3o">VENDOR/Developer</span><span class="c3"> hereby admitted and acknowledged the receipt of entire sale consideration. The </span><span class="c3o">VENDOR/Developer</span><span class="c3"> hereby convey, sell, transfer and assign all their title, right and interest over the Schedule &#8220;B&#8221; Property together with rights of easements and appurtenances unto and to the use of the VENDEE(S).</span></div>
@@ -2579,82 +2563,82 @@ img { border:0; }
 </colgroup>
 <tr class="c4w">
 <td class="c30"><div class="c4x">PROJECT</div></td>
-<td class="c37"><div class="c4x"><span class="c4y">ANANDA THE DRIZZLE</span></div></td>
+<td class="c37"><div class="c4x"><span class="c4y"><apex:outputText value="{!projectName}"/></span></div></td>
 </tr>
 <tr class="c4w">
 <td class="c39"><div class="c4x">BLOCK</div></td>
-<td class="c3l"><div class="c4x"><span class="c4z">F</span></div></td>
+<td class="c3l"><div class="c4x"><span class="c4z"><apex:outputText value="{!blockName}"/></span></div></td>
 </tr>
 <tr class="c4w">
 <td class="c39"><div class="c4x">FLAT NO.</div></td>
-<td class="c3l"><div class="c4x"><span class="c4z">F-309</span></div></td>
+<td class="c3l"><div class="c4x"><span class="c4z"><apex:outputText value="{!flatNo}"/></span></div></td>
 </tr>
 <tr class="c4w">
 <td class="c39"><div class="c4x">FLOOR</div></td>
-<td class="c3l"><div class="c4x"><span class="c4y">THIRD</span></div></td>
+<td class="c3l"><div class="c4x"><span class="c4y"><apex:outputText value="{!floorName}"/></span></div></td>
 </tr>
 <tr class="c4w">
 <td class="c39"><div class="c4x">FLAT TYPE</div></td>
-<td class="c3l"><div class="c4x"><span class="c4y">3 BHK</span></div></td>
+<td class="c3l"><div class="c4x"><span class="c4y"><apex:outputText value="{!flatType}"/></span></div></td>
 </tr>
 <tr class="c4w">
 <td class="c39"><div class="c4x">FACING</div></td>
-<td class="c3l"><div class="c4x"><span class="c4y">WEST</span></div></td>
+<td class="c3l"><div class="c4x"><span class="c4y"><apex:outputText value="{!facingName}"/></span></div></td>
 </tr>
 <tr class="c4w">
 <td class="c39"><div class="c4x">FLAT SIZE </div></td>
-<td class="c3t"><div><span class="c4z">1995 SFT</span></div></td>
+<td class="c3t"><div><span class="c4z"><apex:outputText value="{!flatSize}"/></span></div></td>
 </tr>
 <tr class="c4w">
 <td class="c39"><div class="c4x">CARPET AREA</div></td>
-<td class="c3t"><div><span class="c4y">1200.43 SFT</span></div></td>
+<td class="c3t"><div><span class="c4y"><apex:outputText value="{!carpetArea}"/></span></div></td>
 </tr>
 <tr class="c4w">
 <td class="c39"><div class="c4x">BALCONY AREA</div></td>
-<td class="c3t"><div><span class="c4y">158.01 SFT</span></div></td>
+<td class="c3t"><div><span class="c4y"><apex:outputText value="{!balconyArea}"/></span></div></td>
 </tr>
 <tr class="c4w">
 <td class="c39"><div class="c4x">UTILITY AREA</div></td>
-<td class="c3t"><div><span class="c4y">44.72 SFT</span></div></td>
+<td class="c3t"><div><span class="c4y"><apex:outputText value="{!utilityArea}"/></span></div></td>
 </tr>
 <tr class="c4w">
 <td class="c39"><div class="c4x">COMMON AREA</div></td>
-<td class="c3t"><div><span class="c4y">460.383 SFT</span></div></td>
+<td class="c3t"><div><span class="c4y"><apex:outputText value="{!commonArea}"/></span></div></td>
 </tr>
 <tr class="c50">
 <td class="c39"><div class="c4x">EXTERNAL WALL</div></td>
-<td class="c3t"><div><span class="c4y">76.66 SFT</span></div></td>
+<td class="c3t"><div><span class="c4y"><apex:outputText value="{!externalWall}"/></span></div></td>
 </tr>
 <tr class="c51">
 <td class="c39"><div class="c4x">INTERNAL WALL</div></td>
-<td class="c3t"><div><span class="c4y">54.79 SFT</span></div></td>
+<td class="c3t"><div><span class="c4y"><apex:outputText value="{!internalWall}"/></span></div></td>
 </tr>
 <tr class="c4w">
 <td class="c39"><div class="c4x">CAR PARKING</div></td>
-<td class="c3t"><div><span class="c4y">TWO</span></div></td>
+<td class="c3t"><div><span class="c4y"><apex:outputText value="{!carParkingName}"/></span></div></td>
 </tr>
 <tr class="c4w">
 <td class="c39"><div class="c4x">UDS</div></td>
-<td class="c3t"><div><span class="c4z">47.30 Sq. Yds</span></div></td>
+<td class="c3t"><div><span class="c4z"><apex:outputText value="{!udsArea}"/></span></div></td>
 </tr>
 <tr class="c4w">
 <td colspan="2" class="c30"><div class="c52"><span class="c47">BOUNDARIES</span></div></td>
 </tr>
 <tr class="c4w">
 <td class="c39"><div class="c4x">NORTH</div></td>
-<td class="c3l"><div class="c4x"><span class="c4y">OPEN TO SKY</span></div></td>
+<td class="c3l"><div class="c4x"><span class="c4y"><apex:outputText value="{!boundaryNorth}"/></span></div></td>
 </tr>
 <tr class="c4w">
 <td class="c39"><div class="c4x">SOUTH</div></td>
-<td class="c3l"><div class="c4x"><span class="c4y">OPEN TO SKY</span></div></td>
+<td class="c3l"><div class="c4x"><span class="c4y"><apex:outputText value="{!boundarySouth}"/></span></div></td>
 </tr>
 <tr class="c4w">
 <td class="c39"><div class="c4x">EAST</div></td>
-<td class="c3l"><div class="c4x"><span class="c4y">OPEN TO SKY</span></div></td>
+<td class="c3l"><div class="c4x"><span class="c4y"><apex:outputText value="{!boundaryEast}"/></span></div></td>
 </tr>
 <tr class="c4w">
 <td class="c39"><div class="c4x">WEST</div></td>
-<td class="c3l"><div class="c4x"><span class="c4y">CORRIDOR</span></div></td>
+<td class="c3l"><div class="c4x"><span class="c4y"><apex:outputText value="{!boundaryWest}"/></span></div></td>
 </tr>
 </table>
 <div class="c3">&#160;</div>
@@ -2680,7 +2664,7 @@ img { border:0; }
 </colgroup>
 <tr class="c58">
 <td class="c59"><div class="c3"><span class="c4">1.Description of the Property: -</span></div></td>
-<td class="c59"><div class="cb"><span class="c4">All THAT the </span><span class="c3p">3</span><span class="c4"> BHK Flat bearing No. </span><span class="c3p">F-309 </span><span class="c3s">(</span><span class="c3p">West</span><span class="c4"> Facing</span><span class="c3">)</span><span class="c4"> </span><span class="c3">in</span><span class="c4"> </span><span class="c3p">Third</span><span class="c4"> Floor </span><span class="c3">of</span><span class="c4"> &#8220;BLOCK-</span><span class="c3p">F</span><span class="c4">" </span><span class="c3">in</span><span class="c4"> &#8220;</span><span class="c2n">ANANDA</span><span class="c4"> THE DRIZZLE&#8221;</span><span class="c3">,</span><span class="c4"> </span><span class="c3">constructed</span><span class="c4"> </span><span class="c3">in</span><span class="c4"> </span><span class="c3">Sy.No.325/AA/3, 327/A/2, 327/AA/1/2, 327/AA/2, 328/A, 328/AA, 328/E of Narsingi Village and Sy.No.91/A, 91/AA, 93/AA, 93/A/1/2, 93E/1 of Neknampur Village, </span><span class="c32">both are within the limits of Cyberabad Municipal Corporation, Narsingi Cirlce-45, Gandipet Mandal, Ranga Reddy District, Telangana State</span><span class="c3">.</span></div></td>
+<td class="c59"><div class="cb"><span class="c4">All THAT the </span><span class="c3p"><apex:outputText value="{!bhkNumber}"/></span><span class="c4"> BHK Flat bearing No. </span><span class="c3p"><apex:outputText value="{!flatNo}"/> </span><span class="c3s">(</span><span class="c3p"><apex:outputText value="{!facingTitle}"/></span><span class="c4"> Facing</span><span class="c3">)</span><span class="c4"> </span><span class="c3">in</span><span class="c4"> </span><span class="c3p"><apex:outputText value="{!floorTitle}"/></span><span class="c4"> Floor </span><span class="c3">of</span><span class="c4"> &#8220;BLOCK-</span><span class="c3p"><apex:outputText value="{!blockName}"/></span><span class="c4">" </span><span class="c3">in</span><span class="c4"> &#8220;</span><span class="c2n">ANANDA</span><span class="c4"> THE DRIZZLE&#8221;</span><span class="c3">,</span><span class="c4"> </span><span class="c3">constructed</span><span class="c4"> </span><span class="c3">in</span><span class="c4"> </span><span class="c3">Sy.No.325/AA/3, 327/A/2, 327/AA/1/2, 327/AA/2, 328/A, 328/AA, 328/E of Narsingi Village and Sy.No.91/A, 91/AA, 93/AA, 93/A/1/2, 93E/1 of Neknampur Village, </span><span class="c32">both are within the limits of Cyberabad Municipal Corporation, Narsingi Cirlce-45, Gandipet Mandal, Ranga Reddy District, Telangana State</span><span class="c3">.</span></div></td>
 </tr>
 <tr class="c5a">
 <td class="c59"><div class="c3">&#160;</div></td>
@@ -2712,7 +2696,7 @@ img { border:0; }
 </tr>
 <tr class="c5d">
 <td class="c59"><div class="c3"><span class="c4">3.&#160; Extent: -</span></div></td>
-<td class="c59"><div class="cb"><span class="c3">Proportionate undivided share of land admeasuring </span><span class="c3p">47.30</span><span class="c4"> Square Yards</span><span class="c3">,</span><span class="c4"> (</span><span class="c3">out of total land admeasuring 37,337.56 Square Yards equivalent to 31218.96 Square Meters)</span></div></td>
+<td class="c59"><div class="cb"><span class="c3">Proportionate undivided share of land admeasuring </span><span class="c3p"><apex:outputText value="{!udsNumber}"/></span><span class="c4"> Square Yards</span><span class="c3">,</span><span class="c4"> (</span><span class="c3">out of total land admeasuring 37,337.56 Square Yards equivalent to 31218.96 Square Meters)</span></div></td>
 </tr>
 <tr class="c5b">
 <td class="c59"><div class="c3">&#160;</div></td>
@@ -2720,7 +2704,7 @@ img { border:0; }
 </tr>
 <tr class="c5e">
 <td class="c59"><div class="c3"><span class="c4">4.Built up Area Particulars: -</span></div></td>
-<td class="c59"><div class="cb"><span class="c3p">1995</span><span class="c4"> Square Feet</span><span class="c3"> (including common areas) and </span><span class="c3s">Two</span><span class="c3"> Car Parking.</span></div></td>
+<td class="c59"><div class="cb"><span class="c3p"><apex:outputText value="{!flatSizeNumber}"/></span><span class="c4"> Square Feet</span><span class="c3"> (including common areas) and </span><span class="c3s"><apex:outputText value="{!carParkingTitle}"/></span><span class="c3"> Car Parking.</span></div></td>
 </tr>
 <tr class="c5b">
 <td class="c59"><div class="c3">&#160;</div></td>
@@ -2728,7 +2712,7 @@ img { border:0; }
 </tr>
 <tr class="c5f">
 <td class="c59"><div class="cb"><span class="c4">5. Executant&#8217;s estimate of the MV of the Flat: -</span></div></td>
-<td class="c59"><div class="c3"><span class="c4">Rs. </span><span class="c3p">89,77,500</span><span class="c4">/-</span><span class="c5g"> </span></div></td>
+<td class="c59"><div class="c3"><span class="c4">Rs. </span><span class="c3p"><apex:outputText value="{!considerationAmount}"/></span><span class="c4">/-</span><span class="c5g"> </span></div></td>
 </tr>
 <tr class="c5b">
 <td class="c59"><div class="c3">&#160;</div></td>
@@ -2758,12 +2742,12 @@ img { border:0; }
 <div class="c55"><span class="c3">2)</span><span class="c53"></span><span class="c54"></span><span class="c54"></span><span class="c54"></span><span class="c54"></span><span class="c54"></span><span class="c54"></span><span class="c54"></span><span class="c54"></span><span class="c2i">SIGN. OF THE VENDEE(S)</span></div>
 <div class="c3">&#160;</div>
 <div style="page-break-after:always;height:0"></div>
-<div class="c4n"><span class="c32">REGISTRATION PLAN SHOWING ALL THAT the </span><span class="c5i">3</span><span class="c2y"> BHK Flat bearing No. </span><span class="c5i">F-309 (West</span><span class="c2y"> Facing)</span><span class="c32"> in </span><span class="c5i">Third</span><span class="c2y"> Floor</span><span class="c32"> of "</span><span class="c2y">ANANDA THE DRIZZLE</span><span class="c32">", with an area o</span><span class="c5j">f </span><span class="c5i">1995</span><span class="c2y"> Square Feet</span><span class="c32"> (including common areas) and </span><span class="c5j">Two</span><span class="c32"> Car parking along with a proportionate undivided share of land admeasuring </span><span class="c5i">47.30</span><span class="c2y"> Square Yards</span><span class="c32">, (out of total land admeasuring 37,337.56 Square Yards or equivalent to 31218.96 Square Meters) in Sy.No.325/AA/3, 327/A/2, 327/AA/1/2 327/AA/2, 328/A, 328/AA, 328/E of Narsingi Village and Sy.No.91/A, 91/AA, 93/AA, 93/A/1/2, 93E/1 of&#160; Neknampur Village, both are within the limits of Cyberabad Municipal Corporation, Narsingi Cirlce-45, Gandipet Mandal, Ranga Reddy District, Telangana State</span></div>
+<div class="c4n"><span class="c32">REGISTRATION PLAN SHOWING ALL THAT the </span><span class="c5i"><apex:outputText value="{!bhkNumber}"/></span><span class="c2y"> BHK Flat bearing No. </span><span class="c5i"><apex:outputText value="{!flatNo}"/> (<apex:outputText value="{!facingTitle}"/></span><span class="c2y"> Facing)</span><span class="c32"> in </span><span class="c5i"><apex:outputText value="{!floorTitle}"/></span><span class="c2y"> Floor</span><span class="c32"> of "</span><span class="c2y">ANANDA THE DRIZZLE</span><span class="c32">", with an area o</span><span class="c5j">f </span><span class="c5i"><apex:outputText value="{!flatSizeNumber}"/></span><span class="c2y"> Square Feet</span><span class="c32"> (including common areas) and </span><span class="c5j"><apex:outputText value="{!carParkingTitle}"/></span><span class="c32"> Car parking along with a proportionate undivided share of land admeasuring </span><span class="c5i"><apex:outputText value="{!udsNumber}"/></span><span class="c2y"> Square Yards</span><span class="c32">, (out of total land admeasuring 37,337.56 Square Yards or equivalent to 31218.96 Square Meters) in Sy.No.325/AA/3, 327/A/2, 327/AA/1/2 327/AA/2, 328/A, 328/AA, 328/E of Narsingi Village and Sy.No.91/A, 91/AA, 93/AA, 93/A/1/2, 93E/1 of&#160; Neknampur Village, both are within the limits of Cyberabad Municipal Corporation, Narsingi Cirlce-45, Gandipet Mandal, Ranga Reddy District, Telangana State</span></div>
 <div class="c4n">&#160;</div>
 <div class="c5k"><span class="c4i">VENDORS/DEVELOPERS</span><span class="c2y">: - SMT. BHUPATHI PADMA, W/O. ERRAM SAMPATH KUMAR AND OTHERS </span><span class="c4i">REP.BY THEIR DAGPA HOLDERS:</span><span class="c2y"> - M/s. ANANDA HOMES &amp; M/s. ANANDA PROSPER PROJECTS and M/s. THE DRIZZLE JV, REP. BY SRI P.V. SREENIVASULU S/O. LATE P.C.V. RAMANAIAH</span></div>
 <div class="c5l">&#160;</div>
-<div class="c4n"><span class="c4i">VENDEE(S</span><span class="c2y">): - </span><span class="c5i">MR. NISHANT GOEL, S/o. MR. VIJAY PAL GOEL &amp;</span></div>
-<div class="c32"><span class="c5i">&#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; MRS. NANCY GOEL, W/o. MR. NISHANT GOEL.</span></div>
+<div class="c4n"><span class="c4i">VENDEE(S</span><span class="c2y">): - </span><apex:repeat value="{!vendees}" var="v"><apex:outputPanel layout="none" rendered="{!v.isFirst}"><span class="c5i"><apex:outputText value="{!v.nameLine}"/><apex:outputText value="{!IF(v.isLast, '.', ' &amp;')}"/></span></apex:outputPanel></apex:repeat></div>
+<apex:repeat value="{!vendees}" var="v"><apex:outputPanel layout="none" rendered="{!NOT(v.isFirst)}"><div class="c32"><span class="c5i">&#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; <apex:outputText value="{!v.nameLine}"/><apex:outputText value="{!IF(v.isLast, '.', ' &amp;')}"/></span></div></apex:outputPanel></apex:repeat>
 <div class="c32">&#160;</div>
 <!--<img src="{!URLFOR($Resource.Drizzle_SD_FloorPlan)}" style="float:left;margin-left:4.2pt;margin-top:0.7pt;margin-right:6pt;width:298.9pt;height:329.9pt"/><div class="c32">&#160;</div>-->
 <div class="c5m"><span class="c2y"> Reference</span></div>

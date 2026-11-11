@@ -199,6 +199,16 @@
                 <identifier>RecordRERA_Tower_ID_cField</identifier>
             </fieldInstance>
         </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Survey_Number__c</fieldItem>
+                <identifier>RecordSurvey_Number__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
         <name>Facet-03249642-7cd3-48ea-9cac-9363b0dfff64</name>
         <type>Facet</type>
     </flexiPageRegions>

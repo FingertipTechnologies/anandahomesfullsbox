@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Layout xmlns="http://soap.sforce.com/2006/04/metadata">
-    <excludeButtons>OpenSlackRecordChannel</excludeButtons>
+    <excludeButtons>GenerateKnowledge</excludeButtons>
     <excludeButtons>SmartFillEnrich</excludeButtons>
     <layoutSections>
         <customLabel>false</customLabel>
@@ -43,6 +43,30 @@
             <layoutItems>
                 <behavior>Edit</behavior>
                 <field>Legacy_Split_Demand_Receipt__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Corpus_Charge_Per_Sq_ft__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Maintenance_Per_sq_ft_per_month__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Stamp_Duty_Percentage__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Document_Charges__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Maintenance_Month__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Booking_Amount__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
@@ -257,6 +281,10 @@
     <relatedLists>
         <fields>NAME</fields>
         <relatedList>Plot__c.Project__c</relatedList>
+    </relatedLists>
+    <relatedLists>
+        <fields>NAME</fields>
+        <relatedList>Block__c.Project__c</relatedList>
     </relatedLists>
     <relatedLists>
         <fields>NAME</fields>

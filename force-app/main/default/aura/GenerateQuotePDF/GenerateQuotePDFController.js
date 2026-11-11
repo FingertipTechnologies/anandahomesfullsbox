@@ -50,6 +50,8 @@
                 var vfpage;
                 if (projectNorm === 'the legacey') {
                     vfpage = '/apex/COST_SHEET_TL?Id=' + recordId;
+                } else if (projectNorm === 'the drizzle') {
+                    vfpage = '/apex/COST_SHEET_TD?Id=' + recordId;
                 }
                 if (!vfpage) {
                     var toastEvent = $A.get("e.force:showToast");

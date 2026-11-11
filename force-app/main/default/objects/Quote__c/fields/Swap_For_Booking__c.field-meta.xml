@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Swap_For_Booking__c</fullName>
+    <deleteConstraint>SetNull</deleteConstraint>
+    <description>Set when this quote was created automatically for a unit swap: the booking whose swap request it belongs to. The booking created by the swap is linked to this quote.</description>
+    <inlineHelpText>Booking whose unit swap this cost sheet was created for.</inlineHelpText>
+    <label>Swap For Booking</label>
+    <referenceTo>Booking__c</referenceTo>
+    <relationshipLabel>Swap Quotes</relationshipLabel>
+    <relationshipName>Swap_Quotes</relationshipName>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

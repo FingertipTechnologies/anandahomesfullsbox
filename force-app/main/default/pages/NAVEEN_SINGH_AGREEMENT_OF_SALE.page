@@ -1,4 +1,4 @@
-<apex:page renderAs="pdf" showHeader="false" sidebar="false" standardStylesheets="false" applyHtmlTag="false" applyBodyTag="false">
+<apex:page standardController="Booking__c" extensions="AgreementOfSaleController" renderAs="pdf" showHeader="false" sidebar="false" standardStylesheets="false" applyHtmlTag="false" applyBodyTag="false">
 <html>
 <head>
 <style type="text/css">
@@ -59,10 +59,11 @@
 </style>
 </head>
 <body>
+<apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(ownerMismatchMessage))}"><div style="border:1px solid #c00;color:#c00;padding:4px;margin-bottom:8px;font-size:9pt">{!ownerMismatchMessage}</div></apex:outputPanel>
 
     <p class="title">AGREEMENT OF SALE</p>
 
-    <p>This AGREEMENT OF SALE is made and executed on this the ______ day of ____________ 2026, at Ranga Reddy District, Telangana State, by and between: -</p>
+    <p>This AGREEMENT OF SALE is made and executed on this the&#160;<apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,dd}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText> day of&#160;<apex:outputText value="{0,date,MMMM yyyy}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">______ day of ____________</apex:outputPanel>, at Ranga Reddy District, Telangana State, by and between: -</p>
 
     <p><span class="bold">SRI NAVEEN SINGH, S/O. SRI K. SARDAR SINGH,</span> Aged about 37 years, Occupation: Private Employee, Resident of H.No.12-1-325/B, Dattatreya Nagar, Asif Nagar, Hyderabad (Aadhar No. 2894 1416 4069 &amp; PAN No. BBVPK7729M).</p>
 
@@ -78,9 +79,10 @@
 
     <p class="center bold">IN FAVOUR OF</p>
 
-    <p><span class="bold">SRI. PAMULAPATI MAHESH, S/O. SRI. VENKATESWARARAO PAMULAPATI,</span> aged about 30 years Occupation: Private Employee, Resident of H.No-1-121, CENTER, CENTER, PERECHERLA, GUNTUR DIST, ANDHRA PRADESH-522005. (AADHAAR No. 6236 7871 6036 &amp; PAN No. CSGPP7659L)</p>
-
-    <p><span class="bold">SMT. YARRA THIREESHA, W/O. SRI. PAMULAPATI MAHESH,</span> aged about 28 years Occupation: Private Employee, Resident of H.No-1-121, CENTER, CENTER, PERECHERLA, GUNTUR DIST, ANDHRA PRADESH-522005. (AADHAAR No. 2303 0148 6240 &amp; PAN No. AVJPY2857K)</p>
+    <apex:repeat value="{!applicants}" var="applicant">
+    <p><span class="bold">{!applicant.displayName},</span> {!applicant.legalDetails}</p>
+    </apex:repeat>
+    <apex:outputPanel layout="none" rendered="{!NOT(hasApplicants)}"><p>Applicant information is missing.</p></apex:outputPanel>
 
     <p>Hereinafter called the "VENDEE(S)/ PURCHASER(S)", which term shall mean and include all his/her heirs, executors, administrators, legal representatives, nominees and assignees etc., of the OTHER PART.</p>
 
@@ -158,21 +160,22 @@
     <p>AND WHEREAS, in accordance with the terms and conditions set out in this Agreement and as mutually agreed upon by and between the Parties, the AGPA Holder hereby agrees to sell and the VENDEE/S hereby agree to purchase the Flat Which is more specifically demarcated as per the Schedule below.</p>
 
     <table>
-        <tr><td class="bold">PROJECT</td><td>THE LEGACEY</td></tr>
-        <tr><td class="bold">TOWER</td><td>1</td></tr>
-        <tr><td class="bold">FLAT NO.</td><td>T1-707</td></tr>
-        <tr><td class="bold">FLOOR</td><td>7th Floor</td></tr>
-        <tr><td class="bold">FLAT TYPE</td><td>3 BHK</td></tr>
-        <tr><td class="bold">FACING</td><td>EAST</td></tr>
-        <tr><td class="bold">CARPET AREA</td><td>942 SQ. FT</td></tr>
-        <tr><td class="bold">BALCONY &amp; UTILITY AREA</td><td>146 SQ. FT</td></tr>
-        <tr><td class="bold">WALL AREA</td><td>85 SQ. FT</td></tr>
-        <tr><td class="bold">PLINTH AREA</td><td>1173 SQ. FT</td></tr>
-        <tr><td class="bold">COMMON AREA</td><td>347 SQ. FT</td></tr>
-        <tr><td class="bold">FLAT SIZE</td><td>1520 SQ. FT</td></tr>
-        <tr><td class="bold">CAR PARKING</td><td>ONE</td></tr>
-        <tr><td class="bold">UDS</td><td>31.9 SQ. YDS</td></tr>
+        <tr><td class="bold">PROJECT</td><td>{!selectedUnit.Project__r.Name}</td></tr>
+        <tr><td class="bold">TOWER</td><td>{!selectedTowerDisplay}</td></tr>
+        <tr><td class="bold">FLAT NO.</td><td>{!selectedFlatLabel}</td></tr>
+        <tr><td class="bold">FLOOR</td><td>{!selectedFloorDisplay} Floor</td></tr>
+        <tr><td class="bold">FLAT TYPE</td><td>{!selectedUnit.BHK_Type__c}</td></tr>
+        <tr><td class="bold">FACING</td><td>{!selectedFacingUpper}</td></tr>
+        <tr><td class="bold">CARPET AREA</td><td><apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Carpet_Area__c}"/></apex:outputText> SQ. FT</td></tr>
+        <tr><td class="bold">BALCONY &amp; UTILITY AREA</td><td><apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Balcony_Area__c}"/></apex:outputText> SQ. FT</td></tr>
+        <tr><td class="bold">WALL AREA</td><td><apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedWallArea}"/></apex:outputText> SQ. FT</td></tr>
+        <tr><td class="bold">PLINTH AREA</td><td><apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Built_up_area__c}"/></apex:outputText> SQ. FT</td></tr>
+        <tr><td class="bold">COMMON AREA</td><td><apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Common_Area_Allotted_to_Association__c}"/></apex:outputText> SQ. FT</td></tr>
+        <tr><td class="bold">FLAT SIZE</td><td><apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText> SQ. FT</td></tr>
+        <tr><td class="bold">CAR PARKING</td><td><apex:outputText value="{!UPPER(selectedCarParkingDisplay)}"/></td></tr>
+        <tr><td class="bold">UDS</td><td><apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.UDS__c}"/></apex:outputText> SQ. YDS</td></tr>
     </table>
+    <apex:outputPanel layout="none" rendered="{!NOT(hasSelectedUnit)}"><p>Selected unit data is missing from this Booking.</p></apex:outputPanel>
 
     <p>AND WHEREAS, this agreement shall be construed, interpreted and applied in accordance with, and shall be governed by the laws applicable in India. The courts at Hyderabad shall have the sole and exclusive jurisdiction to entertain any dispute or suit arising out of or in relation to this agreement.</p>
 
@@ -184,7 +187,7 @@
 
     <p>"Act" means the Real Estate (Regulation and Development) Act, 2016 (16 of 2016) and includes Telangana Real Estates (Regulation and Development) Rules, 2017, wherever, the context so requires:</p>
 
-    <p>"Agreement" shall mean this agreement to sell a flat bearing No. T1-707, Tower no. 1, square feet 1520, including the schedule hereto, as may be amended from time to time;</p>
+    <p>"Agreement" shall mean this agreement to sell a flat bearing No. {!selectedFlatLabel}, Tower no. {!selectedTowerDisplay}, square feet&#160;<apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText>, including the schedule hereto, as may be amended from time to time;</p>
 
     <p>"Applicable Law" means all laws, statutes, regulations, codes, bye-laws, ordinances, treaties, judgments, decrees, directives, rules, guidelines, orders, policies and other requirements of any statutory authority having jurisdiction over the Schedule property which are in effect or as may be amended, modified, enacted or revoked from time-to-time hereafter;</p>
 
@@ -258,13 +261,13 @@
 
     <p class="heading">TERMS:</p>
 
-    <p>Subject to the terms and conditions as detailed in this Agreement, the DEVELOPER agrees to sell to the VENDEE/S and the VENDEE/S hereby agrees to purchase the Flat No. T1-707, Tower No. 1, Area 1520 sq. ft (including common area) for a total consideration of Rs. 1,05,13,680/- (Rupees One Crore Five Lakh Thirteen Thousand Six Hundred Eighty Only) Which includes amenities and excludes GST, constructed on Schedule A property, Puppalguda Village, Gandipet Mandal, Ranga Reddy District, Telangana State:</p>
+    <p>Subject to the terms and conditions as detailed in this Agreement, the DEVELOPER agrees to sell to the VENDEE/S and the VENDEE/S hereby agrees to purchase the Flat No. {!selectedFlatLabel}, Tower No. {!selectedTowerDisplay}, Area&#160;<apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText> sq. ft (including common area) for a total consideration of Rs. {!formattedTotalFlatCost}/- ({!agreementAmountInWords}) Which includes amenities and excludes GST, constructed on Schedule A property, Puppalguda Village, Gandipet Mandal, Ranga Reddy District, Telangana State:</p>
 
     <table>
         <tr><th>Particulars</th><th>Rate Per SFT (In Rupees)</th><th>Total Price (In Rupees)</th></tr>
-        <tr><td>Basic Price</td><td>6,259</td><td>95,13,680</td></tr>
-        <tr><td>Amenities including One car parking &amp; Infrastructure charges</td><td></td><td>10,00,000</td></tr>
-        <tr><td class="bold">Total</td><td></td><td class="bold">1,05,13,680/-</td></tr>
+        <tr><td>Basic Price</td><td>{!formattedPricePerSquareFoot}</td><td>{!formattedBasicPrice}</td></tr>
+        <tr><td>{!amenitiesDescription}</td><td></td><td>{!formattedAmenitiesAmount}</td></tr>
+        <tr><td class="bold">Total</td><td></td><td class="bold">{!formattedTotalFlatCost}/-</td></tr>
     </table>
 
     <p class="bold">GST:</p>
@@ -307,17 +310,18 @@
 
     <p>The DEVELOPER agrees to pay all outgoings before transferring the physical possession or transfer of Scheduled Property whichever is earlier, of the flat to the VENDEE/S, which it has collected from the VENDEE/S, for the payment of outgoings (including land cost [either directly or by way of share in the project, ground rent, municipal or other local taxes, charges for water or electricity, maintenance charges, including mortgage loan and interest on mortgages or other encumbrances and such other liabilities payable to competent authorities, banks and financial institutions, which are related to the project). If DEVELOPER fails to pay all or any of the outgoings collected by it from the VENDEE/S or any liability, mortgage loan and interest thereon before transferring the flat to the VENDEE/S or any liability, mortgage loan and interest thereon before transferring the flat to the VENDEE/S, the DEVELOPER agrees to be liable, even after the transfer of the property, to pay such outgoings and penal charges, if any, to the authority or person to whom they are payable and be liable for the cost of any legal proceedings which may be taken there for by such authority or persons.</p>
 
-    <p>VENDEE/S has paid a sum of Rs. 21,02,736/- (Rupees Twenty One Lakh Two Thousand Seven Hundred Thirty Six Only) as booking amount, excluding GST being part payment towards the total price of the flat at the time of entering this Agreement, the receipt of which the DEVELOPER hereby acknowledges in the table below and the VENDEE/S hereby agrees to pay the remaining price of the flat as prescribed in the Payment Plan (Schedule C) as may be demanded by the DEVELOPER within the time and in the manner specified therein.</p>
+    <p>VENDEE/S has paid a sum of Rs. {!formattedTotalReceiptAmount}/- ({!totalReceiptAmountInWords}) as booking amount, excluding GST being part payment towards the total price of the flat at the time of entering this Agreement, the receipt of which the DEVELOPER hereby acknowledges in the table below and the VENDEE/S hereby agrees to pay the remaining price of the flat as prescribed in the Payment Plan (Schedule C) as may be demanded by the DEVELOPER within the time and in the manner specified therein.</p>
 
     <table>
         <tr><th>Date</th><th>Mode</th><th>Reference ID</th><th>Amount</th></tr>
-        <tr><td>24-Sep-24</td><td>Cheque</td><td>"000004"</td><td>5,00,000</td></tr>
-        <tr><td>11-Nov-24</td><td>Online</td><td>301069395</td><td>15,81,709</td></tr>
-        <tr><td>04-Jul-25</td><td>TDS Challan</td><td>Challan No-12378</td><td>21,027</td></tr>
-        <tr><td class="bold">Total payments</td><td></td><td></td><td class="bold">21,02,736/-</td></tr>
+        <apex:repeat value="{!receiptRows}" var="receipt">
+        <tr><td><apex:outputText value="{0,date,dd-MMM-yy}"><apex:param value="{!receipt.receiptDate}"/></apex:outputText></td><td>{!receipt.mode}</td><td>{!receipt.referenceId}</td><td>{!receipt.amountDisplay}</td></tr>
+        </apex:repeat>
+        <apex:outputPanel layout="none" rendered="{!NOT(hasReceipts)}"><tr><td colspan="4">No approved receipt records are available for this Booking.</td></tr></apex:outputPanel>
+        <tr><td class="bold">Total payments</td><td></td><td></td><td class="bold">{!formattedTotalReceiptAmount}/-</td></tr>
     </table>
 
-    <p>Balance Rs. 84,10,944 /- (Rupees Eighty Four Lakh Ten Thousand Nine Hundred Forty Four Only) availing by the way of loan from INDIAN BANK.</p>
+    <p>Balance Rs. {!formattedBalanceAmount}/- ({!balanceAmountInWords}) availing by the way of loan from {!loanBankName}.</p>
 
     <p>The VENDEE/S shall pay the installments as stipulated above within 15 days from the date of notice issued by the DEVELOPER, failing which it shall carry interest at the rate of 24% prescribed in the Rules.</p>
 
@@ -620,9 +624,9 @@
     <p>In the case of notice to the VENDEE (S), to:</p>
 
     <table>
-        <tr><td class="bold">Attention</td><td>:</td><td>SRI. PAMULAPATI MAHESH &amp; SMT. YARRA THIREESHA</td></tr>
-        <tr><td class="bold">Address</td><td>:</td><td>H.No-1-121, CENTER, CENTER, PERECHERLA, GUNTUR DIST, ANDHRA PRADESH-522005.</td></tr>
-        <tr><td class="bold">E mail</td><td>:</td><td>maheshpmlpt@gmail.com</td></tr>
+        <tr><td class="bold">Attention</td><td>:</td><td>{!buyerNames}</td></tr>
+        <tr><td class="bold">Address</td><td>:</td><td>{!buyerAddress}</td></tr>
+        <tr><td class="bold">E mail</td><td>:</td><td>{!buyerEmail}</td></tr>
     </table>
 
     <p>It shall be the duty of the VENDEE/S and the DEVELOPER to inform each other of any change in address subsequent to the execution of this Agreement in the above address by Registered post failing which all communication and letters posted at the above address shall be deemed to have been received by the DEVELOPER or the VENDEE/S, as the case may be.</p>
@@ -678,36 +682,24 @@
 
     <p class="sched">SCHEDULE 'B' PROPERTY</p>
 
-    <p>All that the 3 BHK Flat No.T1-707 (EAST Facing) on 7th Floor, of Tower-1, the High Rise Residential Flats known as "THE LEGACEY", with saleable area of 1520 Square Feet (including common areas and One Car Parking), along with proportionate undivided share of land equivalent to 31.9 Square Yards, (Out of total land admeasuring 80704.23 Square yards or equivalent to 67479.02 Square Meters), in Sy.Nos. 128/1A/2/2, 129/A/1, 129/A/2, 129/AA/1, 129/AA/2, 129/AA/3, 129/E/1, 130/A/1, 130/A/2, 130/A/3/1, 130/A/3/2, 130/A/4, 130/AA/1, 130/AA/2, 130/AA/3, 130/E/1, 130/E/2, 145/1/2, 145/1/1/7, 145/1/1/1/2, 145/1/1/1/1/2, 145/1/1/1/1/1/1, 145/1/1/1/1/1/2, 145/2, 147/A/1, 147/A/2, 147/A/3, 147/AA/1, 147/AA/2, 147/AA/3, 147/E/1, 147/E/2, 148/A/1, 148/A/2, 148/A/3, 148/A/4, 148/AA/1, 148/AA/2, 148/AA/3, 148/E/1, 148/E/2, 148/E/3, 148/E/5, 149/1, 149/2, 149/3, 149/4, 149/5, 149/6, 149/7, Situated at PUPPALGUDA VILLAGE, under Manikonda Municipality, Gandipet Mandal, Ranga Reddy District, Telangana State and bounded as follows:</p>
+    <p>All that the {!selectedBhkNumber} BHK Flat No.{!selectedFlatLabel} ({!selectedFacingUpper} Facing) on {!selectedFloorDisplay} Floor, of Tower-{!selectedTowerDisplay}, the High Rise Residential Flats known as "THE LEGACEY", with saleable area of&#160;<apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText> Square Feet (including common areas{!selectedCarParkingClause}), along with proportionate undivided share of land equivalent to&#160;<apex:outputText value="{0,number,0.##}"><apex:param value="{!selectedUnit.UDS__c}"/></apex:outputText> Square Yards, (Out of total land admeasuring 80704.23 Square yards or equivalent to 67479.02 Square Meters), in Sy.Nos. 128/1A/2/2, 129/A/1, 129/A/2, 129/AA/1, 129/AA/2, 129/AA/3, 129/E/1, 130/A/1, 130/A/2, 130/A/3/1, 130/A/3/2, 130/A/4, 130/AA/1, 130/AA/2, 130/AA/3, 130/E/1, 130/E/2, 145/1/2, 145/1/1/7, 145/1/1/1/2, 145/1/1/1/1/2, 145/1/1/1/1/1/1, 145/1/1/1/1/1/2, 145/2, 147/A/1, 147/A/2, 147/A/3, 147/AA/1, 147/AA/2, 147/AA/3, 147/E/1, 147/E/2, 148/A/1, 148/A/2, 148/A/3, 148/A/4, 148/AA/1, 148/AA/2, 148/AA/3, 148/E/1, 148/E/2, 148/E/3, 148/E/5, 149/1, 149/2, 149/3, 149/4, 149/5, 149/6, 149/7, Situated at PUPPALGUDA VILLAGE, under Manikonda Municipality, Gandipet Mandal, Ranga Reddy District, Telangana State and bounded as follows:</p>
 
     <table>
-        <tr><td class="bold" style="width:25%;">NORTH</td><td>OPEN TO SKY</td></tr>
-        <tr><td class="bold">SOUTH</td><td>OPEN TO SKY</td></tr>
-        <tr><td class="bold">EAST</td><td>CORRIDOR</td></tr>
-        <tr><td class="bold">WEST</td><td>OPEN TO SKY</td></tr>
+        <tr><td class="bold" style="width:25%;">NORTH</td><td>{!selectedUnit.Boundary_North__c}</td></tr>
+        <tr><td class="bold">SOUTH</td><td>{!selectedUnit.Boundary_South__c}</td></tr>
+        <tr><td class="bold">EAST</td><td>{!selectedUnit.Boundary_East__c}</td></tr>
+        <tr><td class="bold">WEST</td><td>{!selectedUnit.Boundary_West__c}</td></tr>
     </table>
 
     <p class="sched">SCHEDULE 'C' PAYMENT SCHEDULE</p>
 
     <table>
         <tr><th>INSTALLMENT NAME</th><th>STAGE</th><th>FLAT COST</th><th>NET AMOUNT</th></tr>
-        <tr><td>Booking Amount</td><td>20%</td><td>Rs. 5,00,000</td><td>Rs. 5,25,000</td></tr>
-        <tr><td>Within 15 Days From The Date Of Booking</td><td>20%</td><td>Rs. 16,02,736</td><td>Rs. 16,82,873</td></tr>
-        <tr><td>On Completion Of Excavation Of Respective Tower</td><td>10%</td><td>Rs. 10,51,368</td><td>Rs. 11,03,936</td></tr>
-        <tr><td>On Completion Of Footing Works Of Respective Tower</td><td>6%</td><td>Rs. 6,30,821</td><td>Rs. 6,62,362</td></tr>
-        <tr><td>On Completion Transfer Slab Of 1 &amp; 2 Towers</td><td>5%</td><td>Rs. 5,25,684</td><td>Rs. 5,51,968</td></tr>
-        <tr><td>On Completion Transfer Slab Of 6 &amp; 8 Towers</td><td>5%</td><td>Rs. 5,25,684</td><td>Rs. 5,51,968</td></tr>
-        <tr><td>On Completion 7th Floor Slab Of 1 &amp; 2 Towers</td><td>7%</td><td>Rs. 7,35,958</td><td>Rs. 7,72,755</td></tr>
-        <tr><td>On Completion 14th Floor Slab Of 1 &amp; 2 Towers</td><td>5%</td><td>Rs. 5,25,684</td><td>Rs. 5,51,968</td></tr>
-        <tr><td>On Completion 22nd Floor Slab Of 1 &amp; 2 Towers</td><td>5%</td><td>Rs. 5,25,684</td><td>Rs. 5,51,968</td></tr>
-        <tr><td>On Completion 7th Floor Slab Of 8 &amp; 6 Towers</td><td>7%</td><td>Rs. 7,35,958</td><td>Rs. 7,72,755</td></tr>
-        <tr><td>On Completion 14th Floor Slab Of 8 &amp; 6 Towers</td><td>5%</td><td>Rs. 5,25,684</td><td>Rs. 5,51,968</td></tr>
-        <tr><td>On Completion 22nd Floor Slab Of 8 &amp; 6 Tower</td><td>5%</td><td>Rs. 5,25,684</td><td>Rs. 5,51,968</td></tr>
-        <tr><td>On Completion 7th Floor Slab Of 5th Tower</td><td>7%</td><td>Rs. 7,35,958</td><td>Rs. 7,72,755</td></tr>
-        <tr><td>On Completion 14th Floor Slab Of 5th Tower</td><td>5%</td><td>Rs. 5,25,684</td><td>Rs. 5,51,968</td></tr>
-        <tr><td>On Completion 22nd Floor Slab Of 5th Tower</td><td>5%</td><td>Rs. 5,25,684</td><td>Rs. 5,51,968</td></tr>
-        <tr><td>Handover Or Registration Whichever Is Earlier</td><td>3%</td><td>Rs. 3,15,410</td><td>Rs. 3,31,181</td></tr>
-        <tr><td class="bold">TOTAL FLAT COST INCLUDING</td><td class="bold">100%</td><td class="bold">Rs. 1,05,13,680</td><td class="bold">Rs. 1,10,39,364</td></tr>
+        <apex:repeat value="{!paymentScheduleRows}" var="schedule">
+        <tr><td>{!schedule.installmentName}</td><td><apex:outputText value="{0,number,0.##}"><apex:param value="{!schedule.percentage}"/></apex:outputText>%</td><td>Rs. {!schedule.flatCostDisplay}</td><td>Rs. {!schedule.netAmountDisplay}</td></tr>
+        </apex:repeat>
+        <apex:outputPanel layout="none" rendered="{!NOT(hasPaymentSchedules)}"><tr><td colspan="4">No payment schedule records are available for this Booking.</td></tr></apex:outputPanel>
+        <tr><td class="bold">TOTAL FLAT COST INCLUDING</td><td class="bold"><apex:outputText value="{0,number,0.##}"><apex:param value="{!totalSchedulePercentage}"/></apex:outputText>%</td><td class="bold">Rs. {!formattedTotalScheduleFlatCost}</td><td class="bold">Rs. {!formattedTotalScheduleNetAmount}</td></tr>
     </table>
 
     <p class="sched">SCHEDULE 'D' SPECIFICATIONS</p>

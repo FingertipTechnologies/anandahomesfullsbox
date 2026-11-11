@@ -239,6 +239,8 @@
             component.set('v.searchText1', plt[i].Name);
             selPlot = plt[i];
             component.set('v.showqute',true);
+             component.set('v.projectName', plt[i].Project__r ? plt[i].Project__r.Name : '');
+           
             oppPlot.CLead__c=component.get('v.recordId');
             oppPlot.Unit__c = plt[i].Id;
             oppPlot.Project__c = plt[i].Project__r ? plt[i].Project__r.Project__c : null;
@@ -282,6 +284,19 @@
             oppPlot.Outer_Premium__c = plt[i].Outer_Premium__c;
             oppPlot.Amenities_Car_Parking__c = plt[i].Amenities_Car_Parking__c;
             oppPlot.Infrastructure_Charges__c = plt[i].Infrastructure_Charges__c;
+            if(plt[i].Project__r.Project__c == 'The Drizzle'){
+                //alert(JSON.stringify(plt[i]))
+                  oppPlot.Lake_Premium__c = plt[i].Lake_Premium__c;
+            oppPlot.Extra_Covered_Car_Parking_Charges__c = plt[i].Extra_Car_Parking__c;
+            oppPlot.Piped_Gas__c = plt[i].Piped_Gas__c;
+                oppPlot.Floor_Rise__c = plt[i].Floor_Rise_Charge__c;
+             oppPlot.PLC__c = plt[i].PLC__c;
+             oppPlot.East_North_Facing__c = plt[i].East_North_Facing__c;
+            
+                
+           
+            }
+
 
             // Reset all discount fields and snapshot original charge rates
             var discountConfig = component.get('v.discountConfig') || [];
@@ -325,9 +340,18 @@
             var outer = (parseFloat(oppPlot.Outer_Premium__c) || 0) * saleableArea;
             var amenities = parseFloat(oppPlot.Amenities_Car_Parking__c) || 0;
             var infrastructure = parseFloat(oppPlot.Infrastructure_Charges__c) || 0;
-
+            // Added on 06-11-2026
+            var gaspipe = parseFloat(oppPlot.Piped_Gas__c) || 0;
+            var extracarparking = parseFloat(oppPlot.Extra_Covered_Car_Parking_Charges__c) || 0;
+            var lakePremium = (parseFloat(oppPlot.Lake_Premium__c) || 0) * saleableArea;
+            var floorrisr = (parseFloat(oppPlot.Floor_Rise__c) || 0) * saleableArea;
+            var eastNorthFacing = (parseFloat(oppPlot.East_North_Facing__c) || 0) * saleableArea;
+            
             var flatCost = basicPrice + eastFacing + corner + hiRise + centralCourtYard
-                         + meadow + roadside + courtYard + outer + amenities + infrastructure;
+                         + meadow + roadside + courtYard + outer + amenities + infrastructure
+            			+gaspipe+extracarparking+	lakePremium+floorrisr+ eastNorthFacing;
+            
+            
             var gstAmount = flatCost * (gstPercentage / 100);
             var grandTotal = flatCost + gstAmount;
 
@@ -335,6 +359,12 @@
             component.set('v.eastFacingCalc', eastFacing);
             component.set('v.cornerCalc', corner);
             component.set('v.hiRiseCalc', hiRise);
+            component.set('v.gaspipeCalc', gaspipe);
+            component.set('v.extracarparkingCalc', extracarparking);
+            component.set('v.lakePremiumCalc', lakePremium);
+            component.set('v.floorrisrCalc', floorrisr);
+            component.set('v.eastNorthFacingCalc', eastNorthFacing);
+            
             component.set('v.centralCourtYardCalc', centralCourtYard);
             component.set('v.meadowCalc', meadow);
             component.set('v.roadsideCalc', roadside);
@@ -351,7 +381,7 @@
             // FIX: Add null check for Project__r
             console.log('plt[i]: ', plt[i]);
             console.log('Project__r: ', plt[i].Project__r ? plt[i].Project__r.Name : '');
-            component.set('v.projectName', plt[i].Project__r ? plt[i].Project__r.Name : '');
+            //component.set('v.projectName', plt[i].Project__r ? plt[i].Project__r.Name : '');
             
             component.set('v.flatNumber', plt[i].Name);
             component.set('v.RecTypeId',plt[i].Name);

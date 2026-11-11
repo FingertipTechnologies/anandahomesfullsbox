@@ -1009,6 +1009,19 @@ public with sharing class AgreementOfSaleController {
         return selectedTowerName;
     }
 
+    /**
+     * The tower as the deeds write it after the word "Tower" ("Tower no. 1", "Tower-1"):
+     * the tower name without a leading "Tower" / "T" word, so a tower named "Tower A"
+     * prints "Tower-A" and not "Tower-Tower A".
+     */
+    public String getSelectedTowerLabel() {
+        String name = getSelectedTowerName();
+        if (String.isBlank(name)) {
+            return '';
+        }
+        return name.replaceFirst('(?i)^tower\\s*[-:]?\\s*', '').trim();
+    }
+
     @TestVisible
     private static String queryTowerLookupName(Id unitId) {
         if (unitId == null) {

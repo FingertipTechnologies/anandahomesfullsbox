@@ -1305,9 +1305,9 @@ img { border:0; }
 <div class="c0 ag-tight">&#160;</div>
 <div class="ci"><span class="c4">&#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160;</span></div>
 <div class="c68 ag-tight">&#160;</div>
-<div class="c69"><span class="c1">AMENITIES</span></div>
+<div style="page-break-inside:avoid"><div class="c69"><span class="c1">AMENITIES</span></div>
 <div class="c2d ag-tight">&#160;</div>
-<div style="page-break-inside:avoid"><table class="c6f"><tr><td class="c6g"><table class="c6a">
+<table class="c6f"><tr><td class="c6g"><table class="c6a">
 <colgroup>
 <col style="width:203pt"/>
 </colgroup>
@@ -1399,7 +1399,7 @@ img { border:0; }
 <tr class="c27">
 <td class="c6e"><div class="c6d"><span class="c6c">LAWN</span></div></td>
 </tr>
-</table></td></tr></table></div>
+</table></td></tr></table></div></div>
 <div class="c2d ag-tight">&#160;</div>
 <div style="page-break-after:always;height:0"></div>
 <div class="c25 ag-tight">&#160;</div>

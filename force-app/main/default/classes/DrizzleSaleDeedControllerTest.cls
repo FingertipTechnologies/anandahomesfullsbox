@@ -63,19 +63,17 @@ private class DrizzleSaleDeedControllerTest {
     static void fillsScheduleVendeesConsiderationAndPayments() {
         Booking__c booking = buildBooking();
 
-        Co_Applicant__c coApplicant = new Co_Applicant__c(
+        insert new Co_Applicant__c(
             Booking__c = booking.Id,
             Full_Name__c = 'Rahul Goel',
             S_o_D_o_W_o__c = 'S/o',
             W_o_S_o_C_o_c__c = 'Nishant Goel',
             Date_of_Birth__c = Date.today().addYears(-10),
+            Occupation__c = 'Student',
             Aadhar_Number__c = '111122223333',
             PAN_Number__c = 'ABCDE1234F',
             Permenent_Address__c = 'Patiala'
         );
-        // Occupation__c is set dynamically so the Co_Applicant__c field type can change.
-        coApplicant.put('Occupation__c', 'Student');
-        insert coApplicant;
 
         Receipt__c approvedReceipt = new Receipt__c(
             Booking__c = booking.Id,

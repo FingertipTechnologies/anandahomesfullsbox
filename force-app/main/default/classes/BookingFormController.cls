@@ -271,16 +271,15 @@ public with sharing class BookingFormController {
     }
 
     private static List<SObject> queryCoApplicants(Id bookingId) {
-        // Co_Applicant__c.Occupation__c is referenced dynamically so its field type can change.
-        List<Co_Applicant__c> coApplicants = Database.query(
-            'SELECT Id, Salutation__c, Full_Name__c, First_Name__c, Last_Name__c, ' +
-            'W_o_S_o_C_o_c__c, Contact_Number__c, Email__c, ' +
-            'Date_of_Birth__c, Occupation__c, Aadhar_Number__c, ' +
-            'PAN_Number__c, Permenent_Address__c, Address__c, Name_of_Company__c ' +
-            'FROM Co_Applicant__c ' +
-            'WHERE Booking__c = :bookingId ' +
-            'ORDER BY CreatedDate ASC, Name ASC'
-        );
+        List<Co_Applicant__c> coApplicants = [
+            SELECT Id, Salutation__c, Full_Name__c, First_Name__c, Last_Name__c,
+                   W_o_S_o_C_o_c__c, Contact_Number__c, Email__c,
+                   Date_of_Birth__c, Occupation__c, Aadhar_Number__c,
+                   PAN_Number__c, Permenent_Address__c, Address__c, Name_of_Company__c
+            FROM Co_Applicant__c
+            WHERE Booking__c = :bookingId
+            ORDER BY CreatedDate ASC, Name ASC
+        ];
 
         return stripInaccessible(coApplicants);
     }

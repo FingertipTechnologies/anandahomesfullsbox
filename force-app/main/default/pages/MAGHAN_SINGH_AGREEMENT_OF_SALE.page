@@ -87,7 +87,7 @@ img { border:0; }
 .c1s{font-size:10.97pt;font-family:'Times New Roman', Times, serif}
 .c1t{text-align:justify;text-indent:36pt;padding-bottom:8pt;line-height:13.54pt;font-size:10.97pt;font-family:'Times New Roman', Times, serif}
 .c1u{text-align:justify;text-indent:36pt;line-height:12.89pt;font-size:10.45pt;font-family:'Times New Roman', Times, serif}
-.c1v{border-collapse:collapse;table-layout:fixed;width:451.3pt;margin-left:-0.65pt}
+.c1v{border-collapse:collapse;table-layout:fixed;width:451.3pt}
 .c1w{height:30pt}
 .c1x{border-top:0.5pt solid #000;border-right:0.5pt solid #000;border-bottom:0.5pt solid #000;border-left:0.5pt solid #000;padding:0 5.4pt 0 5.4pt;vertical-align:top}
 .c1y{border-top:0.5pt solid #000;border-right:0.5pt solid #000;border-bottom:0.5pt solid #000;border-left:0.5pt solid #000;padding:0 5.4pt 0 5.4pt;vertical-align:middle}
@@ -545,18 +545,12 @@ img { border:0; }
 </colgroup>
 <tr class="c1w">
 <td class="c1x"><div class="c10"><span class="c6">S. No</span></div></td><td class="c1y"><div class="c10"><span class="c6">TOWER</span></div></td><td class="c1y"><div class="c10"><span class="c6">FLOOR</span></div></td><td class="c1y"><div class="c10"><span class="c6">FLAT NO.</span></div></td><td class="c1y"><div class="c10"><span class="c6">SFT</span></div></td><td class="c1y"><div class="c10"><span class="c6">FACING</span></div></td>
-</tr></table></div>
+</tr>
 <apex:outputPanel layout="none" rendered="{!hasSelectedUnit}">
-<div style="page-break-inside:avoid;margin-top:-0.5pt"><table class="c1v"><colgroup>
-<col style="width:38.52pt"/><col style="width:74.78pt"/><col style="width:86.67pt"/><col style="width:65pt"/><col style="width:78pt"/><col style="width:108.34pt"/>
-</colgroup>
 <tr class="c20">
 <td class="c1x"><div class="c10"><span class="c5">1</span></div></td><td class="c21"><div class="c10"><span class="c5">{!selectedTowerName}</span></div></td><td class="c21"><div class="c10"><span class="c5">{!selectedFloorDisplay}</span></div></td><td class="c21"><div class="c10"><span class="c5">{!selectedFlatNumber}</span></div></td><td class="c21"><div class="c10"><span class="c5"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText></span></div></td><td class="c22"><div class="c10"><span class="c5">{!selectedFacingDisplay}</span></div></td>
-</tr></table></div>
+</tr>
 </apex:outputPanel>
-<div style="page-break-inside:avoid;margin-top:-0.5pt"><table class="c1v"><colgroup>
-<col style="width:38.52pt"/><col style="width:74.78pt"/><col style="width:86.67pt"/><col style="width:65pt"/><col style="width:78pt"/><col style="width:108.34pt"/>
-</colgroup>
 <tr class="c20"><td class="c1x"><div class="c10">&#160;</div></td><td class="c22"><div class="c10">&#160;</div></td><td class="c21"><div class="c10">&#160;</div></td><td class="c21"><div class="c10"><span class="c6">Total</span></div></td><td class="c21"><div class="c10"><span class="c6"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText></span></div></td><td class="c22"><div class="c10">&#160;</div></td></tr>
 </table></div>
 <div class="c23">&#160;</div>

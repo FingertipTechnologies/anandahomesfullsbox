@@ -544,7 +544,7 @@ private class AgreementOfSaleControllerTest {
     @IsTest
     static void arjunPageListsEveryCoApplicantOnceInDeedFormat() {
         Booking__c booking = buildBooking('ARJUN SINGH');
-        insert new List<Co_Applicant__c>{
+        List<Co_Applicant__c> coApplicants = new List<Co_Applicant__c>{
             new Co_Applicant__c(
                 Booking__c = booking.Id,
                 Salutation__c = 'Mr',
@@ -552,7 +552,6 @@ private class AgreementOfSaleControllerTest {
                 S_o_D_o_W_o__c = 'S/o',
                 W_o_S_o_C_o_c__c = 'Ravi Extra',
                 Date_of_Birth__c = Date.today().addYears(-40),
-                Occupation__c = 'Business',
                 Permenent_Address__c = 'Plot 1, Hyderabad',
                 Aadhar_Number__c = '123412341234',
                 PAN_Number__c = 'ABCDE1234F'
@@ -568,6 +567,9 @@ private class AgreementOfSaleControllerTest {
                 Full_Name__c = 'Sita  Devi Sample'
             )
         };
+        // Occupation__c is set dynamically so the Co_Applicant__c field type can change.
+        coApplicants[0].put('Occupation__c', 'Business');
+        insert coApplicants;
 
         Test.startTest();
         AgreementOfSaleController controller = load(Page.ARJUN_SINGH_AGREEMENT_OF_SALE, booking);

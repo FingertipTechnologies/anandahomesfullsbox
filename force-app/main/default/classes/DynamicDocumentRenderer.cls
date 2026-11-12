@@ -652,14 +652,16 @@ public with sharing class DynamicDocumentRenderer {
         List<String> renderedApplicants = new List<String>();
         Integer applicantNumber = 1;
         String permanentAddress = escapeHtmlValue(record.get('Permanent_Address__c'));
-        for (Co_Applicant__c applicant : [
-            SELECT Salutation__c, Full_Name__c, Relalation_Details__c, S_o_D_o_W_o__c,
-                   W_o_S_o_C_o_c__c, Date_of_Birth__c, Occupation__c,
-                   Aadhar_Number__c, PAN_Number__c, Permenent_Address__c
-            FROM Co_Applicant__c
-            WHERE Booking__c = :record.Id
-            ORDER BY CreatedDate ASC
-        ]) {
+        // Co_Applicant__c.Occupation__c is referenced dynamically so its field type can change.
+        Id bookingId = record.Id;
+        for (Co_Applicant__c applicant : (List<Co_Applicant__c>) Database.query(
+            'SELECT Salutation__c, Full_Name__c, Relalation_Details__c, S_o_D_o_W_o__c, ' +
+            'W_o_S_o_C_o_c__c, Date_of_Birth__c, Occupation__c, ' +
+            'Aadhar_Number__c, PAN_Number__c, Permenent_Address__c ' +
+            'FROM Co_Applicant__c ' +
+            'WHERE Booking__c = :bookingId ' +
+            'ORDER BY CreatedDate ASC'
+        )) {
             List<String> details = new List<String>();
             List<String> heading = new List<String>();
             String name = coApplicantDisplayName(applicant);
@@ -682,8 +684,9 @@ public with sharing class DynamicDocumentRenderer {
                     'aged about ' + calculateAge(applicant.Date_of_Birth__c) + ' years'
                 );
             }
-            if (String.isNotBlank(applicant.Occupation__c)) {
-                details.add('Occupation: ' + escapeHtmlValue(applicant.Occupation__c));
+            String occupation = (String) applicant.get('Occupation__c');
+            if (String.isNotBlank(occupation)) {
+                details.add('Occupation: ' + escapeHtmlValue(occupation));
             }
             // The co-applicant's own permanent address; the booking's only when theirs is blank.
             String applicantAddress = String.isNotBlank(applicant.Permenent_Address__c)

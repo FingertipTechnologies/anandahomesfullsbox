@@ -613,7 +613,7 @@ public with sharing class AgreementOfSaleController {
                     coApplicant.Full_Name__c,
                     buildRelation(coApplicant.S_o_D_o_W_o__c, coApplicant.W_o_S_o_C_o_c__c),
                     coApplicant.Date_of_Birth__c,
-                    coApplicant.Occupation__c,
+                    (String) coApplicant.get('Occupation__c'),
                     firstNonBlank(new List<String>{
                         coApplicant.Permenent_Address__c, coApplicant.Address__c, getPrimaryAddress()
                     }),
@@ -777,14 +777,15 @@ public with sharing class AgreementOfSaleController {
      */
     private static Co_Applicant__c getCoApplicant(Id bookingId, String applicantName) {
         String normalizedApplicantName = normalizeApplicantName(applicantName);
-        List<Co_Applicant__c> coApplicants = [
-            SELECT Full_Name__c, Salutation__c, Date_of_Birth__c, Occupation__c,
-                   S_o_D_o_W_o__c, W_o_S_o_C_o_c__c, Address__c, Permenent_Address__c,
-                   Aadhar_Number__c, PAN_Number__c, Email__c
-            FROM Co_Applicant__c
-            WHERE Booking__c = :bookingId
-            ORDER BY CreatedDate ASC
-        ];
+        // Co_Applicant__c.Occupation__c is referenced dynamically so its field type can change.
+        List<Co_Applicant__c> coApplicants = Database.query(
+            'SELECT Full_Name__c, Salutation__c, Date_of_Birth__c, Occupation__c, ' +
+            'S_o_D_o_W_o__c, W_o_S_o_C_o_c__c, Address__c, Permenent_Address__c, ' +
+            'Aadhar_Number__c, PAN_Number__c, Email__c ' +
+            'FROM Co_Applicant__c ' +
+            'WHERE Booking__c = :bookingId ' +
+            'ORDER BY CreatedDate ASC'
+        );
         for (Co_Applicant__c coApplicant : coApplicants) {
             if (!String.isBlank(normalizedApplicantName) &&
                 normalizeApplicantName(coApplicant.Full_Name__c) == normalizedApplicantName) {
@@ -1108,14 +1109,16 @@ public with sharing class AgreementOfSaleController {
             rememberAadhaar(printedAadhaars, normalizeApplicantName(entry.name), entry.aadhaar);
         }
 
-        for (Co_Applicant__c coApplicant : [
-            SELECT Full_Name__c, First_Name__c, Last_Name__c, Salutation__c, Date_of_Birth__c,
-                   Occupation__c, S_o_D_o_W_o__c, W_o_S_o_C_o_c__c, Address__c,
-                   Permenent_Address__c, Aadhar_Number__c, PAN_Number__c, Email__c
-            FROM Co_Applicant__c
-            WHERE Booking__c = :booking.Id
-            ORDER BY CreatedDate ASC, Name ASC
-        ]) {
+        // Co_Applicant__c.Occupation__c is referenced dynamically so its field type can change.
+        Id bookingId = booking.Id;
+        for (Co_Applicant__c coApplicant : (List<Co_Applicant__c>) Database.query(
+            'SELECT Full_Name__c, First_Name__c, Last_Name__c, Salutation__c, Date_of_Birth__c, ' +
+            'Occupation__c, S_o_D_o_W_o__c, W_o_S_o_C_o_c__c, Address__c, ' +
+            'Permenent_Address__c, Aadhar_Number__c, PAN_Number__c, Email__c ' +
+            'FROM Co_Applicant__c ' +
+            'WHERE Booking__c = :bookingId ' +
+            'ORDER BY CreatedDate ASC, Name ASC'
+        )) {
             String name = firstNonBlank(new List<String>{
                 coApplicant.Full_Name__c,
                 joinNames(coApplicant.First_Name__c, coApplicant.Last_Name__c)
@@ -1133,7 +1136,7 @@ public with sharing class AgreementOfSaleController {
                 name,
                 buildRelation(coApplicant.S_o_D_o_W_o__c, coApplicant.W_o_S_o_C_o_c__c),
                 coApplicant.Date_of_Birth__c,
-                coApplicant.Occupation__c,
+                (String) coApplicant.get('Occupation__c'),
                 firstNonBlank(new List<String>{
                     coApplicant.Permenent_Address__c, coApplicant.Address__c, getPrimaryAddress()
                 }),

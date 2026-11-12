@@ -205,15 +205,17 @@ public with sharing class DrizzleSaleDeedController {
             vendees.add(v);
         }
 
-        for (Co_Applicant__c co : [
-            SELECT Salutation__c, Full_Name__c, First_Name__c, Last_Name__c,
-                   Relalation_Details__c, S_o_D_o_W_o__c, W_o_S_o_C_o_c__c,
-                   Date_of_Birth__c, Occupation__c, Aadhar_Number__c, PAN_Number__c,
-                   Permenent_Address__c, Address__c
-            FROM Co_Applicant__c
-            WHERE Booking__c = :booking.Id
-            ORDER BY CreatedDate ASC, Name ASC
-        ]) {
+        // Co_Applicant__c.Occupation__c is referenced dynamically so its field type can change.
+        Id bookingId = booking.Id;
+        for (Co_Applicant__c co : (List<Co_Applicant__c>) Database.query(
+            'SELECT Salutation__c, Full_Name__c, First_Name__c, Last_Name__c, ' +
+            'Relalation_Details__c, S_o_D_o_W_o__c, W_o_S_o_C_o_c__c, ' +
+            'Date_of_Birth__c, Occupation__c, Aadhar_Number__c, PAN_Number__c, ' +
+            'Permenent_Address__c, Address__c ' +
+            'FROM Co_Applicant__c ' +
+            'WHERE Booking__c = :bookingId ' +
+            'ORDER BY CreatedDate ASC, Name ASC'
+        )) {
             String fullName = firstNonBlank(new List<String>{
                 co.Full_Name__c,
                 (clean(co.First_Name__c) + ' ' + clean(co.Last_Name__c)).trim()
@@ -226,7 +228,7 @@ public with sharing class DrizzleSaleDeedController {
                 firstNonBlank(new List<String>{ co.Relalation_Details__c, co.S_o_D_o_W_o__c }),
                 co.W_o_S_o_C_o_c__c);
             v.ageText = ageText(ageFrom(co.Date_of_Birth__c));
-            v.occupation = clean(co.Occupation__c);
+            v.occupation = clean((String) co.get('Occupation__c'));
             v.address = clean(firstNonBlank(new List<String>{ co.Permenent_Address__c, co.Address__c }));
             v.aadhar = formatAadhaar(co.Aadhar_Number__c);
             v.pan = upper(co.PAN_Number__c);

@@ -155,18 +155,20 @@ private class DynamicDocumentRendererTest {
         );
         insert booking;
 
-        insert new Co_Applicant__c(
+        Co_Applicant__c coApplicant = new Co_Applicant__c(
             Booking__c = booking.Id,
             Salutation__c = 'Mrs',
             Full_Name__c = 'Co Applicant',
             Relalation_Details__c = 'W/o',
             W_o_S_o_C_o_c__c = 'Applicant Spouse',
             Date_of_Birth__c = Date.today().addYears(-32),
-            Occupation__c = 'Engineer',
             Permenent_Address__c = 'Co-Applicant Own Address',
             Aadhar_Number__c = '123412341234',
             PAN_Number__c = 'COAPP1234A'
         );
+        // Occupation__c is set dynamically so the Co_Applicant__c field type can change.
+        coApplicant.put('Occupation__c', 'Engineer');
+        insert coApplicant;
         insert new Co_Applicant__c(
             Booking__c = booking.Id,
             Salutation__c = 'Mr',

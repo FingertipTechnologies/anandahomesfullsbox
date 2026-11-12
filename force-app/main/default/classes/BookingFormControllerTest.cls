@@ -136,7 +136,7 @@ private class BookingFormControllerTest {
         );
         insert new List<Booking__c>{ fullBooking, fallbackBooking, noUnitBooking };
 
-        insert new List<Co_Applicant__c>{
+        List<Co_Applicant__c> coApplicants = new List<Co_Applicant__c>{
             new Co_Applicant__c(
                 Booking__c = fullBooking.Id,
                 Salutation__c = 'Ms',
@@ -145,7 +145,6 @@ private class BookingFormControllerTest {
                 Contact_Number__c = '9000000001',
                 Email__c = 'anita.sharma@example.com',
                 Date_of_Birth__c = Date.newInstance(1988, 3, 9),
-                Occupation__c = 'Doctor',
                 Aadhar_Number__c = '777788889999',
                 PAN_Number__c = 'KLMNO1234P',
                 Permenent_Address__c = 'Lane 3, Kondapur, Hyderabad'
@@ -164,6 +163,9 @@ private class BookingFormControllerTest {
                 Address__c = 'Ameerpet, Hyderabad'
             )
         };
+        // Occupation__c is set dynamically so the Co_Applicant__c field type can change.
+        coApplicants[0].put('Occupation__c', 'Doctor');
+        insert coApplicants;
     }
 
     // =====================================================================

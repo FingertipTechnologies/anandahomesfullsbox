@@ -224,7 +224,7 @@
                                  onkeyup="{!c.normalizePAN}" onblur="{!c.validateField}" required="true"/>
             </div>
             <div class="slds-size_4-of-8 slds-p-horizontal_small"  >
-                <c:CustomPicklistGlobal fieldAPIname="Occupation__c" objAPIName="booking__c" selectedValue="{!v.plot.Occupation__c}" label="Occupation"/>
+                <lightning:input name="Occupation__c" type="text" maxlength="255" label="Occupation" value="{!v.plot.Occupation__c}"/>
             </div>
             <div class="slds-size_4-of-8 slds-p-horizontal_small"  >
                 <lightning:input aura:id="field" messageWhenValueMissing="Select fill this field" name="Name_of_Company__c" type="Text" formatter="Text"  disabled="false" required="false" label="Name of Company"  value="{!v.plot.Name_of_Company__c}" />
@@ -549,7 +549,7 @@
                                                       onkeyup="{!c.keepAadhaarDigits}" onblur="{!c.validateField}"/>
                                 </div>
                                 <div class="slds-size_4-of-8 slds-p-horizontal_small"  >
-                                    <c:CustomPicklistGlobal fieldAPIname="Occupation__c" objAPIName="Co_Applicant__c" selectedValue="{!prd.Occupation__c}" label="Occupation"/>
+                                    <lightning:input name="Occupation__c" type="text" maxlength="255" label="Occupation" value="{!prd.Occupation__c}"/>
                                 </div>
                                 <div class="slds-size_4-of-8 slds-p-horizontal_small"  >
                                     <lightning:input aura:id="field" messageWhenValueMissing="Select fill this field" name="Designation__c" type="Text" formatter="Text"  disabled="false" required="false" label="Designation"  value="{!prd.Designation__c}" />

@@ -753,4 +753,21 @@ private class AgreementOfSaleControllerTest {
 
         System.assertEquals('East/North', after.getDrizzleFacing());
     }
+
+    @IsTest
+    static void flatTableReadsWallPlinthAndUdsFields() {
+        Booking__c booking = buildBooking('ARJUN SINGH');
+        update new Plot__c(Id = booking.Plot__c, Wall_Area__c = 98, Plinth_Area__c = 1706, UDS_Sq_mts__c = 46.48);
+
+        Test.startTest();
+        AgreementOfSaleController arjun = load(Page.ARJUN_SINGH_AGREEMENT_OF_SALE, booking);
+        AgreementOfSaleController maghan = load(Page.MAGHAN_SINGH_AGREEMENT_OF_SALE, booking);
+        Test.stopTest();
+
+        for (AgreementOfSaleController controller : new List<AgreementOfSaleController>{ arjun, maghan }) {
+            System.assertEquals(98, controller.selectedUnit.Wall_Area__c, 'WALL AREA = Plot__c.Wall_Area__c');
+            System.assertEquals(1706, controller.selectedUnit.Plinth_Area__c, 'PLINTH AREA = Plot__c.Plinth_Area__c');
+            System.assertEquals(46.48, controller.selectedUnit.UDS_Sq_mts__c, 'UDS = Plot__c.UDS_Sq_mts__c');
+        }
+    }
 }

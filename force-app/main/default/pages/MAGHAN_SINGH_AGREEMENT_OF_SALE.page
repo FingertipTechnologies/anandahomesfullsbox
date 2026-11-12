@@ -606,11 +606,11 @@ img { border:0; }
 </tr>
 <tr>
 <td class="c1x"><div class="c25"><span class="c8">WALL AREA</span></div></td>
-<td class="c26"><div class="c25"><span class="c8"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedWallArea}"/></apex:outputText> SQ. FT</span></div></td>
+<td class="c26"><div class="c25"><span class="c8"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Wall_Area__c}"/></apex:outputText> SQ. FT</span></div></td>
 </tr>
 <tr>
 <td class="c1x"><div class="c25"><span class="c8">PLINTH AREA</span></div></td>
-<td class="c26"><div class="c25"><span class="c8"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Built_up_area__c}"/></apex:outputText> SQ. FT</span></div></td>
+<td class="c26"><div class="c25"><span class="c8"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Plinth_Area__c}"/></apex:outputText> SQ. FT</span></div></td>
 </tr>
 <tr>
 <td class="c1x"><div class="c25"><span class="c8">COMMON AREA</span></div></td>
@@ -626,7 +626,7 @@ img { border:0; }
 </tr>
 <tr class="c13">
 <td class="c1x"><div class="c25"><span class="c8">UDS</span></div></td>
-<td class="c26"><div class="c25"><span class="c8"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.UDS__c}"/></apex:outputText> SQ. YDS</span></div></td>
+<td class="c26"><div class="c25"><span class="c8"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.UDS_Sq_mts__c}"/></apex:outputText> SQ. YDS</span></div></td>
 </tr>
 </table><apex:outputPanel layout="none" rendered="{!NOT(hasSelectedUnit)}">Selected unit data is missing from this Booking.</apex:outputPanel></div>
 <div class="c23">&#160;</div>

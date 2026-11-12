@@ -652,7 +652,7 @@ public with sharing class AgreementOfSaleController {
             selectedUnit = [
                 SELECT Id, Name, Project__r.Name, Plot_Number__c, Tower__c, Tower_Block__c,
                        Floor__c, BHK_Type__c, Facing__c, Carpet_Area__c, Balcony_Area__c,
-                       Built_up_area__c, Saleable_Area_Sft__c,
+                       Built_up_area__c, Saleable_Area_Sft__c, Wall_Area__c, Plinth_Area__c,
                        Common_Area_Allotted_to_Association__c, UDS__c, UDS_Sq_mts__c, Utility_Area__c,
                        East_North_Facing__c,
                        Boundary_North__c, Boundary_South__c, Boundary_East__c, Boundary_West__c,

@@ -29,7 +29,7 @@ private class UnitBlockingControllerTest {
             Apartment_No__c = 'A-101',
             Unit_Number__c = 'U-101',
             Plot_Number__c = 'P-101',
-            Tower__c = 'A',
+            Tower__c = activeTower(),
             Floor_Number__c = 1
         );
         insert plot;
@@ -39,6 +39,17 @@ private class UnitBlockingControllerTest {
             Phone__c = '9100000000'
         );
         insert lead;
+    }
+
+    // Tower is a restricted picklist whose values differ between sandbox and production,
+    // so the test unit takes whichever value is active in the org the test runs in.
+    static String activeTower() {
+        for (Schema.PicklistEntry entry : Plot__c.Tower__c.getDescribe().getPicklistValues()) {
+            if (entry.isActive()) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 
     static void loadIds() {
@@ -187,5 +198,70 @@ private class UnitBlockingControllerTest {
             threw = true;
         }
         System.assert(threw, 'Exceeding project max must throw');
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Only the lead owner or a System Administrator may block a unit from a lead
+    // ---------------------------------------------------------------------------------------
+
+    @isTest
+    static void blockingRuleAllowsOnlyOwnerOrAdmin() {
+        Id ownerId = UserInfo.getUserId();
+        Id otherId = [SELECT Id FROM User WHERE Id != :ownerId AND IsActive = true LIMIT 1].Id;
+
+        System.assert(UnitBlockingController.isBlockingAllowed(ownerId, ownerId, 'CRM User'), 'Lead owner is allowed');
+        System.assert(UnitBlockingController.isBlockingAllowed(ownerId, otherId, UnitBlockingController.ADMIN_PROFILE), 'Admin is allowed on any lead');
+        System.assert(!UnitBlockingController.isBlockingAllowed(ownerId, otherId, 'CRM User'), 'Another user is not allowed');
+        System.assert(!UnitBlockingController.isBlockingAllowed(null, otherId, 'CRM User'), 'No owner and not admin: not allowed');
+    }
+
+    @isTest
+    static void anotherUserIsBlockedFromBlockingAUnit() {
+        loadIds();   // the lead is owned by the user running the test
+        User outsider = new User(
+            Username = 'block.outsider@anandahomes.test.invalid',
+            LastName = 'Outsider',
+            Email = 'block.outsider@example.com',
+            Alias = 'bouts',
+            ProfileId = [SELECT Id FROM Profile WHERE Name = 'Standard User' LIMIT 1].Id,
+            TimeZoneSidKey = 'Asia/Kolkata',
+            LocaleSidKey = 'en_IN',
+            EmailEncodingKey = 'UTF-8',
+            LanguageLocaleKey = 'en_US'
+        );
+        insert outsider;
+
+        String message;
+        String saveError;
+        Test.startTest();
+        System.runAs(outsider) {
+            message = UnitBlockingController.checkBlockAccess(leadId);
+            try {
+                UnitBlockingController.saveUnitBlock(leadId, plotId, projectName, 'reason', 1);
+            } catch (AuraHandledException e) {
+                saveError = e.getMessage();
+            }
+        }
+        Test.stopTest();
+
+        System.assertEquals(UnitBlockingController.BLOCK_ACCESS_DENIED, message, 'Screen check returns the error message');
+        System.assertEquals(UnitBlockingController.BLOCK_ACCESS_DENIED, saveError, 'Save is refused with the same message');
+        System.assertEquals(0, [SELECT COUNT() FROM Unit_Block_History__c WHERE CLead__c = :leadId], 'No block is created');
+        System.assertEquals('Available', [SELECT Status__c FROM Plot__c WHERE Id = :plotId].Status__c, 'Unit stays available');
+    }
+
+    @isTest
+    static void leadOwnerAndNonLeadRecordsAreNotBlocked() {
+        loadIds();   // the running user owns the lead
+
+        Test.startTest();
+        String ownerMessage = UnitBlockingController.checkBlockAccess(leadId);
+        String noRecordMessage = UnitBlockingController.checkBlockAccess(null);
+        String otherObjectMessage = UnitBlockingController.checkBlockAccess(plotId);
+        Test.stopTest();
+
+        System.assertEquals(null, ownerMessage, 'The lead owner may block a unit');
+        System.assertEquals(null, noRecordMessage, 'No record: nothing to restrict');
+        System.assertEquals(null, otherObjectMessage, 'Not a lead: nothing to restrict');
     }
 }

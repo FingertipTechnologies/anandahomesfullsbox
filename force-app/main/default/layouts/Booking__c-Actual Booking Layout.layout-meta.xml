@@ -213,6 +213,10 @@
                 <behavior>Edit</behavior>
                 <field>Bank_Name__c</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Bank_Branch__c</field>
+            </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
     </layoutSections>

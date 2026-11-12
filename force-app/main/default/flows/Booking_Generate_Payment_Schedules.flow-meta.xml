@@ -3,8 +3,8 @@
     <actionCalls>
         <name>Generate_Payment_Schedules</name>
         <label>Generate Payment Schedules</label>
-        <locationX>50</locationX>
-        <locationY>400</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <actionName>PaymentScheduleGeneratorService</actionName>
         <actionType>apex</actionType>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
@@ -16,14 +16,52 @@
         </inputParameters>
         <nameSegment>PaymentScheduleGeneratorService</nameSegment>
     </actionCalls>
+    <actionCalls>
+        <description>Same step as production&apos;s &quot;Booking After Create Handler&quot; flow: copies the Quote values onto the Booking using the active Field Mapping Configuration (Quote to Booking) - Rate Per Sqft, Super Built Up Area, Base Price, Total Flat Cost, GST Amount, Total Payable Amount, Lead, Tower - before the payment schedules are generated from those totals.</description>
+        <name>Step_1_Map_Fields_From_Quote</name>
+        <label>Step 1 - Map Fields From Quote</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <actionName>FieldMapperInvocable</actionName>
+        <actionType>apex</actionType>
+        <connector>
+            <targetReference>Generate_Payment_Schedules</targetReference>
+        </connector>
+        <flowTransactionModel>CurrentTransaction</flowTransactionModel>
+        <inputParameters>
+            <name>isInsert</name>
+            <value>
+                <booleanValue>true</booleanValue>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>objectApiName</name>
+            <value>
+                <stringValue>Quote__c</stringValue>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>sourceRecordId</name>
+            <value>
+                <elementReference>$Record.Quote__c</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>targetRecordId</name>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </inputParameters>
+        <nameSegment>FieldMapperInvocable</nameSegment>
+    </actionCalls>
     <apiVersion>62.0</apiVersion>
     <decisions>
         <name>Check_Project_Exists</name>
         <label>Check Project Exists</label>
-        <locationX>50</locationX>
-        <locationY>200</locationY>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
         <defaultConnector>
-            <targetReference>Generate_Payment_Schedules</targetReference>
+            <targetReference>Check_Quote_Exists</targetReference>
         </defaultConnector>
         <defaultConnectorLabel>Project Exists</defaultConnectorLabel>
         <rules>
@@ -39,7 +77,33 @@
             <label>No Project</label>
         </rules>
     </decisions>
-    <description>Record-Triggered Flow that fires after a Booking is created. Calls PaymentScheduleGeneratorService to auto-create Payment Schedules from Master Payment Schedules and set Total_Payable_Amount on the Booking.</description>
+    <decisions>
+        <description>Bookings created from a Quote get the Quote values first; bookings without a Quote go straight to schedule generation.</description>
+        <name>Check_Quote_Exists</name>
+        <label>Check Quote Exists</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Generate_Payment_Schedules</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>No Quote</defaultConnectorLabel>
+        <rules>
+            <name>Has_Quote</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Quote__c</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Step_1_Map_Fields_From_Quote</targetReference>
+            </connector>
+            <label>Has Quote</label>
+        </rules>
+    </decisions>
+    <description>Record-Triggered Flow that fires after a Booking is created. Step 1 copies the Quote values onto the Booking (same Field Mapping step as production&apos;s Booking After Create Handler), then PaymentScheduleGeneratorService creates the Payment Schedules from the Master Payment Schedules.</description>
     <environments>Default</environments>
     <interviewLabel>Booking - Generate Payment Schedules {!$Flow.CurrentDateTime}</interviewLabel>
     <label>Booking - Generate Payment Schedules</label>
@@ -63,7 +127,7 @@
     </processMetadataValues>
     <processType>AutoLaunchedFlow</processType>
     <start>
-        <locationX>50</locationX>
+        <locationX>0</locationX>
         <locationY>0</locationY>
         <connector>
             <targetReference>Check_Project_Exists</targetReference>

@@ -9,7 +9,7 @@
  *   "header":  { "content": "html", "showLogo": true, "logoPosition": "left" },
  *   "footer":  { "content": "html", "showPageNumbers": true },
  *   "sections": [
- *     { "type": "content",   "content": "html with {!Field__c}" },
+ *     { "type": "content",   "content": "html with {!Field__c}", "showIfField": "Field__c" },
  *     { "type": "table",     "title": "...", "childObject": "...",
  *       "relationshipField": "...", "columns": [{"label":"...","field":"..."}],
  *       "orderBy": "...", "maxRows": 50, "showRowNumbers": true },
@@ -180,19 +180,21 @@ public with sharing class DynamicDocumentRenderer {
     // ============================== FOOTER ==============================
 
     private static String renderFooter(Map<String, Object> footer, SObject record, String objectApiName) {
+        String content = getStr(footer, 'content', '');
+        Boolean showPageNumbers = footer.get('showPageNumbers') == true;
+        if (String.isBlank(content) && !showPageNumbers) return '';
+
         StringBuilder html = new StringBuilder();
         String ftrFontSize = getStr(footer, 'fontSize', '10px');
         String ftrColor = getStr(footer, 'textColor', '#666666');
         html.append('<div style="border-top:1px solid #ccc;padding-top:10px;margin-top:20px;font-size:' +
                     ftrFontSize + ';color:' + ftrColor + ';">');
 
-        String content = getStr(footer, 'content', '');
         if (String.isNotBlank(content)) {
             content = resolveMergeFields(content, record, objectApiName);
             html.append('<div>' + content + '</div>');
         }
 
-        Boolean showPageNumbers = footer.get('showPageNumbers') == true;
         if (showPageNumbers) {
             String pageNumPos = getStr(footer, 'pageNumberPosition', 'center');
             html.append('<div style="text-align:' + pageNumPos + ';margin-top:4px;">Page <span class="pagenumber"/> of <span class="pagecount"/></div>');
@@ -206,6 +208,12 @@ public with sharing class DynamicDocumentRenderer {
 
     private static String renderSection(Map<String, Object> section, SObject record,
                                          String recordId, String objectApiName) {
+        String showIfField = getStr(section, 'showIfField', '');
+        if (String.isNotBlank(showIfField) &&
+            (record == null || String.isBlank(formatFieldValue(getFieldValue(record, showIfField))))) {
+            return '';
+        }
+
         String sectionType = getStr(section, 'type', 'content');
 
         if (sectionType == 'content') {
@@ -271,29 +279,67 @@ public with sharing class DynamicDocumentRenderer {
         Integer cols = section.containsKey('gridColumns') ? Integer.valueOf(section.get('gridColumns')) :
                        (section.containsKey('columns') ? Integer.valueOf(section.get('columns')) : 2);
         String widthPct = String.valueOf(Math.floor(100 / cols)) + '%';
+        String labelWidthPct = '15%';
+        String valueWidthPct = widthPct;
+        if (section.containsKey('labelWidth')) {
+            Integer labelWidth = 38;
+            try {
+                labelWidth = Integer.valueOf(String.valueOf(section.get('labelWidth')));
+            } catch (Exception e) {
+                labelWidth = 38;
+            }
+            if (labelWidth < 20) labelWidth = 20;
+            if (labelWidth > 60) labelWidth = 60;
+            Decimal pairWidth = 100.0 / cols;
+            Decimal labelWidthValue = (pairWidth * labelWidth) / 100;
+            labelWidthPct = String.valueOf(labelWidthValue.setScale(2)) + '%';
+            valueWidthPct = String.valueOf((pairWidth - labelWidthValue).setScale(2)) + '%';
+        }
+        String fontSize = getStr(section, 'fontSize', '');
+        String borderColor = getStr(section, 'borderColor', '#eee');
+        String labelBackground = getStr(section, 'labelBackground', '#f9f9f9');
 
         StringBuilder html = new StringBuilder();
-        html.append('<table style="width:100%;border-collapse:collapse;margin:8px 0;">');
+        html.append('<table style="width:100%;border-collapse:collapse;margin:8px 0;');
+        if (String.isNotBlank(fontSize)) html.append('font-size:' + fontSize + ';');
+        html.append('">');
 
         Integer count = 0;
         for (Object fieldObj : fields) {
             Map<String, Object> field = (Map<String, Object>) fieldObj;
             String label = getStr(field, 'label', '');
             String fieldName = getStr(field, 'field', '');
+            String showIfField = getStr(field, 'showIfField', '');
+
+            if (String.isNotBlank(showIfField) &&
+                (record == null || String.isBlank(formatFieldValue(getFieldValue(record, showIfField))))) {
+                continue;
+            }
 
             if (Math.mod(count, cols) == 0) html.append('<tr>');
 
             String value = '';
-            if (record != null && String.isNotBlank(fieldName)) {
-                value = formatFieldValue(getFieldValue(record, fieldName));
+            String valueTemplate = getStr(field, 'valueTemplate', '');
+            if (record != null && String.isNotBlank(valueTemplate)) {
+                value = resolveMergeFields(valueTemplate, record, objectApiName);
+            } else if (record != null && String.isNotBlank(fieldName)) {
+                value = formatDisplayValue(
+                    getFieldValue(record, fieldName),
+                    getStr(field, 'format', '')
+                );
             }
 
-            html.append('<td style="padding:4px 8px;font-weight:bold;width:15%;border:1px solid #eee;background:#f9f9f9;">' + label + '</td>');
-            html.append('<td style="padding:4px 8px;width:' + widthPct + ';border:1px solid #eee;">' + value + '</td>');
+            html.append('<td style="padding:4px 8px;font-weight:bold;width:' + labelWidthPct +
+                ';border:1px solid ' + borderColor + ';background:' + labelBackground + ';">' +
+                label + '</td>');
+            html.append('<td style="padding:4px 8px;width:' + valueWidthPct +
+                ';border:1px solid ' + borderColor + ';">' + value + '</td>');
 
             count++;
             if (Math.mod(count, cols) == 0) html.append('</tr>');
         }
+
+        if (count == 0) return '';
 
         // Close final row if needed
         if (Math.mod(count, cols) != 0) {
@@ -385,13 +431,7 @@ public with sharing class DynamicDocumentRenderer {
             children = (record != null) ? new List<SObject>{ record } : new List<SObject>();
         } else {
             children = queryChildRecords(
-                childObject,
-                relationshipField,
-                recordId,
-                fieldNames,
-                orderBy,
-                maxRows,
-                (List<Object>) section.get('filters')
+                childObject, relationshipField, recordId, fieldNames, orderBy, maxRows
             );
         }
 
@@ -399,6 +439,10 @@ public with sharing class DynamicDocumentRenderer {
         String headerBg = getStr(section, 'headerBackground', '#f5f5f5');
         String headerColor = getStr(section, 'headerColor', '#333');
         String borderColor = getStr(section, 'borderColor', '#ddd');
+        String cellPadding = getStr(section, 'cellPadding', '4px 8px');
+        String headerPadding = getStr(section, 'headerPadding', '6px 8px');
+        String fontSize = getStr(section, 'fontSize', '');
+        String rowNumberLabel = getStr(section, 'rowNumberLabel', 'Sl. No');
 
         StringBuilder html = new StringBuilder();
 
@@ -406,17 +450,26 @@ public with sharing class DynamicDocumentRenderer {
             html.append('<h3 style="margin:16px 0 6px 0;">' + title + '</h3>');
         }
 
-        html.append('<table style="width:100%;border-collapse:collapse;margin-bottom:12px;">');
+        html.append('<table style="width:100%;border-collapse:collapse;margin-bottom:12px;');
+        if (getStr(section, 'tableLayout', '') == 'fixed') html.append('table-layout:fixed;');
+        if (String.isNotBlank(fontSize)) html.append('font-size:' + fontSize + ';');
+        html.append('">');
 
         // Header row
         html.append('<thead><tr>');
         if (showRowNumbers) {
             html.append('<th style="background:' + headerBg + ';color:' + headerColor +
-                        ';border:1px solid ' + borderColor + ';padding:6px 8px;text-align:center;">Sl. No</th>');
+                        ';border:1px solid ' + borderColor + ';padding:' + headerPadding +
+                        ';text-align:center;">' + rowNumberLabel + '</th>');
         }
-        for (String lbl : columnLabels) {
+        for (Integer i = 0; i < columnLabels.size(); i++) {
+            Map<String, Object> col = (Map<String, Object>) columns[i];
+            String width = getTableColumnWidth(col);
+            String alignment = getTableColumnAlignment(col, 'left');
             html.append('<th style="background:' + headerBg + ';color:' + headerColor +
-                        ';border:1px solid ' + borderColor + ';padding:6px 8px;text-align:left;">' + lbl + '</th>');
+                        ';border:1px solid ' + borderColor + ';padding:' + headerPadding +
+                        ';text-align:' + alignment + ';' + (String.isNotBlank(width) ? 'width:' + width + ';' : '') +
+                        'word-wrap:break-word;">' + columnLabels[i] + '</th>');
         }
         html.append('</tr></thead>');
 
@@ -436,13 +489,19 @@ public with sharing class DynamicDocumentRenderer {
                 html.append('<tr style="background:' + rowBg + ';">');
                 if (showRowNumbers) {
                     html.append('<td style="border:1px solid ' + borderColor +
-                                ';padding:4px 8px;text-align:center;">' + rowNum + '</td>');
+                                ';padding:' + cellPadding + ';text-align:center;">' + rowNum + '</td>');
                 }
-                for (String fName : fieldNames) {
+                for (Integer i = 0; i < fieldNames.size(); i++) {
+                    String fName = fieldNames[i];
                     Object val = getFieldValue(child, fName);
-                    String display = formatFieldValue(val);
+                    Map<String, Object> col = (Map<String, Object>) columns[i];
+                    String display = formatDisplayValue(val, getStr(col, 'format', ''));
+                    String width = getTableColumnWidth(col);
+                    String alignment = getTableColumnAlignment(col, 'left');
                     html.append('<td style="border:1px solid ' + borderColor +
-                                ';padding:4px 8px;">' + display + '</td>');
+                                ';padding:' + cellPadding + ';text-align:' + alignment + ';' +
+                                (String.isNotBlank(width) ? 'width:' + width + ';' : '') +
+                                'word-wrap:break-word;">' + display + '</td>');
                 }
                 html.append('</tr>');
             }
@@ -474,9 +533,12 @@ public with sharing class DynamicDocumentRenderer {
                 if (agg == 'parent') {
                     String pf = getStr(col, 'totalParentField', '');
                     Object pv = (record != null && String.isNotBlank(pf)) ? getFieldValue(record, pf) : null;
-                    cellVal = formatFieldValue(pv);
+                    cellVal = formatDisplayValue(pv, getStr(col, 'format', ''));
                 } else if (agg == 'sum' || agg == 'count' || agg == 'average' || agg == 'min' || agg == 'max') {
                     cellVal = computeAggregate(children, fieldNames[ci], agg);
+                    if (String.isNotBlank(cellVal) && getStr(col, 'format', '').equalsIgnoreCase('INR')) {
+                        cellVal = formatIndianAmount(Decimal.valueOf(cellVal));
+                    }
                 } else if (!labelPlaced) {
                     // No aggregate for this column — use the first such cell to carry the label.
                     cellVal = totalsLabel;
@@ -500,15 +562,10 @@ public with sharing class DynamicDocumentRenderer {
 
         content = content.replace('{!TODAY}', formatFieldValue(Date.today()));
         content = content.replace('{!NOW}', Datetime.now().format('dd/MM/yyyy HH:mm'));
-        if (objectApiName == 'Booking__c') {
-            content = content.replace(
-                '{!NOC_BALANCE_RECEIVABLE}',
-                formatFieldValue(calculateNocBalance(
-                    (Decimal) getFieldValue(record, 'Total_Flat_Cost__c'),
-                    (Decimal) getFieldValue(record, 'Total_Receipt_Amount__c')
-                ))
-            );
-        }
+        content = resolveCoApplicantDetails(content, record, objectApiName);
+        content = resolveCoApplicantNames(content, record, objectApiName);
+        content = resolveAndCoApplicantNames(content, record, objectApiName);
+        content = resolveAmountFunctions(content, record, objectApiName);
 
         // ---- Function: {!INWORDS(Field__c)} -> the field's numeric value in words ----
         // (parentheses keep this from matching the plain {!Field} pattern below)
@@ -563,10 +620,277 @@ public with sharing class DynamicDocumentRenderer {
         return content;
     }
 
-    @TestVisible
-    private static Decimal calculateNocBalance(Decimal totalConsideration, Decimal receivedAmount) {
-        return Math.max(0, (totalConsideration == null ? 0 : totalConsideration)
-            - (receivedAmount == null ? 0 : receivedAmount));
+    private static String resolveCoApplicantDetails(
+        String content, SObject record, String objectApiName
+    ) {
+        if (String.isBlank(content) || record == null
+            || !'Booking__c'.equalsIgnoreCase(objectApiName)
+            || !content.contains('{!CO_APPLICANTS')) {
+            return content;
+        }
+
+        if (content.contains('{!CO_APPLICANTS}')) {
+            content = content.replace(
+                '{!CO_APPLICANTS}', buildCoApplicantParagraphs(record, true, false));
+        }
+        // numbered 2., 3., ... - the first applicant is "1." in the template
+        if (content.contains('{!CO_APPLICANTS_NUMBERED}')) {
+            content = content.replace(
+                '{!CO_APPLICANTS_NUMBERED}', buildCoApplicantParagraphs(record, true, true));
+        }
+        // without "aged about N years"
+        if (content.contains('{!CO_APPLICANTS_NO_AGE}')) {
+            content = content.replace(
+                '{!CO_APPLICANTS_NO_AGE}', buildCoApplicantParagraphs(record, false, false));
+        }
+        return content;
+    }
+
+    private static String buildCoApplicantParagraphs(
+        SObject record, Boolean includeAge, Boolean numbered
+    ) {
+        List<String> renderedApplicants = new List<String>();
+        Integer applicantNumber = 1;
+        String permanentAddress = escapeHtmlValue(record.get('Permanent_Address__c'));
+        for (Co_Applicant__c applicant : [
+            SELECT Salutation__c, Full_Name__c, Relalation_Details__c, S_o_D_o_W_o__c,
+                   W_o_S_o_C_o_c__c, Date_of_Birth__c, Occupation__c,
+                   Aadhar_Number__c, PAN_Number__c, Permenent_Address__c
+            FROM Co_Applicant__c
+            WHERE Booking__c = :record.Id
+            ORDER BY CreatedDate ASC
+        ]) {
+            List<String> details = new List<String>();
+            List<String> heading = new List<String>();
+            String name = coApplicantDisplayName(applicant);
+            if (String.isNotBlank(name)) {
+                heading.add(name);
+            }
+
+            // S_o_D_o_W_o__c is the field in use (the booking form fills it);
+            // Relalation_Details__c is the older field, read only when the first is blank.
+            String relationType = String.isNotBlank(applicant.S_o_D_o_W_o__c)
+                ? applicant.S_o_D_o_W_o__c : applicant.Relalation_Details__c;
+            if (String.isNotBlank(applicant.W_o_S_o_C_o_c__c)) {
+                heading.add(joinDisplayValues(withFullStop(relationType), applicant.W_o_S_o_C_o_c__c));
+            }
+            if (!heading.isEmpty()) {
+                details.add('<b>' + String.join(heading, ', ') + '</b>');
+            }
+            if (includeAge && applicant.Date_of_Birth__c != null) {
+                details.add(
+                    'aged about ' + calculateAge(applicant.Date_of_Birth__c) + ' years'
+                );
+            }
+            if (String.isNotBlank(applicant.Occupation__c)) {
+                details.add('Occupation: ' + escapeHtmlValue(applicant.Occupation__c));
+            }
+            // The co-applicant's own permanent address; the booking's only when theirs is blank.
+            String applicantAddress = String.isNotBlank(applicant.Permenent_Address__c)
+                ? escapeHtmlValue(applicant.Permenent_Address__c) : permanentAddress;
+            details.add('Resident of ' + applicantAddress);
+            // Aadhaar and PAN always start on a new line. A block span, not <br/>: the PDF engine
+            // stretches (justifies) the short line that ends at a <br/>.
+            applicantNumber++;
+            String opening = numbered
+                ? '<p style="text-align:justify;margin-left:36pt;text-indent:-22.5pt">'
+                    + '<span style="display:inline-block;width:22.5pt;text-indent:0">'
+                    + applicantNumber + '.</span>'
+                : '<p style="text-align:justify">';
+            renderedApplicants.add(
+                opening + String.join(details, ', ') + '.'
+                + '<span style="display:block;text-indent:0;font-weight:bold">(Aadhaar No. '
+                + escapeHtmlValue(applicant.Aadhar_Number__c)
+                + ' &amp; PAN No. ' + escapeHtmlValue(applicant.PAN_Number__c) + ')</span></p>'
+            );
+        }
+
+        return String.join(renderedApplicants, '');
+    }
+
+    private static String resolveCoApplicantNames(
+        String content, SObject record, String objectApiName
+    ) {
+        if (String.isBlank(content) || record == null
+            || !'Booking__c'.equalsIgnoreCase(objectApiName)
+            || !content.contains('{!CO_APPLICANT_NAMES}')) {
+            return content;
+        }
+
+        List<String> names = new List<String>();
+        for (Co_Applicant__c applicant : [
+            SELECT Salutation__c, Full_Name__c
+            FROM Co_Applicant__c
+            WHERE Booking__c = :record.Id
+            ORDER BY CreatedDate ASC
+        ]) {
+            String name = coApplicantDisplayName(applicant);
+            if (String.isNotBlank(name)) {
+                names.add(name);
+            }
+        }
+
+        return content.replace('{!CO_APPLICANT_NAMES}', String.join(names, ', '));
+    }
+
+    /**
+     * {!AND_CO_APPLICANT_NAMES} continues the first applicant's name: nothing when there is no
+     * co-applicant, " &amp; B" for one, ", B, C &amp; D" for several ("&" only before the last name).
+     */
+    private static String resolveAndCoApplicantNames(
+        String content, SObject record, String objectApiName
+    ) {
+        if (String.isBlank(content) || record == null
+            || !'Booking__c'.equalsIgnoreCase(objectApiName)
+            || !content.contains('{!AND_CO_APPLICANT_NAMES}')) {
+            return content;
+        }
+
+        List<String> names = new List<String>();
+        for (Co_Applicant__c applicant : [
+            SELECT Salutation__c, Full_Name__c
+            FROM Co_Applicant__c
+            WHERE Booking__c = :record.Id
+            ORDER BY CreatedDate ASC
+        ]) {
+            String name = coApplicantDisplayName(applicant);
+            if (String.isNotBlank(name)) {
+                names.add(name);
+            }
+        }
+
+        String joined = '';
+        for (Integer i = 0; i < names.size(); i++) {
+            joined += (i == names.size() - 1 ? ' &amp; ' : ', ') + names[i];
+        }
+        return content.replace('{!AND_CO_APPLICANT_NAMES}', joined);
+    }
+
+    private static String coApplicantDisplayName(Co_Applicant__c applicant) {
+        return joinDisplayValues(withFullStop(applicant.Salutation__c), applicant.Full_Name__c);
+    }
+
+    /** "Mr" -> "Mr.", "S/o" -> "S/o." (values that already end with a full stop are left alone). */
+    private static String withFullStop(String value) {
+        if (String.isBlank(value)) return value;
+        String trimmed = value.trim();
+        return trimmed.endsWith('.') ? trimmed : trimmed + '.';
+    }
+
+    private static String joinDisplayValues(String firstValue, String secondValue) {
+        List<String> values = new List<String>();
+        if (String.isNotBlank(firstValue)) values.add(escapeHtmlValue(firstValue));
+        if (String.isNotBlank(secondValue)) values.add(escapeHtmlValue(secondValue));
+        return String.join(values, ' ');
+    }
+
+    private static String escapeHtmlValue(Object value) {
+        if (value == null) return '';
+        return String.valueOf(value)
+            .replace('&', '&amp;')
+            .replace('<', '&lt;')
+            .replace('>', '&gt;')
+            .replace('"', '&quot;')
+            .replace('\'', '&#39;');
+    }
+
+    private static Integer calculateAge(Date dateOfBirth) {
+        Date today = Date.today();
+        Integer age = today.year() - dateOfBirth.year();
+        if (today.month() < dateOfBirth.month()
+            || (today.month() == dateOfBirth.month() && today.day() < dateOfBirth.day())) {
+            age--;
+        }
+        return age;
+    }
+
+    private static String resolveAmountFunctions(String content, SObject record, String objectApiName) {
+        content = replaceArithmeticFunction(content, 'MULTIPLY', record, objectApiName);
+        content = replaceArithmeticFunction(content, 'ADD', record, objectApiName);
+        content = replaceArithmeticFunction(content, 'SUBTRACT', record, objectApiName);
+
+        Pattern amountPattern = Pattern.compile('(?i)\\{!\\s*INR\\s*\\(\\s*([A-Za-z0-9_.-]*)\\s*\\)\\s*\\}');
+        Matcher amountMatcher = amountPattern.matcher(content);
+        Map<String, String> replacements = new Map<String, String>();
+        while (amountMatcher.find()) {
+            Decimal amount = getNumericMergeValue(amountMatcher.group(1), record, objectApiName);
+            replacements.put(amountMatcher.group(0), formatIndianAmount(amount));
+        }
+        for (String token : replacements.keySet()) {
+            content = content.replace(token, replacements.get(token));
+        }
+
+        Pattern rawResultPattern = Pattern.compile('\\{!\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\}');
+        Matcher rawResultMatcher = rawResultPattern.matcher(content);
+        Map<String, String> rawResultReplacements = new Map<String, String>();
+        while (rawResultMatcher.find()) {
+            rawResultReplacements.put(rawResultMatcher.group(0), rawResultMatcher.group(1));
+        }
+        for (String token : rawResultReplacements.keySet()) {
+            content = content.replace(token, rawResultReplacements.get(token));
+        }
+        return content.replace('{!}', '');
+    }
+
+    private static String replaceArithmeticFunction(String content, String functionName,
+                                                     SObject record, String objectApiName) {
+        Pattern functionPattern = Pattern.compile(
+            '(?i)' + functionName + '\\s*\\(\\s*([A-Za-z0-9_.-]*)\\s*,\\s*([A-Za-z0-9_.-]*)\\s*\\)'
+        );
+        Matcher functionMatcher = functionPattern.matcher(content);
+        Map<String, String> replacements = new Map<String, String>();
+        while (functionMatcher.find()) {
+            Decimal left = getNumericMergeValue(functionMatcher.group(1), record, objectApiName);
+            Decimal right = getNumericMergeValue(functionMatcher.group(2), record, objectApiName);
+            Decimal result;
+            if (left != null && right != null) {
+                if (functionName == 'MULTIPLY') result = left * right;
+                else if (functionName == 'ADD') result = left + right;
+                else result = left - right;
+            }
+            replacements.put(functionMatcher.group(0), formatNumber(result));
+        }
+        for (String token : replacements.keySet()) {
+            content = content.replace(token, replacements.get(token));
+        }
+        return content;
+    }
+
+    private static Decimal getNumericMergeValue(String valueOrField, SObject record, String objectApiName) {
+        if (String.isBlank(valueOrField)) return null;
+        String operand = valueOrField.trim();
+        if (Pattern.matches('^-?\\d+(?:\\.\\d+)?$', operand)) {
+            return Decimal.valueOf(operand);
+        }
+
+        if (operand.contains('.') && !operand.contains('__r.')) {
+            String prefix = operand.substringBefore('.');
+            if (prefix.equalsIgnoreCase(objectApiName)) operand = operand.substringAfter('.');
+        }
+
+        Object value = getFieldValue(record, operand);
+        if (value instanceof Decimal) return (Decimal) value;
+        if (value instanceof Integer || value instanceof Long || value instanceof Double) {
+            return Decimal.valueOf(String.valueOf(value));
+        }
+        return null;
+    }
+
+    private static String formatIndianAmount(Decimal amount) {
+        if (amount == null) return '';
+        Boolean negative = amount < 0;
+        String raw = formatNumber(amount.abs());
+        List<String> parts = raw.split('\\.');
+        String integerPart = parts[0];
+        Integer position = integerPart.length() - 3;
+        String grouped = integerPart.substring(Math.max(0, position));
+        while (position > 0) {
+            Integer start = Math.max(0, position - 2);
+            grouped = integerPart.substring(start, position) + ',' + grouped;
+            position = start;
+        }
+        if (parts.size() > 1) grouped += '.' + parts[1];
+        return (negative ? '-' : '') + grouped;
     }
 
     // ============================== QUERY HELPERS ==============================
@@ -647,8 +971,7 @@ public with sharing class DynamicDocumentRenderer {
 
     private static List<SObject> queryChildRecords(String childObject, String relationshipField,
                                                      String parentRecordId, List<String> fieldNames,
-                                                     String orderBy, Integer maxRows,
-                                                     List<Object> filters) {
+                                                     String orderBy, Integer maxRows) {
         if (String.isBlank(childObject) || String.isBlank(relationshipField)) {
             return new List<SObject>();
         }
@@ -676,21 +999,6 @@ public with sharing class DynamicDocumentRenderer {
                         ' FROM ' + String.escapeSingleQuotes(childObject) +
                         ' WHERE ' + String.escapeSingleQuotes(relationshipField) + ' = :parentRecordId';
 
-        Map<String, Object> bindValues = new Map<String, Object>{ 'parentRecordId' => parentRecordId };
-        if (filters != null) {
-            Integer filterIndex = 0;
-            for (Object filterObj : filters) {
-                Map<String, Object> filter = (Map<String, Object>) filterObj;
-                String fieldPath = getStr(filter, 'field', '');
-                if (!isValidChildFieldPath(childObject, fieldPath)) {
-                    throw new IllegalArgumentException('Invalid child table filter field: ' + fieldPath);
-                }
-                String bindName = 'filterValue' + filterIndex++;
-                query += ' AND ' + fieldPath + ' = :' + bindName;
-                bindValues.put(bindName, filter.get('value'));
-            }
-        }
-
         if (String.isNotBlank(orderBy)) {
             query += ' ORDER BY ' + String.escapeSingleQuotes(orderBy);
         }
@@ -698,43 +1006,11 @@ public with sharing class DynamicDocumentRenderer {
         query += ' LIMIT ' + maxRows;
 
         try {
-            return Database.queryWithBinds(query, bindValues, AccessLevel.SYSTEM_MODE);
+            return Database.query(query);
         } catch (Exception e) {
             System.debug('Error querying child records: ' + e.getMessage() + ' | Query: ' + query);
             return new List<SObject>();
         }
-    }
-
-    private static Boolean isValidChildFieldPath(String objectApiName, String fieldPath) {
-        if (String.isBlank(objectApiName) || String.isBlank(fieldPath)) return false;
-        Schema.SObjectType currentType = Schema.getGlobalDescribe().get(objectApiName);
-        if (currentType == null) return false;
-
-        List<String> parts = fieldPath.split('\\.');
-        for (Integer i = 0; i < parts.size(); i++) {
-            Map<String, Schema.SObjectField> fields =
-                currentType.getDescribe().fields.getMap();
-            if (i == parts.size() - 1) {
-                return fields.containsKey(parts[i])
-                    && fields.get(parts[i]).getDescribe().isAccessible();
-            }
-
-            Schema.SObjectField relationshipField;
-            for (Schema.SObjectField field : fields.values()) {
-                Schema.DescribeFieldResult description = field.getDescribe();
-                if (description.getType() == Schema.DisplayType.REFERENCE
-                    && description.getRelationshipName() != null
-                    && description.getRelationshipName().equalsIgnoreCase(parts[i])) {
-                    relationshipField = field;
-                    break;
-                }
-            }
-            if (relationshipField == null || relationshipField.getDescribe().getReferenceTo().isEmpty()) {
-                return false;
-            }
-            currentType = relationshipField.getDescribe().getReferenceTo()[0];
-        }
-        return false;
     }
 
     // ============================== FIELD VALUE TRAVERSAL ==============================
@@ -786,6 +1062,9 @@ public with sharing class DynamicDocumentRenderer {
         scanReferencedPaths('\\{!([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)\\}', templateJson, fieldSet, fieldMap);
         // 1b. {!INWORDS(...)} calls too — e.g. {!INWORDS(Booking__r.Unit__r.Cost__c)}
         scanReferencedPaths('(?i)\\{!\\s*INWORDS\\s*\\(\\s*([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)\\s*\\)\\s*\\}', templateJson, fieldSet, fieldMap);
+        // 1c. Relationship fields used as operands in amount/area expressions.
+        scanReferencedPaths('(?i)(?:INR|MULTIPLY|ADD|SUBTRACT)\\s*\\(\\s*([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)', templateJson, fieldSet, fieldMap);
+        scanReferencedPaths('(?i)(?:MULTIPLY|ADD|SUBTRACT)\\s*\\(\\s*[A-Za-z0-9_.-]+\\s*,\\s*([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)', templateJson, fieldSet, fieldMap);
         // 2. fieldGrid / table-column fields with dot notation (any depth)
         //    (e.g., "field":"Account__r.Phone" or "field":"Booking__r.Unit__r.Name")
         scanReferencedPaths('"field"\\s*:\\s*"([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)"', templateJson, fieldSet, fieldMap);
@@ -983,12 +1262,44 @@ public with sharing class DynamicDocumentRenderer {
         return String.valueOf(val);
     }
 
+    private static String formatDisplayValue(Object value, String format) {
+        if (String.isBlank(format) || !format.equalsIgnoreCase('INR')) {
+            return formatFieldValue(value);
+        }
+
+        Decimal amount;
+        if (value instanceof Decimal) {
+            amount = (Decimal) value;
+        } else if (value instanceof Integer || value instanceof Long || value instanceof Double) {
+            amount = Decimal.valueOf(String.valueOf(value));
+        } else {
+            return formatFieldValue(value);
+        }
+        return formatIndianAmount(amount);
+    }
+
     private static String getStr(Map<String, Object> data, String key, String defaultVal) {
         if (data == null || !data.containsKey(key) || data.get(key) == null) return defaultVal;
         String val = String.valueOf(data.get(key));
         // Return default for empty strings when a non-empty default is provided
         if (String.isBlank(val) && String.isNotBlank(defaultVal)) return defaultVal;
         return val;
+    }
+
+    private static String getTableColumnWidth(Map<String, Object> column) {
+        String width = getStr(column, 'width', '');
+        Matcher matcher = Pattern.compile('^(\\d{1,3})%$').matcher(width);
+        if (!matcher.matches()) return '';
+
+        Integer percent = Integer.valueOf(matcher.group(1));
+        return percent > 0 && percent <= 100 ? String.valueOf(percent) + '%' : '';
+    }
+
+    private static String getTableColumnAlignment(Map<String, Object> column, String defaultAlignment) {
+        String alignment = getStr(column, 'align', defaultAlignment);
+        return new Set<String>{ 'left', 'center', 'right' }.contains(alignment)
+            ? alignment
+            : defaultAlignment;
     }
 
     // Read a numeric logoSize from a header/column map. Defaults to 100, clamped to a

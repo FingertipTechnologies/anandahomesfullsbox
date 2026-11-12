@@ -352,6 +352,39 @@ private class BookingFormControllerTest {
         Assert.areEqual('', form.bankName, 'Blank bank prints empty');
     }
 
+    /**
+     * Bookings saved by the Create Booking form: the applicant's title is in Salutation__c, and
+     * "Flat Booking Amount Payable (including GST)" is the first schedule line's full Amount.
+     */
+    @IsTest
+    static void createBookingFormFieldsPrintSalutationAndFirstInstalmentWithGst() {
+        Booking__c booking = findBooking(FALLBACK_APPLICANT);
+        update new Booking__c(Id = booking.Id, Salutation__c = 'Mr.');
+        // Status is required on a payment schedule; any active value will do here.
+        String status;
+        for (Schema.PicklistEntry entry : Payment_Schedule__c.Status__c.getDescribe().getPicklistValues()) {
+            if (entry.isActive()) {
+                status = entry.getValue();
+                break;
+            }
+        }
+        insert new List<Payment_Schedule__c>{
+            new Payment_Schedule__c(Booking__c = booking.Id, S_No__c = 2, Status__c = status,
+                                    Amount__c = 315000, Payment_Schedule_Amount__c = 300000),
+            new Payment_Schedule__c(Booking__c = booking.Id, S_No__c = 1, Status__c = status,
+                                    Amount__c = 105000, Payment_Schedule_Amount__c = 100000)
+        };
+
+        Test.startTest();
+        BookingFormController form = openForm(booking.Id);
+        Test.stopTest();
+
+        Assert.isFalse(form.hasError, 'No error expected: ' + form.errorMessage);
+        Assert.areEqual('Mr. ' + FALLBACK_APPLICANT, form.applicantName, 'Salutation__c fallback');
+        Assert.areEqual('Rs. 1,05,000', form.flatBookingAmountPayable,
+                        'First instalment (S No 1) with GST and TDS, not the base amount');
+    }
+
     @IsTest
     static void bookingWithoutUnitOrDatesFallsBackToCreatedDate() {
         Booking__c booking = findBooking(NO_UNIT_APPLICANT);

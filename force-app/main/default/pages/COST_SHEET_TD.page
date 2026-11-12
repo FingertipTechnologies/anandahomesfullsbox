@@ -75,19 +75,23 @@
             <apex:variable var="lakePremium" value="{!NULLVALUE(Quote__c.Lake_Premium__c, 0)}" />
             <apex:variable var="centralCourtyard" value="{!NULLVALUE(Quote__c.Central_Court_Yard_Premium__c, 0)}" />
             <!-- Rates that are not on the Drizzle sheet; printed (and costed) only when a quote carries them -->
+            <apex:variable var="eastFacing" value="{!NULLVALUE(Quote__c.East_Facing_Charges__c, 0)}" />
             <apex:variable var="hiRise" value="{!NULLVALUE(Quote__c.Hi_Rise_Charges__c, 0)}" />
             <apex:variable var="meadow" value="{!NULLVALUE(Quote__c.Meadow_Premium__c, 0)}" />
             <apex:variable var="courtYard" value="{!NULLVALUE(Quote__c.Court_Yard_Premium__c, 0)}" />
             <apex:variable var="outer" value="{!NULLVALUE(Quote__c.Outer_Premium__c, 0)}" />
             <!-- Lump sums -->
-            <apex:variable var="clubInfra" value="{!NULLVALUE(Quote__c.Infrastructure_Charges__c, 0)}" />
+            <apex:variable var="Infra" value="{!NULLVALUE(Quote__c.Infrastructure_Charges__c, 0)}" />
+            <apex:variable var="clubInfra" value="{!NULLVALUE(Quote__c.Club_House__c, 0)}" />
             <apex:variable var="carParking" value="{!NULLVALUE(Quote__c.Amenities_Car_Parking__c, 0)}" />
             <apex:variable var="extraCarParking" value="{!NULLVALUE(Quote__c.Extra_Covered_Car_Parking_Charges__c, 0)}" />
             <apex:variable var="gasPipe" value="{!NULLVALUE(Quote__c.Piped_Gas__c, 0)}" />
 
-            <!-- Cost = everything printed in the price break-up box -->
-            <apex:variable var="ratePerSft" value="{!basePrice + eastNorth + corner + floorRise + roadPremium + lakePremium + centralCourtyard + hiRise + meadow + courtYard + outer}" />
-            <apex:variable var="flatCost" value="{!ROUND(area * ratePerSft + clubInfra + carParking + extraCarParking + gasPipe, 0)}" />
+            <!-- Cost = everything printed in the price break-up box; it must equal the Quote's Sub total,
+                 so every per-sft rate in that formula (East Facing included) is counted here. -->
+            <apex:variable var="ratePerSft" value="{!basePrice + eastNorth + eastFacing + corner + floorRise + roadPremium + lakePremium + centralCourtyard + hiRise + meadow + courtYard + outer}" />
+            <apex:variable var="flatCost" value="{!ROUND(area * ratePerSft + clubInfra + carParking + extraCarParking + gasPipe+Infra, 0)}" />
+            <apex:variable var="clubhoustinfra" value="{!ROUND(Infra + clubInfra , 0)}" />
             <apex:variable var="gstPct" value="{!NULLVALUE(Quote__c.GST1__c, 0)}" />
             <apex:variable var="gstAmount" value="{!ROUND(flatCost * gstPct / 100, 0)}" />
             <apex:variable var="grandTotal" value="{!flatCost + gstAmount}" />
@@ -103,7 +107,7 @@
             <!-- Rates used in "Expenditure at registration" (from the Project) -->
             <apex:variable var="stampDutyPct" value="{!NULLVALUE(Quote__c.Project1__r.Stamp_Duty_Percentage__c, 0)}" />
             <apex:variable var="corpusPerSft" value="{!NULLVALUE(Quote__c.Project1__r.Corpus_Charge_Per_Sq_ft__c, 0)}" />
-            <apex:variable var="maintPerSftPerMonth" value="{!NULLVALUE(Quote__c.Project1__r.Maintenance_Per_sq_ft_per_month__c, 0)}" />
+            <apex:variable var="maintPerSftPerMonth" value="{!NULLVALUE(Quote__c.Unit__r.Project__r.Maintenance_Per_sq_ft_per_month__c, 0)}" />
             <apex:variable var="maintMonths" value="{!NULLVALUE(Quote__c.Project1__r.Maintenance_Month__c, 0)}" />
             <apex:variable var="docCharges" value="{!NULLVALUE(Quote__c.Project1__r.Document_Charges__c, 0)}" />
             <apex:variable var="advMaint" value="{!area * maintPerSftPerMonth * maintMonths}" />
@@ -147,6 +151,9 @@
                         <table class="box">
                             <tr><td class="k" style="width:77%;">Base Price</td><td class="r"><c:IndianAmount value="{!basePrice}" dashIfZero="true"/></td></tr>
                             <tr><td class="k">East/North Facing</td><td class="r"><c:IndianAmount value="{!eastNorth}" dashIfZero="true"/></td></tr>
+                            <apex:outputPanel layout="none" rendered="{!eastFacing != 0}">
+                                <tr><td class="k">East Facing</td><td class="r"><c:IndianAmount value="{!eastFacing}"/></td></tr>
+                            </apex:outputPanel>
                             <tr><td class="k">Corner</td><td class="r"><c:IndianAmount value="{!corner}" dashIfZero="true"/></td></tr>
                             <tr><td class="k">Floor Rise (From 5th 25rs each floor)</td><td class="r"><c:IndianAmount value="{!floorRise}" dashIfZero="true"/></td></tr>
                             <tr><td class="k">Road Premium</td><td class="r"><c:IndianAmount value="{!roadPremium}" dashIfZero="true"/></td></tr>
@@ -164,7 +171,7 @@
                             <apex:outputPanel layout="none" rendered="{!outer != 0}">
                                 <tr><td class="k">Outer Premium</td><td class="r"><c:IndianAmount value="{!outer}"/></td></tr>
                             </apex:outputPanel>
-                            <tr><td class="k">Club House + Infra</td><td class="r"><c:IndianAmount value="{!clubInfra}" dashIfZero="true"/></td></tr>
+                            <tr><td class="k">Club House + Infra</td><td class="r"><c:IndianAmount value="{!clubhoustinfra}" dashIfZero="true"/></td></tr>
                             <tr><td class="k">Car Parking</td><td class="r"><c:IndianAmount value="{!carParking}" dashIfZero="true"/></td></tr>
                             <tr><td class="k">Extra Car Parking</td><td class="r"><c:IndianAmount value="{!extraCarParking}" dashIfZero="true"/></td></tr>
                             <tr><td class="k">Gas Pipe line</td><td class="r"><c:IndianAmount value="{!gasPipe}" dashIfZero="true"/></td></tr>

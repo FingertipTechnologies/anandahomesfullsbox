@@ -1,6 +1,8 @@
 ({
     
     doInit: function(component, event, helper) {
+    // Only the lead owner or an admin may create a quote; others get an error and the window closes.
+    helper.checkQuoteAccess(component, helper);
     // Fetch Lead details first
     //helper.fetchLeadDetails(component, event, helper);
      var recordId = component.get("v.recordId");
@@ -292,6 +294,7 @@
                 oppPlot.Floor_Rise__c = plt[i].Floor_Rise_Charge__c;
              oppPlot.PLC__c = plt[i].PLC__c;
              oppPlot.East_North_Facing__c = plt[i].East_North_Facing__c;
+             oppPlot.Club_House__c = plt[i].Club_House__c;
             
                 
            
@@ -342,6 +345,7 @@
             var infrastructure = parseFloat(oppPlot.Infrastructure_Charges__c) || 0;
             // Added on 06-11-2026
             var gaspipe = parseFloat(oppPlot.Piped_Gas__c) || 0;
+            var clubhouse = parseFloat(oppPlot.Club_House__c) || 0;
             var extracarparking = parseFloat(oppPlot.Extra_Covered_Car_Parking_Charges__c) || 0;
             var lakePremium = (parseFloat(oppPlot.Lake_Premium__c) || 0) * saleableArea;
             var floorrisr = (parseFloat(oppPlot.Floor_Rise__c) || 0) * saleableArea;
@@ -349,7 +353,7 @@
             
             var flatCost = basicPrice + eastFacing + corner + hiRise + centralCourtYard
                          + meadow + roadside + courtYard + outer + amenities + infrastructure
-            			+gaspipe+extracarparking+	lakePremium+floorrisr+ eastNorthFacing;
+            			+gaspipe+extracarparking+	lakePremium+floorrisr+ eastNorthFacing+clubhouse;
             
             
             var gstAmount = flatCost * (gstPercentage / 100);
@@ -635,9 +639,19 @@
         var outer            = (parseFloat(oppPlot.Outer_Premium__c)                || 0) * saleableArea;
         var amenities        =  parseFloat(oppPlot.Amenities_Car_Parking__c)        || 0;
         var infrastructure   =  parseFloat(oppPlot.Infrastructure_Charges__c)       || 0;
+          // Added on 06-11-2026
+          
+        var gaspipe = parseFloat(oppPlot.Piped_Gas__c) || 0;
+            var clubhouse = parseFloat(oppPlot.Club_House__c) || 0;
+            var extracarparking = parseFloat(oppPlot.Extra_Covered_Car_Parking_Charges__c) || 0;
+            var lakePremium = (parseFloat(oppPlot.Lake_Premium__c) || 0) * saleableArea;
+            var floorrisr = (parseFloat(oppPlot.Floor_Rise__c) || 0) * saleableArea;
+            var eastNorthFacing = (parseFloat(oppPlot.East_North_Facing__c) || 0) * saleableArea;
+            
 
         var flatCost = basicPrice + eastFacing + corner + hiRise + centralCourtYard
-                     + meadow + roadside + courtYard + outer + amenities + infrastructure;
+                     + meadow + roadside + courtYard + outer + amenities + infrastructure
+        			+gaspipe +clubhouse+extracarparking +lakePremium +floorrisr +eastNorthFacing;
         var gstAmount = flatCost * (gstPercentage / 100);
         var grandTotal = flatCost + gstAmount;
 

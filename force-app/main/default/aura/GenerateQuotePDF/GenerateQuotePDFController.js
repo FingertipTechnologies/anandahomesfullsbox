@@ -105,19 +105,38 @@
             var state = response.getState();
             if (state === "SUCCESS") {
                 console.log('finish');
+                // The Apex returns a message; only this one means the mail really went out.
+                var result = response.getReturnValue();
                 var toastEvent = $A.get("e.force:showToast");
-                toastEvent.setParams({
-                    "title": "Success!",
-                    "message": "Email Sent Successfully.",
-                    "type": "success"
-                });
-                toastEvent.fire();
-                
-                var dismissActionPanel = $A.get("e.force:closeQuickAction");
-                dismissActionPanel.fire();
+                if (result === 'Quotation sent to customer') {
+                    toastEvent.setParams({
+                        "title": "Success!",
+                        "message": "Email Sent Successfully.",
+                        "type": "success"
+                    });
+                    toastEvent.fire();
+
+                    var dismissActionPanel = $A.get("e.force:closeQuickAction");
+                    dismissActionPanel.fire();
+                } else {
+                    toastEvent.setParams({
+                        "title": "Email not sent",
+                        "message": result || "The email could not be sent.",
+                        "type": "error"
+                    });
+                    toastEvent.fire();
+                }
             } else {
                 console.log('finish');
                 console.error("Error sending email");
+                var errors = response.getError();
+                var errorToast = $A.get("e.force:showToast");
+                errorToast.setParams({
+                    "title": "Email not sent",
+                    "message": (errors && errors[0] && errors[0].message) ? errors[0].message : "The email could not be sent.",
+                    "type": "error"
+                });
+                errorToast.fire();
             }
         });
         

@@ -155,7 +155,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>AdditionalChargeReminderService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>AdditionalChargeReminderServiceTest</apexClass>
@@ -175,7 +175,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>AgentDetailsAPI</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>AgentDetailsAPITest</apexClass>
@@ -183,7 +183,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>AgreementOfSaleController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>AgreementOfSaleControllerTest</apexClass>
@@ -191,7 +191,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ApprovalActionHandler</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ApprovalActionHandlerTest</apexClass>
@@ -199,7 +199,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ApprovalActionRunner</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ApprovalActionRunnerTest</apexClass>
@@ -207,7 +207,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ApprovalGenericStatusHandler</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ApprovalGenericStatusHandlerTest</apexClass>
@@ -215,7 +215,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ApprovalRejectionNotifier</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ApprovalRejectionNotifierTest</apexClass>
@@ -223,7 +223,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ApprovalSubmissionInvocable</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ApprovalSubmissionInvocableTest</apexClass>
@@ -231,7 +231,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>AutoDemandBatch</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>AutoDemandBatchTest</apexClass>
@@ -239,7 +239,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>AutoDemandSchedulable</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>AutoDemandSchedulableTest</apexClass>
@@ -247,7 +247,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>AutoReceiptService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>AutoReceiptServiceTest</apexClass>
@@ -259,7 +259,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>BookingAgreementController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>BookingAgreementControllerTest</apexClass>
@@ -267,7 +267,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>BookingCancellationHandler</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>BookingCancellationHandlerTest</apexClass>
@@ -283,7 +283,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>BookingFinancialRecalcService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>BookingFinancialRecalcServiceTest</apexClass>
@@ -291,7 +291,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>BookingFormController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>BookingFormControllerTest</apexClass>
@@ -299,7 +299,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>BookingQuoteFinancialFields</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>BookingQuoteFinancialFieldsTest</apexClass>
@@ -311,7 +311,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>BookingStageRemarkService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>BookingStageRemarkServiceTest</apexClass>
@@ -319,7 +319,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>BookingStageValidationService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>BookingStageValidationServiceTest</apexClass>
@@ -327,7 +327,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>BookingSwapHandler</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>BookingSwapHandlerTest</apexClass>
@@ -339,11 +339,11 @@
     </classAccesses>
     <classAccesses>
         <apexClass>BookingUnitBookingValidationService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>BulkDemandController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>BulkDemandControllerTest</apexClass>
@@ -363,7 +363,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>BulkReassignmenController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>BulkReassignmenController_Test</apexClass>
@@ -371,11 +371,11 @@
     </classAccesses>
     <classAccesses>
         <apexClass>CAPRI_CANCELLATION_LETTER</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>CapriNocApprovedEmailInvocable</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>CapriNocApprovedEmailInvocableTest</apexClass>
@@ -383,7 +383,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>CapriNocPdfController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>CapriNocPdfControllerTest</apexClass>
@@ -391,7 +391,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ChangePasswordController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ChangePasswordControllerTest</apexClass>
@@ -403,7 +403,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ChangePasswordController_Old</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ChangePasswordController_OldTest</apexClass>
@@ -419,7 +419,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>CommunitiesLandingController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>CommunitiesLandingControllerTest</apexClass>
@@ -427,7 +427,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>CommunitiesLoginController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>CommunitiesLoginControllerTest</apexClass>
@@ -435,7 +435,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>CommunitiesSelfRegConfirmController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>CommunitiesSelfRegConfirmControllerTest</apexClass>
@@ -443,7 +443,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>CommunitiesSelfRegController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>CommunitiesSelfRegControllerTest</apexClass>
@@ -451,7 +451,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ConfigMatchingService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ConfigMatchingServiceTest</apexClass>
@@ -487,7 +487,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>CreditNoteApplicationService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>CreditNoteApplicationServiceTest</apexClass>
@@ -511,7 +511,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DashboardConfigController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DashboardConfigControllerTest</apexClass>
@@ -519,7 +519,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DashboardDataService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DashboardDataServiceTest</apexClass>
@@ -527,7 +527,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DebitNoteApplicationService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DebitNoteApplicationServiceTest</apexClass>
@@ -535,11 +535,11 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DemandComponentService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DemandLetterPDFController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DemandLetterPDFControllerTest</apexClass>
@@ -547,7 +547,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DemandReminderBatch</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DemandReminderBatchTest</apexClass>
@@ -559,7 +559,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DemandReminderSchedulable</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DemandReminderSchedulableTest</apexClass>
@@ -567,7 +567,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DemandReminderService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DemandReminderServiceTest</apexClass>
@@ -579,7 +579,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DocumentDesignerController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DocumentDesignerControllerTest</apexClass>
@@ -587,7 +587,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DocumentManagerController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DocumentManagerControllerTest</apexClass>
@@ -595,7 +595,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DocumentViewerController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DocumentViewerControllerTest</apexClass>
@@ -603,7 +603,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DrizzleSaleDeedController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DrizzleSaleDeedControllerTest</apexClass>
@@ -611,7 +611,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DynamicApprovalController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DynamicApprovalControllerTest</apexClass>
@@ -619,7 +619,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DynamicApprovalService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DynamicApprovalServiceTest</apexClass>
@@ -627,7 +627,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DynamicDocumentPDFController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DynamicDocumentPDFControllerTest</apexClass>
@@ -635,7 +635,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DynamicDocumentRenderer</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DynamicDocumentRendererTest</apexClass>
@@ -643,7 +643,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DynamicFormConfigController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DynamicFormConfigControllerTest</apexClass>
@@ -651,7 +651,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DynamicFormExecutionController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DynamicFormExecutionControllerTest</apexClass>
@@ -659,7 +659,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DynamicSOQLBuilder</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DynamicSOQLBuilderTest</apexClass>
@@ -667,7 +667,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>EmailFieldPickerController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>EmailFieldPickerControllerTest</apexClass>
@@ -679,7 +679,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>EmailMergeFieldResolver</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>EmailMergeFieldResolverTest</apexClass>
@@ -687,7 +687,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>EmailPdfGenerator</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>EmailPdfGeneratorTest</apexClass>
@@ -695,7 +695,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>EmailSenderController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>EmailSenderControllerTest</apexClass>
@@ -703,7 +703,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>EmailSenderInvocable</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>EmailSenderInvocableTest</apexClass>
@@ -715,7 +715,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>EmailTemplateConfigController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>EmailTemplateConfigControllerTest</apexClass>
@@ -727,7 +727,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>FieldDiscoveryService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>FieldDiscoveryServiceTest</apexClass>
@@ -735,7 +735,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>FieldMapperController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>FieldMapperControllerTest</apexClass>
@@ -743,7 +743,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>FieldMapperInvocable</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>FieldMapperInvocableTest</apexClass>
@@ -751,7 +751,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>FinancialTransactionController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>FinancialTransactionControllerTest</apexClass>
@@ -767,7 +767,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>FirstApplicantChangeController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>FirstApplicantChangeControllerTest</apexClass>
@@ -775,7 +775,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>FirstApplicantChangeService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>FirstApplicantChangeServiceTest</apexClass>
@@ -795,7 +795,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ForgotPasswordController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ForgotPasswordControllerTest</apexClass>
@@ -807,7 +807,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ForgotPasswordController_Old</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ForgotPasswordController_OldTest</apexClass>
@@ -815,7 +815,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>FormulaBuilderController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>GRE_Lead_Controller</apexClass>
@@ -827,7 +827,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>HMACSignatureService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>HMACSignatureServiceTest</apexClass>
@@ -835,7 +835,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>HelloWorld</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>HelloWorldTest</apexClass>
@@ -851,7 +851,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>InterestCalculationBatch</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>InterestCalculationBatchTest</apexClass>
@@ -859,7 +859,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>InterestCalculationSchedulable</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>InterestCalculationSchedulableTest</apexClass>
@@ -867,7 +867,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>InterestCalculationService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>InterestCalculationServiceTest</apexClass>
@@ -875,7 +875,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>InterestWaiverService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>InterestWaiverServiceTest</apexClass>
@@ -898,12 +898,20 @@
         <enabled>false</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>LeadStatusDateHandler</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>LeadStatusDateHandlerTest</apexClass>
+        <enabled>false</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>LeadTriggerTest</apexClass>
         <enabled>false</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>LegacySaleDeedController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>LegacySaleDeedControllerTest</apexClass>
@@ -923,7 +931,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>MicrobatchSelfRegController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>MicrobatchSelfRegControllerTest</apexClass>
@@ -931,7 +939,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>MilestoneCompletionNotifier</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>MilestoneCompletionNotifierTest</apexClass>
@@ -939,7 +947,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>MilestonePaymentGateService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>MilestonePaymentGateServiceTest</apexClass>
@@ -947,7 +955,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>MilestoneStatusRemarkService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>MilestoneStatusRemarkServiceTest</apexClass>
@@ -959,7 +967,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>MyProfilePageController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>MyProfilePageControllerTest</apexClass>
@@ -971,7 +979,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>MyProfilePageController_Old</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>MyProfilePageController_OldTest</apexClass>
@@ -979,7 +987,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>NOCApprovalSyncService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>NOCApprovalSyncServiceTest</apexClass>
@@ -987,7 +995,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>NOCController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>NOCControllerTest</apexClass>
@@ -1003,7 +1011,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>PayloadMaskingService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>PayloadMaskingServiceTest</apexClass>
@@ -1011,7 +1019,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>PaymentScheduleEditorController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>PaymentScheduleEditorControllerTest</apexClass>
@@ -1019,7 +1027,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>PaymentScheduleGeneratorService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>PaymentScheduleGeneratorServiceTest</apexClass>
@@ -1027,7 +1035,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>PaymentScheduleMasterDefaults</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>PaymentScheduleMasterDefaultsTest</apexClass>
@@ -1035,11 +1043,11 @@
     </classAccesses>
     <classAccesses>
         <apexClass>PaymentScheduleRevisionCompareController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>PaymentScheduleRevisionService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>PaymentScheduleRevisionServiceTest</apexClass>
@@ -1055,7 +1063,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>PaymentScheduleViewController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>PaymentScheduleViewControllerTest</apexClass>
@@ -1063,7 +1071,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>PlaceholderResolver</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>PlaceholderResolverTest</apexClass>
@@ -1071,7 +1079,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>PostSalesAdminController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>PostSalesAdminControllerTest</apexClass>
@@ -1079,7 +1087,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>PostSalesConfigMasterController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>PostSalesConfigMasterControllerTest</apexClass>
@@ -1087,7 +1095,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>PostSalesConstants</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>PostSalesConstantsTest</apexClass>
@@ -1095,7 +1103,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>PostSalesJobScheduler</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>PostSalesJobSchedulerTest</apexClass>
@@ -1103,7 +1111,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ProrataDemandService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ProrataDemandServiceTest</apexClass>
@@ -1111,7 +1119,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ProrataForecastReminderService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ProrataForecastReminderServiceTest</apexClass>
@@ -1119,7 +1127,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ProrataInvariantService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ProrataInvariantServiceTest</apexClass>
@@ -1127,7 +1135,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ProrataSplitInvocable</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ProrataSplitInvocableTest</apexClass>
@@ -1163,7 +1171,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ReceiptAllocationService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ReceiptAllocationServiceTest</apexClass>
@@ -1171,7 +1179,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ReceiptApprovalGateService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ReceiptApprovalGateServiceTest</apexClass>
@@ -1191,7 +1199,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ReportConfigController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ReportConfigControllerTest</apexClass>
@@ -1199,7 +1207,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ReportDataService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ReportDataServiceTest</apexClass>
@@ -1247,7 +1255,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>SiteLoginController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>SiteLoginControllerTest</apexClass>
@@ -1259,7 +1267,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>SiteLoginController_old</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>SiteLoginController_oldTest</apexClass>
@@ -1267,7 +1275,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>SiteRegisterController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>SiteRegisterControllerTest</apexClass>
@@ -1279,7 +1287,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>SiteRegisterController_Old</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>SiteRegisterController_OldTest</apexClass>
@@ -1291,7 +1299,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>SwapQuoteService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>SwapQuoteServiceTest</apexClass>
@@ -1311,7 +1319,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>TemplateJsonStorageService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>TemplateJsonStorageServiceTest</apexClass>
@@ -1383,7 +1391,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>click2callController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>contactFormatterTest</apexClass>
@@ -1415,7 +1423,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>postSalesTestDataFactory</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>projectTriggerTest</apexClass>
@@ -5294,17 +5302,17 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.Aadhar_Number__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.Address__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.Anniverssary_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -5314,32 +5322,32 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.Booking__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.Contact_Number__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.Country__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.Date_of_Birth__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.Designation__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.Email__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -5374,32 +5382,32 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.Name_of_Company__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.Occupation__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.PAN_Number__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.Passport_Aadhar_number__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.Permenent_Address__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.Relalation_Details__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -5409,12 +5417,12 @@
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.Salutation__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
-        <editable>false</editable>
+        <editable>true</editable>
         <field>Co_Applicant__c.W_o_S_o_C_o_c__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -13005,6 +13013,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Quote__c.Club_House__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Quote__c.Common_Area_Allotted_to_Association__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -15988,59 +16001,59 @@
     </objectPermissions>
     <pageAccesses>
         <apexPage>ARJUN_SINGH_AGREEMENT_OF_SALE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>AXIS_BANK_TPA_VF_PAGE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>AnswersHome</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>BHFL_TPA_DRIZZLE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>BHFL_TPA_VF_PAGE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>BOM_TPA_VF_PAGE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>BUILDER_SHARE_AGREEMENT_OF_SALE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>BandwidthExceeded</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>BookingForm_DJV</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>BookingForm_LEGACY</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>CAPRI_CANCELLATION_LETTER</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>CAPRI_NOC_FORMAT_LOAN</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>CAPRI_NOC_FORMAT_SWAP</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>COST_SHEET_TD</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>COST_SHEET_TL</apexPage>
@@ -16048,187 +16061,187 @@
     </pageAccesses>
     <pageAccesses>
         <apexPage>ChangePassword</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>CommunitiesLanding</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>CommunitiesLogin</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>CommunitiesSelfReg</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>CommunitiesSelfRegConfirm</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>CommunitiesTemplate</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>DRIZZLE_PRICE_SHEET</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>DRIZZLE_SALE_DEED</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>DemandLetterFlat</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>DemandLetterFull</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>DemandLetterGST</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>DynamicDocumentPDF</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>Exception</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>FileNotFound</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>ForgotPassword</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>ForgotPasswordConfirm</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>HDFC_TPA_DRIZZLE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>HDFC_TPA_VF_PAGE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>INDIAN_BANK_TPA_DRIZZLE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>INDIAN_BANK_TPA_VF_PAGE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>IdeasHome</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>InMaintenance</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>MAGHAN_SINGH_AGREEMENT_OF_SALE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>MicrobatchSelfReg</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>MortgageAgreementofSaleDrizzle</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>MyProfilePage</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>NAVEEN_SINGH_AGREEMENT_OF_SALE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>NITIN_SINGH_AGREEMENT_OF_SALE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>PNB_TPA_VF_PAGE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>PaymentScheduleRevisionCompare</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>RECEIPT_FOR_FLAT</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>SBI_TPA_DRIZZLE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>SBI_TPA_VF_PAGE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>SURESH_SINGH_AGREEMENT_OF_SALE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>SaleAgreementDrizzil</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>SaleDeedDrizzle</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>SiteLogin</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>SiteRegister</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>SiteRegisterConfirm</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>SiteTemplate</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>StdExceptionTemplate</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>T11004_saledeed_Legacy</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>T8910_saledeed_Legacy</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>UNION_BANK_TPA_VF_PAGE</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>Unauthorized</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>UnderConstruction</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <recordTypeVisibilities>
         <default>false</default>

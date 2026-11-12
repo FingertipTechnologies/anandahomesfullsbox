@@ -271,6 +271,16 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
+                <fieldItem>Record.S_o_D_o_W_o__c</fieldItem>
+                <identifier>RecordS_o_D_o_W_o_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
                 <fieldItem>Record.Date_of_Birth__c</fieldItem>
                 <identifier>RecordDate_of_Birth_cField</identifier>
             </fieldInstance>
@@ -361,38 +371,16 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Record.Total_Refunded_Amount__c</fieldItem>
-                <identifier>RecordTotal_Refunded_Amount__cField</identifier>
-            </fieldInstance>
-        </itemInstances>
-        <itemInstances>
-            <fieldInstance>
-                <fieldInstanceProperties>
-                    <name>uiBehavior</name>
-                    <value>none</value>
-                </fieldInstanceProperties>
-                <fieldItem>Record.Capri_Email__c</fieldItem>
-                <identifier>RecordCapri_Email__cField</identifier>
-            </fieldInstance>
-        </itemInstances>
-        <itemInstances>
-            <fieldInstance>
-                <fieldInstanceProperties>
-                    <name>uiBehavior</name>
-                    <value>none</value>
-                </fieldInstanceProperties>
-                <fieldItem>Record.No_of_car_parking__c</fieldItem>
-                <identifier>RecordNo_of_car_parking__cField</identifier>
-            </fieldInstance>
-        </itemInstances>
-        <itemInstances>
-            <fieldInstance>
                 <fieldItem>Record.Total_Received_Flat_Amount__c</fieldItem>
                 <identifier>RecordTotal_Received_Flat_Amount__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
             <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
                 <fieldItem>Record.Balance_Flat_Amount__c</fieldItem>
                 <identifier>RecordBalance_Flat_Amount__cField</identifier>
             </fieldInstance>
@@ -469,6 +457,56 @@
                 </fieldInstanceProperties>
                 <fieldItem>Record.Correspondence_Address__c</fieldItem>
                 <identifier>RecordCorrespondence_Address_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Name_of_Company__c</fieldItem>
+                <identifier>RecordName_of_Company_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Occupation__c</fieldItem>
+                <identifier>RecordOccupation_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Total_Refunded_Amount__c</fieldItem>
+                <identifier>RecordTotal_Refunded_Amount__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Capri_Email__c</fieldItem>
+                <identifier>RecordCapri_Email__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.No_of_car_parking__c</fieldItem>
+                <identifier>RecordNo_of_car_parking__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <name>Facet-0871440d-5405-4250-80a0-1802384774e9</name>

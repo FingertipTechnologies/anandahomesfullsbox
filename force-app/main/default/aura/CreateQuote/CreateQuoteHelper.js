@@ -1,4 +1,22 @@
 ({
+    // Only the lead owner or a System Administrator may create a quote. Anyone else gets the
+    // error message and the window closes (the same rule is enforced again in Apex on save).
+    checkQuoteAccess: function(component, helper) {
+        var recordId = component.get("v.recordId");
+        if (!recordId) {
+            return;
+        }
+        var action = component.get("c.checkQuoteAccess");
+        action.setParams({ 'leadId': recordId });
+        action.setCallback(this, function(response) {
+            if (response.getState() === "SUCCESS" && response.getReturnValue()) {
+                helper.showToast(response.getReturnValue(), 'error');
+                $A.get("e.force:closeQuickAction").fire();
+            }
+        });
+        $A.enqueueAction(action);
+    },
+
     // Translate a raw platform access error into a friendly message.
     mapLeadAccessError: function(msg) {
         if (msg && /INSUFFICIENT_ACCESS_OR_READONLY|insufficient access/i.test(msg)) {

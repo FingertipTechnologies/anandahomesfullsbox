@@ -11523,6 +11523,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Quote__c.Club_House__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Quote__c.Common_Area_Allotted_to_Association__c</field>
         <readable>true</readable>
     </fieldPermissions>

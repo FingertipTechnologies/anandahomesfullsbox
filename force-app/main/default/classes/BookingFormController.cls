@@ -241,7 +241,7 @@ public with sharing class BookingFormController {
                    Plot__r.BHK_Type__c, Plot__r.Tower__c, Plot__r.Block1__r.Name,
                    Plot__r.Floor__c, Plot__r.Series__c, Plot__r.PLC__c, Quote__r.BHK_Type__c,
 
-                   salutation_Applicant1__c, First_Applicant_Name__c,
+                   salutation_Applicant1__c, Salutation__c, First_Applicant_Name__c,
                    Son_Daughter_Wife_of__c, Mobile_Primary__c, Mobile__c,
                    Email1__c, Email__c, Customer_Email__c,
                    Date_of_Birth1__c, Date_of_Birth__c, Occupation__c,
@@ -325,8 +325,10 @@ public with sharing class BookingFormController {
     }
 
     private void mapApplicant(Booking__c booking) {
+        // The Create Booking form saves the applicant's title in Salutation__c; older bookings
+        // carry it in salutation_Applicant1__c.
         applicantName = withSalutation(
-            textOf(booking, 'salutation_Applicant1__c'),
+            firstText(booking, new List<String>{ 'salutation_Applicant1__c', 'Salutation__c' }),
             textOf(booking, 'First_Applicant_Name__c')
         );
         applicantFatherName = textOf(booking, 'Son_Daughter_Wife_of__c');
@@ -505,17 +507,26 @@ public with sharing class BookingFormController {
         balanceFlatAmount = formatAmount(balanceFlat == null ? null : (balanceFlat > 0 ? balanceFlat : 0));
     }
 
-    /** Amount of the booking's first payment schedule line (lowest S No), or null when there is none. */
+    /**
+     * Amount of the booking's first payment schedule line (lowest S No), or null when there is none.
+     * The form's cell is "(INCLUDING GST)", so this is the line's full Amount (base + GST + TDS);
+     * Payment Schedule Amount is only the base part and is used when Amount is empty.
+     */
     private static Decimal firstScheduleAmount(Id bookingId) {
         List<Payment_Schedule__c> lines = [
-            SELECT Payment_Schedule_Amount__c
+            SELECT Amount__c, Payment_Schedule_Amount__c
             FROM Payment_Schedule__c
-            WHERE Booking__c = :bookingId AND Payment_Schedule_Amount__c != null
+            WHERE Booking__c = :bookingId
+              AND (Amount__c != null OR Payment_Schedule_Amount__c != null)
             ORDER BY S_No__c ASC NULLS LAST, CreatedDate ASC
             LIMIT 1
         ];
         List<SObject> readable = stripInaccessible(lines);
-        return readable.isEmpty() ? null : decimalOf(readable[0], 'Payment_Schedule_Amount__c');
+        if (readable.isEmpty()) {
+            return null;
+        }
+        Decimal full = decimalOf(readable[0], 'Amount__c');
+        return full != null ? full : decimalOf(readable[0], 'Payment_Schedule_Amount__c');
     }
 
     private void mapAcknowledgement(Booking__c booking) {

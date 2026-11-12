@@ -898,6 +898,14 @@
         <enabled>false</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>LeadStatusDateHandler</apexClass>
+        <enabled>false</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>LeadStatusDateHandlerTest</apexClass>
+        <enabled>false</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>LeadTriggerTest</apexClass>
         <enabled>false</enabled>
     </classAccesses>
@@ -13001,6 +13009,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Quote__c.Central_Court_Yard_Premium__c</field>
+        <readable>false</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Quote__c.Club_House__c</field>
         <readable>false</readable>
     </fieldPermissions>
     <fieldPermissions>

@@ -130,8 +130,32 @@
         </itemInstances>
         <itemInstances>
             <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
                 <fieldItem>Record.First_Name__c</fieldItem>
                 <identifier>RecordFirst_Name__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Occupation__c</fieldItem>
+                <identifier>RecordOccupation_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Permenent_Address__c</fieldItem>
+                <identifier>RecordPermenent_Address_cField</identifier>
             </fieldInstance>
         </itemInstances>
         <name>Facet-6291b323-5e55-4001-bd73-6c6128969e1a</name>
@@ -212,6 +236,26 @@
                 </fieldInstanceProperties>
                 <fieldItem>Record.PAN_Number__c</fieldItem>
                 <identifier>RecordPAN_Number_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Name_of_Company__c</fieldItem>
+                <identifier>RecordName_of_Company_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Address__c</fieldItem>
+                <identifier>RecordAddress_cField</identifier>
             </fieldInstance>
         </itemInstances>
         <name>Facet-842e7851-4502-4a94-9485-34b215984fdd</name>

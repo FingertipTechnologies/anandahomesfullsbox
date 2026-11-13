@@ -150,8 +150,7 @@ public with sharing class LegacySaleDeedController {
             FROM Receipt_Line_Item__c
             WHERE Booking__c = :bookingId
               AND Received_Amount__c > 0
-              AND Receipt__r.Approval_Status__c = 'Approved'
-              AND Receipt__r.Receipt_Status__c = 'Received'
+              AND Receipt__r.Approval_Status__c IN ('Approved', 'Approved by Finance Team')
             ORDER BY Receipt__r.Receipt_Date__c ASC, CreatedDate ASC
             LIMIT 200
         ];

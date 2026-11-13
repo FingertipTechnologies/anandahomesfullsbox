@@ -286,8 +286,8 @@ img { border:0; }
 <div class="ch"><span class="c4">(Vide </span><span class="c5">A.G.P.A. Registered as Document No.577 of 2025, </span><span class="c4">Book-I, dated: 10/01/2025, Registered at S.R.O. Gandipet, Ranga Reddy District, Telangana State).</span></div>
 <div class="ci"><span class="cg">Hereinafter</span><span class="c4"> called the</span><span class="c5"> (DEVELOPER/AGPA HOLDER) </span><span class="c4">which term shall mean and include their legal heirs, executors, successors, representatives&#8217; administrators and assignees etc., of the</span><span class="c5"> ONE PART.</span></div>
 <div class="ag-keep"><div class="ck"><span class="cj">IN FAVOUR OF</span></div>
-<div class="cl ag-tight">&#160;</div></div>
-<apex:repeat value="{!allApplicants}" var="applicant"><div class="cn">{!applicant.sequence}.<span class="cm"></span><span class="c7">{!applicant.deedNameLine}</span><span class="c6">{!applicant.deedDetails}</span><span class="c7">{!applicant.deedIds}</span></div></apex:repeat>
+<div class="cl ag-tight">&#160;</div>
+<apex:repeat value="{!allApplicants}" var="applicant"><div class="cn">{!applicant.sequence}.<span class="cm"></span><span class="c7">{!applicant.deedNameLine}</span><span class="c6">{!applicant.deedDetails}</span><span class="c7">{!applicant.deedIds}</span></div></apex:repeat></div>
 <div class="co ag-tight">&#160;</div>
 <apex:outputPanel layout="none" rendered="{!NOT(hasApplicants)}">Applicant information is missing.</apex:outputPanel>
 <div class="cp"><span class="cg">Hereinafter</span><span class="c4"> called the </span><span class="c5">&#8220;VENDEE(S)/</span><span class="c4"> </span><span class="c5">ALLOTTEE</span><span class="c4"> </span><span class="c5">/</span><span class="c4"> </span><span class="c5">PURCHASE&#8221;</span><span class="c4">, which term shall mean and include all his/her heirs, executors, administrators, legal representatives, nominees and assignees etc., of the </span><span class="c5">OTHER PART</span><span class="c4">.</span></div>

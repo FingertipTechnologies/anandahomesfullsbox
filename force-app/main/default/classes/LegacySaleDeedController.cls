@@ -1,19 +1,54 @@
 public with sharing class LegacySaleDeedController {
+    /**
+     * One approved receipt of the booking, as the deed lists it:
+     * "a. Rs. 50,000/- paid through NEFT vide Reference No. 4227..., Dated: 14/08/2024."
+     * The money, method, reference and date live on the Receipt itself; its Receipt Line Items are
+     * allocations to the payment schedule and carry no amounts (user, 2026-11-13).
+     */
     public class PaymentEntry {
-        public Receipt_Line_Item__c lineItem { get; private set; }
+        public Receipt__c receipt { get; private set; }
+        /** "94,55,900" - Indian grouping, no decimals. */
+        public String amountDisplay { get; private set; }
+        /** NEFT / RTGS / Cheque / UPI ... */
+        public String mode { get; private set; }
+        /** Transaction reference, else cheque / transaction number, else cheque number. */
+        public String reference { get; private set; }
         public Date paymentDate { get; private set; }
         public String sequenceLabel { get; private set; }
 
-        private PaymentEntry(Receipt_Line_Item__c source, Integer index) {
-            lineItem = source;
-            paymentDate = source.Cheque_Date__c != null
-                ? source.Cheque_Date__c
-                : source.Receipt__r.Receipt_Date__c;
+        private PaymentEntry(Receipt__c source, Integer index) {
+            receipt = source;
+            amountDisplay = indianNumber(source.Amount_received__c);
+            mode = String.isNotBlank(source.Payment_Method__c) ? source.Payment_Method__c : source.Mode_of_payment__c;
+            reference = String.isNotBlank(source.Transaction_Reference__c) ? source.Transaction_Reference__c
+                : String.isNotBlank(source.Check_Transaction_Nmber__c) ? source.Check_Transaction_Nmber__c
+                : source.Cheque_Number__c;
+            paymentDate = source.Cheque_Date__c != null ? source.Cheque_Date__c : source.Receipt_Date__c;
             String alphabet = 'abcdefghijklmnopqrstuvwxyz';
             sequenceLabel = index < alphabet.length()
                 ? alphabet.substring(index, index + 1)
                 : String.valueOf(index + 1);
         }
+    }
+
+    /** 9455900 -> "94,55,900" (Indian digit grouping, rounded to the rupee). */
+    @TestVisible
+    private static String indianNumber(Decimal value) {
+        if (value == null) {
+            return '';
+        }
+        String digits = value.setScale(0, System.RoundingMode.HALF_UP).abs().toPlainString();
+        if (digits.length() > 3) {
+            String last3 = digits.substring(digits.length() - 3);
+            String rest = digits.substring(0, digits.length() - 3);
+            String grouped = '';
+            while (rest.length() > 2) {
+                grouped = ',' + rest.substring(rest.length() - 2) + grouped;
+                rest = rest.substring(0, rest.length() - 2);
+            }
+            digits = rest + grouped + ',' + last3;
+        }
+        return (value < 0 ? '-' : '') + digits;
     }
 
     public List<PaymentEntry> paymentEntries { get; private set; }
@@ -143,25 +178,28 @@ public with sharing class LegacySaleDeedController {
         }
 
         Id bookingId = standardController.getId();
-        List<Receipt_Line_Item__c> receiptLines = [
-            SELECT Id, Received_Amount__c, TDS_Amount__c, Mode_of_Payment__c,
-                   Cheque_no_Transaction_Number__c, Cheque_Date__c,
-                   Receipt__r.Receipt_Date__c
-            FROM Receipt_Line_Item__c
+        // Approved receipts towards the sale consideration (GST and additional-charge receipts are not
+        // part of the consideration and are left out, as in the Agreement of Sale pages).
+        List<Receipt__c> receipts = [
+            SELECT Id, Amount_received__c, TDS_Deducted__c, Payment_Method__c, Mode_of_payment__c,
+                   Transaction_Reference__c, Check_Transaction_Nmber__c, Cheque_Number__c,
+                   Cheque_Date__c, Receipt_Date__c, Receipt_Type__c
+            FROM Receipt__c
             WHERE Booking__c = :bookingId
-              AND Received_Amount__c > 0
-              AND Receipt__r.Approval_Status__c IN ('Approved', 'Approved by Finance Team')
-            ORDER BY Receipt__r.Receipt_Date__c ASC, CreatedDate ASC
+              AND Amount_received__c > 0
+              AND Approval_Status__c IN ('Approved', 'Approved by Finance Team')
+              AND (Receipt_Type__c = null OR Receipt_Type__c NOT IN ('GST Amount', 'Additional Charge'))
+            ORDER BY Receipt_Date__c ASC, CreatedDate ASC
             LIMIT 200
         ];
 
         Integer index = 0;
-        for (Receipt_Line_Item__c receiptLine : receiptLines) {
-            paymentEntries.add(new PaymentEntry(receiptLine, index));
+        for (Receipt__c receipt : receipts) {
+            paymentEntries.add(new PaymentEntry(receipt, index));
             index++;
-            totalTdsAmount += receiptLine.TDS_Amount__c == null
+            totalTdsAmount += receipt.TDS_Deducted__c == null
                 ? 0
-                : receiptLine.TDS_Amount__c;
+                : receipt.TDS_Deducted__c;
         }
     }
 }

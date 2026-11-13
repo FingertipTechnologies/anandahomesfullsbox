@@ -32,6 +32,9 @@ private class LegacySaleDeedControllerTest {
             Receipt_Date__c = Date.newInstance(2026, 10, 10),
             Receipt_Type__c = 'Installment Payment',
             Payment_Method__c = 'Cheque',
+            Cheque_Number__c = 'CHQ-100',
+            Cheque_Date__c = Date.newInstance(2026, 10, 9),
+            TDS_Deducted__c = 500,
             Approval_Status__c = 'Approved',
             Receipt_Status__c = 'Received'
         );
@@ -68,7 +71,11 @@ private class LegacySaleDeedControllerTest {
 
         System.assertEquals(1, controller.paymentEntries.size());
         System.assertEquals('a', controller.paymentEntries[0].sequenceLabel);
-        System.assertEquals(approvedLine.Id, controller.paymentEntries[0].lineItem.Id);
+        System.assertEquals(approvedReceipt.Id, controller.paymentEntries[0].receipt.Id);
+        System.assertEquals('50,000', controller.paymentEntries[0].amountDisplay);
+        System.assertEquals('Cheque', controller.paymentEntries[0].mode);
+        System.assertEquals('CHQ-100', controller.paymentEntries[0].reference);
+        System.assertEquals('94,55,900', LegacySaleDeedController.indianNumber(9455900));
         System.assertEquals(
             Date.newInstance(2026, 10, 9),
             controller.paymentEntries[0].paymentDate,

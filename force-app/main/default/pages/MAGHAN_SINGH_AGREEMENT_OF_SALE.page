@@ -332,7 +332,7 @@ img { border:0; }
 <div class="cx"><span class="c5">During pending of the appeal Dhan Singh, Satyanarayana Singh and Ramesh Singh were died and their legal heirs have brought on record and thereafter due to the intervention of the family elders and well-wishers the matter has been settled between the parties amicably and accordingly all the parties entered into a memorandum of compromise dated 14-08-2020 and the same has been filed in A.S.No.552 of 2009 before the Hon&#8217;ble High Court of Telangana and after recording the compromise the Hon&#8217;ble High Court pleased to disposed the appeal in terms of the compromise vide orders dated 23-09-2020.</span></div>
 <div class="cx"><span class="c5">&#160; &#160; &#160; &#160; &#160; &#160;WHEREAS late Satyanarayana Singh during the pending of the partition suit vide O.S.No.473 of 2000 entered into a registered deed of exchange vide doc.no.9130 of 2004 dated 29-11-2004 with Mr.B.Vijay and four others, who are the owners of the land in Sy.No.128/1, admeasuring Ac.1 : 02 guntas, situated at Puppalguda Village, Rajendra Nagar Mandal, presently in Gandipet Mandal, Ranga Reddy District, purchased the said land in the Auction conducted by the Government vide proceedings no.LC2/7279/2003 dated 20-09-2003. In the said exchange deed late Satyanarayana Singh had exchanged the land by giving the land admeasuring Ac.00 : 15.5 guntas, out of his share of land admeasuring Ac.00 : 18 guntas in Sy.No.127, situated at Puppalguda Village, Rajendra Nagar Mandal, presently in Gandipet Mandal, Ranga Reddy District, by taking the land admeasuring Ac.00 : 15.5 guntas, out of Ac.01:02 guntas, in Sy.No.128/1, situated at Puppalguda Village, Gandipet Mandal, Ranga Reddy District with the distinct boundaries.</span></div>
 <div class="c9"><span class="c5">WHEREAS late Satyanarayana Singh also entered into another deed of exchange vide Doc.No.57 of 2006 dated 02-01-2006 with one K.Rama Krishna Reddy S/o. K.Ram Reddy by exchanging the land by giving 597 Sq.yards of land in Sy.No.127, 129 and 130 situated at Puppalguda Village, Rajendra Nagar Mandal, presently in Gandipet Mandal, Ranga Reddy District by taking the land admeasuring 600 Sq.yards, in Sy.No.128/3, situated at Puppalguda Village, Gandipet Mandal, Ranga Reddy District with the distinct boundaries.</span></div>
-<div class="c9"><span class="c5">The Total extent of land is as follows.</span></div>
+<div class="ag-keep" style="page-break-before:always"><div class="c9"><span class="c5">The Total extent of land is as follows.</span></div>
 <div style="page-break-inside:avoid"><table class="cy">
 <colgroup>
 <col style="width:53.7pt"/>
@@ -404,7 +404,7 @@ img { border:0; }
 <td class="c15"><div class="c10"><span class="c6">Total Extent</span></div></td>
 <td class="c15"><div class="c10"><span class="c6">Ac.21 : 19 Gts</span></div></td>
 </tr>
-</table></div>
+</table></div></div>
 <div class="cx">&#160;</div>
 <div class="cx"><span class="c5">&#160; &#160; &#160; &#160; &#160;WHEREAS in the compromise entered by the parties in A.S.No.552 of 2009, the Vendor NO.1 along with his brothers Ravi Singh, Sardar Singh and Rajkumar Singh herein got the land admeasuring Ac.11: 30 guntas out of the total extent of land admeasuring Ac.21: 19 guntas, in Sy. 127, 129, 130, 133, 134, 145, 147, 148 &amp; 149 situated at Puppalguda Village, in Gandipet Mandal Ranga Reddy District. </span></div>
 <div class="c9"><span class="c5">WHEREAS in view of the compromise between the parties in the appeal suit vide A.S.No.552 of 2009 before the Hon&#8217;ble High Court and as per the Memorandum of Understanding-cum-Family Settlement deed dated 17-08-2020 entered between the parties for division of lands by dividing the survey numbers and its extent of the land by all the shareholders.</span></div>
@@ -545,18 +545,12 @@ img { border:0; }
 </colgroup>
 <tr class="c1w">
 <td class="c1x"><div class="c10"><span class="c6">S. No</span></div></td><td class="c1y"><div class="c10"><span class="c6">TOWER</span></div></td><td class="c1y"><div class="c10"><span class="c6">FLOOR</span></div></td><td class="c1y"><div class="c10"><span class="c6">FLAT NO.</span></div></td><td class="c1y"><div class="c10"><span class="c6">SFT</span></div></td><td class="c1y"><div class="c10"><span class="c6">FACING</span></div></td>
-</tr></table></div>
+</tr>
 <apex:outputPanel layout="none" rendered="{!hasSelectedUnit}">
-<div style="page-break-inside:avoid;margin-top:-0.5pt"><table class="c1v"><colgroup>
-<col style="width:38.52pt"/><col style="width:74.78pt"/><col style="width:86.67pt"/><col style="width:65pt"/><col style="width:78pt"/><col style="width:108.34pt"/>
-</colgroup>
 <tr class="c20">
 <td class="c1x"><div class="c10"><span class="c5">1</span></div></td><td class="c21"><div class="c10"><span class="c5">{!selectedTowerName}</span></div></td><td class="c21"><div class="c10"><span class="c5">{!selectedFloorDisplay}</span></div></td><td class="c21"><div class="c10"><span class="c5">{!selectedFlatNumber}</span></div></td><td class="c21"><div class="c10"><span class="c5"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText></span></div></td><td class="c22"><div class="c10"><span class="c5">{!selectedFacingDisplay}</span></div></td>
-</tr></table></div>
+</tr>
 </apex:outputPanel>
-<div style="page-break-inside:avoid;margin-top:-0.5pt"><table class="c1v"><colgroup>
-<col style="width:38.52pt"/><col style="width:74.78pt"/><col style="width:86.67pt"/><col style="width:65pt"/><col style="width:78pt"/><col style="width:108.34pt"/>
-</colgroup>
 <tr class="c20"><td class="c1x"><div class="c10">&#160;</div></td><td class="c22"><div class="c10">&#160;</div></td><td class="c21"><div class="c10">&#160;</div></td><td class="c21"><div class="c10"><span class="c6">Total</span></div></td><td class="c21"><div class="c10"><span class="c6"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Saleable_Area_Sft__c}"/></apex:outputText></span></div></td><td class="c22"><div class="c10">&#160;</div></td></tr>
 </table></div>
 <div class="c23">&#160;</div>

@@ -181,6 +181,7 @@ private class DynamicDocumentRendererTest {
                     'type' => 'content',
                     'content' => 'Borrowers: {!CO_APPLICANTS}<p>Co-applicant names: {!CO_APPLICANT_NAMES}</p>'
                         + '<p>Joint: First Applicant{!AND_CO_APPLICANT_NAMES}|</p>'
+                        + '<p>Joint relation: First Applicant S/o. Father{!AND_CO_APPLICANT_NAMES_RELATION}|</p>'
                 }
             }
         });
@@ -199,6 +200,8 @@ private class DynamicDocumentRendererTest {
         System.assert(html.contains('<span style="display:block;text-indent:0;font-weight:bold">(Aadhaar No. 123412341234'), html);
         // "&" only before the last name
         System.assert(html.contains('Joint: First Applicant, Mrs. Co Applicant &amp; Mr. Second Co Applicant|'), html);
+        // names with their relation, for "Mr. A S/o. X &amp; Mrs. B W/o. Y" lines
+        System.assert(html.contains('Joint relation: First Applicant S/o. Father, Mrs. Co Applicant W/o. Applicant Spouse &amp; Mr. Second Co Applicant S/o. Second Father|'), html);
         System.assert(html.contains('aged about 32 years'));
         System.assert(html.contains('Occupation: Engineer'));
         // own address when filled, the booking's address for the co-applicant without one

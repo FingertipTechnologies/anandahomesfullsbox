@@ -781,34 +781,51 @@ public with sharing class DynamicDocumentRenderer {
     /**
      * {!AND_CO_APPLICANT_NAMES} continues the first applicant's name: nothing when there is no
      * co-applicant, " &amp; B" for one, ", B, C &amp; D" for several ("&" only before the last name).
+     * {!AND_CO_APPLICANT_NAMES_RELATION} does the same with each co-applicant's relation after the
+     * name (" &amp; Mrs. B W/o. C"), for lines such as "Mr. A S/o. X &amp; Mrs. B W/o. Y" (2026-11-13).
      */
     private static String resolveAndCoApplicantNames(
         String content, SObject record, String objectApiName
     ) {
         if (String.isBlank(content) || record == null
             || !'Booking__c'.equalsIgnoreCase(objectApiName)
-            || !content.contains('{!AND_CO_APPLICANT_NAMES}')) {
+            || !(content.contains('{!AND_CO_APPLICANT_NAMES}')
+                 || content.contains('{!AND_CO_APPLICANT_NAMES_RELATION}'))) {
             return content;
         }
 
         List<String> names = new List<String>();
+        List<String> namesWithRelation = new List<String>();
         for (Co_Applicant__c applicant : [
-            SELECT Salutation__c, Full_Name__c
+            SELECT Salutation__c, Full_Name__c, S_o_D_o_W_o__c, Relalation_Details__c, W_o_S_o_C_o_c__c
             FROM Co_Applicant__c
             WHERE Booking__c = :record.Id
             ORDER BY CreatedDate ASC
         ]) {
             String name = coApplicantDisplayName(applicant);
-            if (String.isNotBlank(name)) {
-                names.add(name);
+            if (String.isBlank(name)) {
+                continue;
             }
+            names.add(name);
+            String relationType = String.isNotBlank(applicant.S_o_D_o_W_o__c)
+                ? applicant.S_o_D_o_W_o__c : applicant.Relalation_Details__c;
+            namesWithRelation.add(String.isNotBlank(applicant.W_o_S_o_C_o_c__c)
+                ? name + ' ' + joinDisplayValues(withFullStop(relationType), applicant.W_o_S_o_C_o_c__c)
+                : name);
         }
 
+        return content
+            .replace('{!AND_CO_APPLICANT_NAMES_RELATION}', joinWithAmpersand(namesWithRelation))
+            .replace('{!AND_CO_APPLICANT_NAMES}', joinWithAmpersand(names));
+    }
+
+    /** ", B, C &amp; D": a comma before every name but the last, which gets " &amp; ". */
+    private static String joinWithAmpersand(List<String> names) {
         String joined = '';
         for (Integer i = 0; i < names.size(); i++) {
             joined += (i == names.size() - 1 ? ' &amp; ' : ', ') + names[i];
         }
-        return content.replace('{!AND_CO_APPLICANT_NAMES}', joined);
+        return joined;
     }
 
     private static String coApplicantDisplayName(Co_Applicant__c applicant) {

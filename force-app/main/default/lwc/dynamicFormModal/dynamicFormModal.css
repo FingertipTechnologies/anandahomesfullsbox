@@ -408,3 +408,66 @@
         grid-template-columns: 1fr;
     }
 }
+/* ========================================
+   FORM GRID (component-owned two-column layout)
+   Sections and child cards use this instead of the shared SLDS grid classes,
+   so the form always opens in two columns.
+   ======================================== */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem 1.5rem;
+    box-sizing: border-box;
+    padding: 1.25rem;
+}
+
+.form-grid_1 {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.form-col {
+    min-width: 0;
+}
+
+.form-col_full {
+    grid-column: 1 / -1;
+}
+
+/* Child records: one card per record */
+.child-cards {
+    padding: 1.25rem 1.25rem 0.25rem;
+}
+
+.child-card {
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    background: #ffffff;
+    margin-bottom: 1rem;
+    overflow: hidden;
+}
+
+.child-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    background: #fafaf9;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.child-card-title {
+    font-weight: 700;
+    font-size: 0.8125rem;
+    color: #181818;
+}
+
+.child-card-grid {
+    padding: 1rem;
+}
+
+/* Phones only: a single column */
+@media (max-width: 480px) {
+    .form-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

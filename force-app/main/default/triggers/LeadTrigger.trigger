@@ -133,7 +133,9 @@ trigger LeadTrigger on Lead__c (before insert, after insert, before update, afte
                 } */
                 if (Trigger.isUpdate) {
                     system.debug('on update');
-                    
+                    // Stamp Status_Change_Date__c when Lead_Status__c changes (home page "Lead's For The Day")
+                    LeadStatusDateHandler.stampStatusChange(Trigger.new, Trigger.oldMap);
+
                     List<Lead__c> preSalesLdList = new List<Lead__c>();
                     List<Lead__c> salesLdList = new List<Lead__c>();
                     Set<String> keySet = new Set<String>();

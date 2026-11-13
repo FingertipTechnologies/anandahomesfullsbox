@@ -8,10 +8,10 @@
     contentType="application/pdf#DrizzleJVBookingForm.pdf">
 <!--
     THE DRIZZLE JV - Booking Form (PDF)
-    Layout follows "DJV BOOKING FORM 26 May 2025.pdf".
-    Dynamic values come from BookingFormController (same controller and
-    properties as BookingForm_LEGACY); page parameter "id" = Booking__c Id.
-    Lines with no controller property are left blank for handwriting.
+    Layout follows "DJV BOOKING FORM 26 May 2025.pdf": logos of Ananda Homes, The Drizzle and Prosper in
+    the header and Bay Hills, The Ozone Heights and Poetree in the footer of every page.
+    Dynamic values come from BookingFormController (shared with BookingForm_LEGACY); page parameter
+    "id" = Booking__c Id. Flat details come from the booked Unit (Floor, BHK Type, Series, PLC).
 -->
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -19,7 +19,9 @@
 
 @page {
     size: A4 portrait;
-    margin: 9mm 10mm 10mm 10mm;
+    margin: 34mm 10mm 30mm 10mm;
+    @top-center { content: element(pageHeader); }
+    @bottom-center { content: element(pageFooter); }
 }
 
 body {
@@ -39,24 +41,45 @@ body {
     page-break-after: auto;
 }
 
-/* HEADER */
+/* HEADER / FOOTER (printed on every page) */
 
-.header-table {
+#pageHeader {
+    position: running(pageHeader);
+    width: 190mm;
+}
+
+#pageFooter {
+    position: running(pageFooter);
+    width: 190mm;
+}
+
+.logo-table {
     width: 100%;
     border-collapse: collapse;
-    border-bottom: 1.2pt solid #E0E0E0;
-    margin-bottom: 4mm;
 }
 
-.header-table td {
-    padding: 0 0 2.5mm 0;
+.logo-table td {
+    width: 33%;
     text-align: center;
+    vertical-align: middle;
+    padding: 0 2mm;
 }
 
-.header-image {
-    width: 170mm;
-    height: auto;
-    display: inline-block;
+.logo-table td.left { text-align: left; }
+.logo-table td.right { text-align: right; }
+
+.logo-table img.hdr { height: 18mm; width: auto; }
+.logo-table img.hdr-wide { height: 14mm; width: auto; }
+.logo-table img.ftr { height: 14mm; width: auto; }
+
+.header-rule {
+    border-bottom: 1.2pt solid #E0E0E0;
+    margin-top: 2mm;
+}
+
+.footer-rule {
+    border-top: 1.2pt solid #E0E0E0;
+    margin-bottom: 2mm;
 }
 
 /* TITLES */
@@ -67,7 +90,7 @@ body {
     font-weight: bold;
     color: #1A237E;
     text-decoration: underline;
-    margin: 2mm 0 4mm 0;
+    margin: 0 0 4mm 0;
 }
 
 .sub-title {
@@ -233,21 +256,33 @@ body {
 
 <body>
 
+<!-- Header and footer logos, repeated by the PDF renderer on every page -->
+<div id="pageHeader">
+    <table class="logo-table">
+        <tr>
+            <td class="left"><apex:image styleClass="hdr" url="{!$Resource.Ananda_Home_New_Logo}" alt="Ananda Homes"/></td>
+            <td><apex:image styleClass="hdr" url="{!$Resource.Drizzle_Logo}" alt="The Drizzle - Live Amazing @Narsingi"/></td>
+            <td class="right"><apex:image styleClass="hdr-wide" url="{!$Resource.Prosper_Logo}" alt="Prosper - Together with Innovation"/></td>
+        </tr>
+    </table>
+    <div class="header-rule"></div>
+</div>
+<div id="pageFooter">
+    <div class="footer-rule"></div>
+    <table class="logo-table">
+        <tr>
+            <td class="left"><apex:image styleClass="ftr" url="{!$Resource.Bay_Hills_Logo}" alt="Bay Hills"/></td>
+            <td><apex:image styleClass="ftr" url="{!$Resource.Ozone_Logo}" alt="The Ozone Heights"/></td>
+            <td class="right"><apex:image styleClass="ftr" url="{!$Resource.Poetree_Logo}" alt="Poetree"/></td>
+        </tr>
+    </table>
+</div>
+
 <!-- ===================================== -->
 <!-- PAGE 1 - FLAT DETAILS AND APPLICANT   -->
 <!-- ===================================== -->
 
 <div class="page">
-
-    <table class="header-table">
-        <tr>
-            <td>
-                <apex:image styleClass="header-image"
-                            url="{!$Resource.LOGO_PRICE_SHEET}"
-                            alt="The Drizzle - Ananda Homes - Prosper"/>
-            </td>
-        </tr>
-    </table>
 
     <apex:outputPanel layout="block"
                       styleClass="error-banner"
@@ -276,15 +311,15 @@ body {
         </tr>
         <tr class="row-tall">
             <td class="label-cell">FLOOR</td>
-            <td class="value-cell">&#160;</td>
+            <td class="value-cell"><apex:outputText value="{!floorName}"/>&#160;</td>
             <td class="label-cell">FLAT TYPE</td>
             <td class="value-cell"><apex:outputText value="{!flatConfiguration}"/>&#160;</td>
         </tr>
         <tr class="row-tall">
             <td class="label-cell">SERIES</td>
-            <td class="value-cell">&#160;</td>
+            <td class="value-cell"><apex:outputText value="{!seriesName}"/>&#160;</td>
             <td class="label-cell">PLCs</td>
-            <td class="value-cell">&#160;</td>
+            <td class="value-cell"><apex:outputText value="{!plcName}"/>&#160;</td>
         </tr>
     </table>
 
@@ -324,7 +359,7 @@ body {
         </tr>
         <tr class="row-tall">
             <td class="label-cell">COMPANY DETAILS</td>
-            <td class="value-cell">&#160;</td>
+            <td class="value-cell"><apex:outputText value="{!applicantCompany}"/>&#160;</td>
         </tr>
         <tr class="row-tall">
             <td class="label-cell">AADHAR CARD NO.</td>
@@ -337,7 +372,7 @@ body {
     </table>
 
     <!-- Signature -->
-    <table class="signature-table" style="margin-top:22mm;">
+    <table class="signature-table" style="margin-top:14mm;">
         <tr>
             <td class="signature-label">SIGNATURE OF PURCHASER</td>
             <td class="signature-label">SIGNATURE (For THE DRIZZLE JV)</td>
@@ -365,16 +400,6 @@ body {
 <apex:repeat value="{!coApplicantPages}" var="pg">
 
     <div class="page">
-
-        <table class="header-table">
-            <tr>
-                <td>
-                    <apex:image styleClass="header-image"
-                                url="{!$Resource.LOGO_PRICE_SHEET}"
-                                alt="The Drizzle - Ananda Homes - Prosper"/>
-                </td>
-            </tr>
-        </table>
 
         <!-- One section per co-applicant on this page -->
         <apex:repeat value="{!pg.coApplicants}" var="co">
@@ -415,7 +440,7 @@ body {
                 </tr>
                 <tr class="row-tall">
                     <td class="label-cell">COMPANY DETAILS</td>
-                    <td class="value-cell">&#160;</td>
+                    <td class="value-cell"><apex:outputText value="{!co.company}"/>&#160;</td>
                 </tr>
                 <tr class="row-tall">
                     <td class="label-cell">AADHAR CARD NO.</td>
@@ -446,11 +471,11 @@ body {
                 <tr class="row-tall">
                     <td class="value-cell" style="text-align:center;"><apex:outputText value="{!finalPrice}"/>&#160;</td>
                     <td class="value-cell" style="text-align:center;"><apex:outputText value="{!gstPayable}"/>&#160;</td>
-                    <td class="value-cell" style="text-align:center;">&#160;</td>
+                    <td class="value-cell" style="text-align:center;"><apex:outputText value="{!totalCost}"/>&#160;</td>
                 </tr>
                 <tr class="row-tall">
                     <td class="label-cell">FLAT BOOKING AMOUNT PAYABLE<br/>(INCLUDING GST)</td>
-                    <td class="value-cell" colspan="2"><apex:outputText value="{!bookingAmountPayable}"/>&#160;</td>
+                    <td class="value-cell" colspan="2"><apex:outputText value="{!flatBookingAmountPayable}"/>&#160;</td>
                 </tr>
                 <tr class="row-tall">
                     <td class="label-cell">INITIAL BOOKING AMOUNT PAID</td>
@@ -458,7 +483,7 @@ body {
                 </tr>
                 <tr class="row-tall">
                     <td class="label-cell">BALANCE FLAT AMOUNT PAYABLE<br/>(INCLUDING 1% TDS)</td>
-                    <td class="value-cell" colspan="2">&#160;</td>
+                    <td class="value-cell" colspan="2"><apex:outputText value="{!balanceFlatAmount}"/>&#160;</td>
                 </tr>
             </table>
 
@@ -479,7 +504,7 @@ body {
                 </tr>
                 <tr class="row-tall">
                     <td class="label-cell">IF LOAN AVAILED - NAME OF THE BANK</td>
-                    <td class="value-cell">&#160;</td>
+                    <td class="value-cell"><apex:outputText value="{!loanBankName}"/>&#160;</td>
                 </tr>
                 <tr class="row-tall">
                     <td class="label-cell">LOAN AMOUNT (Rs.)</td>
@@ -488,7 +513,7 @@ body {
             </table>
 
             <!-- Signature -->
-            <table class="signature-table" style="margin-top:14mm;">
+            <table class="signature-table" style="margin-top:10mm;">
                 <tr>
                     <td class="signature-label">SIGNATURE OF PURCHASER</td>
                     <td class="signature-label">SIGNATURE (For THE DRIZZLE JV)</td>
@@ -515,16 +540,6 @@ body {
 <!-- ===================================== -->
 
 <div class="page">
-
-    <table class="header-table">
-        <tr>
-            <td>
-                <apex:image styleClass="header-image"
-                            url="{!$Resource.LOGO_PRICE_SHEET}"
-                            alt="The Drizzle - Ananda Homes - Prosper"/>
-            </td>
-        </tr>
-    </table>
 
     <div class="page-title">TERMS &amp; CONDITIONS</div>
 
@@ -564,7 +579,7 @@ body {
     </table>
 
     <!-- Signature -->
-    <table class="signature-table" style="margin-top:150mm;">
+    <table class="signature-table" style="margin-top:120mm;">
         <tr>
             <td class="signature-label">SIGNATURE OF PURCHASER</td>
             <td class="signature-label">SIGNATURE (For THE DRIZZLE JV)</td>
@@ -587,16 +602,6 @@ body {
 <!-- ===================================== -->
 
 <div class="page page-last">
-
-    <table class="header-table">
-        <tr>
-            <td>
-                <apex:image styleClass="header-image"
-                            url="{!$Resource.LOGO_PRICE_SHEET}"
-                            alt="The Drizzle - Ananda Homes - Prosper"/>
-            </td>
-        </tr>
-    </table>
 
     <div class="page-title">ANNEXURE</div>
     <div class="sub-title">TO WHOMSOEVER IT MAY CONCERN</div>
@@ -650,7 +655,7 @@ body {
     <div class="note-text">NOTE: Listed above are applicable for all our on-going and upcoming projects</div>
 
     <!-- Signature -->
-    <table class="signature-table" style="margin-top:95mm;">
+    <table class="signature-table" style="margin-top:70mm;">
         <tr>
             <td class="signature-label">SIGNATURE OF PURCHASER</td>
             <td class="signature-label">SIGNATURE (For THE DRIZZLE JV)</td>

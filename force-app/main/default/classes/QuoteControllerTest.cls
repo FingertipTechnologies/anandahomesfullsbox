@@ -146,6 +146,43 @@ public class QuoteControllerTest {
     }
 
     /**
+     * Covers Project1__r.Name == 'The Drizzle' branch (pref = Page.COST_SHEET_TD):
+     * the Drizzle cost sheet is mailed the same way as the Legacey one.
+     */
+    @isTest
+    static void testSendEmailtoCustomer_TheDrizzle_WithEmail() {
+        Project__c drizzleProj = new Project__c(
+            Name = 'The Drizzle',
+            Project_Type__c = 'Residential'
+        );
+        insert drizzleProj;
+
+        Lead__c cLeadRec = new Lead__c(
+            Name__c = 'Drizzle Customer',
+            Phone__c = '9112233800',
+            Email__c = 'drizzle@example.com'
+        );
+        insert cLeadRec;
+
+        Quote__c q = new Quote__c(
+            Quote_status__c = 'Approved',
+            Approval_status__c = 'Approved',
+            CLead__c = cLeadRec.Id,
+            Project1__c = drizzleProj.Id,
+            payment_type__c = 'Standard'
+        );
+        insert q;
+
+        Test.startTest();
+        String ret = QuoteController.sendEmailtoCustomer(q.Id, '<p>Hello Drizzle</p>', null);
+        Integer emailsSent = Limits.getEmailInvocations();
+        Test.stopTest();
+
+        System.assertEquals('Quotation sent to customer', ret);
+        System.assertEquals(1, emailsSent, 'The Drizzle cost sheet email should be sent');
+    }
+
+    /**
      * Covers 'The Legacey' branch with no email address on lead →
      * sendTo.size() == 0 → returns 'Please enter email address in lead'.
      */

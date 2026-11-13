@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Survey_Number__c</fullName>
+    <description>Survey numbers of the land on which the tower is built, e.g. "128/P, 129, 130/P, 145, 147, 147/P, 148 and 149". Printed after "Survey Nos." in the Sale Deed flat description.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Survey numbers printed after "Survey Nos." in the Sale Deed, e.g. 128/P, 129, 130/P, 145, 147, 147/P, 148 and 149</inlineHelpText>
+    <label>Survey Number</label>
+    <length>255</length>
+    <required>false</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

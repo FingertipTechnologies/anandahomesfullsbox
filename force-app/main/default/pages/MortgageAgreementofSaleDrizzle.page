@@ -1,4 +1,4 @@
-<apex:page standardController="Booking__c" extensions="BookingAgreementController" renderAs="pdf" showHeader="false" sidebar="false" standardStylesheets="false" applyHtmlTag="false" applyBodyTag="false">
+<apex:page standardController="Booking__c" extensions="AgreementOfSaleController" renderAs="pdf" showHeader="false" sidebar="false" standardStylesheets="false" applyHtmlTag="false" applyBodyTag="false">
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
@@ -106,8 +106,8 @@ img { border:0; }
 .c2d{text-align:justify;padding-left:36pt;text-indent:-18pt}
 .c2e{text-align:justify;padding-left:36pt}
 .c2f{text-align:justify;padding-left:21.3pt}
-.c2g{font-weight:bold;background-color:#FFFF00}
-.c2h{background-color:#FFFF00}
+.c2g{font-weight:bold;}
+.c2h{}
 .c2i{padding-left:21.3pt}
 .c2j{display:inline-block;width:36pt}
 .c2k{text-align:justify;white-space:nowrap}
@@ -198,12 +198,12 @@ img { border:0; }
 .c4x{border-collapse:collapse;table-layout:fixed;width:308.5pt;margin-left:102.6pt}
 .c4y{height:11.45pt}
 .c4z{border-top:0.5pt solid #000;border-right:0.5pt solid #000;border-bottom:0.5pt solid #000;border-left:0.5pt solid #000;padding:0 5.4pt 0 5.4pt;vertical-align:top}
-.c50{font-size:9.57pt;font-family:Arial, Helvetica, sans-serif;background-color:#FFFF00}
+.c50{font-size:9.57pt;font-family:Arial, Helvetica, sans-serif;}
 .c51{text-align:center;font-size:9.57pt;font-family:Arial, Helvetica, sans-serif}
 .c52{border-top:0.5pt solid #000;border-right:0.5pt solid #000;border-bottom:0.5pt solid #000;border-left:0.5pt solid #000;padding:0 5.4pt 0 5.4pt;vertical-align:middle}
 .c53{height:2.85pt}
 .c54{font-weight:bold;font-size:9.57pt;font-family:Arial, Helvetica, sans-serif}
-.c55{font-weight:bold;font-size:9.57pt;font-family:Arial, Helvetica, sans-serif;background-color:#FFFF00}
+.c55{font-weight:bold;font-size:9.57pt;font-family:Arial, Helvetica, sans-serif;}
 .c56{text-align:justify;padding-left:56.5pt;font-size:6.65pt}
 .c57{text-align:justify;padding-left:56.5pt;text-indent:15.5pt;font-size:3.8pt}
 .c58{text-align:justify;font-size:0.95pt}
@@ -212,8 +212,8 @@ img { border:0; }
 .c5b{font-size:0.95pt}
 .c5c{font-size:3.8pt}
 .c5d{font-weight:bold;font-size:9.97pt}
-.c5e{font-weight:bold;font-size:9.97pt;background-color:#FFFF00}
-.c5f{font-size:9.97pt;background-color:#FFFF00}
+.c5e{font-weight:bold;font-size:9.97pt;}
+.c5f{font-size:9.97pt;}
 .c5g{text-align:justify;padding-left:54.6pt;text-indent:-40.6pt;font-size:9.97pt}
 .c5h{text-align:justify;padding-left:54.6pt;font-size:0.95pt}
 .c5i{text-align:justify;padding-left:54.6pt;font-size:5.22pt}
@@ -322,6 +322,7 @@ img { border:0; }
 </style>
 </head>
 <body>
+
 <div class="footer">Page <b><span class="pagenumber"></span></b> of <b><span class="pagecount"></span></b></div>
 <div class="c0">&#160;</div>
 <div class="c0">&#160;</div>
@@ -357,7 +358,7 @@ img { border:0; }
 <div class="c0">&#160;</div>
 <div class="c3"><span class="c2">AGREEMENT OF SALE</span></div>
 <div>&#160;</div>
-<div class="c6">This Deed of Agreement of Sale is made and executed on this <apex:outputField value="{!booking.Agreement_Date__c}"/>, by and between: -</div>
+<div class="c6">This Deed of Agreement of Sale is made and executed on this the&#160;<apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,dd}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText>&#160;day of&#160;<apex:outputText value="{0,date,MMMM yyyy}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">_______ day of _________________________</apex:outputPanel>, at Hyderabad, by and between: -</div>
 <div>&#160;</div>
 <table class="c7">
 <colgroup>
@@ -1951,12 +1952,12 @@ img { border:0; }
 <div style="page-break-after:always;height:0"></div>
 <div class="c9"><span class="c5">AND</span></div>
 <div class="c2f">&#160;</div>
-<div class="c2f"><span class="c2g"><apex:outputText value="{!IF(ISBLANK(booking.First_Applicant_Name__c), booking.Applicant_Name__c, booking.First_Applicant_Name__c)}"/>; R/o: <apex:outputText value="{!IF(ISBLANK(booking.Permanent_Address__c), booking.Address__c, booking.Permanent_Address__c)}"/>.</span></div>
-<div class="c2f"><span class="c2g">Email: <apex:outputText value="{!IF(ISBLANK(booking.Email__c), IF(ISBLANK(booking.Email1__c), booking.Customer_Email__c, booking.Email1__c), booking.Email__c)}"/></span></div>
+<apex:repeat value="{!allApplicants}" var="applicant">
+<div class="c2f"><span class="c2g"><b>{!applicant.drizzleNameLine}</b> {!applicant.drizzleDetails}</span></div>
+<div class="c2f"><span class="c2g">{!applicant.drizzleIds}</span></div>
 <div class="c2f">&#160;</div>
-<apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(booking.Second_Applicant_Name__c))}">
-<div class="c2f"><span class="c2g"><apex:outputText value="{!booking.Second_Applicant_Name__c}"/></span></div>
-</apex:outputPanel>
+</apex:repeat>
+<apex:outputPanel layout="none" rendered="{!NOT(hasApplicants)}"><div class="c2f">Applicant information is missing.</div></apex:outputPanel>
 <div class="c2i">&#160;</div>
 <div class="c2k"><span class="c2j"></span></div>
 <div class="cc">(Hereinafter called as the <span class="c4">&#8220;ALLOTTEE(S)/PURCHASER(S)" </span>which expression shall mean and include all their heirs, executors, administrators, assignees etc.,) of the <span class="c4">SECOND PART.</span></div>
@@ -2198,7 +2199,7 @@ img { border:0; }
 <div style="page-break-after:always;height:0"></div>
 <div class="c2y">The Flat Numbers and Block Numbers have been allotted to the share of <span class="c4">Developer 1</span> and <span class="c4">Developer 2</span>, as such the Vendors represented by DAGPA Holders/Developers having become the owner by virtue of the Supplementary Agreements, have got every right to enter into this Agreement of Sale and thereafter to execute the registered sale deed in favour of the Allottee herein.</div>
 <div class="c3j">&#160;</div>
-<div class="c2x">22.<span class="c30"></span>The Vendor / Developer / Promoter has commenced the construction of the residential project on the Schedule Property and the project is named &#8220;<apex:outputText value="{!booking.Project__r.Name}"/>&#8221; (the <span class="c4">Project</span>).</div>
+<div class="c2x">22.<span class="c30"></span>The Vendor / Developer / Promoter has commenced the construction of the residential project on the Schedule Property and the project is named &#8220;{!drizzleProjectName}&#8221; (the <span class="c4">Project</span>).</div>
 <div class="c2y">&#160;</div>
 <div class="c2x">23.<span class="c30"></span>The Allottee had applied for an apartment in the Project and has provisionally been allotted and the apartment details mentioned below which is part of Vendor / Developer / Promoter<span class="c4"> </span>share and has the following specifications (&#8220;<span class="c4">Apartment</span>&#8221;). The said Apartment is referred to as the <span class="c4">Schedule-B (1) Property </span>and is described in detail in the <span class="c4">Schedule-B (1) </span>hereto.</div>
 <div class="c3k">&#160;</div>
@@ -2209,59 +2210,71 @@ img { border:0; }
 </colgroup>
 <tr class="c3m">
 <td class="c3n"><div class="cc">PROJECT</div></td>
-<td class="c3o"><div class="cc"><span class="c2h"><apex:outputText value="{!booking.Project__r.Name}"/></span></div></td>
+<td class="c3o"><div class="cc"><span class="c2h">{!drizzleProjectName}</span></div></td>
 </tr>
 <tr class="c3m">
 <td class="c3p"><div class="cc">BLOCK</div></td>
-<td class="c3q"><div class="cc"><span class="c2g"><apex:outputText value="{!IF(ISBLANK(booking.Plot__r.Tower_Block__c), booking.Tower__c, booking.Plot__r.Tower_Block__c)}"/></span></div></td>
+<td class="c3q"><div class="cc"><span class="c2g">{!drizzleBlock}</span></div></td>
 </tr>
 <tr class="c3m">
 <td class="c3p"><div class="cc">FLAT NO.</div></td>
-<td class="c3q"><div class="cc"><span class="c2g"><apex:outputText value="{!flatNumber}"/></span></div></td>
+<td class="c3q"><div class="cc"><span class="c2g">{!drizzleFlatNo}</span></div></td>
 </tr>
 <tr class="c3m">
 <td class="c3p"><div class="cc">FLOOR</div></td>
-<td class="c3q"><div class="cc"><span class="c2h"><apex:outputText value="{!booking.FloorNo__c}"/></span></div></td>
+<td class="c3q"><div class="cc"><span class="c2h">{!drizzleFloor}</span></div></td>
 </tr>
 <tr class="c3m">
 <td class="c3p"><div class="cc">FLAT TYPE</div></td>
-<td class="c3q"><div class="cc"><span class="c2h"><apex:outputText value="{!booking.BHK_Type__c}"/></span></div></td>
+<td class="c3q"><div class="cc"><span class="c2h">{!drizzleFlatType}</span></div></td>
 </tr>
 <tr class="c3m">
 <td class="c3p"><div class="cc">FACING</div></td>
-<td class="c3q"><div class="cc"><span class="c2h"><apex:outputText value="{!booking.Plot__r.Facing__c}"/></span></div></td>
+<td class="c3q"><div class="cc"><span class="c2h">{!drizzleFacing}</span></div></td>
 </tr>
 <tr class="c3m">
 <td class="c3p"><div class="cc">FLAT SIZE </div></td>
-<td class="c3r"><div><span class="c2g"><apex:outputField value="{!booking.Plot__r.Saleable_Area_Sft__c}"/> SFT</span></div></td>
+<td class="c3r"><div><span class="c2g">{!drizzleFlatSize} SFT</span></div></td>
 </tr>
 <tr class="c3m">
 <td class="c3p"><div class="cc">CARPET AREA</div></td>
-<td class="c3r"><div><span class="c2h"><apex:outputField value="{!booking.Plot__r.Carpet_Area__c}"/> SFT</span></div></td>
+<td class="c3r"><div><span class="c2h">{!drizzleCarpetArea} SFT</span></div></td>
 </tr>
 <tr class="c3m">
 <td class="c3p"><div class="cc">BALCONY AREA</div></td>
-<td class="c3r"><div><span class="c2h"><apex:outputField value="{!booking.Plot__r.Balcony_Area__c}"/> SFT</span></div></td>
+<td class="c3r"><div><span class="c2h">{!drizzleBalconyArea} SFT</span></div></td>
+</tr>
+<tr class="c3m">
+<td class="c3p"><div class="cc">UTILITY AREA</div></td>
+<td class="c3r"><div><span class="c2h">{!drizzleUtilityArea} SFT</span></div></td>
 </tr>
 
 <tr class="c3m">
 <td class="c3p"><div class="cc">COMMON AREA</div></td>
-<td class="c3r"><div><span class="c2h"><apex:outputField value="{!booking.Plot__r.Common_Area_Allotted_to_Association__c}"/> SFT</span></div></td>
+<td class="c3r"><div><span class="c2h">{!drizzleCommonArea} SFT</span></div></td>
+</tr>
+<tr class="c3m">
+<td class="c3p"><div class="cc">EXTERNAL WALL</div></td>
+<td class="c3r"><div><span class="c2h">{!drizzleExternalWall} SFT</span></div></td>
+</tr>
+<tr class="c3m">
+<td class="c3p"><div class="cc">INTERNAL WALL</div></td>
+<td class="c3r"><div><span class="c2h">{!drizzleInternalWall} SFT</span></div></td>
 </tr>
 
 
 <tr class="c3m">
 <td class="c3p"><div class="cc">CAR PARKING</div></td>
-<td class="c3r"><div><span class="c2h"><apex:outputText value="{!IF(booking.Car_Parking_Selected__c, 'ONE', 'NONE')}"/></span></div></td>
+<td class="c3r"><div><span class="c2h"><apex:outputText value="{!UPPER(selectedCarParkingDisplay)}"/></span></div></td>
 </tr>
 <tr class="c3m">
 <td class="c3p"><div class="cc">UDS</div></td>
-<td class="c3r"><div><span class="c2g"><apex:outputField value="{!booking.Plot__r.UDS__c}"/> Sq. Yds</span></div></td>
+<td class="c3r"><div><span class="c2g">{!drizzleUds} Sq. Yds</span></div></td>
 </tr>
 </table>
 <div class="c3k">&#160;</div>
 <div class="c34">&#160;</div>
-<div class="c3t"><span class="c2h">The Schedule property is mortgaged to HMDA and the flat can be registered in the name of VENDEES / purchaser after release of mortgage from HMDA. The VENDOR (Developer) has explained this matter to VENDEES / purchaser and VENDEES agreed for the same. BHFL Being Project Financier, they are ready to provide Home Loan to the VENDEE and VENDEE is availing Home Loan from <apex:outputText value="{!booking.Loan_Bank_Name__c}"/>.</span></div>
+<div class="c3t"><span>The Schedule property is mortgaged to HMDA and the flat can be registered in the name of VENDEES / purchaser after release of mortgage from HMDA. The VENDOR (Developer) has explained this matter to VENDEES / purchaser and VENDEES agreed for the same. {!loanBankName} Being Project Financier, they are ready to provide Home Loan to the VENDEE and VENDEE is availing Home Loan from {!loanBankName}.</span></div>
 <div class="c3u">&#160;</div>
 <div class="c3u">And includes the following:</div>
 <div class="c3k">&#160;</div>
@@ -2286,14 +2299,14 @@ img { border:0; }
 <div class="c44">1.1.<span class="c43"></span>Subject to the terms and conditions as detailed in this Agreement, the Vendors/Developers/Promoters agrees to sell to the Allottee and the Allottee hereby agrees to purchase, the Apartment.</div>
 <div class="c45">&#160;</div>
 <div class="c46">1.2.<span class="c43"></span><span class="c5">Total Price for the Apartment</span><span class="c4">:</span></div>
-<div class="c44">1.2.1.<span class="c47"></span>The total sale consideration for the Apartment based on the Saleable Area including GST is Rs. <apex:outputField value="{!booking.Total_Flat_Cost__c}"/>.</div>
+<div class="c44">1.2.1.<span class="c47"></span>The total sale consideration for the Apartment based on the Saleable Area including GST is Rs.{!drizzleGrandTotalDisplay}/- ({!drizzleGrandTotalInWords}).</div>
 <div>&#160;</div>
-<table width="100%" border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:9pt;">
-<tr><th align="left">Price particulars</th><th align="left">Amount (Rs.)</th></tr>
-<tr><td>Base price (Quote)</td><td><apex:outputField value="{!booking.Quote__r.Basic_Sale_Price_Rs__c}"/></td></tr>
-<tr><td>Amenities / car parking charges (Quote)</td><td><apex:outputField value="{!booking.Quote__r.Amenities_Car_Parking__c}"/></td></tr>
-<tr><td>Total other / amenity charges (Quote)</td><td><apex:outputField value="{!booking.Quote__r.Total_Other_Charges__c}"/></td></tr>
-<tr><th align="left">Total flat cost (Booking)</th><td><apex:outputField value="{!booking.Total_Flat_Cost__c}"/></td></tr>
+<table width="100%" border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-size:10pt;">
+<tr><th align="left">Particulars</th><th>Rate Per SFT<br/>(In Rupees)</th><th>Amount<br/>(In Rupees)</th><th>GST<br/>(In Rupees)</th><th>Total Price<br/>(In Rupees)</th></tr>
+<apex:repeat value="{!drizzlePriceLines}" var="line">
+<tr><td>{!line.label}</td><td align="center">{!line.rateText}</td><td align="right">{!line.amountDisplay}</td><td align="right">{!line.gstDisplay}</td><td align="right">{!line.totalDisplay}</td></tr>
+</apex:repeat>
+<tr><th align="left">Total</th><td>&#160;</td><th align="right">{!drizzlePriceTotal.amountDisplay}</th><th align="right">{!drizzlePriceTotal.gstDisplay}</th><th align="right">{!drizzlePriceTotal.totalDisplay}</th></tr>
 </table>
 <div class="c9">&#160;</div>
 <div class="cc">Apart from the above total sale consideration, the Allottee(s)/Purchaser(s) shall also be liable to pay the following amounts on the following heads at the time of execution and registration of sale deed.</div>
@@ -2315,32 +2328,32 @@ img { border:0; }
 <td class="c4b"><div class="c9"><span class="c4">Total Price</span><br/><span class="c4">(In Rupees)</span></div></td>
 </tr>
 <tr class="c4i">
-<td class="c4d"><div class="cc">Corpus Fund (Payable at the time of handover of the Apartment in favour of Association of Allottees)</div></td>
-<td class="c4e"><div class="c9"><span class="c2h">Rs. 50/- per SFT</span></div></td>
-<td class="c4e"><div class="cb"><span class="c2h">68750</span></div></td>
-<td class="c4e"><div class="cb"><span class="c2h">NA</span></div></td>
-<td class="c4e"><div class="cb"><span class="c2h">68750</span></div></td>
+<td class="c4d"><div class="cc">{!drizzleCorpusLine.label}</div></td>
+<td class="c4e"><div class="c9"><span class="c2h">{!drizzleCorpusLine.rateText}</span></div></td>
+<td class="c4e"><div class="cb"><span class="c2h">{!drizzleCorpusLine.amountDisplay}</span></div></td>
+<td class="c4e"><div class="cb"><span class="c2h">{!drizzleCorpusLine.gstDisplay}</span></div></td>
+<td class="c4e"><div class="cb"><span class="c2h">{!drizzleCorpusLine.totalDisplay}</span></div></td>
 </tr>
 <tr class="c4j">
-<td class="c4d"><div class="cc">Maintenance Charges Deposit for 24 months, payable at the time of hand over of the Apartment, in favour of the Association of Allottees.</div></td>
-<td class="c4e"><div class="c9"><span class="c2h">Rs. 3.50ps. per SFT per Month for 24 Months</span></div></td>
-<td class="c4e"><div class="cb"><span class="c2h">115500</span></div></td>
-<td class="c4e"><div class="cb"><span class="c2h">20790</span></div></td>
-<td class="c4e"><div class="cb"><span class="c2h">136290</span></div></td>
+<td class="c4d"><div class="cc">{!drizzleMaintenanceLine.label}</div></td>
+<td class="c4e"><div class="c9"><span class="c2h">{!drizzleMaintenanceLine.rateText}</span></div></td>
+<td class="c4e"><div class="cb"><span class="c2h">{!drizzleMaintenanceLine.amountDisplay}</span></div></td>
+<td class="c4e"><div class="cb"><span class="c2h">{!drizzleMaintenanceLine.gstDisplay}</span></div></td>
+<td class="c4e"><div class="cb"><span class="c2h">{!drizzleMaintenanceLine.totalDisplay}</span></div></td>
 </tr>
 <tr class="c4k">
 <td class="c4d"><div>Legal and Documentation charges</div></td>
 <td class="c4e"><div class="c9"><span class="c2h">LS</span></div></td>
-<td class="c4e"><div class="cb"><span class="c2h">25000</span></div></td>
-<td class="c4e"><div class="cb"><span class="c2h">4500</span></div></td>
-<td class="c4e"><div class="cb"><span class="c2h">29500</span></div></td>
+<td class="c4e"><div class="cb"><span class="c2h">{!drizzleLegalLine.amountDisplay}</span></div></td>
+<td class="c4e"><div class="cb"><span class="c2h">{!drizzleLegalLine.gstDisplay}</span></div></td>
+<td class="c4e"><div class="cb"><span class="c2h">{!drizzleLegalLine.totalDisplay}</span></div></td>
 </tr>
 <tr class="c4k">
 <td class="c4d"><div><span class="c4">Total</span></div></td>
 <td class="c3h"><div><span class="c2h">&#160;</span></div></td>
-<td class="c4e"><div class="cb"><span class="c2h">209250</span></div></td>
-<td class="c4e"><div class="cb"><span class="c2h">25290</span></div></td>
-<td class="c4e"><div class="cb"><span class="c2h">234540</span></div></td>
+<td class="c4e"><div class="cb"><span class="c2h">{!drizzleOtherTotal.amountDisplay}</span></div></td>
+<td class="c4e"><div class="cb"><span class="c2h">{!drizzleOtherTotal.gstDisplay}</span></div></td>
+<td class="c4e"><div class="cb"><span class="c2h">{!drizzleOtherTotal.totalDisplay}</span></div></td>
 </tr>
 </table>
 <div>&#160;</div>
@@ -2383,7 +2396,7 @@ img { border:0; }
 <div class="c4u">&#160;</div>
 <div class="c44">2.3<span class="c4q"></span>The Vendors/Developers/Promoters may allow, in its sole discretion, a rebate for early payments of installments payable by the Allottee by discounting such early payments at a rate decided by the Vendors/Developers/Promoters The provision for allowing rebate and such rate of rebate shall not be subject to any revision/withdrawal, once granted to an Allottee by the Vendors/Developers/Promoters.</div>
 <div class="c4v">&#160;</div>
-<div class="c44">2.4<span class="c4q"></span>The Allottee has paid a booking amount of <span class="c2g">Rs. <apex:outputField value="{!booking.Booking_Amount__c}"/></span> and total receipts of <span class="c2g">Rs. <apex:outputField value="{!booking.Total_Receipt_Amount__c}"/></span> towards booking and installments, details of which are furnished below and the receipt of which the Vendors/Developers/Promoters hereby acknowledges, and the Allottee hereby agrees to pay the remaining price of the Apartment as prescribed in the Payment Plan (Schedule-C) as may be demanded by the Vendors/Developers/Promoters within the time and in the manner specified therein:</div>
+<div class="c44">2.4<span class="c4q"></span>The Allottee has paid a sum of <span class="c2g">Rs.{!formattedTotalReceiptAmount}/- ({!totalReceiptAmountInWords})</span> as Booking Amount, First and Second installments respectively, details of which are furnished below and the receipt of which the Vendors/Developers/Promoters hereby acknowledges, and the Allottee hereby agrees to pay the remaining price of the Apartment as prescribed in the Payment Plan (Schedule-C) as may be demanded by the Vendors/Developers/Promoters within the time and in the manner specified therein:</div>
 <div class="c4w">&#160;</div>
 <table class="c4x">
 <colgroup>
@@ -2397,13 +2410,13 @@ img { border:0; }
 <td class="c4z"><div class="c9"><span class="c4">Mode </span></div></td>
 <td class="c4z"><div class="c9"><span class="c4">Ref.No. /Cheque No.</span></div></td>
 <td class="c4z"><div class="c9"><span class="c4">Amount</span></div></td>
-</tr><apex:repeat value="{!receipts}" var="receipt"><tr class="c4y"><td class="c52"><div class="c51"><span class="c50"><apex:outputField value="{!receipt.Receipt_Date__c}"/></span></div></td><td class="c52"><div class="c51"><span class="c50"><apex:outputText value="{!receipt.Payment_Method__c}"/></span></div></td><td class="c52"><div class="c51"><span class="c50"><apex:outputText value="{!IF(ISBLANK(receipt.Receipt_Name__c), receipt.Name, receipt.Receipt_Name__c)}"/></span></div></td><td class="c52"><div class="c51"><span class="c50"><apex:outputField value="{!receipt.Amount_received__c}"/></span></div></td></tr></apex:repeat><tr class="c4y">
+</tr><apex:repeat value="{!receiptRows}" var="receipt"><tr class="c4y"><td class="c52"><div class="c51"><span class="c50"><apex:outputText value="{0,date,dd-MM-yyyy}"><apex:param value="{!receipt.receiptDate}"/></apex:outputText></span></div></td><td class="c52"><div class="c51"><span class="c50"><apex:outputText value="{!UPPER(receipt.mode)}"/></span></div></td><td class="c52"><div class="c51"><span class="c50">{!receipt.referenceId}</span></div></td><td class="c52"><div class="c51"><span class="c50"><span style="font-family:'Arial Unicode MS'">&#8377;</span> {!receipt.amountDisplay}</span></div></td></tr></apex:repeat><apex:outputPanel layout="none" rendered="{!NOT(hasReceipts)}"><tr class="c4y"><td colspan="4" class="c52"><div class="c51"><span class="c50">No approved receipt records are available for this Booking.</span></div></td></tr></apex:outputPanel><tr class="c4y">
 <td colspan="3" class="c4z"><div class="cb"><span class="c4">TOTAL RS.</span></div></td>
-<td class="c52"><div class="c51"><span class="c54"><span style="font-family:'Arial Unicode MS'">&#8377;</span></span><span class="c55"><apex:outputField value="{!booking.Total_Receipt_Amount__c}"/></span></div></td>
+<td class="c52"><div class="c51"><span class="c54"><span style="font-family:'Arial Unicode MS'">&#8377;</span></span><span class="c55">{!formattedTotalReceiptAmount}/-</span></div></td>
 </tr>
 </table>
 <div class="c56">&#160;</div>
-<div class="c45">Pending amount: <span class="c2g">Rs. </span><apex:outputField value="{!booking.Pending_Amount__c}"/>; loan bank: <apex:outputText value="{!booking.Loan_Bank_Name__c}"/>.</div>
+<div class="c45"><span class="c2g">Rs.{!drizzleBalanceDisplay}/- ({!drizzleBalanceInWords})</span> availing by the way of loan from {!loanBankName}.</div>
 <div class="c57">&#160;</div>
 <div class="c57">&#160;</div>
 <div class="c58">&#160;</div>
@@ -2416,7 +2429,7 @@ img { border:0; }
 <div class="c5b">&#160;</div>
 <div class="c46">2.1<span class="c4q"></span><span class="c5">Corpus Fund</span></div>
 <div class="c5c">&#160;</div>
-<div class="c5g">2.1.1<span class="c4s"></span><span class="c59">The Parties agree that the initial Corpus Fund a</span><span class="c5d">m</span><span class="c59">ount at the rate of Rs.50/- per SFT ie., </span><span class="c5e">Rs.68,750/-</span><span class="c5f"> (</span><span class="c5e">Rupees Sixty-Eight Thousand Seven Hundred Fifty Only)</span><span class="c59"> being collected&#160; &#160;by the Vendors/ Developers/Promoters. The Vendors/ Developers/Promoters shall deposit the Corpus Fund collected by the Vendors/ Developers/Promoters in the name of the Association of Allottees from the Allottee to a Sseparate account maintained with any scheduled bank at the time of Handover of the community to the Association and after completion of the scope of the Building Maintenance of the Developers /Promotors and the same has to be operated and maintained as per the bye-laws of the Association of Allottees. </span></div>
+<div class="c5g">2.1.1<span class="c4s"></span><span class="c59">The Parties agree that the initial Corpus Fund a</span><span class="c5d">m</span><span class="c59">ount at the rate of Rs.{!drizzleCorpusRate}/- per SFT ie., </span><span class="c5e">Rs.{!drizzleCorpusLine.amountDisplay}/-</span><span class="c5f"> (</span><span class="c5e">{!drizzleCorpusInWords})</span><span class="c59"> being collected&#160; &#160;by the Vendors/ Developers/Promoters. The Vendors/ Developers/Promoters shall deposit the Corpus Fund collected by the Vendors/ Developers/Promoters in the name of the Association of Allottees from the Allottee to a Sseparate account maintained with any scheduled bank at the time of Handover of the community to the Association and after completion of the scope of the Building Maintenance of the Developers /Promotors and the same has to be operated and maintained as per the bye-laws of the Association of Allottees. </span></div>
 <div class="c5h">&#160;</div>
 <div class="c5i">&#160;</div>
 <div class="c4t">2.1.2<span class="c4s"></span>The Parties agree that the Corpus Fund shall only be used in accordance with the above provision by the Association, and shall not be utilized for any other purpose, such as, day to day maintenance, including electricity, energy, water, gas, salaries, wages, repairs, minor expenditures, etc. The Parties agree that the initial Corpus Fund amount is subject to modification and/or revision by the Vendors/Developers/Promoters until the handover of the Project to the Association</div>
@@ -2759,17 +2772,17 @@ img { border:0; }
 <tr class="c6z">
 <td class="c4z"><div>Attention</div></td>
 <td class="c4z"><div>:</div></td>
-<td class="c4z"><div><span class="c2g"><apex:outputText value="{!IF(ISBLANK(booking.First_Applicant_Name__c), booking.Applicant_Name__c, booking.First_Applicant_Name__c)}"/></span><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(booking.Second_Applicant_Name__c))}"><span class="c2g"> &amp; <apex:outputText value="{!booking.Second_Applicant_Name__c}"/></span></apex:outputPanel></div></td>
+<td class="c4z"><div><span class="c2g">{!drizzleBuyerNames}</span></div></td>
 </tr>
 <tr class="c70">
 <td class="c4z"><div>Address</div></td>
 <td class="c4z"><div>:</div></td>
-<td class="c4z"><div class="cc"><span class="c2h"><apex:outputText value="{!IF(ISBLANK(booking.Permanent_Address__c), booking.Address__c, booking.Permanent_Address__c)}"/></span></div></td>
+<td class="c4z"><div class="cc"><span class="c2h">{!drizzleBuyerAddress}</span></div></td>
 </tr>
 <tr class="c71">
 <td class="c4z"><div>E mail</div></td>
 <td class="c4z"><div>:</div></td>
-<td class="c4z"><div><span class="c2h"><apex:outputText value="{!IF(ISBLANK(booking.Email__c), IF(ISBLANK(booking.Email1__c), booking.Customer_Email__c, booking.Email1__c), booking.Email__c)}"/></span></div></td>
+<td class="c4z"><div><span class="c2h">{!drizzleBuyerEmails}</span></div></td>
 </tr>
 </table>
 <div>&#160;</div>
@@ -2883,7 +2896,7 @@ img { border:0; }
 <div>&#160;</div>
 <div class="c9"><span class="c4">Description of the Apartment and the garage/covered parking (if applicable) along with boundaries in all four directions.</span></div>
 <div>&#160;</div>
-<div class="cc">All that the Semi Finished Flat details mentioned below in the Residential Apartment known as <span class="c4">&#8220;<apex:outputText value="{!booking.Project__r.Name}"/>&#8221; </span>in Survey No.325/AA/3, 327/A/2, 327/AA/1 327/AA/2, 328/A, 328/AA,328/E, of Narsingi Village, and Sy.No.91A, 91AA, 93/AA, 93A/1/2, Situated at Neknampur Village, both Gandipet Mandal, Ranga Reddy District, Telangana State.</div>
+<div class="cc">All that the Semi Finished Flat details mentioned below in the Residential Apartment known as <span class="c4">&#8220;{!drizzleProjectName}&#8221; </span>in Survey No.325/AA/3, 327/A/2, 327/AA/1 327/AA/2, 328/A, 328/AA,328/E, of Narsingi Village, and Sy.No.91A, 91AA, 93/AA, 93A/1/2, Situated at Neknampur Village, both Gandipet Mandal, Ranga Reddy District, Telangana State.</div>
 <div>&#160;</div>
 <div class="cc"><span class="c4">Particulars of the Building / Tower &amp; Details of the Apartment / Details of Undivided Interest</span></div>
 <div>&#160;</div>
@@ -2894,73 +2907,85 @@ img { border:0; }
 </colgroup>
 <tr class="c7d">
 <td class="c3n"><div class="cc">PROJECT</div></td>
-<td class="c3o"><div class="cc"><span class="c2h"><apex:outputText value="{!booking.Project__r.Name}"/></span></div></td>
+<td class="c3o"><div class="cc"><span class="c2h">{!drizzleProjectName}</span></div></td>
 </tr>
 <tr class="c7d">
 <td class="c3p"><div class="cc">BLOCK</div></td>
-<td class="c3q"><div class="cc"><span class="c2g"><apex:outputText value="{!IF(ISBLANK(booking.Plot__r.Tower_Block__c), booking.Tower__c, booking.Plot__r.Tower_Block__c)}"/></span></div></td>
+<td class="c3q"><div class="cc"><span class="c2g">{!drizzleBlock}</span></div></td>
 </tr>
 <tr class="c7d">
 <td class="c3p"><div class="cc">FLAT NO.</div></td>
-<td class="c3q"><div class="cc"><span class="c2g"><apex:outputText value="{!flatNumber}"/></span></div></td>
+<td class="c3q"><div class="cc"><span class="c2g">{!drizzleFlatNo}</span></div></td>
 </tr>
 <tr class="c7d">
 <td class="c3p"><div class="cc">FLOOR</div></td>
-<td class="c3q"><div class="cc"><span class="c2h"><apex:outputText value="{!booking.FloorNo__c}"/></span></div></td>
+<td class="c3q"><div class="cc"><span class="c2h">{!drizzleFloor}</span></div></td>
 </tr>
 <tr class="c7d">
 <td class="c3p"><div class="cc">FLAT TYPE</div></td>
-<td class="c3q"><div class="cc"><span class="c2h"><apex:outputText value="{!booking.BHK_Type__c}"/></span></div></td>
+<td class="c3q"><div class="cc"><span class="c2h">{!drizzleFlatType}</span></div></td>
 </tr>
 <tr class="c7d">
 <td class="c3p"><div class="cc">FACING</div></td>
-<td class="c3q"><div class="cc"><span class="c2h"><apex:outputText value="{!booking.Plot__r.Facing__c}"/></span></div></td>
+<td class="c3q"><div class="cc"><span class="c2h">{!drizzleFacing}</span></div></td>
 </tr>
 <tr class="c7d">
 <td class="c3p"><div class="cc">FLAT SIZE </div></td>
-<td class="c3r"><div><span class="c2g"><apex:outputField value="{!booking.Plot__r.Saleable_Area_Sft__c}"/> SFT</span></div></td>
+<td class="c3r"><div><span class="c2g">{!drizzleFlatSize} SFT</span></div></td>
 </tr>
 <tr class="c7d">
 <td class="c3p"><div class="cc">CARPET AREA</div></td>
-<td class="c3r"><div><span class="c2h"><apex:outputField value="{!booking.Plot__r.Carpet_Area__c}"/> SFT</span></div></td>
+<td class="c3r"><div><span class="c2h">{!drizzleCarpetArea} SFT</span></div></td>
 </tr>
 <tr class="c7d">
 <td class="c3p"><div class="cc">BALCONY AREA</div></td>
-<td class="c3r"><div><span class="c2h"><apex:outputField value="{!booking.Plot__r.Balcony_Area__c}"/> SFT</span></div></td>
+<td class="c3r"><div><span class="c2h">{!drizzleBalconyArea} SFT</span></div></td>
+</tr>
+<tr class="c7d">
+<td class="c3p"><div class="cc">UTILITY AREA</div></td>
+<td class="c3r"><div><span class="c2h">{!drizzleUtilityArea} SFT</span></div></td>
 </tr>
 
 <tr class="c7d">
 <td class="c3p"><div class="cc">COMMON AREA</div></td>
-<td class="c3r"><div><span class="c2h"><apex:outputField value="{!booking.Plot__r.Common_Area_Allotted_to_Association__c}"/> SFT</span></div></td>
+<td class="c3r"><div><span class="c2h">{!drizzleCommonArea} SFT</span></div></td>
+</tr>
+<tr class="c7d">
+<td class="c3p"><div class="cc">EXTERNAL WALL</div></td>
+<td class="c3r"><div><span class="c2h">{!drizzleExternalWall} SFT</span></div></td>
+</tr>
+<tr class="c7d">
+<td class="c3p"><div class="cc">INTERNAL WALL</div></td>
+<td class="c3r"><div><span class="c2h">{!drizzleInternalWall} SFT</span></div></td>
 </tr>
 
 
 <tr class="c7d">
 <td class="c3p"><div class="cc">CAR PARKING</div></td>
-<td class="c3r"><div><span class="c2h"><apex:outputText value="{!IF(booking.Car_Parking_Selected__c, 'ONE', 'NONE')}"/></span></div></td>
+<td class="c3r"><div><span class="c2h"><apex:outputText value="{!UPPER(selectedCarParkingDisplay)}"/></span></div></td>
 </tr>
 <tr class="c7d">
 <td class="c3p"><div class="cc">UDS</div></td>
-<td class="c3r"><div><span class="c2g"><apex:outputField value="{!booking.Plot__r.UDS__c}"/> Sq. Yds</span></div></td>
+<td class="c3r"><div><span class="c2g">{!drizzleUds} Sq. Yds</span></div></td>
 </tr>
 <tr class="c7d">
 <td colspan="2" class="c3n"><div class="c9"><span class="c4">BOUNDARIES</span></div></td>
 </tr>
 <tr class="c7d">
 <td class="c3p"><div class="cc">NORTH</div></td>
-<td class="c3q"><div class="cc"><span class="c2h"><apex:outputText value="{!booking.Plot__r.North_By__c}"/></span></div></td>
+<td class="c3q"><div class="cc"><span class="c2h">{!drizzleBoundaryNorth}</span></div></td>
 </tr>
 <tr class="c7d">
 <td class="c3p"><div class="cc">SOUTH</div></td>
-<td class="c3q"><div class="cc"><span class="c2h"><apex:outputText value="{!booking.Plot__r.South_By__c}"/></span></div></td>
+<td class="c3q"><div class="cc"><span class="c2h">{!drizzleBoundarySouth}</span></div></td>
 </tr>
 <tr class="c7d">
 <td class="c3p"><div class="cc">EAST</div></td>
-<td class="c3q"><div class="cc"><span class="c2h"><apex:outputText value="{!booking.Plot__r.East_By__c}"/></span></div></td>
+<td class="c3q"><div class="cc"><span class="c2h">{!drizzleBoundaryEast}</span></div></td>
 </tr>
 <tr class="c7d">
 <td class="c3p"><div class="cc">WEST</div></td>
-<td class="c3q"><div class="cc"><span class="c2h"><apex:outputText value="{!booking.Plot__r.West_By__c}"/></span></div></td>
+<td class="c3q"><div class="cc"><span class="c2h">{!drizzleBoundaryWest}</span></div></td>
 </tr>
 </table>
 <div>&#160;</div>
@@ -2983,21 +3008,6 @@ img { border:0; }
 <div class="c9">&#160;</div>
 <div><span class="c4">Payment Schedule for the Apartment Amount to be paid in installments as follows:</span></div>
 <div>&#160;</div>
-<table width="100%" border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-family:Arial,sans-serif;font-size:9pt;">
-<tr><th>Payment milestone</th><th>Percent</th><th>Scheduled amount</th><th>Paid</th><th>Pending</th><th>Demand date</th></tr>
-<apex:repeat value="{!paymentSchedules}" var="schedule">
-<tr>
-<td><apex:outputText value="{!IF(ISBLANK(schedule.Payment_Schedule_Name__c), schedule.Name, schedule.Payment_Schedule_Name__c)}"/></td>
-<td><apex:outputField value="{!schedule.Percentage__c}"/></td>
-<td><apex:outputField value="{!schedule.Payment_Schedule_Amount__c}"/></td>
-<td><apex:outputField value="{!schedule.Payment_Schedule_Amount_Paid__c}"/></td>
-<td><apex:outputField value="{!schedule.Payment_Schedule_Amount_Pending__c}"/></td>
-<td><apex:outputField value="{!schedule.Demand_Date__c}"/></td>
-</tr>
-</apex:repeat>
-<tr><th colspan="2" align="left">Booking amount</th><td><apex:outputField value="{!booking.Booking_Amount__c}"/></td><td colspan="3"></td></tr>
-<tr><th colspan="2" align="left">Total sale consideration</th><td><apex:outputField value="{!booking.Total_Flat_Cost__c}"/></td><td colspan="3"></td></tr>
-</table>
 <table class="c7f">
 <colgroup>
 <col style="width:211.93pt"/>
@@ -3018,32 +3028,51 @@ img { border:0; }
 <td class="c3q"><div class="c9"><span class="c4">(Rs.)</span></div></td>
 <td class="c3q"><div class="c9"><span class="c4">(Rs.)</span></div></td>
 </tr>
+<apex:repeat value="{!paymentScheduleRows}" var="schedule">
+<tr class="c7g">
+<td class="c52"><div>{!schedule.installmentName}</div></td>
+<td class="c3o"><div class="c9"><apex:outputText value="{0,number,0.##}"><apex:param value="{!schedule.percentage}"/></apex:outputText>%</div></td>
+<td class="c3o"><div class="cb"><span class="c2h">{!schedule.flatCostDisplay}</span></div></td>
+<td class="c3o"><div class="cb"><span class="c2h">{!schedule.gstAmountDisplay}</span></div></td>
+<td class="c3o"><div class="cb"><span class="c2h">{!schedule.netAmountDisplay}</span></div></td>
+</tr>
+</apex:repeat>
+<apex:outputPanel layout="none" rendered="{!NOT(hasPaymentSchedules)}">
+<tr class="c7g"><td colspan="5" class="c52"><div>No payment schedule records are available for this Booking.</div></td></tr>
+</apex:outputPanel>
+<tr class="c7g">
+<td class="c52"><div><b>Total Sale Consideration</b></div></td>
+<td class="c3o"><div class="c9"><apex:outputText value="{0,number,0.##}"><apex:param value="{!totalSchedulePercentage}"/></apex:outputText>%</div></td>
+<td class="c3o"><div class="cb"><span class="c2h"><b>{!formattedTotalScheduleFlatCost}</b></span></div></td>
+<td class="c3o"><div class="cb"><span class="c2h"><b>{!formattedTotalScheduleGst}</b></span></div></td>
+<td class="c3o"><div class="cb"><span class="c2h"><b>{!formattedTotalScheduleNetAmount}</b></span></div></td>
+</tr>
 <tr class="c7g">
 <td colspan="5" class="c7l"><div class="c9"><span class="c4">AMOUNT PAYABLE&#160; &#160;AT&#160; &#160;THE&#160; &#160;TIME&#160; &#160;OF REGISTRATION</span></div></td>
 </tr>
 <tr class="c7g">
 <td class="c52"><div>Legal &amp; Documentation Charges</div></td>
 <td class="c3o"><div class="c9">&#160;</div></td>
-<td class="c3o"><div class="cb"><span class="c2h">25000</span></div></td>
-<td class="c3o"><div class="cb"><span class="c2h">4500</span></div></td>
-<td class="c3o"><div class="cb"><span class="c2h">29500</span></div></td>
+<td class="c3o"><div class="cb"><span class="c2h">{!drizzleLegalLine.amountDisplay}</span></div></td>
+<td class="c3o"><div class="cb"><span class="c2h">{!drizzleLegalLine.gstDisplay}</span></div></td>
+<td class="c3o"><div class="cb"><span class="c2h">{!drizzleLegalLine.totalDisplay}</span></div></td>
 </tr>
 <tr class="c7g">
 <td colspan="5" class="c7l"><div class="c9"><span class="c4">AMOUNTS PAYABLE AT THE TIME OF HANDINGOVER</span></div></td>
 </tr>
 <tr class="c7i">
-<td class="c52"><div>Maintenance for 24 months @ Rs 3.5 /- per month per Sft</div></td>
+<td class="c52"><div>{!drizzleMaintenanceScheduleLabel}</div></td>
 <td class="c3o"><div class="c9"><span class="c2h">&#160;</span></div></td>
-<td class="c3o"><div class="cb"><span class="c2h">115500</span></div></td>
-<td class="c3o"><div class="cb"><span class="c2h">20790</span></div></td>
-<td class="c3o"><div class="cb"><span class="c2h">136290</span></div></td>
+<td class="c3o"><div class="cb"><span class="c2h">{!drizzleMaintenanceLine.amountDisplay}</span></div></td>
+<td class="c3o"><div class="cb"><span class="c2h">{!drizzleMaintenanceLine.gstDisplay}</span></div></td>
+<td class="c3o"><div class="cb"><span class="c2h">{!drizzleMaintenanceLine.totalDisplay}</span></div></td>
 </tr>
 <tr class="c7g">
-<td class="c7h"><div>Corpus Fund @ Rs. 50 /- per sft</div></td>
+<td class="c7h"><div>{!drizzleCorpusScheduleLabel}</div></td>
 <td class="c3q"><div class="c9"><span class="c2h">&#160;</span></div></td>
-<td class="c3q"><div class="cb"><span class="c2h">68750</span></div></td>
-<td class="c3q"><div class="cb"><span class="c2h">0</span></div></td>
-<td class="c3q"><div class="cb"><span class="c2h">68750</span></div></td>
+<td class="c3q"><div class="cb"><span class="c2h">{!drizzleCorpusLine.amountDisplay}</span></div></td>
+<td class="c3q"><div class="cb"><span class="c2h">{!drizzleCorpusLine.gstOrZeroDisplay}</span></div></td>
+<td class="c3q"><div class="cb"><span class="c2h">{!drizzleCorpusLine.totalDisplay}</span></div></td>
 </tr>
 <tr class="c7g">
 <td colspan="5" class="c7l"><div class="c9"><span class="c4">OTHER TERMS AND CONDITIONS</span></div></td>

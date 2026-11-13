@@ -22,6 +22,9 @@ public class QuoteController {
 
             if (projectName == 'The Legacey') {
                 pref = Page.COST_SHEET_TL;
+            } else if (projectName != null && projectName.trim().equalsIgnoreCase('The Drizzle')) {
+                // Same page the Generate Cost Sheet screen previews for The Drizzle
+                pref = Page.COST_SHEET_TD;
             } else {
                 return 'Cost Sheet template is not configured for this project. Please contact admin.';
             }

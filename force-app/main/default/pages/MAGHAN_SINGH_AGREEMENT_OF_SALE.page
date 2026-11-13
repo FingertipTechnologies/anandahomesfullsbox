@@ -282,9 +282,9 @@ img { border:0; }
 <div class="c0">&#160;</div>
 <div class="c0">&#160;</div>
 <div class="c1">&#160;</div>
-<div class="c3"><span class="c2">AGREEMENT OF SALE</span></div>
+<div class="ag-keep"><div class="c3"><span class="c2">AGREEMENT OF SALE</span></div>
 <div class="c4">&#160;</div>
-<div class="c9"><span class="c5">This </span><span class="c6">AGREEMENT OF SALE </span><span class="c5">is made and executed on this the </span><span class="c7"><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,dd}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">____</apex:outputPanel></span><span class="c5"> day of </span><span class="c7"><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,MMMM yyyy}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">____________ ______</apex:outputPanel></span><span class="c5">, at Ranga Reddy District, Telangana State, by and between: -</span></div>
+<div class="c9"><span class="c5">This </span><span class="c6">AGREEMENT OF SALE </span><span class="c5">is made and executed on this the </span><span class="c7"><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,dd}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">____</apex:outputPanel></span><span class="c5"> day of </span><span class="c7"><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,MMMM yyyy}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">____________ ______</apex:outputPanel></span><span class="c5">, at Ranga Reddy District, Telangana State, by and between: -</span></div></div>
 <div class="c9">&#160;</div>
 <div class="ce"><span class="ca">1.</span><span class="cb"></span><span class="cc">Sri. K. MAGAN SINGH</span><span class="cd">, </span><span class="cc">S/o Late K. SATYANARAYANA SINGH, </span><span class="cd">aged 70 Years, Occupation: Business, Resident of 12-1-325/D, Dattatreya Nagar, Asif Nagar, Hyderabad, Telangana State - 500028. (Aadhaar No. 6046 3431 7974 &amp; PAN No. ANFPM1588D).</span></div>
 <div class="cf">&#160;</div>
@@ -730,8 +730,8 @@ img { border:0; }
 </tr>
 </table></div>
 <div class="c2c">&#160;</div>
-<div class="c2w"><span class="c27">GST:</span></div>
-<div class="c2x"><span class="c5">1.&#160; 5% on Sale Consideration</span></div>
+<div class="ag-keep"><div class="c2w"><span class="c27">GST:</span></div>
+<div class="c2x"><span class="c5">1.&#160; 5% on Sale Consideration</span></div></div>
 <div class="c2x"><span class="c5">2.&#160; 18% on Maintenance, Move in, legal &amp; documentation charges</span></div>
 <div class="c2c ag-tight">&#160;</div>
 <div class="c2c ag-tight"><span class="c5">Explanation:</span></div>
@@ -909,8 +909,8 @@ img { border:0; }
 <div class="ci ag-tight">&#160;</div>
 <div class="c3x">(xii)<span class="c41"></span><span class="c5">To pay the applicable Property Tax to GHMC / HMDA / such other statutory authority as may be applicable from, the date of registration of the Flat by the Developer to the Vendee, within the period specified.</span></div>
 <div class="ag-keep">
-<div class="c23"><span class="c6">9.EVENTS OF DEFAULTS AND CONSEQUENCES</span></div>
-<div class="c2c"><span class="c5">9.1 Subject to the Force Majeure clause, the DEVELOPER shall be considered under a condition of default, in the following events:</span></div>
+<div class="ag-keep"><div class="c23"><span class="c6">9.EVENTS OF DEFAULTS AND CONSEQUENCES</span></div>
+<div class="c2c"><span class="c5">9.1 Subject to the Force Majeure clause, the DEVELOPER shall be considered under a condition of default, in the following events:</span></div></div>
 </div>
 <div class="c30"><span class="c5">(i) DEVELOPER fails to provide ready to move in possession of the flat to the VENDEE/S within the time period specified in para 7.1 or fails to complete the project within the stipulated time disclosed at the time of registration of the project with the Authority. For the purpose of this Para, ready to move in possession&#8217; shall mean that the flat shall be in a habitable condition which is complete in all respects including the provision of all specifications, and facilities, as agreed to between the parties, and for which occupation certificate as the case may be, has been issued by the competent authority.</span></div>
 <div class="c30"><span class="c5">(ii) Discontinuance of the DEVELOPER business as a developer on account of suspension or revocation of his registration under the provisions of the Act or the rules and regulations made there under.</span></div>
@@ -950,8 +950,8 @@ img { border:0; }
 <div class="c44"><span class="c5">d. The terms of work like painting etc. which are subject to wear and tear.</span></div>
 <div class="c43"><span class="c5">12.3. The VENDEE/S shall maintain the flats in good tenantable conditions and carry out the internal repairs for the upkeep of the flats. The association of the VENDEE/S or its assigns shall maintain the services and amenities in good condition and covered with proper AMC and insurance. The obligation of the promoter shall be subject to proper maintenance and upkeep of the flats/services and amenities by the VENDEE/S or the association of VENDEE/S as the case may be.</span></div>
 <div class="ag-keep">
-<div class="c23"><span class="c6">13. RIGHT TO ENTER THE FLAT FOR REPAIRS</span><span class="c5">:</span></div>
-<div class="c2c"><span class="c5">The DEVELOPER/maintenance agency/association of VENDEE/S shall have rights of unrestricted access of all common areas, garages/covered parking and parking spaces for providing necessary maintenance services and the VENDEE/S agree to permit the association of VENDEE/S and/or maintenance agency to enter into the Schedule B property or any part thereof, after due notice and during the normal working hours, unless the circumstances warrant otherwise, with a view to set right any defect.</span></div>
+<div class="ag-keep"><div class="c23"><span class="c6">13. RIGHT TO ENTER THE FLAT FOR REPAIRS</span><span class="c5">:</span></div>
+<div class="c2c"><span class="c5">The DEVELOPER/maintenance agency/association of VENDEE/S shall have rights of unrestricted access of all common areas, garages/covered parking and parking spaces for providing necessary maintenance services and the VENDEE/S agree to permit the association of VENDEE/S and/or maintenance agency to enter into the Schedule B property or any part thereof, after due notice and during the normal working hours, unless the circumstances warrant otherwise, with a view to set right any defect.</span></div></div>
 </div>
 <div class="ag-keep">
 <div class="ag-keep"><div class="c23"><span class="c6">14.USAGE:</span></div>
@@ -1121,8 +1121,8 @@ img { border:0; }
 <div class="c2c"><span class="c5">In WITNESS WHEREOF, parties herein above named have set their respective hands and signed this Agreement for Sale at Hyderabad in the presence of attesting witness, signing as such on the day, first written above.</span></div>
 <div class="c2c">&#160;</div>
 <div class="c2c">&#160;</div>
-<div class="c4h"><span class="c4g">SIGNED AND DELIVERED BY:</span></div>
-<div class="c4h"><span class="c4i">VENDEE/S:</span></div>
+<div class="ag-keep"><div class="c4h"><span class="c4g">SIGNED AND DELIVERED BY:</span></div>
+<div class="c4h"><span class="c4i">VENDEE/S:</span></div></div>
 <div class="c4k">(1)<span class="c4j"></span><span class="c4i">Signature: &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;.</span></div>
 <div class="c4l ag-tight">&#160;</div>
 <div class="c4m ag-tight"><span class="c4i">Name: &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;.</span></div>
@@ -1131,8 +1131,8 @@ img { border:0; }
 <div class="c4p ag-tight">&#160;</div>
 <div class="c4m ag-tight"><span class="c4i">Name: &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;.</span></div>
 <div class="c4m">&#160;</div>
-<div class="c4q"><span class="c4g">SIGNED AND DELIVERED BY THE NAMED AGREEMENT OF SALE CUM POWER OF ATTORNEY HOLDER ON BEHALF OF ALL THE 5 VENDORS NAMED HEREIN:</span></div>
-<div class="c4r ag-tight">1.<span class="cb"></span><span class="c4i">Signature: (AGPA HOLDER): &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;.</span></div>
+<div class="ag-keep"><div class="c4q"><span class="c4g">SIGNED AND DELIVERED BY THE NAMED AGREEMENT OF SALE CUM POWER OF ATTORNEY HOLDER ON BEHALF OF ALL THE 5 VENDORS NAMED HEREIN:</span></div>
+<div class="c4r ag-tight">1.<span class="cb"></span><span class="c4i">Signature: (AGPA HOLDER): &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;.</span></div></div>
 <div class="c4s ag-tight">&#160;</div>
 <div class="c4t ag-tight">&#160;</div>
 <div class="c4t ag-tight"><span class="c4i">At &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;on&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;in the presence of:</span></div>

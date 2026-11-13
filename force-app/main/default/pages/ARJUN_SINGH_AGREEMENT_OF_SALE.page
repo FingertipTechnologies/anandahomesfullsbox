@@ -290,9 +290,9 @@ img { border:0; }
 <div class="c1">&#160;</div>
 <div class="c1">&#160;</div>
 <div class="c1">&#160;</div>
-<div class="c3"><span class="c2">AGREEMENT OF SALE </span></div>
+<div class="ag-keep"><div class="c3"><span class="c2">AGREEMENT OF SALE </span></div>
 <div class="c4">&#160;</div>
-<div class="c9"><span class="c5">This </span><span class="c6">AGREEMENT OF SALE</span><span class="c5"> is made and executed on this the </span><span class="c7"><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,dd}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">____</apex:outputPanel></span><span class="c5"> of</span><span class="c6"> </span><span class="c8"><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,MMMM}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">____________</apex:outputPanel></span><span class="c6"> </span><span class="c8"><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,yyyy}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">______</apex:outputPanel></span><span class="c6">,</span><span class="c5"> Ranga Reddy District, Telangana State, by:-</span></div>
+<div class="c9"><span class="c5">This </span><span class="c6">AGREEMENT OF SALE</span><span class="c5"> is made and executed on this the </span><span class="c7"><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,dd}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">____</apex:outputPanel></span><span class="c5"> of</span><span class="c6"> </span><span class="c8"><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,MMMM}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">____________</apex:outputPanel></span><span class="c6"> </span><span class="c8"><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,yyyy}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">______</apex:outputPanel></span><span class="c6">,</span><span class="c5"> Ranga Reddy District, Telangana State, by:-</span></div></div>
 <div class="ca">&#160;</div>
 <div class="cb"><span class="c6">1). Sri. K. ARJUN SINGH, S/o Late SRI DHAN SINGH</span><span class="c5">, aged about 62&#160; &#160;Years, Occupation: Business, R/o 12-1-325/E, Asif Nagar, Near&#160; Dattatreya Nagar, Hyderabad, Telangana State-500 028. (Aadhar&#160; No.4343 0723 4106).</span></div>
 <div class="cc">&#160;</div>
@@ -711,8 +711,8 @@ img { border:0; }
 <div class="cv">&#160;</div>
 <div class="cv"><span class="cu">AND WHEREAS, this agreement shall be construed, interpreted and applied in accordance with, and shall be governed by the laws applicable in India. The courts at Hyderabad shall have the sole and exclusive jurisdiction to entertain any dispute or suit arising out of or in relation to this agreement.</span></div>
 <div style="page-break-after:always;height:0"></div>
-<div class="cc"><span class="ci">NOW THEREFORE THIS AGREEMENT WITNESSES AND IT IS HEREBY AGREED TO BY THE PARTIES HERETO AS FOLLOWS:</span></div>
-<div class="c2m"><span class="cj">1.</span><span class="ck"></span><span class="c6">DEFINITIONS AND INTERPRETATION:</span></div>
+<div class="ag-keep"><div class="cc"><span class="ci">NOW THEREFORE THIS AGREEMENT WITNESSES AND IT IS HEREBY AGREED TO BY THE PARTIES HERETO AS FOLLOWS:</span></div>
+<div class="c2m"><span class="cj">1.</span><span class="ck"></span><span class="c6">DEFINITIONS AND INTERPRETATION:</span></div></div>
 <div class="c2n">&#160;</div>
 <div class="c2o"><span class="cj">1.1.</span><span class="c6">Definitions:</span><span class="c5"> Unless the context otherwise requires, the following capitalized terms shall have the meaning set forth below:</span></div>
 <div class="cb">&#160;</div>
@@ -795,8 +795,8 @@ img { border:0; }
 <div class="c2z">&#160;</div>
 <div class="c2z"><span class="c5">In this Agreement, (including the Recitals above) unless the context clearly indicates a contrary intention, a word or an expression, which denotes a natural person shall include an artificial person (and vice versa) any one gender shall include the other genders, the singular shall include the plural (and vice versa).</span></div>
 <div class="c2z">&#160;</div>
-<div class="c2z"><span class="ci">THEREFORE, IN CONSIDERATION OF THE MUTUAL REPRESENTATIONS, COVENANTS, ASSURANCES, PROMISES, AND AGREEMENTS CONTAINED HEREIN AND OTHER GOOD AND VALUABLE CONSIDERATION, THE PARTIES AGREE AS FOLLOWS:</span></div>
-<div class="c30"><span class="cj">1.</span><span class="ck"></span><span class="ci">TERMS:</span></div>
+<div class="ag-keep"><div class="c2z"><span class="ci">THEREFORE, IN CONSIDERATION OF THE MUTUAL REPRESENTATIONS, COVENANTS, ASSURANCES, PROMISES, AND AGREEMENTS CONTAINED HEREIN AND OTHER GOOD AND VALUABLE CONSIDERATION, THE PARTIES AGREE AS FOLLOWS:</span></div>
+<div class="c30"><span class="cj">1.</span><span class="ck"></span><span class="ci">TERMS:</span></div></div>
 <div class="c31">&#160;</div>
 <div class="c33"><span class="cj">1.1.</span><span class="c32"></span><span class="c5">Subject to the terms and conditions as detailed in this Agreement, the DEVELOPER agrees to sell to the VENDEE/S and the VENDEE/S hereby agrees to purchase the </span><span class="c6">Flat No. </span><span class="c8">{!selectedUnit.Name}</span><span class="c5">, </span><span class="c6">Tower No. </span><span class="c8">{!selectedTowerName}</span><span class="c7">, </span><span class="c5">Area </span><span class="c8">{!selectedUnit.Saleable_Area_Sft__c}</span><span class="c6"> sq. ft</span><span class="c5"> (including common area) for a total consideration of </span><span class="c6">Rs. </span><span class="c8">{!formattedTotalFlatCost}</span><span class="c6">/- </span><span class="c8">({!agreementAmountInWords})</span><span class="c6"> </span><span class="c5">Which includes amenities and excludes GST, constructed on Schedule A property, Puppalguda Village, Gandipet Mandal, Ranga Reddy District, Telangana State:</span></div>
 <div class="c31">&#160;</div>
@@ -828,8 +828,8 @@ img { border:0; }
 </tr>
 </table>
 <div class="cb">&#160;</div>
-<div class="c3b"><span class="ci">GST:</span></div>
-<div class="c2u"><span class="c5">1.&#160; 5% on Sale Consideration</span></div>
+<div class="ag-keep"><div class="c3b"><span class="ci">GST:</span></div>
+<div class="c2u"><span class="c5">1.&#160; 5% on Sale Consideration</span></div></div>
 <div class="c2u"><span class="c5">2.&#160; 18% on Maintenance, Move in, legal &amp; documentation charges</span></div>
 <div class="cb">&#160;</div>
 <div class="cb"><span class="c5">Explanation:</span></div>
@@ -911,36 +911,36 @@ img { border:0; }
 <div class="cf">&#160;</div>
 <div class="c3k"><span class="cj">1.14</span><span class="c3o"></span><span class="c5">DEVELOPER enabling the DEVELOPER to submit with respective banks for release of payments avoiding delay in releasing installment amounts without any hindrance and the DEVELOPER hereby undertakes and confirms to the VENDEE/S that the said disbursal from the Demand Letter from the DEVELOPER will be submitted with respective banks of prior intimation of at least 7 days from the date of attaining such milestone/landmark of construction progress.</span></div>
 <div class="c2u">&#160;</div>
-<div class="c30"><span class="cj">2.</span><span class="ck"></span><span class="c6">MODE OF PAYMENT</span></div>
-<div class="cb"><span class="c5">Subject to the terms of the Agreement and the DEVELOPER abiding by the construction milestones, the VENDEE/S shall make all payments, on written demand by the DEVELOPER, within the stipulated time as mentioned in the payment plan through A/c Payee cheque/demand draft/banker&#8217;s cheque or online payment in below mentioned account </span><span class="c6">Account bearing A/c. Nos 322205002425</span><span class="c5"> in favor of </span><span class="c6">M/s. ANANDA HOMES</span><span class="c5">, </span><span class="c6">Bank: ICICI BANK, Branch: MANIKONDA, IFSC: ICIC0003222.</span></div>
+<div class="ag-keep"><div class="c30"><span class="cj">2.</span><span class="ck"></span><span class="c6">MODE OF PAYMENT</span></div>
+<div class="cb"><span class="c5">Subject to the terms of the Agreement and the DEVELOPER abiding by the construction milestones, the VENDEE/S shall make all payments, on written demand by the DEVELOPER, within the stipulated time as mentioned in the payment plan through A/c Payee cheque/demand draft/banker&#8217;s cheque or online payment in below mentioned account </span><span class="c6">Account bearing A/c. Nos 322205002425</span><span class="c5"> in favor of </span><span class="c6">M/s. ANANDA HOMES</span><span class="c5">, </span><span class="c6">Bank: ICICI BANK, Branch: MANIKONDA, IFSC: ICIC0003222.</span></div></div>
 <div class="cb">&#160;</div>
 <div class="cb">&#160;</div>
 <div class="cb">&#160;</div>
 <div class="cb">&#160;</div>
 <div class="cb">&#160;</div>
 <div class="cb">&#160;</div>
-<div class="c30"><span class="cj">3.</span><span class="ck"></span><span class="c6">COMPLAINCE OF LAWS RELATING TO REMITTANCES</span></div>
-<div class="cb"><span class="c5">3.1 The VENDEE/S, if residents outside India, shall be solely responsible for complying with necessary formalities as laid down in Foreign Exchange Management Act, 1999, Reserve Bank of India Act, 1934, and the Rules and Regulations made there-under or any statutory amendment(s) modification(s) made thereof and all other applicable laws including that of remittance of payment acquisition/sale/transfer of immovable properties in India, etc. and provide the DEVELOPER with such permission, approvals which would enable the DEVELOPER to fulfill its obligations under this Agreement. Any refund, transfer of security, if provided in terms of the Agreement shall be made in accordance with the provisions of Foreign Exchange Management Act, 1999, or statutory enactments or amendments thereof and the Rules and Regulations of the Reserve Bank of India or any other applicable law. The VENDEE/S understand and agree that in the event of any failure on his/her part to comply with the applicable guidelines issued by the Reserve Bank of India, he/she may be liable for any action under the Foreign Exchange Management Act, 1999, or other laws as applicable, as amended from time to time.</span></div>
+<div class="ag-keep"><div class="c30"><span class="cj">3.</span><span class="ck"></span><span class="c6">COMPLAINCE OF LAWS RELATING TO REMITTANCES</span></div>
+<div class="cb"><span class="c5">3.1 The VENDEE/S, if residents outside India, shall be solely responsible for complying with necessary formalities as laid down in Foreign Exchange Management Act, 1999, Reserve Bank of India Act, 1934, and the Rules and Regulations made there-under or any statutory amendment(s) modification(s) made thereof and all other applicable laws including that of remittance of payment acquisition/sale/transfer of immovable properties in India, etc. and provide the DEVELOPER with such permission, approvals which would enable the DEVELOPER to fulfill its obligations under this Agreement. Any refund, transfer of security, if provided in terms of the Agreement shall be made in accordance with the provisions of Foreign Exchange Management Act, 1999, or statutory enactments or amendments thereof and the Rules and Regulations of the Reserve Bank of India or any other applicable law. The VENDEE/S understand and agree that in the event of any failure on his/her part to comply with the applicable guidelines issued by the Reserve Bank of India, he/she may be liable for any action under the Foreign Exchange Management Act, 1999, or other laws as applicable, as amended from time to time.</span></div></div>
 <div class="cb">&#160;</div>
 <div class="cb"><span class="c5">3.2 The DEVELOPER accepts no responsibility in regard to matters specified in Para 3.1, above. The VENDEE/S shall keep the DEVELOPER fully indemnified and harmless in this regard. Whenever there is any change in the residential status of the VENDEE/S subsequent to the signing of this Agreement, it shall be the sole responsibility of the VENDEE/S to intimate the same in writing to the DEVELOPER immediately and comply with necessary formalities if any under the applicable laws. The DEVELOPER shall not be responsible towards any third-party making payment/remittances on behalf of any VENDEE/S and such third party shall not have any right in the application/allotment of the said flat applied herein in any way and the DEVELOPER shall be issuing the payment receipts in favor of the VENDEE/S only.</span></div>
 <div class="cb">&#160;</div>
-<div class="c30"><span class="cj">4.</span><span class="ck"></span><span class="c6">ADJUSTMENT/APPROPRIATION OF PAYMENTS:</span></div>
+<div class="ag-keep"><div class="c30"><span class="cj">4.</span><span class="ck"></span><span class="c6">ADJUSTMENT/APPROPRIATION OF PAYMENTS:</span></div>
 <div class="cb">&#160;</div>
-<div class="cb"><span class="c5">The VENDEE/S authorizes the DEVELOPER to adjust/appropriate all payments made by him/her under any head(s) of dues against lawful outstanding of the VENDEE/S against the [Flat], if any, in his/her name and the VENDEE/S undertakes not to object/demand/direct the DEVELOPER to adjust his payments in any manner.</span></div>
+<div class="cb"><span class="c5">The VENDEE/S authorizes the DEVELOPER to adjust/appropriate all payments made by him/her under any head(s) of dues against lawful outstanding of the VENDEE/S against the [Flat], if any, in his/her name and the VENDEE/S undertakes not to object/demand/direct the DEVELOPER to adjust his payments in any manner.</span></div></div>
 <div class="cb">&#160;</div>
-<div class="c30"><span class="cj">5.</span><span class="ck"></span><span class="c6">TIME IS ESSENCE:</span></div>
+<div class="ag-keep"><div class="c30"><span class="cj">5.</span><span class="ck"></span><span class="c6">TIME IS ESSENCE:</span></div>
 <div class="cb">&#160;</div>
-<div class="cb"><span class="c5">The DEVELOPER shall abide by the time schedule for completing the project as disclosed at the time of registration of the project with the Authority and towards handing over the [Flats] to the VENDEE/S and the common areas to the association of VENDEE/S or the competent authority, as the case may be subject to the VENDEE/S make the payments as per the schedule mentioned above.</span></div>
+<div class="cb"><span class="c5">The DEVELOPER shall abide by the time schedule for completing the project as disclosed at the time of registration of the project with the Authority and towards handing over the [Flats] to the VENDEE/S and the common areas to the association of VENDEE/S or the competent authority, as the case may be subject to the VENDEE/S make the payments as per the schedule mentioned above.</span></div></div>
 <div class="cb">&#160;</div>
-<div class="c30"><span class="cj">6.</span><span class="ck"></span><span class="c6">CONSTRUCTION OF THE FLAT:</span></div>
+<div class="ag-keep"><div class="c30"><span class="cj">6.</span><span class="ck"></span><span class="c6">CONSTRUCTION OF THE FLAT:</span></div>
 <div class="cb">&#160;</div>
-<div class="cb"><span class="c5">The VENDEE/S have seen the sanction plan, specifications, amenities and facilities of the Schedule B Property and accepted floor plan, payment plan and the specifications, amenities and facilities (annexed along with this Agreement) which has been approved by the competent authority, as represented by the DEVELOPER. The DEVELOPER shall develop the Project in accordance with the said sanction plan or the modified plan, floor plans and specifications, amenities and facilities</span><span class="c6">. </span></div>
+<div class="cb"><span class="c5">The VENDEE/S have seen the sanction plan, specifications, amenities and facilities of the Schedule B Property and accepted floor plan, payment plan and the specifications, amenities and facilities (annexed along with this Agreement) which has been approved by the competent authority, as represented by the DEVELOPER. The DEVELOPER shall develop the Project in accordance with the said sanction plan or the modified plan, floor plans and specifications, amenities and facilities</span><span class="c6">. </span></div></div>
 <div class="cb">&#160;</div>
 <div class="cb">&#160;</div>
 <div class="cb">&#160;</div>
-<div class="c30"><span class="cj">7.</span><span class="ck"></span><span class="c6">POSSESSION OF THE FLAT/PLOT:</span></div>
+<div class="ag-keep"><div class="c30"><span class="cj">7.</span><span class="ck"></span><span class="c6">POSSESSION OF THE FLAT/PLOT:</span></div>
 <div class="c31">&#160;</div>
-<div class="c31"><span class="c5">7.1 Schedule for possession of the said [Flat]: The DEVELOPER agrees and understands that timely delivery of possession of the Schedule B property to the VENDEE/S and the common areas to the Association of VENDEE/S or competent authority, as the case may be, is the essence of the Agreement. The DEVELOPER assures to hand over possession of the Schedule B property of the project by June-2028&#8217; and with a grace period of 6 months unless there is a delay or failure due to war, flood, drought, fire, cyclone, earthquake, or any other calamity caused by nature or any Court stay or government order affecting the regular development of the real estate project (&#8220;Force Majeure&#8221;). If, however, the completion of the Project is delayed due to Force Majeure conditions then the VENDEE/S agree that the DEVELOPER shall be entitled to the extension of time and delivery of possession of the Schedule B property, provided that such Force Majeure conditions are not of nature which make it impossible for the contract to be implemented. The VENDEE/S agree and confirm that, in the event it becomes impossible for the DEVELOPER to implement the project due to Force Majeure conditions, then this agreement shall stand terminated and the DEVELOPER shall refund to the VENDEE, the entire amount received by the DEVELOPER from this agreement within 90 days from that date. The DEVELOPER shall intimate the VENDEE/S about such termination at least thirty days prior to such termination. After refund of the money paid to the VENDEE/S, the VENDEE/S agree that he/she shall not have any rights, claims, etc. against the DEVELOPER and that the DEVELOPER shall be released and discharged from all its obligations and liabilities under this Agreement. </span></div>
+<div class="c31"><span class="c5">7.1 Schedule for possession of the said [Flat]: The DEVELOPER agrees and understands that timely delivery of possession of the Schedule B property to the VENDEE/S and the common areas to the Association of VENDEE/S or competent authority, as the case may be, is the essence of the Agreement. The DEVELOPER assures to hand over possession of the Schedule B property of the project by June-2028&#8217; and with a grace period of 6 months unless there is a delay or failure due to war, flood, drought, fire, cyclone, earthquake, or any other calamity caused by nature or any Court stay or government order affecting the regular development of the real estate project (&#8220;Force Majeure&#8221;). If, however, the completion of the Project is delayed due to Force Majeure conditions then the VENDEE/S agree that the DEVELOPER shall be entitled to the extension of time and delivery of possession of the Schedule B property, provided that such Force Majeure conditions are not of nature which make it impossible for the contract to be implemented. The VENDEE/S agree and confirm that, in the event it becomes impossible for the DEVELOPER to implement the project due to Force Majeure conditions, then this agreement shall stand terminated and the DEVELOPER shall refund to the VENDEE, the entire amount received by the DEVELOPER from this agreement within 90 days from that date. The DEVELOPER shall intimate the VENDEE/S about such termination at least thirty days prior to such termination. After refund of the money paid to the VENDEE/S, the VENDEE/S agree that he/she shall not have any rights, claims, etc. against the DEVELOPER and that the DEVELOPER shall be released and discharged from all its obligations and liabilities under this Agreement. </span></div></div>
 <div class="c31">&#160;</div>
 <div class="cb"><span class="c5">7.2 Procedure for taking possession &#8211; The Developers/Promoters (i) upon applying for and upon the completion of the period prescribed for issuing the Occupancy Certificate under applicable building laws; or (ii) after obtaining the Occupancy Certificate from the competent authority, shall offer in writing the possession of the Apartment, to the Vendee, who has paid all the amounts in terms of this Agreement. The Vendee shall take possession within two months from the date of the said notice. The Vendee shall be liable to pay property tax from the date of the Registration of the Sale Deed in favour of the Vendee or Occupancy Certificate whichever is earlier. </span></div>
 <div class="cb">&#160;</div>
@@ -966,9 +966,9 @@ img { border:0; }
 <div class="cb"><span class="c42">7.7&#160; In the event the Developer fails to complete the construction of the Apartment and/or is unable to offer or deliver possession of the Apartment, duly completed in all respects, on or before the date stipulated in Clause 7.1, the Developer shall be liable to compensate the Allottee for such delay. The Developer shall pay compensation at the rate of Rs. 5/- (Rupees Five only) per square foot of the super built-up area per month of delay, calculated from the due date of possession until the actual date on which possession of the Apartment is handed over to the Allottee.</span></div>
 <div class="cb">&#160;</div>
 <div class="cb">&#160;</div>
-<div class="c43"><span class="cj">8.</span><span class="ck"></span><span class="c6">REPRESENTATIONS AND WARRANTIES OF THE DEVELOPER</span></div>
+<div class="ag-keep"><div class="c43"><span class="cj">8.</span><span class="ck"></span><span class="c6">REPRESENTATIONS AND WARRANTIES OF THE DEVELOPER</span></div>
 <div class="c31">&#160;</div>
-<div class="c44"><span class="cj">8.1.</span><span class="c32"></span><span class="c5">The DEVELOPER hereby represent and warrant to the VENDEE/S as follows:</span></div>
+<div class="c44"><span class="cj">8.1.</span><span class="c32"></span><span class="c5">The DEVELOPER hereby represent and warrant to the VENDEE/S as follows:</span></div></div>
 <div class="cb">&#160;</div>
 <div class="c3l"><span class="c5">(i)&#160; The DEVELOPER has absolute, clear and marketable title with respect to the said Land and the DEVELOPER has the requisite rights to carry out the development upon the said land and absolute, actual, physical and legal possession of the said Land for the Project.</span></div>
 <div class="c45"><span class="c32"></span></div>
@@ -1017,9 +1017,9 @@ img { border:0; }
 <div class="c47"><span class="cj">(xi)</span><span class="c3h"></span><span class="c5">Till a conveyance of the common areas, services and amenities of the building/project in which the Flat is situated is executed in favour of Society/Association and till all the total built-up area/units are sold off, the VENDEE/S shall permit the PROMOTER and their surveyors and agents, with or without workmen and others, at all reasonable times, to enter into and upon the said buildings or any part thereof to view and examine the state and condition thereof.</span></div>
 <div class="c2u">&#160;</div>
 <div class="c47"><span class="cj">(xii)</span><span class="c4a"></span><span class="c5">To pay the applicable Property Tax to GHMC / HMDA / such other statutory authority as may be applicable from, the date of registration of the Flat by the Developer to the Vendee, within the period specified.</span></div>
-<div class="cf"><span class="c6">9.EVENTS OF DEFAULTS AND CONSEQUENCES</span></div>
+<div class="ag-keep"><div class="cf"><span class="c6">9.EVENTS OF DEFAULTS AND CONSEQUENCES</span></div>
 <div class="cf">&#160;</div>
-<div class="cb"><span class="c5">9.1 Subject to the Force Majeure clause, the DEVELOPER shall be considered under a condition of default, in the following events:</span></div>
+<div class="cb"><span class="c5">9.1 Subject to the Force Majeure clause, the DEVELOPER shall be considered under a condition of default, in the following events:</span></div></div>
 <div class="c3e"><span class="c5">(i) DEVELOPER fails to provide ready to move in possession of the flat to the VENDEE/S within the time period specified in para 7.1 or fails to complete the project within the stipulated time disclosed at the time of registration of the project with the Authority. For the purpose of this Para, ready to move in possession&#8217; shall mean that the flat shall be in a habitable condition which is complete in all respects including the provision of all specifications, and facilities, as agreed to between the parties, and for which occupation certificate as the case may be, has been issued by the competent authority.</span></div>
 <div class="c3e">&#160;</div>
 <div class="c3e"><span class="c5">(ii) Discontinuance of the DEVELOPER business as a developer on account of suspension or revocation of his registration under the provisions of the Act or the rules and regulations made there under.</span></div>
@@ -1074,9 +1074,9 @@ img { border:0; }
 <div class="c4d"><span class="c5">d. The terms of work like painting etc. which are subject to wear and tear.</span></div>
 <div class="c4c"><span class="c5">12.3. The VENDEE/S shall maintain the flats in good tenantable conditions and carry out the internal repairs for the upkeep of the flats. The association of the VENDEE/S or its assigns shall maintain the services and amenities in good condition and covered with proper AMC and insurance. The obligation of the promoter shall be subject to proper maintenance and upkeep of the flats/services and amenities by the VENDEE/S or the association of VENDEE/S as the case may be.</span></div>
 <div class="c4c">&#160;</div>
-<div class="cf"><span class="c6">13. RIGHT TO ENTER THE FLAT FOR REPAIRS</span><span class="c5">:</span></div>
+<div class="ag-keep"><div class="cf"><span class="c6">13. RIGHT TO ENTER THE FLAT FOR REPAIRS</span><span class="c5">:</span></div>
 <div class="cf">&#160;</div>
-<div class="cb"><span class="c5">The DEVELOPER/maintenance agency/association of VENDEE/S shall have rights of unrestricted access of all common areas, garages/covered parking and parking spaces for providing necessary maintenance services and the VENDEE/S agree to permit the association of VENDEE/S and/or maintenance agency to enter into the Schedule B property or any part thereof, after due notice and during the normal working hours, unless the circumstances warrant otherwise, with a view to set right any defect.</span></div>
+<div class="cb"><span class="c5">The DEVELOPER/maintenance agency/association of VENDEE/S shall have rights of unrestricted access of all common areas, garages/covered parking and parking spaces for providing necessary maintenance services and the VENDEE/S agree to permit the association of VENDEE/S and/or maintenance agency to enter into the Schedule B property or any part thereof, after due notice and during the normal working hours, unless the circumstances warrant otherwise, with a view to set right any defect.</span></div></div>
 <div class="cb">&#160;</div>
 <div class="ag-keep"><div class="cf"><span class="c6">14.USAGE:</span></div>
 <div class="cf">&#160;</div></div>
@@ -1272,9 +1272,9 @@ img { border:0; }
 <div class="cb"><span class="c5">In WITNESS WHEREOF, parties herein above named have set their respective hands and signed this Agreement for Sale at Hyderabad in the presence of attesting witness, signing as such on the day, first written above.</span></div>
 <div class="c4t">&#160;</div>
 <div style="page-break-after: always;"></div>
-<div class="c4t"><span class="c6">SIGNED AND DELIVERED BY:</span></div>
+<div class="ag-keep"><div class="c4t"><span class="c6">SIGNED AND DELIVERED BY:</span></div>
 <div class="c4t">&#160;</div>
-<div class="c4t"><span class="c5">VENDEE/S:</span></div>
+<div class="c4t"><span class="c5">VENDEE/S:</span></div></div>
 <div class="c4t">&#160;</div>
 <div class="c4v"><span class="cj">(1)</span><span class="c4u"></span><span class="c5">Signature: &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;.</span></div>
 <div class="c4w">&#160;</div>
@@ -1294,9 +1294,9 @@ img { border:0; }
 <div class="cb">&#160;</div>
 <div class="cb">&#160;</div>
 <div class="cb">&#160;</div>
-<div class="cb"><span class="c5">WITNESSES:</span></div>
+<div class="ag-keep"><div class="cb"><span class="c5">WITNESSES:</span></div>
 <div class="cb">&#160;</div>
-<div class="cb"><span class="c5">1)</span></div>
+<div class="cb"><span class="c5">1)</span></div></div>
 <div class="cb">&#160;</div>
 <div class="cb">&#160;</div>
 <div class="cb">&#160;</div>

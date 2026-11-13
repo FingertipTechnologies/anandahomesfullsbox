@@ -275,8 +275,8 @@ img { border:0; }
 <body>
 <div class="footer"><div class="c6q">Page <span class="c6s"><span class="pagenumber"></span></span> of <span class="c6s"><span class="pagecount"></span></span></div></div>
 <div class="c0 ag-tight">&#160;</div>
-<div class="c2"><span class="c1">AGREEMENT OF SALE</span></div>
-<div class="c3 ag-tight">&#160;</div>
+<div class="ag-keep"><div class="c2"><span class="c1">AGREEMENT OF SALE</span></div>
+<div class="c3 ag-tight">&#160;</div></div>
 <div class="c8"><span class="c4">This </span><span class="c5">AGREEMENT OF SALE </span><span class="c4">is made and executed on this the </span><span class="c6"><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,dd}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">____</apex:outputPanel></span><span class="c4"> day of</span><span class="c5"> </span><span class="c7"><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Agreement_Date__c))}"><apex:outputText value="{0,date,MMMM yyyy}"><apex:param value="{!Booking__c.Agreement_Date__c}"/></apex:outputText></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Agreement_Date__c)}">____________ ______</apex:outputPanel></span><span class="c4">, at Ranga Reddy District, Telangana State, by and between: </span></div>
 <div class="ca"><span class="c5">1).</span><span class="c9"></span><span class="c5">SRI K. SURESH SINGH, S/o. Late SRI DHAN SINGH,</span><span class="c4"> aged about 53 years, Occupation: Business, Resident of H.No.12-1-325/E, Asif Nagar, Near Dattatreya Nagar, Hyderabad-500028, Telangana State. (Aadhar No.5705 3649 6318 &amp; PAN No. DUIPS3658K) herein after called as Vendor 1.</span></div>
 <div class="cc"><span class="c5">2)</span><span class="c4"> </span><span class="cb"></span><span class="c5">SRI</span><span class="c4"> </span><span class="c5">K. ASHWIN SINGH</span><span class="c4">, </span><span class="c5">S/o. SURESH SINGH</span><span class="c4">, aged about 25 years, Occupation: Student, Resident of H.No.12-1-325/E, Asif Nagar, Near Dattatreya Nagar, Hyderabad-500028, Telangana State. (Aadhaar No.5322 7123 0757 &amp; PAN No. EMSK9040Q) herein after called as Vendor 2.</span></div>
@@ -285,8 +285,8 @@ img { border:0; }
 <div class="ch"><span class="ce">REPRESENTED BY THEIR AGREEMENT OF SALE-CUM-G.P.A. HOLDER: </span><span class="c5">- M/s. ANANDA HOMES</span><span class="c4">, (</span><span class="cf">pan</span><span class="c4"> No. ABFFA6591E), having its Registered Office at Flat No. A1, Vista Residency, Road No.4, Plot Nos.81 &amp; 82, Block-D, Sector-I, Alkaapoor Township, Manikonda Village, Gandipet Mandal, Ranga Reddy District, Telangana State-500089, Represented by its Managing Partner: </span><span class="cg">Sri. P.V. Sreenivasulu, S/o. Sri. P. C. V. Ramanaiah</span><span class="c4">, aged about 51 years, Occupation: Business, Resident of Neknampur Village, Gandipet Mandal, Ranga Reddy District, Telangana State-500 089 (AADHAAR No.7420 0525 3319, PAN No. ACNPP9239K).</span></div>
 <div class="ch"><span class="c4">(Vide </span><span class="c5">A.G.P.A. Registered as Document No.577 of 2025, </span><span class="c4">Book-I, dated: 10/01/2025, Registered at S.R.O. Gandipet, Ranga Reddy District, Telangana State).</span></div>
 <div class="ci"><span class="cg">Hereinafter</span><span class="c4"> called the</span><span class="c5"> (DEVELOPER/AGPA HOLDER) </span><span class="c4">which term shall mean and include their legal heirs, executors, successors, representatives&#8217; administrators and assignees etc., of the</span><span class="c5"> ONE PART.</span></div>
-<div class="ck"><span class="cj">IN FAVOUR OF</span></div>
-<div class="cl ag-tight">&#160;</div>
+<div class="ag-keep"><div class="ck"><span class="cj">IN FAVOUR OF</span></div>
+<div class="cl ag-tight">&#160;</div></div>
 <apex:repeat value="{!allApplicants}" var="applicant"><div class="cn">{!applicant.sequence}.<span class="cm"></span><span class="c7">{!applicant.deedNameLine}</span><span class="c6">{!applicant.deedDetails}</span><span class="c7">{!applicant.deedIds}</span></div></apex:repeat>
 <div class="co ag-tight">&#160;</div>
 <apex:outputPanel layout="none" rendered="{!NOT(hasApplicants)}">Applicant information is missing.</apex:outputPanel>
@@ -633,8 +633,8 @@ img { border:0; }
 <div class="c2g ag-tight">&#160;</div>
 <div class="ci"><span class="c4">AND WHEREAS, this agreement shall be construed, interpreted and applied in accordance with, and shall be governed by the laws applicable in India. The courts at Hyderabad shall have the sole and exclusive jurisdiction to entertain any dispute or suit arising out of or in relation to this agreement.</span></div>
 <div class="ci ag-tight">&#160;</div>
-<div class="c0"><span class="cj">NOW THEREFORE THIS AGREEMENT WITNESSES AND IT IS HEREBY AGREED TO BY THE PARTIES HERETO AS FOLLOWS:</span></div>
-<div class="c2h">1.<span class="cm"></span><span class="c5">DEFINITIONS AND INTERPRETATION:</span></div>
+<div class="ag-keep"><div class="c0"><span class="cj">NOW THEREFORE THIS AGREEMENT WITNESSES AND IT IS HEREBY AGREED TO BY THE PARTIES HERETO AS FOLLOWS:</span></div>
+<div class="c2h">1.<span class="cm"></span><span class="c5">DEFINITIONS AND INTERPRETATION:</span></div></div>
 <div class="c2i ag-tight">&#160;</div>
 <div class="c2k">1.1.<span class="c2j"></span><span class="c5">Definitions:</span><span class="c4"> Unless the context otherwise requires, the following capitalized terms shall have the meaning set forth below:</span></div>
 <div class="ch ag-tight">&#160;</div>
@@ -697,8 +697,8 @@ img { border:0; }
 <div class="c2u"><span class="c4">h) Reference to the terms &#8220;herein&#8221;, &#8220;hereto&#8221;,&#8221; hereunder&#8221; and words of similar purport refer to this Agreement as a whole.</span></div>
 <div class="c2u"><span class="c4">i)&#160; Headings in this Agreement are inserted for convenience only and shall not be used in its interpretation.</span></div>
 <div class="c2u"><span class="c4">In this Agreement, (including the Recitals above) unless the context clearly indicates a contrary intention, a word or an expression, which denotes a natural person shall include an artificial person (and vice versa) any one gender shall include the other genders, the singular shall include the plural (and vice versa).</span></div>
-<div class="c2u"><span class="cj">THEREFORE, IN CONSIDERATION OF THE MUTUAL REPRESENTATIONS, COVENANTS, ASSURANCES, PROMISES, AND AGREEMENTS CONTAINED HEREIN AND OTHER GOOD AND VALUABLE CONSIDERATION, THE PARTIES AGREE AS FOLLOWS:</span></div>
-<div class="c2v">1.<span class="cm"></span><span class="cj">TERMS:</span></div>
+<div class="ag-keep"><div class="c2u"><span class="cj">THEREFORE, IN CONSIDERATION OF THE MUTUAL REPRESENTATIONS, COVENANTS, ASSURANCES, PROMISES, AND AGREEMENTS CONTAINED HEREIN AND OTHER GOOD AND VALUABLE CONSIDERATION, THE PARTIES AGREE AS FOLLOWS:</span></div>
+<div class="c2v">1.<span class="cm"></span><span class="cj">TERMS:</span></div></div>
 <div class="c2y">1.1<span class="c2x"></span><span class="c4">Subject to the terms and conditions as detailed in this Agreement, the DEVELOPER agrees to sell to the VENDEE/S and the VENDEE/S hereby agrees to purchase the </span><span class="c5">Flat No. </span><span class="c7">{!selectedUnit.Name}</span><span class="c6">,</span><span class="c4"> </span><span class="c5">Tower No. </span><span class="c7">{!selectedTowerName}</span><span class="c4">, Area </span><span class="c7">{!selectedUnit.Saleable_Area_Sft__c}</span><span class="c5"> sq. ft</span><span class="c4"> (including common area) for a total consideration of </span><span class="c7">Rs. {!formattedTotalFlatCost}/- ({!agreementAmountInWords})</span><span class="c5"> </span><span class="c4">Which includes amenities and excludes GST, constructed on Schedule A property, Puppalguda Village, Gandipet Mandal, Ranga Reddy District, Telangana State:</span></div>
 <div class="c2w ag-tight">&#160;</div>
 <div style="page-break-inside:avoid"><table class="c2z">
@@ -729,8 +729,8 @@ img { border:0; }
 </tr>
 </table></div>
 <div class="ch ag-tight">&#160;</div>
-<div class="c36"><span class="cj">GST:</span></div>
-<div class="c37"><span class="c4">1.&#160; 5% on Sale Consideration</span></div>
+<div class="ag-keep"><div class="c36"><span class="cj">GST:</span></div>
+<div class="c37"><span class="c4">1.&#160; 5% on Sale Consideration</span></div></div>
 <div class="c37"><span class="c4">2.&#160; 18% on Maintenance, Move in, legal &amp; documentation charges</span></div>
 <div class="ch ag-tight">&#160;</div>
 <div class="ch"><span class="c4">Explanation:</span></div>
@@ -881,8 +881,8 @@ img { border:0; }
 <div class="c46">(xi)<span class="c3d"></span><span class="c4">Till a conveyance of the common areas, services and amenities of the building/project in which the Flat is situated is executed in favour of Society/Association and till all the total built-up area/units are sold off, the VENDEE/S shall permit the PROMOTER and their surveyors and agents, with or without workmen and others, at all reasonable times, to enter into and upon the said buildings or any part thereof to view and examine the state and condition thereof.</span></div>
 <div class="c2s ag-tight">&#160;</div>
 <div class="c46">(xii)<span class="c4a"></span><span class="c4">To pay the applicable Property Tax to GHMC / HMDA / such other statutory authority as may be applicable from, the date of registration of the Flat by the Developer to the Vendee, within the period specified.</span></div>
-<div class="ci"><span class="c5">9.EVENTS OF DEFAULTS AND CONSEQUENCES</span></div>
-<div class="ch"><span class="c4">9.1 Subject to the Force Majeure clause, the DEVELOPER shall be considered under a condition of default, in the following events:</span></div>
+<div class="ag-keep"><div class="ci"><span class="c5">9.EVENTS OF DEFAULTS AND CONSEQUENCES</span></div>
+<div class="ch"><span class="c4">9.1 Subject to the Force Majeure clause, the DEVELOPER shall be considered under a condition of default, in the following events:</span></div></div>
 <div class="c3a"><span class="c4">(i) DEVELOPER fails to provide ready to move in possession of the flat to the VENDEE/S within the time period specified in para 7.1 or fails to complete the project within the stipulated time disclosed at the time of registration of the project with the Authority. For the purpose of this Para, ready to move in possession&#8217; shall mean that the flat shall be in a habitable condition which is complete in all respects including the provision of all specifications, and facilities, as agreed to between the parties, and for which occupation certificate as the case may be, has been issued by the competent authority.</span></div>
 <div class="c3a"><span class="c4">(ii) Discontinuance of the DEVELOPER business as a developer on account of suspension or revocation of his registration under the provisions of the Act or the rules and regulations made there under.</span></div>
 <div class="ch"><span class="c4">9.2 In case of Default by the DEVELOPER under the conditions listed above, VENDEE/S are entitled to the following:</span></div>
@@ -911,8 +911,8 @@ img { border:0; }
 <div class="c4c"><span class="c4">c. Allowable structural and other deformations including expansion quotient (Tiles, granite, railing, wood doors and Kitchen sink).</span></div>
 <div class="c4d"><span class="c4">d. The terms of work like painting etc. which are subject to wear and tear.</span></div>
 <div class="c4c"><span class="c4">12.3. The VENDEE/S shall maintain the flats in good tenantable conditions and carry out the internal repairs for the upkeep of the flats. The association of the VENDEE/S or its assigns shall maintain the services and amenities in good condition and covered with proper AMC and insurance. The obligation of the promoter shall be subject to proper maintenance and upkeep of the flats/services and amenities by the VENDEE/S or the association of VENDEE/S as the case may be.</span></div>
-<div class="ci"><span class="c5">13. RIGHT TO ENTER THE FLAT FOR REPAIRS</span><span class="c4">:</span></div>
-<div class="ch"><span class="c4">The DEVELOPER/maintenance agency/association of VENDEE/S shall have rights of unrestricted access of all common areas, garages/covered parking and parking spaces for providing necessary maintenance services and the VENDEE/S agree to permit the association of VENDEE/S and/or maintenance agency to enter into the Schedule B property or any part thereof, after due notice and during the normal working hours, unless the circumstances warrant otherwise, with a view to set right any defect.</span></div>
+<div class="ag-keep"><div class="ci"><span class="c5">13. RIGHT TO ENTER THE FLAT FOR REPAIRS</span><span class="c4">:</span></div>
+<div class="ch"><span class="c4">The DEVELOPER/maintenance agency/association of VENDEE/S shall have rights of unrestricted access of all common areas, garages/covered parking and parking spaces for providing necessary maintenance services and the VENDEE/S agree to permit the association of VENDEE/S and/or maintenance agency to enter into the Schedule B property or any part thereof, after due notice and during the normal working hours, unless the circumstances warrant otherwise, with a view to set right any defect.</span></div></div>
 <div class="ag-keep"><div class="ci"><span class="c5">14.USAGE:</span></div>
 <div class="ch"><span class="c4">Use of Basement and Service Areas: The basement(s) and service areas, if any, as located within the flats shall be earmarked for purposes such as parking spaces and services including but not limited to electric sub-station, transformer, DG set rooms, underground water tanks, pump rooms, maintenance and service rooms, firefighting and equipment&#8217;s etc and other permitted uses as per plans. The VENDEE/S shall not be permitted to use the services areas and the basements in any manner whatsoever, other than those earmarked as parking formed by the VENDEE/S for rendering maintenance services.</span></div></div>
 <div class="ag-keep"><div class="ci"><span class="c5">15.GENERAL COMPLAINCE WITH RESPECT TO THE FLAT:</span></div>
@@ -1037,8 +1037,8 @@ img { border:0; }
 <div class="ag-keep"><div class="c2u"><span class="c5">34. OTHER TERMS AND CONDITIONS:</span></div>
 <div class="ch"><span class="c4">Realization of Payments: All payments shall be subject to their actual realization in the DEVELOPER&#8217;s account. The date of credit into the aforesaid account or the DEVELOPER shall be deemed to be the date of payment of an installment by the VENDEE/S.</span></div></div>
 <div class="ch"><span class="c4">In WITNESS WHEREOF, parties herein above named have set their respective hands and signed this Agreement for Sale at Hyderabad in the presence of attesting witness, signing as such on the day, first written above.</span></div>
-<div class="c4t"><span class="c4s">SIGNED AND DELIVERED BY:</span></div>
-<div class="c4t"><span class="c4u">VENDEE/S:</span></div>
+<div class="ag-keep"><div class="c4t"><span class="c4s">SIGNED AND DELIVERED BY:</span></div>
+<div class="c4t"><span class="c4u">VENDEE/S:</span></div></div>
 <div class="c4w">(1)<span class="c4v"></span><span class="c4u">Signature: &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;.</span></div>
 <div class="c4x ag-tight">&#160;</div>
 <div class="c4y"><span class="c4u">Name: &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;.</span></div>
@@ -1047,13 +1047,13 @@ img { border:0; }
 <div class="c51 ag-tight">&#160;</div>
 <div class="c4y"><span class="c4u">Name: &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;.</span></div>
 <div class="c4y ag-tight">&#160;</div>
-<div class="c52"><span class="c4s">SIGNED AND DELIVERED BY THE NAMED AGREEMENT OF SALE CUM POWER OF ATTORNEY HOLDER ON BEHALF OF ALL THE 3 VENDORS NAMED HEREIN:</span></div>
-<div class="c53">1.<span class="cm"></span><span class="c4u">Signature: (AGPA HOLDER): &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;.</span></div>
+<div class="ag-keep"><div class="c52"><span class="c4s">SIGNED AND DELIVERED BY THE NAMED AGREEMENT OF SALE CUM POWER OF ATTORNEY HOLDER ON BEHALF OF ALL THE 3 VENDORS NAMED HEREIN:</span></div>
+<div class="c53">1.<span class="cm"></span><span class="c4u">Signature: (AGPA HOLDER): &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;.</span></div></div>
 <div class="c54 ag-tight">&#160;</div>
 <div class="c55"><span class="c4u">At &#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;on&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;&#8230;in the presence of:</span></div>
 <div class="c56 ag-tight">&#160;</div>
-<div class="c55"><span class="c4u">WITNESSES:</span></div>
-<div class="c55 ag-tight">&#160;</div>
+<div class="ag-keep"><div class="c55"><span class="c4u">WITNESSES:</span></div>
+<div class="c55 ag-tight">&#160;</div></div>
 <div class="c55"><span class="c4u">1)</span></div>
 <div class="c57 ag-tight">&#160;</div>
 <div class="c55"><span class="c4u">2)</span></div>

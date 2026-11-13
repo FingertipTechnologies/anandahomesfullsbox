@@ -9,6 +9,8 @@ public with sharing class LegacySaleDeedController {
         public Receipt__c receipt { get; private set; }
         /** "94,55,900" - Indian grouping, no decimals. */
         public String amountDisplay { get; private set; }
+        /** "Rupees Fifty Thousand Only" */
+        public String amountWords { get; private set; }
         /** NEFT / RTGS / Cheque / UPI ... */
         public String mode { get; private set; }
         /** Transaction reference, else cheque / transaction number, else cheque number. */
@@ -19,6 +21,8 @@ public with sharing class LegacySaleDeedController {
         private PaymentEntry(Receipt__c source, Integer index) {
             receipt = source;
             amountDisplay = indianNumber(source.Amount_received__c);
+            amountWords = source.Amount_received__c == null ? ''
+                : 'Rupees ' + new NumberTOWordConvertion().getNumberTOWordConvertion(source.Amount_received__c);
             mode = String.isNotBlank(source.Payment_Method__c) ? source.Payment_Method__c : source.Mode_of_payment__c;
             reference = String.isNotBlank(source.Transaction_Reference__c) ? source.Transaction_Reference__c
                 : String.isNotBlank(source.Check_Transaction_Nmber__c) ? source.Check_Transaction_Nmber__c
@@ -188,7 +192,6 @@ public with sharing class LegacySaleDeedController {
             WHERE Booking__c = :bookingId
               AND Amount_received__c > 0
               AND Approval_Status__c IN ('Approved', 'Approved by Finance Team')
-              AND (Receipt_Type__c = null OR Receipt_Type__c NOT IN ('GST Amount', 'Additional Charge'))
             ORDER BY Receipt_Date__c ASC, CreatedDate ASC
             LIMIT 200
         ];

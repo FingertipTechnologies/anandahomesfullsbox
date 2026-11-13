@@ -2,7 +2,8 @@
  * Controller extension for the landowner / builder-share "Agreement of Sale"
  * Visualforce PDFs (ARJUN_SINGH_, MAGHAN_SINGH_, SURESH_SINGH_, NAVEEN_SINGH_,
  * NITIN_SINGH_ and BUILDER_SHARE_AGREEMENT_OF_SALE) and for THE DRIZZLE builder
- * agreements (SaleAgreementDrizzil and MortgageAgreementofSaleDrizzle).
+ * agreement (SaleAgreementDrizzil - one page: it prints the HMDA mortgage clause
+ * itself when the booked unit is ticked "Mortgaged to HMDA").
  *
  * The landowner whose template is being rendered is derived from the page
  * name. The units that belong to that landowner are identified by the
@@ -517,6 +518,23 @@ public with sharing class AgreementOfSaleController {
         return paymentScheduleRows != null && !paymentScheduleRows.isEmpty();
     }
 
+    /**
+     * "Download" in the Agreement Preview window opens the agreement page with download=1:
+     * the PDF is then sent as a file (named by fileName) instead of being shown in the browser.
+     */
+    private static void applyDownloadHeader() {
+        PageReference page = ApexPages.currentPage();
+        if (page == null || page.getParameters().get('download') != '1') {
+            return;
+        }
+        String fileName = page.getParameters().get('fileName');
+        fileName = String.isBlank(fileName) ? '' : fileName.replaceAll('[^A-Za-z0-9 _.-]', '').trim();
+        if (String.isBlank(fileName)) {
+            fileName = 'Agreement of Sale';
+        }
+        page.getHeaders().put('content-disposition', 'attachment; filename="' + fileName + '.pdf"');
+    }
+
     public AgreementOfSaleController(ApexPages.StandardController standardController) {
         ownerUnits = new List<OwnerUnitRow>();
         applicants = new List<ApplicantEntry>();
@@ -538,10 +556,10 @@ public with sharing class AgreementOfSaleController {
         buyerNames = '';
         ownerDisplayName = '';
         String pageUrl = currentPageUrl();
+        applyDownloadHeader();
         // Builder (developer share) templates: the unit must not belong to a landowner.
         isBuilderSharePage = pageUrl.contains('BUILDER_SHARE_AGREEMENT_OF_SALE') ||
-            pageUrl.contains('SALEAGREEMENTDRIZZIL') ||
-            pageUrl.contains('MORTGAGEAGREEMENTOFSALEDRIZZLE');
+            pageUrl.contains('SALEAGREEMENTDRIZZIL');
         if (standardController == null || standardController.getId() == null) {
             return;
         }
@@ -571,7 +589,7 @@ public with sharing class AgreementOfSaleController {
                    // THE DRIZZLE price break-up
                    Rate_Per_Sqft__c, GST__c, Covered_Park_Parking__c, Car_Parking_Charges__c,
                    Extra_Covered_Parking_Charges__c,
-                   Quote__r.Price_Per_Sq_Ft__c, Quote__r.Infrastructure_Charges__c,
+                   Quote__r.Price_Per_Sq_Ft__c, Quote__r.Infrastructure_Charges__c, Quote__r.Club_House__c,
                    Quote__r.Amenities_Car_Parking__c, Quote__r.Extra_Covered_Car_Parking_Charges__c,
                    Quote__r.GST1__c,
                    Project__r.Name, Project__r.GST_Percentage__c, Project__r.GST_Other_Percentage__c,
@@ -652,7 +670,7 @@ public with sharing class AgreementOfSaleController {
             selectedUnit = [
                 SELECT Id, Name, Project__r.Name, Plot_Number__c, Tower__c, Tower_Block__c,
                        Floor__c, BHK_Type__c, Facing__c, Carpet_Area__c, Balcony_Area__c,
-                       Built_up_area__c, Saleable_Area_Sft__c,
+                       Built_up_area__c, Saleable_Area_Sft__c, Wall_Area__c, Plinth_Area__c,
                        Common_Area_Allotted_to_Association__c, UDS__c, UDS_Sq_mts__c, Utility_Area__c,
                        East_North_Facing__c,
                        Boundary_North__c, Boundary_South__c, Boundary_East__c, Boundary_West__c,
@@ -1446,7 +1464,14 @@ public with sharing class AgreementOfSaleController {
             otherGstPercent = 18;
         }
 
-        Decimal club = booking.Quote__r == null ? null : positive(booking.Quote__r.Infrastructure_Charges__c);
+        // "Club House Membership & Infrastructure Charges" = the quote's Club House charge plus its
+        // Infrastructure charge (THE DRIZZLE units carry the club house amount in Club House).
+        Decimal club = null;
+        if (booking.Quote__r != null) {
+            Decimal clubSum = nz(positive(booking.Quote__r.Club_House__c))
+                + nz(positive(booking.Quote__r.Infrastructure_Charges__c));
+            club = clubSum > 0 ? clubSum : null;
+        }
         Decimal parking = firstPositive(new List<Decimal>{
             booking.Quote__r == null ? null : booking.Quote__r.Amenities_Car_Parking__c,
             booking.Covered_Park_Parking__c,
@@ -1483,13 +1508,21 @@ public with sharing class AgreementOfSaleController {
         }
 
         Integer parkingCount = carParkingCount();
-        drizzlePriceLines.add(new ChargeLine('Basic Price', plainNumber(rate), basic, percentOf(basic, gstPercent)));
+        // GST is charged once on the agreed cost, so the GST column has to add up to that figure:
+        // the Basic Price row takes whatever is left after the other two rows (rounding included).
+        Decimal clubGst = percentOf(nz(club), gstPercent);
+        Decimal parkingGst = percentOf(nz(parking), gstPercent);
+        Decimal basicGst = percentOf(basic, gstPercent);
+        if (total != null && basic != null) {
+            basicGst = percentOf(total, gstPercent) - clubGst - parkingGst;
+        }
+        drizzlePriceLines.add(new ChargeLine('Basic Price', plainNumber(rate), basic, basicGst));
         drizzlePriceLines.add(new ChargeLine(
-            'Club House Membership & Infrastructure Charges', '', nz(club), percentOf(nz(club), gstPercent)
+            'Club House Membership & Infrastructure Charges', '', nz(club), clubGst
         ));
         drizzlePriceLines.add(new ChargeLine(
             'Car Parking (' + (parkingCount == 0 ? 'Nil' : String.valueOf(parkingCount) + ' No.') + ')',
-            '', nz(parking), percentOf(nz(parking), gstPercent)
+            '', nz(parking), parkingGst
         ));
         drizzlePriceTotal = sumLines('Total', drizzlePriceLines);
 
@@ -1598,12 +1631,9 @@ public with sharing class AgreementOfSaleController {
 
     /**
      * True when the HMDA mortgage clause must be printed: the booked unit is ticked
-     * "Mortgaged to HMDA", or the dedicated mortgage agreement page is being rendered.
+     * "Mortgaged to HMDA". (There is no separate mortgage agreement page any more.)
      */
     public Boolean getIsMortgagedUnit() {
-        if (currentPageUrl().contains('MORTGAGEAGREEMENTOFSALEDRIZZLE')) {
-            return true;
-        }
         return selectedUnit != null && selectedUnit.Mortgaged_to_HMDA__c == true;
     }
 

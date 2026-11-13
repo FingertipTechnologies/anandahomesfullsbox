@@ -606,11 +606,11 @@ img { border:0; }
 </tr>
 <tr class="c2c">
 <td class="c24"><div class="c2d"><span class="c7">WALL AREA</span></div></td>
-<td class="c24"><div class="c2d"><span class="c7"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedWallArea}"/></apex:outputText> SQ. FT</span></div></td>
+<td class="c24"><div class="c2d"><span class="c7"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Wall_Area__c}"/></apex:outputText> SQ. FT</span></div></td>
 </tr>
 <tr class="c2c">
 <td class="c24"><div class="c2d"><span class="c7">PLINTH AREA</span></div></td>
-<td class="c24"><div class="c2d"><span class="c7"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Built_up_area__c}"/></apex:outputText> SQ. FT</span></div></td>
+<td class="c24"><div class="c2d"><span class="c7"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Plinth_Area__c}"/></apex:outputText> SQ. FT</span></div></td>
 </tr>
 <tr class="c2c">
 <td class="c24"><div class="c2d"><span class="c7">COMMON AREA</span></div></td>
@@ -1093,15 +1093,15 @@ img { border:0; }
 <tr class="c5h">
 <td class="c23"><div class="c5i"><span class="c4">{!schedule.installmentName}</span></div></td>
 <td class="c24"><div class="c5j"><span class="c4"><apex:outputText value="{0,number,###.##}"><apex:param value="{!schedule.percentage}"/></apex:outputText>%</span></div></td>
-<td class="c23"><div class="c5j"><span class="c6"><span style="font-family:'Arial Unicode MS'">&#8377;</span> {!schedule.flatCostDisplay}</span></div></td>
-<td class="c23"><div class="c5j"><span class="c6"><span style="font-family:'Arial Unicode MS'">&#8377;</span> {!schedule.netAmountDisplay}</span></div></td>
+<td class="c23"><div class="c5j"><span class="c6"><img src="{!URLFOR($Resource.Rupee_Sign)}" style="height:7.3pt;vertical-align:baseline"/>&#160;{!schedule.flatCostDisplay}</span></div></td>
+<td class="c23"><div class="c5j"><span class="c6"><img src="{!URLFOR($Resource.Rupee_Sign)}" style="height:7.3pt;vertical-align:baseline"/>&#160;{!schedule.netAmountDisplay}</span></div></td>
 </tr>
 </apex:repeat>
 <tr class="c5h">
 <td class="c24"><div class="c5i"><span class="c5">TOTAL FLAT COST INCLUDING </span></div></td>
 <td class="c24"><div class="c5j"><span class="c5">{!totalSchedulePercentage}%</span></div></td>
-<td class="c24"><div class="c5j"><span class="c7"><span style="font-family:'Arial Unicode MS'">&#8377;</span> {!formattedTotalScheduleFlatCost}</span></div></td>
-<td class="c24"><div class="c5j"><span class="c7"><span style="font-family:'Arial Unicode MS'">&#8377;</span> {!formattedTotalScheduleNetAmount}</span></div></td>
+<td class="c24"><div class="c5j"><span class="c7"><img src="{!URLFOR($Resource.Rupee_Sign_Bold)}" style="height:7.3pt;vertical-align:baseline"/>&#160;{!formattedTotalScheduleFlatCost}</span></div></td>
+<td class="c24"><div class="c5j"><span class="c7"><img src="{!URLFOR($Resource.Rupee_Sign_Bold)}" style="height:7.3pt;vertical-align:baseline"/>&#160;{!formattedTotalScheduleNetAmount}</span></div></td>
 </tr>
 </table></div>
 <div class="c0" style="margin-top:18pt"><span class="cj">SCHEDULE &#8216;D&#8217; SPECIFICATIONS</span></div>
@@ -1153,7 +1153,7 @@ img { border:0; }
 </colgroup>
 <tr class="c5t">
 <td class="c5p"><div class="c2d"><span class="c4">Utilities / Wash areas</span></div></td>
-<td class="c5q"><div class="c2d"><span class="c4">Anti-skid tile &#64258;ooring and dado up to 3' height and Power Point for washing Machine.</span></div></td>
+<td class="c5q"><div class="c2d"><span class="c4">Anti-skid tile flooring and dado up to 3' height and Power Point for washing Machine.</span></div></td>
 </tr>
 </table></div>
 <div style="page-break-inside:avoid"><table class="c5k"><colgroup>
@@ -1162,7 +1162,7 @@ img { border:0; }
 </colgroup>
 <tr class="c5u">
 <td class="c5p"><div class="c2d"><span class="c4">Toilet</span></div></td>
-<td class="c5q"><div class="c2d"><span class="c4">Anti-skid tile &#64258;ooring and designed patterns of glazed tiles will be provided for cladding up to lintel level in bath rooms.</span></div></td>
+<td class="c5q"><div class="c2d"><span class="c4">Anti-skid tile flooring and designed patterns of glazed tiles will be provided for cladding up to lintel level in bath rooms.</span></div></td>
 </tr>
 </table></div>
 <div style="page-break-inside:avoid"><table class="c5k"><colgroup>
@@ -1208,7 +1208,7 @@ img { border:0; }
 </colgroup>
 <tr class="c5z">
 <td class="c5p"><div class="c2d"><span class="c4">Gas Pipe line</span></div></td>
-<td class="c5q"><div class="c2d"><span class="c4">Centralized piped gas to all &#64258;ats through digital/prepaid meters with ISI standards.</span></div></td>
+<td class="c5q"><div class="c2d"><span class="c4">Centralized piped gas to all flats through digital/prepaid meters with ISI standards.</span></div></td>
 </tr>
 </table></div>
 <div style="page-break-inside:avoid"><table class="c5k"><colgroup>

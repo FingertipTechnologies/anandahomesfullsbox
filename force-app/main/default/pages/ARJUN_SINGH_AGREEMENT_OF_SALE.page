@@ -684,11 +684,11 @@ img { border:0; }
 </tr>
 <tr>
 <td class="c26"><div class="cc"><span class="c8">WALL AREA</span></div></td>
-<td class="c26"><div class="cc"><span class="c8"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedWallArea}"/></apex:outputText> SQ. FT</span></div></td>
+<td class="c26"><div class="cc"><span class="c8"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Wall_Area__c}"/></apex:outputText> SQ. FT</span></div></td>
 </tr>
 <tr>
 <td class="c26"><div class="cc"><span class="c8">PLINTH AREA</span></div></td>
-<td class="c26"><div class="cc"><span class="c8"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Built_up_area__c}"/></apex:outputText> SQ. FT</span></div></td>
+<td class="c26"><div class="cc"><span class="c8"><apex:outputText value="{0,number,###,##0.##}"><apex:param value="{!selectedUnit.Plinth_Area__c}"/></apex:outputText> SQ. FT</span></div></td>
 </tr>
 <tr>
 <td class="c26"><div class="cc"><span class="c8">COMMON AREA</span></div></td>
@@ -1346,14 +1346,14 @@ img { border:0; }
 <tr class="cy">
 <td class="cz"><div class="c5d"><span class="c5">{!schedule.installmentName}</span></div></td>
 <td class="c26"><div class="c5e"><span class="c5"><apex:outputText value="{0,number,###.##}"><apex:param value="{!schedule.percentage}"/></apex:outputText>%</span></div></td>
-<td class="cz"><div class="c5e"><span class="c6"><span style="font-family:'Arial Unicode MS'">&#8377;</span> {!schedule.flatCostDisplay}</span></div></td>
-<td class="cz"><div class="c5e"><span class="c6"><span style="font-family:'Arial Unicode MS'">&#8377;</span> {!schedule.netAmountDisplay}</span></div></td>
+<td class="cz"><div class="c5e"><span class="c6"><img src="{!URLFOR($Resource.Rupee_Sign)}" style="height:7.3pt;vertical-align:baseline"/>&#160;{!schedule.flatCostDisplay}</span></div></td>
+<td class="cz"><div class="c5e"><span class="c6"><img src="{!URLFOR($Resource.Rupee_Sign)}" style="height:7.3pt;vertical-align:baseline"/>&#160;{!schedule.netAmountDisplay}</span></div></td>
 </tr>
 </apex:repeat><tr class="cy">
 <td class="c26"><div class="c5d"><span class="c6">TOTAL FLAT COST INCLUDING </span></div></td>
 <td class="c26"><div class="c5e"><span class="c6">{!totalSchedulePercentage}%</span></div></td>
-<td class="c26"><div class="c5e"><span class="c8"><span style="font-family:'Arial Unicode MS'">&#8377;</span> {!formattedTotalScheduleFlatCost}</span></div></td>
-<td class="c26"><div class="c5e"><span class="c8"><span style="font-family:'Arial Unicode MS'">&#8377;</span> {!formattedTotalScheduleNetAmount}</span></div></td>
+<td class="c26"><div class="c5e"><span class="c8"><img src="{!URLFOR($Resource.Rupee_Sign_Bold)}" style="height:7.3pt;vertical-align:baseline"/>&#160;{!formattedTotalScheduleFlatCost}</span></div></td>
+<td class="c26"><div class="c5e"><span class="c8"><img src="{!URLFOR($Resource.Rupee_Sign_Bold)}" style="height:7.3pt;vertical-align:baseline"/>&#160;{!formattedTotalScheduleNetAmount}</span></div></td>
 </tr>
 </table>
 <div class="cc">&#160;</div>
@@ -1391,11 +1391,11 @@ img { border:0; }
 </tr>
 <tr class="c5n">
 <td class="c5k"><div class="cc"><span class="c5">Utilities / Wash areas</span></div></td>
-<td class="c5l"><div class="cc"><span class="c5">Anti-skid tile &#64258;ooring and dado up to 3' height and Power Point for washing Machine.</span></div></td>
+<td class="c5l"><div class="cc"><span class="c5">Anti-skid tile flooring and dado up to 3' height and Power Point for washing Machine.</span></div></td>
 </tr>
 <tr class="c5o">
 <td class="c5k"><div class="cc"><span class="c5">Toilet</span></div></td>
-<td class="c5l"><div class="cc"><span class="c5">Anti-skid tile &#64258;ooring and designed patterns of glazed tiles will be provided for cladding up to lintel level in bath rooms.</span></div></td>
+<td class="c5l"><div class="cc"><span class="c5">Anti-skid tile flooring and designed patterns of glazed tiles will be provided for cladding up to lintel level in bath rooms.</span></div></td>
 </tr>
 <tr class="c5p">
 <td class="c5k"><div class="cc"><span class="c5">Waterproofing</span></div></td>
@@ -1416,7 +1416,7 @@ img { border:0; }
 </tr>
 <tr class="c5t">
 <td class="c5k"><div class="cc"><span class="c5">Gas Pipe line</span></div></td>
-<td class="c5l"><div class="cc"><span class="c5">Centralized piped gas to all &#64258;ats through digital/prepaid meters with ISI standards.</span></div></td>
+<td class="c5l"><div class="cc"><span class="c5">Centralized piped gas to all flats through digital/prepaid meters with ISI standards.</span></div></td>
 </tr>
 <tr class="c5m">
 <td class="c5k"><div class="cc"><span class="c5">Plumbing</span></div></td>

@@ -1,15 +1,16 @@
 ({
     getPickListValue : function(component, event, helper)
     {
-        // Project options for the form: server side excludes the "No Project" placeholder.
-        var action = component.get("c.getProjectOptions");
+        //var recoooordif = component.get("v.recordId");
+        //alert('hiii getPickListValue  '+ recoooordif)
+        var action = component.get("c.getPickListValues");
+        
         action.setCallback(this, function(response){
             var state = response.getState();
             if(state == 'SUCCESS') {
-                var values = response.getReturnValue() || [];
-                var options = values.map(function(v){ return { label: v, value: v }; });
-                component.set('v.projectOptions', options);
-                component.set('v.projectName', values);
+                var ProjectPickList = response.getReturnValue();
+                console.log(ProjectPickList);
+                component.set('v.projectName',ProjectPickList)
             }
         });
         $A.enqueueAction(action);

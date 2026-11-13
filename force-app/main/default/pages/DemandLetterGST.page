@@ -1,0 +1,95 @@
+<apex:page standardController="Demands__c" extensions="DemandLetterPDFController" renderAs="pdf" showHeader="false"
+           sidebar="false" applyBodyTag="false" applyHtmlTag="false" title="GST Demand Letter">
+<html>
+<head>
+    <style type="text/css">
+        @page { size: A4 portrait; margin: 19mm 18mm; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #111; line-height: 1.4; }
+        p { margin: 0 0 10px; }
+        .date { margin-bottom: 15px; }
+        .subject { margin-top: 4px; }
+        .installment-table, .account-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 12px 0 16px; }
+        .installment-table th, .installment-table td, .account-table td { border: 1px solid #222; padding: 6px; vertical-align: middle; }
+        .installment-table th { text-align: center; font-weight: bold; }
+        .installment-table td { text-align: right; }
+        .installment-table td:first-child, .account-table td:first-child { text-align: left; }
+        .installment-table .total-label { font-weight: bold; text-align: left; }
+        .account-table td:first-child { width: 32%; font-weight: bold; }
+        .signature { margin-top: 22px; }
+        .error { border: 1px solid #900; color: #900; padding: 10px; }
+    </style>
+</head>
+<body>
+    <apex:outputPanel layout="block" rendered="{!NOT(ISBLANK(errorMessage))}" styleClass="error">
+        <apex:outputText value="{!errorMessage}" />
+    </apex:outputPanel>
+    <apex:outputPanel layout="block" rendered="{!ISBLANK(errorMessage)}">
+        <p class="date">Date: <apex:outputField value="{!Demands__c.Demand_Date__c}" /></p>
+        <p>To,</p>
+        <p><strong><apex:outputField value="{!Demands__c.Booking__r.Applicant_Name__c}" /></strong></p>
+        <p class="subject"><strong>Sub: Demand Letter for GST Disbursement.</strong></p>
+        <p>
+            Ref: LAN No. <apex:outputField value="{!Demands__c.Booking__r.Loan_Account_Number__c}" />,
+            (Bank Name:- <apex:outputField value="{!Demands__c.Booking__r.Loan_Bank_Name__c}" />)
+        </p>
+        <p>
+            Flat No. <apex:outputField value="{!Demands__c.Booking__r.Plot__r.Name}" />;
+            Tower – <apex:outputField value="{!Demands__c.Booking__r.Plot__r.Tower_Block__c}" />;
+            <apex:outputField value="{!Demands__c.Booking__r.FloorNo__c}" /> Floor;
+            Project – “<apex:outputField value="{!Demands__c.Booking__r.Project__r.Name}" />”
+        </p>
+        <p>
+            With reference to the subject mentioned, we are pleased to inform you that, we have
+            completed the construction progress as per the Instalment Description, mentioned in
+            the below table.
+        </p>
+        <p>
+            Kindly request you to release the GST amount of Rs.
+            <strong><apex:outputField value="{!Demands__c.Demanded_Amount__c}" />/-</strong>,
+            receivable within
+            7 days from the date of this demand letter.
+        </p>
+        <table class="installment-table">
+            <colgroup>
+                <col style="width:30%" /><col style="width:17%" />
+                <col style="width:27%" /><col style="width:26%" />
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Instalment Description</th>
+                    <th>% AS PER STAGE</th>
+                    <th>Flat Installment Amount<br/>(A)</th>
+                    <th>5% GST Payable on Installment<br/>(B)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><apex:outputField value="{!Demands__c.Payment_Schedule__r.Milestone_Name__c}" /></td>
+                    <td><apex:outputField value="{!Demands__c.Payment_Schedule__r.Percentage__c}" /></td>
+                    <td>
+                        <apex:outputText value="{0, number, #,##0.00}">
+                            <apex:param value="{!(Demands__c.Flat_Amount__c + Demands__c.TDS_Amount__c)}" />
+                        </apex:outputText>
+                    </td>
+                    <td><apex:outputField value="{!Demands__c.GST_Amount__c}" /></td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="total-label">TOTAL GST PAYABLE (Rs.)</td>
+                    <td><strong><apex:outputField value="{!Demands__c.GST_Amount__c}" />/-</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        <p>We accept payments by way of A/c Payee Cheques or may do online transfer as stated hereunder:</p>
+        <table class="account-table">
+            <tbody>
+                <tr><td>Payee’s Name:</td><td><apex:outputText value="{!accountHolder}" /></td></tr>
+                <tr><td>Account No:</td><td><apex:outputText value="{!accountNumber}" /></td></tr>
+                <tr><td>Bank &amp; Branch:</td><td><apex:outputText value="{!bankName}" />; <apex:outputText value="{!accountBranch}" /></td></tr>
+                <tr><td>IFSC Code:</td><td><apex:outputText value="{!ifscCode}" /></td></tr>
+            </tbody>
+        </table>
+        <p class="signature">Thanking you,<br/><strong>For M/S. <apex:outputField value="{!Demands__c.Booking__r.Project__r.Name}" /></strong><br/>AUTHORISED SIGNATORY</p>
+    </apex:outputPanel>
+</body>
+</html>
+</apex:page>

@@ -71,6 +71,13 @@
                                 required>
                             </lightning-input>
                         </div>
+                        <template if:true={isSalesTransfer}>
+                            <div class="slds-col slds-size_1-of-1 slds-p-bottom_small">
+                                <p class="slds-text-color_weak">
+                                    The Lead Record Type will change to Sales with this permanent transfer.
+                                </p>
+                            </div>
+                        </template>
                     </div>
 
                     <!-- Filters -->
@@ -117,8 +124,7 @@
                                         type="search"
                                         label="Mobile Number"
                                         value={mobileFilter}
-                                        onchange={handleMobileFilterChange}
-                                        placeholder="Last 4-5 digits">
+                                        onchange={handleMobileFilterChange}>
                                     </lightning-input>
                                 </div>
                             </div>
@@ -170,6 +176,7 @@
                                                 <span class="slds-truncate">Select</span>
                                             </th>
                                             <th scope="col"><span class="slds-truncate">Lead ID</span></th>
+                                            <th scope="col"><span class="slds-truncate">Lead Name</span></th>
                                             <th scope="col"><span class="slds-truncate">Phone</span></th>
                                             <th scope="col"><span class="slds-truncate">Status</span></th>
                                             <th scope="col"><span class="slds-truncate">Project</span></th>
@@ -191,6 +198,7 @@
                                                     </lightning-input>
                                                 </td>
                                                 <td>{lead.Name}</td>
+                                                <td>{lead.Name__c}</td>
                                                 <td>{lead.Phone__c}</td>
                                                 <td>{lead.Lead_Status__c}</td>
                                                 <td>{lead.Allocated_Project__c}</td>

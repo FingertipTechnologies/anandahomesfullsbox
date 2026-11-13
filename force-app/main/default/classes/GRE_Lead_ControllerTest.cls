@@ -64,11 +64,7 @@ private class GRE_Lead_ControllerTest {
         rs.CLead__c = testLead.Id;
 
         Test.startTest();
-        // updated by claude 29-09-26 - reassignment paths now return the assigned user's name for the GRE toast.
-        // Keep the running user as owner (no actual owner change) so org-side automation on OwnerId change does not fire in tests.
-        testLead.OwnerId = UserInfo.getUserId();
-        String assignedName = GRE_Lead_Controller.saveChanges(testLead, sv, null , testLead.OwnerId, testUser.Id, 'CancelFollowups', false);
-        System.assertEquals(UserInfo.getName(), assignedName, 'CancelFollowups reassignment should return the assigned user name');
+        GRE_Lead_Controller.saveChanges(testLead, sv, null , testLead.OwnerId, testUser.Id, 'CancelFollowups', false);
         GRE_Lead_Controller.saveChanges(testLead, sv, rs , testLead.OwnerId, testUser.Id, 'insertRelatedSource', false);
         Test.stopTest();
 
@@ -136,7 +132,6 @@ private class GRE_Lead_ControllerTest {
             FirstName = 'John',
             LastName = 'Doe',
             Company = 'ABC Ltd.',
-            Phone = '1234567890', // updated by claude 29-09-26 - standard Phone required: LeadTriggerStandardLead copies it into required Lead__c.Phone__c
             Phone__c = '1234567890'
         );
         insert testLead;
@@ -184,8 +179,7 @@ private class GRE_Lead_ControllerTest {
     @IsTest
     static void testUpdateSiteVisitStatus() {
         // Step 1: Create test data for Site Visit
-        // updated by claude 29-09-26 - standard Phone required: LeadTriggerStandardLead copies it into required Lead__c.Phone__c
-        Lead testLead = new Lead(FirstName = 'John', LastName = 'Doe', Company = 'ABC Ltd.', Phone = '1234567890', phone__c='1234567890');
+        Lead testLead = new Lead(FirstName = 'John', LastName = 'Doe', Company = 'ABC Ltd.',phone__c='1234567890');
         insert testLead;
         
         Site_Visit__c siteVisit = new Site_Visit__c(slead__c = testLead.Id, Status__c = 'Scheduled', Date__c = System.now().addminutes(5));
@@ -206,9 +200,6 @@ private class GRE_Lead_ControllerTest {
         Lead__c testLead = new Lead__c(Name__c = 'MoveToSales Lead', Phone__c = '1234567890');
         insert testLead;
 
-        // Push to Sales requires at least one Scheduled Site Visit
-        insert new Site_Visit__c(CLead__c = testLead.Id, Status__c = 'Scheduled', Date__c = System.now().addDays(1));
-
         // Step 2: Call the moveToSales method
         Test.startTest();
         String recordId = GRE_Lead_Controller.moveToSales(testLead.Id, 'Moving to Sales', '');
@@ -221,8 +212,7 @@ private class GRE_Lead_ControllerTest {
     /* commented out by claude 30-03-26 15:32 - getLeadDetailsById method was commented out (queries standard Lead instead of Lead__c)
     @IsTest
     static void testGetLeadDetailsById() {
-        // updated by claude 29-09-26 - standard Phone required: LeadTriggerStandardLead copies it into required Lead__c.Phone__c
-        Lead testLead = new Lead(FirstName = 'John', LastName = 'Doe', Company = 'ABC Ltd.', Phone = '1234567890', phone__c='1234567890');
+        Lead testLead = new Lead(FirstName = 'John', LastName = 'Doe', Company = 'ABC Ltd.',phone__c='1234567890');
         insert testLead;
         Test.startTest();
         Lead leadRecord = GRE_Lead_Controller.getLeadDetailsById(testLead.Id);
@@ -233,7 +223,7 @@ private class GRE_Lead_ControllerTest {
     */
     
     // Covers saveChanges actionType='ShareRecords' and svRec.Id != null paths
-   /* @IsTest
+    @IsTest
     static void testSaveChangesShareRecordsAndExistingSV() {
         Lead__c testLead = new Lead__c(Name__c = 'Test Share Records Lead', Phone__c = '6655443322');
         insert testLead;
@@ -261,9 +251,7 @@ private class GRE_Lead_ControllerTest {
 
         Test.startTest();
         // actionType='ShareRecords': covers Lead__Share and Site_Visit__Share creation
-        // updated by claude 29-09-26 - non-reassignment path should return null (no name in the toast)
-        String noReassignName = GRE_Lead_Controller.saveChanges(testLead, svNew, null, UserInfo.getUserId(), svUser.Id, 'ShareRecords', false);
-        System.assertEquals(null, noReassignName, 'ShareRecords (no reassignment) should not return a user name');
+        GRE_Lead_Controller.saveChanges(testLead, svNew, null, UserInfo.getUserId(), svUser.Id, 'ShareRecords', false);
 
         // Now cover svRec.Id != null path: insert a real SV first, then pass it in
         Site_Visit__c existingSv = new Site_Visit__c(
@@ -277,7 +265,7 @@ private class GRE_Lead_ControllerTest {
         insert existingSv;
         GRE_Lead_Controller.saveChanges(testLead, existingSv, null, UserInfo.getUserId(), svUser.Id, 'CancelFollowups', false);
         Test.stopTest();
-    }*/
+    }
 
     // Covers saveChanges useRoundRobin=true exception path (no RR users available)
     @IsTest
@@ -300,8 +288,6 @@ private class GRE_Lead_ControllerTest {
         }
         Test.stopTest();
     }
-
-    
 
     // added by claude 30-03-26 08:49
     @IsTest
@@ -505,22 +491,7 @@ private class GRE_Lead_ControllerTest {
             }
         }
         System.assert(found, 'The test user should be included in the sales users list');
-
-    }
-
-    /** Project options for the GRE New Lead form never include the "No Project" placeholder. */
-    @isTest
-    static void testGetProjectOptions_ExcludesNoProject() {
-        Test.startTest();
-        List<String> options = GRE_Lead_Controller.getProjectOptions();
-        Test.stopTest();
-
-        System.assert(!options.contains(GRE_Lead_Controller.NO_PROJECT), 'No Project must not be offered to users');
-        Integer activeCount = 0;
-        for (Schema.PicklistEntry pe : Lead__c.Allocated_Project__c.getDescribe().getPicklistValues()) {
-            if (pe.isActive() && pe.getValue() != GRE_Lead_Controller.NO_PROJECT) activeCount++;
-        }
-        System.assertEquals(activeCount, options.size(), 'Every other active project should be offered');
+        
     }
     
 }

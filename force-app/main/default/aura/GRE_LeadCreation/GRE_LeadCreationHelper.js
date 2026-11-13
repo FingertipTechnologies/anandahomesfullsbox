@@ -187,8 +187,7 @@
         var action = component.get("c.updateSVCheckoutTime");
         action.setParams({
             svId: component.get("v.checkoutSVId"),
-            checkoutTime: component.get("v.checkoutTime"),
-            checkoutRemark: component.get("v.checkoutRemark") // added by ankita 27-10-1026 Passing checkoutRemark
+            checkoutTime: component.get("v.checkoutTime")
         });
 
         action.setCallback(this, function(resp){
@@ -199,7 +198,6 @@
 
                 component.set("v.isCheckoutModalOpen", false);
                 component.set("v.checkoutTime", null);
-                component.set("v.checkoutRemark", ""); // added by ankita 27-10-2026 Reseting remark
 
                 // ⭐ Refresh site visits so the Fill Checkout button hides
                 if (refreshAfter) {

@@ -171,6 +171,113 @@ public with sharing class DocumentDesignerController {
         }
     }
 
+    @AuraEnabled
+    public static TemplateWrapper getCapriNocTemplateDraft() {
+        TemplateWrapper draft = new TemplateWrapper();
+        draft.name = 'CAPRI NOC Format - Loan';
+        draft.objectApiName = 'Booking__c';
+        draft.description = 'CAPRI Global Capital loan NOC with live Booking, Project, Plot, and received receipt data.';
+        draft.isActive = true;
+        draft.fileNamePattern = 'CAPRI_NOC_{!Name}';
+        draft.pageSize = DEFAULT_PAGE_SIZE;
+        draft.pageOrientation = DEFAULT_ORIENTATION;
+        draft.displayContext = 'Document Viewer';
+        draft.actionBinding = '';
+        draft.matchingCriteria = '';
+
+        Map<String, Object> template = new Map<String, Object>{
+            'header' => new Map<String, Object>{
+                'left' => new Map<String, Object>{ 'type' => 'none', 'content' => '' },
+                'center' => new Map<String, Object>{ 'type' => 'none', 'content' => '' },
+                'right' => new Map<String, Object>{ 'type' => 'text', 'content' => '<b>Date:</b> {!TODAY}' }
+            },
+            'footer' => new Map<String, Object>{
+                'content' => '',
+                'showPageNumbers' => true,
+                'pageNumberPosition' => 'center',
+                'fontSize' => '10px',
+                'textColor' => '#666666'
+            },
+            'styles' => new Map<String, Object>{
+                'fontFamily' => 'Arial, Helvetica, sans-serif',
+                'fontSize' => '11px',
+                'primaryColor' => '#222222',
+                'marginTop' => '15',
+                'marginRight' => '15',
+                'marginBottom' => '15',
+                'marginLeft' => '15'
+            },
+            'sections' => new List<Object>{
+                new Map<String, Object>{
+                    'type' => 'content',
+                    'content' =>
+                        '<p><b>To,</b><br/>Capri Global Capital Limited<br/>502, Tower A,<br/>Peninsula Business Park,<br/>Senapati Bapat Marg,<br/>Lower Parel, Mumbai 400 013.</p>'
+                        + '<p><b>Sub:</b> Request for issue of No Objection Certificate for sale of Flat No. <b>{!Plot__r.Name}</b> in the mortgaged property <b>{!Project__r.Name}</b>, situated at {!Project__r.Project_Address__c}. {!Project__r.Project_description__c}</p>'
+                        + '<p>Dear Sir,</p>'
+                        + '<p>We are pleased to inform you that we have finalized a deal for transfer of the above flat. The flat and sale consideration details are set out below.</p>'
+                        + '<p>We hereby request you to grant a NOC for entering into an Agreement for Sale and for taking a home loan from <b>{!Bank_Name__c}</b>, {!Bank_Branch__c}. Branch contact: {!Banker_Contact_Person__c} {!Banker_Contact_Number__c}.</p>'
+                        + '<p>The in-principle bank sanction letter in favour of the purchaser is attached for your reference.</p>'
+                },
+                new Map<String, Object>{
+                    'type' => 'content',
+                    'content' =>
+                        '<table style="width:100%;border-collapse:collapse;margin:8px 0 14px 0;">'
+                        + '<tr><td style="border:1px solid #777;padding:5px;width:38%;"><b>Flat No.</b></td><td style="border:1px solid #777;padding:5px;">{!Plot__r.Name}</td></tr>'
+                        + '<tr><td style="border:1px solid #777;padding:5px;"><b>Building No.</b></td><td style="border:1px solid #777;padding:5px;">{!Plot__r.Block1__r.Name}</td></tr>'
+                        + '<tr><td style="border:1px solid #777;padding:5px;"><b>Name of Buyer and Address</b></td><td style="border:1px solid #777;padding:5px;">{!Buyer_Address__c}</td></tr>'
+                        + '<tr><td style="border:1px solid #777;padding:5px;"><b>Date of Allotment</b></td><td style="border:1px solid #777;padding:5px;">{!Booking_Date__c}</td></tr>'
+                        + '<tr><td style="border:1px solid #777;padding:5px;"><b>Saleable Area (sq. ft.)</b></td><td style="border:1px solid #777;padding:5px;">{!Plot__r.Saleable_Area_Sft__c}</td></tr>'
+                        + '<tr><td style="border:1px solid #777;padding:5px;"><b>Rate (Rs./sq. ft.)</b></td><td style="border:1px solid #777;padding:5px;">{!Rate_Per_Sqft__c}</td></tr>'
+                        + '<tr><td style="border:1px solid #777;padding:5px;"><b>Amenities &amp; Infrastructure</b></td><td style="border:1px solid #777;padding:5px;">{!Cost_Sheet__r.Amenities_Charges__c}</td></tr>'
+                        + '<tr><td style="border:1px solid #777;padding:5px;"><b>Total Sale Consideration</b></td><td style="border:1px solid #777;padding:5px;">{!Total_Flat_Cost__c}</td></tr>'
+                        + '<tr><td style="border:1px solid #777;padding:5px;"><b>Amount received in escrow till date</b></td><td style="border:1px solid #777;padding:5px;">{!Total_Receipt_Amount__c}</td></tr>'
+                        + '<tr><td style="border:1px solid #777;padding:5px;"><b>Balance Receivables</b></td><td style="border:1px solid #777;padding:5px;">{!NOC_BALANCE_RECEIVABLE}</td></tr>'
+                        + '</table>'
+                },
+                new Map<String, Object>{
+                    'type' => 'content',
+                    'content' => '<p><b>Details of amounts received till date:</b></p>'
+                },
+                new Map<String, Object>{
+                    'type' => 'table',
+                    'title' => '',
+                    'childObject' => 'Receipt_Line_Item__c',
+                    'relationshipField' => 'Booking__c',
+                    'relationshipName' => 'Receipt_Line_Items',
+                    'columns' => new List<Object>{
+                        new Map<String, Object>{ 'label' => 'Sr. No.', 'field' => 'Name' },
+                        new Map<String, Object>{ 'label' => 'Cheque Date', 'field' => 'Cheque_Date__c' },
+                        new Map<String, Object>{ 'label' => 'Deposited Date', 'field' => 'Receipt_Date__c' },
+                        new Map<String, Object>{ 'label' => 'Deposited By', 'field' => 'Payment_From__c' },
+                        new Map<String, Object>{ 'label' => 'Cheque / RTGS / NEFT / IMPS Reference', 'field' => 'Cheque_no_Transaction_Number__c' },
+                        new Map<String, Object>{ 'label' => 'Amount', 'field' => 'Received_Amount__c', 'total' => 'sum' },
+                        new Map<String, Object>{ 'label' => 'Collection Account', 'field' => 'Receipt__r.Account_Name__r.Name' }
+                    },
+                    'filters' => new List<Object>{
+                        new Map<String, Object>{ 'field' => 'Approval_Status__c', 'value' => true },
+                        new Map<String, Object>{ 'field' => 'Receipt__r.Receipt_Status__c', 'value' => 'Received' }
+                    },
+                    'orderBy' => 'Receipt_Date__c',
+                    'maxRows' => 200,
+                    'showRowNumbers' => false,
+                    'showTotals' => true,
+                    'totalsLabel' => 'Total',
+                    'headerBackground' => '#e9eef5',
+                    'headerColor' => '#222222',
+                    'borderColor' => '#777777',
+                    'alternateRowColors' => true,
+                    'alternateRowBackground' => '#f7f9fb'
+                },
+                new Map<String, Object>{
+                    'type' => 'content',
+                    'content' => '<p>Yours truly,</p><p><b>For M/s. ANANDA HOMES</b></p><br/><p>Authorised Signatory</p>'
+                }
+            }
+        };
+        draft.templateJson = JSON.serialize(template);
+        return draft;
+    }
+
     // ============================== SCHEMA HELPERS ==============================
 
     @AuraEnabled(cacheable=true)

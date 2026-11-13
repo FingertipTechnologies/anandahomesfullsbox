@@ -29,27 +29,15 @@ public class RelatedSourceTrigger_Test {
         insert cpOwner;
 
         /* ----------------------------
-           Create Lead
+           Create Lead (Owner ≠ CP Owner)
         ----------------------------- */
         Lead ld = new Lead(
             LastName = 'Test Lead',
             Company = 'Test Company',
-            Phone = '9999999999',
             Phone__c = '9999999999',
             OwnerId = UserInfo.getUserId()
         );
         insert ld;
-
-        /* ----------------------------
-           Pre-insert LeadShare with Edit access
-           (Bypasses the trigger's redundant Read insert)
-        ----------------------------- */
-        LeadShare existingShare = new LeadShare(
-            LeadId = ld.Id,
-            UserOrGroupId = cpOwner.Id,
-            LeadAccessLevel = 'Edit'
-        );
-        insert existingShare;
 
         /* ----------------------------
            Create Channel Partner
@@ -61,7 +49,8 @@ public class RelatedSourceTrigger_Test {
         insert cp;
 
         /* ----------------------------
-           Create custom Lead__c
+           Create custom Lead__c (needed for CLead__c on Related Source
+           to avoid StringException in SendLeadDetailsToPulseTeleSystem)
         ----------------------------- */
         Lead__c customLead = new Lead__c(
             Name__c = 'Test Custom Lead',
@@ -84,7 +73,11 @@ public class RelatedSourceTrigger_Test {
         Test.startTest();
         insert rs;
 
-        // Query & assert BEFORE stopTest (before SLeadTrigger deletes the standard Lead)
+        // Assert BEFORE stopTest — SLeadTrigger queues a @future that
+        // deletes the standard Lead at stopTest, so we must query now.
+        // The RS trigger runs synchronously, so the Lead update and
+        // LeadShare insert are already committed at this point.
+
         Lead updatedLead = [
             SELECT Re_Engaged_CP_Date__c
             FROM Lead
@@ -97,9 +90,18 @@ public class RelatedSourceTrigger_Test {
             'Re-Engaged CP Date should be populated'
         );
 
-        // Test comment sync to AddNoteController
-        rs.comments__c = 'New remark from test';
-        update rs;
+        Integer shareCount = [
+            SELECT COUNT()
+            FROM LeadShare
+            WHERE LeadId = :ld.Id
+            AND UserOrGroupId = :cpOwner.Id
+        ];
+
+        System.assertEquals(
+            1,
+            shareCount,
+            'CP Owner should have Read access to Lead'
+        );
 
         Test.stopTest();
     }

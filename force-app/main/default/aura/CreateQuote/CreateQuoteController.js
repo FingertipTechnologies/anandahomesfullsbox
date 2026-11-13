@@ -249,6 +249,7 @@
             oppPlot.BHK_Type__c = plt[i].BHK_Type__c;
             oppPlot.Unit_Type__c = plt[i].Plot_Type__c;
             oppPlot.Tower__c = plt[i].Block1__c;
+            oppPlot.Tower_Lookup__c = plt[i].Block1__c;
             
             oppPlot.UDS_Area__c = plt[i].UDS__c;
             oppPlot.Super_Built_UpArea__c = plt[i].Super_built_up_area__c;

@@ -58,7 +58,8 @@ private class AutoDemandBatchTest {
         Payment_Schedule__c requeried = [
             SELECT Id, Booking__c, Pending_Amount__c, Payment_Schedule_Amount_Pending__c,
                    GST_Amount_Pending__c, TDS_Amount_Pending__c, Interest_Pending__c,
-                   Demand_Raised__c, Status__c
+                   Demand_Raised__c, Status__c, Sequence__c,
+                   Booking__r.Project__r.Legacy_Split_Demand_Receipt__c
             FROM Payment_Schedule__c WHERE Id = :ps.Id
         ];
         System.assert(
@@ -73,9 +74,19 @@ private class AutoDemandBatchTest {
         batch.execute(null, new List<Payment_Schedule__c>{ requeried });
         Test.stopTest();
 
-       /* System.assertEquals(1, batch.getTotalDemandsCreated(),
-            'Demands created = ' + batch.getTotalDemandsCreated() +
-            '; batch errors = ' + batch.getErrors());*/
+        List<Demands__c> componentDemands = [
+            SELECT Demand_Component__c, Demand_Amount__c, Flat_Amount__c, GST_Amount__c,
+                   TDS_Amount__c
+            FROM Demands__c WHERE Booking__c = :b.Id
+        ];
+        System.assertEquals(1, componentDemands.size(),
+            'Non-legacy projects receive one combined demand. Errors=' + batch.getErrors());
+        System.assertEquals('Flat + GST', componentDemands[0].Demand_Component__c);
+        System.assertEquals(95400, componentDemands[0].Demand_Amount__c);
+        System.assertEquals(80000, componentDemands[0].Flat_Amount__c);
+        System.assertEquals(14400, componentDemands[0].GST_Amount__c);
+        System.assertEquals(1000, componentDemands[0].TDS_Amount__c);
+        System.assertEquals(1, batch.getTotalSchedulesProcessed());
         //System.assertEquals(1, batch.getTotalSchedulesProcessed());
     }
 
@@ -114,6 +125,41 @@ private class AutoDemandBatchTest {
         List<Demands__c> demands = [SELECT Grace_Period_Days__c FROM Demands__c];
         //System.assertEquals(1, demands.size(), 'Expected one demand');
         //System.assertEquals(PostSalesConstants.DEFAULT_GRACE_PERIOD_DAYS, demands[0].Grace_Period_Days__c);
+    }
+
+    @isTest
+    static void execute_legacyProject_keepsSeparateDemands() {
+        Project__c proj = makeProject();
+        proj.Legacy_Split_Demand_Receipt__c = true;
+        update proj;
+        Booking__c booking = makeBooking(proj.Id);
+        Payment_Schedule__c schedule = makeSchedule(booking.Id, Date.today(), 1);
+        insert schedule;
+
+        Payment_Schedule__c loadedSchedule = [
+            SELECT Id, Booking__c, Booking__r.Project__r.Legacy_Split_Demand_Receipt__c,
+                   Booking__r.Funding_Type__c, Pending_Amount__c,
+                   Payment_Schedule_Amount_Pending__c, GST_Amount_Pending__c,
+                   TDS_Amount_Pending__c, Interest_Pending__c,
+                   Milestone_Name__c, Sequence__c
+            FROM Payment_Schedule__c WHERE Id = :schedule.Id
+        ];
+        AutoDemandBatch batch = new AutoDemandBatch(Date.today());
+        Test.startTest();
+        batch.execute(null, new List<Payment_Schedule__c>{ loadedSchedule });
+        Test.stopTest();
+
+        List<Demands__c> demands = [
+            SELECT Demand_Component__c, Demand_Amount__c, TDS_Amount__c
+            FROM Demands__c WHERE Booking__c = :booking.Id
+        ];
+        System.assertEquals(2, demands.size(), 'Legacy project should create Flat and GST demands. Errors=' + batch.getErrors());
+        for (Demands__c demand : demands) {
+            if (demand.Demand_Component__c == 'Flat') {
+                System.assertEquals(81000, demand.Demand_Amount__c);
+                System.assertEquals(1000, demand.TDS_Amount__c);
+            }
+        }
     }
 
     // --------------------------------------------- start() filters

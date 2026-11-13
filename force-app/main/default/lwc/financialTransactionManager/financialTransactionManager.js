@@ -9,7 +9,8 @@ import getOpenDemands from '@salesforce/apex/FinancialTransactionController.getO
 import getAvailableCredits from '@salesforce/apex/FinancialTransactionController.getAvailableCredits';
 import getAvailableAdvances from '@salesforce/apex/FinancialTransactionController.getAvailableAdvances';
 import getTransactionHistory from '@salesforce/apex/FinancialTransactionController.getTransactionHistory';
-import createReceipt from '@salesforce/apex/FinancialTransactionController.createReceipt';
+import createReceiptFromBooking from '@salesforce/apex/FinancialTransactionController.createReceiptFromBooking';
+import getProjectAccountOptions from '@salesforce/apex/FinancialTransactionController.getProjectAccountOptions';
 import createCreditNote from '@salesforce/apex/FinancialTransactionController.createCreditNote';
 import createDebitNote from '@salesforce/apex/FinancialTransactionController.createDebitNote';
 import createRefund from '@salesforce/apex/FinancialTransactionController.createRefund';
@@ -61,6 +62,8 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
     // Receipt Fields
     @track receiptDate = new Date().toISOString().split('T')[0];
     @track receiptType = '';
+    @track projectAccountOptions = [];
+    @track accountNameId = '';
     @track additionalChargeId = '';
     @track amountReceived = 0;
     @track tdsAmount = 0;
@@ -167,6 +170,7 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
         try {
             await Promise.all([
                 this.loadBookingSummary(),
+                this.loadProjectAccountOptions(),
                 this.loadOpenDemands(),
                 this.loadAvailableCredits(),
                 this.loadAvailableAdvances(),
@@ -214,6 +218,11 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
         } catch (error) {
             console.error('Error loading booking summary:', error);
         }
+    }
+
+    async loadProjectAccountOptions() {
+        this.projectAccountOptions = await getProjectAccountOptions({ bookingId: this.recordId }) || [];
+        this.accountNameId = '';
     }
     
     async loadOpenDemands() {
@@ -464,6 +473,10 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
 
     get hasPendingPaymentSchedules() {
         return this.pendingPaymentSchedules && this.pendingPaymentSchedules.length > 0;
+    }
+
+    get hasProjectAccountOptions() {
+        return this.projectAccountOptions && this.projectAccountOptions.length > 0;
     }
     
     get hasTransactionHistory() {
@@ -817,6 +830,10 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
         }
     }
 
+    handleAccountNameChange(event) {
+        this.accountNameId = event.detail.value;
+    }
+
     handleAdditionalChargeChange(event) {
         this.additionalChargeId = event.detail.value;
     }
@@ -967,7 +984,8 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
                 useCredits: this.useCredits
             };
             
-            const result = await createReceipt({ receiptData: JSON.stringify(receiptData) });
+            receiptData.accountNameId = this.accountNameId || null;
+            const result = await createReceiptFromBooking({ receiptData: JSON.stringify(receiptData) });
 
             if (result.success) {
                 this.showToast('Success', result.message || 'Receipt created successfully', 'success');
@@ -1152,6 +1170,9 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
         }
         if (!this.paymentFrom) {
             errors.push('Please select payment source');
+        }
+        if (this.hasProjectAccountOptions && !this.accountNameId) {
+            errors.push('Please select the project Account Name');
         }
         
         if (errors.length > 0) {

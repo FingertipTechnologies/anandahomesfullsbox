@@ -10,12 +10,20 @@ private class BookingStageRemarkServiceTest {
         insert project;
         Plot__c unit = new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Booked');
         insert unit;
+        Quote__c quote = new Quote__c();
+        insert quote;
         Booking__c booking = new Booking__c(
             Project__c = project.Id,
             Plot__c = unit.Id,
+            Quote__c = quote.Id,
             Booking_Date__c = Date.today(),
             Status__c = stage,
-            Stage_Remarks__c = remarks
+            Stage_Remarks__c = remarks,
+            Signed_Booking_Form_Uploaded__c = true,
+            Booking_Verification_Approval_Status__c = 'Approved',
+            Aadhaar__c = '123456789012',
+            PAN_Number__c = 'ABCDE1234F',
+            Mobile__c = '9876543210'
         );
         insert booking;
         return booking;
@@ -78,6 +86,38 @@ private class BookingStageRemarkServiceTest {
 
         List<Booking_Stage_Remark__c> remarks = [SELECT Id FROM Booking_Stage_Remark__c WHERE Booking__c = :b.Id];
         System.assertEquals(1, remarks.size(), 'Only the initial creation remark should exist');
+    }
+
+    @isTest
+    static void captureOnInsert_skipsBlankRemarks() {
+        Test.startTest();
+        Booking__c b = makeBooking('New', null);
+        Test.stopTest();
+
+        List<Booking_Stage_Remark__c> remarks = [
+            SELECT Id FROM Booking_Stage_Remark__c WHERE Booking__c = :b.Id
+        ];
+        System.assertEquals(0, remarks.size(), 'No remark should be created when stage remarks are blank');
+    }
+
+    @isTest
+    static void captureOnStageChange_skipsBlankRemarks() {
+        Booking__c b = makeBooking('New', 'Initial booking notes');
+
+        Test.startTest();
+        b.Stage_Remarks__c = null;
+        b.Status__c = 'Booked';
+        update b;
+        Test.stopTest();
+
+        List<Booking_Stage_Remark__c> remarks = [
+            SELECT Stage__c, Previous_Stage__c, Remarks__c
+            FROM Booking_Stage_Remark__c WHERE Booking__c = :b.Id
+            ORDER BY Captured_Date__c ASC, Name ASC
+        ];
+        System.assertEquals(1, remarks.size(), 'Only the initial remark should stay when the new stage has no comments');
+        System.assertEquals('New', remarks[0].Stage__c);
+        System.assertEquals('Initial booking notes', remarks[0].Remarks__c);
     }
 
     @isTest

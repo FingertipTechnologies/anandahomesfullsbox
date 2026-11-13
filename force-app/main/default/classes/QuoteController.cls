@@ -22,8 +22,6 @@ public class QuoteController {
 
             if (projectName == 'The Legacey') {
                 pref = Page.COST_SHEET_TL;
-            } else if (projectName == 'The Drizzle') {
-                pref = Page.COST_SHEET_TD;
             } else {
                 return 'Cost Sheet template is not configured for this project. Please contact admin.';
             }

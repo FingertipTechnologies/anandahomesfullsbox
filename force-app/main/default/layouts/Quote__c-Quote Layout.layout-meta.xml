@@ -15,6 +15,10 @@
                 <behavior>Edit</behavior>
                 <field>CLead__c</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Tower_Lookup__c</field>
+            </layoutItems>
         </layoutColumns>
         <layoutColumns>
             <layoutItems>

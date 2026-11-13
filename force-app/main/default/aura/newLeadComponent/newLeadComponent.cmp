@@ -3,8 +3,8 @@
     <aura:attribute name="recordTypeId" type="string"/>  
     <aura:attribute name="pageReference" type="Object"/>
     <aura:attribute name="sectionLabels" type="Map" default=""/>
-    <aura:attribute name="selectedCountry" type="string" default="India" />
-    <aura:attribute name="selectedCountryCode" type="string" default="91" />
+    <aura:attribute name="selectedCountry" type="string" />
+    <aura:attribute name="selectedCountryCode" type="string" />
     <aura:attribute name="recordId" type="string"/>
     <aura:attribute name="projectName" type="string"/>
     <aura:attribute name="isModalOpen" type="boolean" default="true"/>
@@ -24,9 +24,6 @@
     
     
     <aura:attribute name="PhoneNumber" type="String"/>
-    <!-- Project picklist offered to users: active Allocated_Project__c values minus the "No Project" system placeholder -->
-    <aura:attribute name="projectOptions" type="List" default="[]"/>
-    <aura:attribute name="selectedProject" type="String"/>
     <aura:handler name="init" value="{!this}" action="{!c.doInit}"></aura:handler>
     <aura:handler name="change" value="{!v.searchText}" action="{!c.searchText}"></aura:handler>
 
@@ -79,8 +76,7 @@
 
                                     
                                         <div class="slds-size_1-of-2 slds-max-small-size_1-of-1">
-                                            <lightning:combobox aura:id="projectPick" name="projectPick" label="Project Name" required="true"
-                                                                placeholder="--None--" options="{!v.projectOptions}" value="{!v.selectedProject}"/>
+                                            <lightning:inputField fieldName="Allocated_Project__c"  required='true'/>
                                         </div>
 
                                         
@@ -101,14 +97,14 @@
                                         <div class="slds-size_1-of-2 slds-max-small-size_1-of-1">
                                             
                                             <div class="slds-form-element__control">
-                                                <lightning:inputField fieldName="Country__c" value="{!v.selectedCountry}" aura:id="CountryLookupField" onchange="{!c.handleCountryChange}" />
+                                                <lightning:inputField fieldName="Country__c" aura:id="CountryLookupField" onchange="{!c.handleCountryChange}" />
                                             </div>
                                             
                                         </div>
                                         <div class="slds-size_1-of-2 slds-max-small-size_1-of-1">
                                             
                                             <div class="slds-form-element__control">
-                                                <lightning:input label="Country Code" value="{!v.selectedCountryCode}" disabled="true"/>
+                                                <lightning:inputField fieldName="Country_Code__c" value="{!v.selectedCountryCode}" disabled="true"/>
                                             </div>
                                             
                                         </div>
@@ -207,8 +203,7 @@
                                     <div class="slds-grid slds-wrap slds-text-align_left">
                                         <div class="slds-size_1-of-2 slds-max-small-size_1-of-1">
                                             <div class="slds-form-element__control">
-                                                <label class="slds-form-element__label" for="unitPreference">BHK Type</label>
-                                                <lightning:inputField aura:id="unitPreference" fieldName="Unit_Preference__c" variant="label-hidden" />
+                                                <lightning:inputField fieldName="Unit_Preference__c" />
                                             </div>
                                         </div>
                                         <div class="slds-size_1-of-2 slds-max-small-size_1-of-1">

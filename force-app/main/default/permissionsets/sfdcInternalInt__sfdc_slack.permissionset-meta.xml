@@ -18,6 +18,36 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Account_Name__c.Account_No__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Account_Name__c.Account_Type__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Account_Name__c.Bank_Name__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Account_Name__c.Branch__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Account_Name__c.IFSC_Code__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Account_Name__c.Project__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Additional_Charge_Receipt__c.Amount_received__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1128,6 +1158,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Booking__c.Capri_Email__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Booking__c.Car_Parking_Charges__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1378,6 +1413,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Booking__c.Do_Not_Calculate_Interest__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Booking__c.Email1__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1524,6 +1564,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Booking__c.Inspection_Project_Person__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Booking__c.Interest_Calculation_Resume_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -1728,6 +1773,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Booking__c.NOC_Email_Recipients__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Booking__c.Name_of_Company1__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1764,6 +1814,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Booking__c.Newspaper_Read__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Booking__c.No_of_car_parking__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -2453,6 +2508,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Booking__c.Total_Refunded_Amount__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Booking__c.Total_Schedule_GST__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -2464,11 +2524,6 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Booking__c.Total__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Booking__c.Tower_Name__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -3334,6 +3389,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Co_Applicant__c.Email__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Co_Applicant__c.First_Name__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -4493,12 +4553,22 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Demands__c.Demand_Component__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Demands__c.Demand_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
         <field>Demands__c.Demand_Reminder_Data__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Demands__c.Demanded_Amount__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -4549,6 +4619,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Demands__c.Interest_Amount__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Demands__c.Interest_Waived_Off_Amount__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -8158,7 +8233,17 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Payment_Schedule__c.Bank_Flat_Demand_Raised__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Payment_Schedule__c.Bank_GST_Amount__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Payment_Schedule__c.Bank_GST_Demand_Raised__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -8178,7 +8263,17 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Payment_Schedule__c.Customer_Flat_Demand_Raised__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Payment_Schedule__c.Customer_Flat_Prorata__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Payment_Schedule__c.Customer_GST_Demand_Raised__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -8229,6 +8324,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Payment_Schedule__c.Email__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Payment_Schedule__c.Flat_Cost__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -8908,6 +9008,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Plot__c.LL_Share_Name__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Plot__c.LO_Dev_Details__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -9209,6 +9314,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Plot__c.Total__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Plot__c.Tower_Block__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -9804,6 +9914,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Project__c.Leagal_Team_Email__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Project__c.Legacy_Split_Demand_Receipt__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -10468,6 +10583,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Quote__c.Tower_Lookup__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Quote__c.Tower__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -10793,12 +10913,22 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Receipt_Line_Item__c.TDS_Amount__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Receipt_Line_Item__c.Total_Amount__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
         <field>Receipt_Line_Item__c.item_Name__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Receipt__c.Account_Name__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -11778,6 +11908,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Site_Visit__c.GRE_User__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Site_Visit__c.Handled_By__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -12263,6 +12398,15 @@
         <allowRead>true</allowRead>
         <modifyAllRecords>false</modifyAllRecords>
         <object>AccountBrand</object>
+        <viewAllRecords>true</viewAllRecords>
+    </objectPermissions>
+    <objectPermissions>
+        <allowCreate>false</allowCreate>
+        <allowDelete>false</allowDelete>
+        <allowEdit>false</allowEdit>
+        <allowRead>true</allowRead>
+        <modifyAllRecords>false</modifyAllRecords>
+        <object>Account_Name__c</object>
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
     <objectPermissions>

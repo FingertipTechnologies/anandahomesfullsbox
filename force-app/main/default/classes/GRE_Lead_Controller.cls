@@ -1,20 +1,5 @@
 public without sharing class GRE_Lead_Controller {
-
-    // Project values offered to users. "No Project" is a system placeholder used by the
-    // LeadCheck API only and must not be selectable by hand.
-    public static final String NO_PROJECT = 'No Project';
-
-    @AuraEnabled(cacheable=true)
-    public static List<String> getProjectOptions(){
-        List<String> options = new List<String>();
-        for(Schema.PicklistEntry pe : Lead__c.Allocated_Project__c.getDescribe().getPicklistValues()){
-            if(pe.isActive() && pe.getValue() != NO_PROJECT){
-                options.add(pe.getValue());
-            }
-        }
-        return options;
-    }
-
+    
     public class InitDataWrapper {
         @AuraEnabled public List<Lead__c> leadRecords { get; set; }
         @AuraEnabled public List<String> ProjLst { get; set; }
@@ -59,8 +44,14 @@ public without sharing class GRE_Lead_Controller {
         String salesRTId = [SELECT Id FROM RecordType WHERE SObjectType = 'Lead__c' AND Name = 'Sales' LIMIT 1].Id;
         intWrp.salesRecordTypeId = salesRTId;
         
-        intWrp.ProjLst = getProjectOptions();
-        system.debug('pickListValuesList '+intWrp.ProjLst);
+        List<String> pickListValuesList= new List<String>();
+        Schema.DescribeFieldResult fieldResult = Lead.Allocated_Project__c.getDescribe();
+        List<Schema.PicklistEntry> ple = fieldResult.getPicklistValues();
+        for( Schema.PicklistEntry pickListVal : ple){
+            pickListValuesList.add(pickListVal.getLabel());
+        }
+        system.debug('pickListValuesList '+pickListValuesList);
+        intWrp.ProjLst = pickListValuesList;
         
         
         
@@ -286,14 +277,20 @@ public without sharing class GRE_Lead_Controller {
         system.debug('actionType > '+actionType);
 
         Lead__c existingLead = [
-            SELECT OwnerId, RecordTypeId, RecordType.Name
+            SELECT OwnerId, RecordType.Name
             FROM Lead__c
             WHERE Id = :ldRec.Id
             LIMIT 1
         ];
+        Boolean existingOwnerIsInactive = false;
+        if (existingLead.OwnerId != null && existingLead.OwnerId.getSObjectType() == User.SObjectType) {
+            User existingOwner = [SELECT IsActive FROM User WHERE Id = :existingLead.OwnerId LIMIT 1];
+            existingOwnerIsInactive = !existingOwner.IsActive;
+        }
         Boolean shouldReassignLeadOwner =
             existingLead.RecordTypeId != null &&
-            existingLead.RecordType.Name == 'Pre Sales';
+            existingLead.RecordType.Name == 'Pre Sales' &&
+            existingOwnerIsInactive;
 
         if(String.isNotBlank(ldRec.Lead_source__c)){
             ldRec.Primary_Source__c = ldRec.Lead_source__c;
@@ -351,18 +348,6 @@ public without sharing class GRE_Lead_Controller {
             sv.Id = svRec.Id;
         }
         upsert sv;
-            
-
-        //added by ankita 27-10-26
-        // Automatically syncs the Site Visit GRE Remark into the parent Lead's 'All Remarks'
-        // history (Lead__c.Last_Note__c) and updates Lead__c.Remark__c.
-        if (String.isNotBlank(sv.Remark__c)) {
-            // 1. Appends the remark to "All Remarks" (Lead__c.Last_Note__c) with Date/Time & User
-            AddNoteController.updateLastNote(ldRec.Id, sv.Remark__c);
-            
-         
-        }
-        
  
         if(actionType == 'insertRelatedSource'){
             if(rsRec != null ){
@@ -496,31 +481,12 @@ public without sharing class GRE_Lead_Controller {
             throw new AuraHandledException('No sales users available in Round Robin for this project.');
         }
     }
-       
-        //updated by ankita 27-10-2026
-        //Updates Site Visit Check-Out time and saves Checkout Remark, 
-        //syncing the remark into the parent Lead's 'All Remarks' history (Lead__c.Last_Note__c).
-        // Overload for Apex callers (pushToSalesController, RoundRobinHandler, etc.)
-        public static void updateSVCheckoutTime(Id svId, Datetime checkoutTime) {
-            updateSVCheckoutTime(svId, checkoutTime, null);
-        }
 
-       @AuraEnabled
-        public static void updateSVCheckoutTime(Id svId, Datetime checkoutTime, String checkoutRemark) {
-            // 1. Query Site Visit along with parent Lead Id
-            Site_Visit__c sv = [SELECT Id, CLead__c FROM Site_Visit__c WHERE Id = :svId LIMIT 1];
-            sv.Check_Out__c = checkoutTime;
-
-            // 2. Save Checkout Remark on Site Visit (if populated)
-            if (String.isNotBlank(checkoutRemark)) {
-                sv.Checkout_Remarks__c = checkoutRemark;
-        }
+    @AuraEnabled
+    public static void updateSVCheckoutTime(Id svId, Datetime checkoutTime) {
+        Site_Visit__c sv = [SELECT Id FROM Site_Visit__c WHERE Id = :svId LIMIT 1];
+        sv.Check_Out__c = checkoutTime;
         update sv;
-
-        // 3. Automatically push to "All Remarks" on the Lead record page
-        if (sv.CLead__c != null && String.isNotBlank(checkoutRemark)) {
-            AddNoteController.updateLastNote(sv.CLead__c, '[Checkout Remark]: ' + checkoutRemark);
-        }
     }
 
 }

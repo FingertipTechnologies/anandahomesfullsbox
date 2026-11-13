@@ -102,7 +102,17 @@ export default class BulkLeadReassignment extends LightningElement {
         return this.selectedTempCount === 0;
     }
 
-    // New Lead Owner options: filtered to the same profile as the selected current owner
+    get isSalesTransfer() {
+        const current = this.userOptions.find(u => u.value === this.currentOwnerId);
+        const next = this.userOptions.find(u => u.value === this.newOwnerId);
+        return this.reassignmentType === 'Permanent'
+            && current
+            && next
+            && current.profileName === 'Pre-Sales Executive'
+            && next.profileName === 'Associate Manager';
+    }
+
+    // Pre-Sales leads can be permanently transferred to Associate Managers.
     get newOwnerOptions() {
         if (!this.currentOwnerId) {
             return this.userOptions;
@@ -111,8 +121,12 @@ export default class BulkLeadReassignment extends LightningElement {
         if (!current) {
             return this.userOptions;
         }
+        const allowedProfiles = current.profileName === 'Pre-Sales Executive'
+            && this.reassignmentType === 'Permanent'
+            ? ['Pre-Sales Executive', 'Associate Manager']
+            : [current.profileName];
         return this.userOptions.filter(
-            u => u.profileName === current.profileName && u.value !== this.currentOwnerId
+            u => allowedProfiles.includes(u.profileName) && u.value !== this.currentOwnerId
         );
     }
 
@@ -153,6 +167,9 @@ export default class BulkLeadReassignment extends LightningElement {
         this.reassignmentType = event.detail.value;
         if (this.reassignmentType === 'Permanent') {
             this.tempExpiryDate = '';
+        }
+        if (!this.newOwnerOptions.some(option => option.value === this.newOwnerId)) {
+            this.newOwnerId = '';
         }
     }
 

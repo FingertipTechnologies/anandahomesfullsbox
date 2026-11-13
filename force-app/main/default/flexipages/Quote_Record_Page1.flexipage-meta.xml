@@ -138,6 +138,12 @@
                 <identifier>RecordGrandManager_cField</identifier>
             </fieldInstance>
         </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.Tower_Lookup__c</fieldItem>
+                <identifier>RecordTower_Lookup__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
         <name>Facet-c62cc08e-73eb-4af5-8a1e-fb99b019b20d</name>
         <type>Facet</type>
     </flexiPageRegions>

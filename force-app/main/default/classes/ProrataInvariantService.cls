@@ -6,7 +6,8 @@
  *                • Per milestone: Bank GST  + Customer GST  = milestone GST amount.
  *                • Σ (Bank Flat + Bank GST)     = Loan Sanctioned Amount (when populated).
  *                • Σ (Customer Flat + Cust GST) = Deficit (when populated, Prorata/Partial only).
- *                • No split may be added or changed on a milestone whose demand is raised.
+ *                • No split may be added or changed on a demanded, completed, or paid milestone,
+ *                  or one with an active receipt allocation.
  *
  *              TDS sits outside the split entirely: Deficit__c is defined as
  *              Grand_Total__c − Loan_Sanctioned_Amount__c − TDS__c, so the customer's split
@@ -17,9 +18,6 @@
  *              the editable/already-split milestones reconcile against the reduced figure.
  *
  * CHANGE LOG (FRD v3 §3A):
- *   • isLocked() now tests Demand_Raised__c ONLY. It previously also treated the closed
- *     statuses (Paid/Completed/Waived) as locked, which contradicted
- *     PaymentScheduleEditorController and blocked edits the editor had declared open.
  *   • Booking-level errors are surfaced again (the addError call was commented out, making
  *     every balance check inert).
  *   • Per-milestone errors are raised on the offending row rather than pooled at booking level.
@@ -32,8 +30,10 @@ public with sharing class ProrataInvariantService {
     /** Escape hatch for trusted bulk processes. */
     public static Boolean bypass = false;
 
-    /** Rounding tolerance in currency units (paise differences are ignored). */
-    private static final Decimal TOLERANCE = 1;
+    /** Per-milestone splits and bank allocations must balance to one paise. */
+    private static final Decimal TOLERANCE = 0.01;
+    /** Whole-rupee schedule rounding can leave a small booking-level customer residue. */
+    private static final Decimal CUSTOMER_ROUNDING_TOLERANCE = 0.50;
 
     private static final Set<String> FUNDING_PRORATA = new Set<String>{ 'Prorata', 'Partial' };
     private static final Set<String> FUNDING_SPLIT = new Set<String>{
@@ -43,55 +43,74 @@ public with sharing class ProrataInvariantService {
     public static void validate(List<Payment_Schedule__c> newList, Map<Id, Payment_Schedule__c> oldMap) {
         if (bypass || newList == null || newList.isEmpty()) return;
 
-        Set<Id> bookingIds = new Set<Id>();
+        List<Payment_Schedule__c> relevantRows = new List<Payment_Schedule__c>();
         for (Payment_Schedule__c ps : newList) {
+            Payment_Schedule__c oldRow = oldMap == null ? null : oldMap.get(ps.Id);
+            if (isRelevantChange(ps, oldRow)) {
+                relevantRows.add(ps);
+            }
+        }
+        if (relevantRows.isEmpty()) return;
+
+        Set<Id> bookingIds = new Set<Id>();
+        for (Payment_Schedule__c ps : relevantRows) {
             if (ps.Booking__c != null) bookingIds.add(ps.Booking__c);
         }
         if (bookingIds.isEmpty()) return;
 
         Map<Id, Booking__c> bookings = new Map<Id, Booking__c>([
-            SELECT Id, Funding_Type__c, Loan_Sanctioned_Amount__c, Deficit__c
+            SELECT Id, Funding_Type__c, Loan_Sanctioned_Amount__c, Deficit__c,
+                   Project__r.Legacy_Split_Demand_Receipt__c
             FROM Booking__c
             WHERE Id IN :bookingIds AND Funding_Type__c IN :FUNDING_SPLIT
+            AND Project__r.Legacy_Split_Demand_Receipt__c = true
         ]);
         if (bookings.isEmpty()) return;
 
-        // 1) Block split changes on demand-raised milestones.
+        // Resolve receipt locks once for all schedules on the affected bookings.
+        List<Payment_Schedule__c> bookingSchedules = [
+            SELECT Id, Booking__c, Milestone_Name__c, Bank_Flat_Amount__c, Customer_Flat_Prorata__c,
+                   Bank_GST_Amount__c, Customer_GST_Prorata__c, GST_Amount__c,
+                   Payment_Schedule_Amount__c, Demand_Raised__c, Status__c, Amount_Paid__c
+            FROM Payment_Schedule__c
+            WHERE Booking__c IN :bookings.keySet()
+        ];
+        Set<Id> scheduleIds = new Set<Id>();
+        for (Payment_Schedule__c schedule : bookingSchedules) scheduleIds.add(schedule.Id);
+        Set<Id> receiptedScheduleIds = schedulesWithReceipts(scheduleIds);
+
+        // 1) Block split changes on demanded, completed, or paid milestones.
         if (oldMap != null) {
-            for (Payment_Schedule__c ps : newList) {
+            for (Payment_Schedule__c ps : relevantRows) {
                 if (!bookings.containsKey(ps.Booking__c)) continue;
                 Payment_Schedule__c old = oldMap.get(ps.Id);
                 if (old == null) continue;
-                if (isLocked(old) && splitChanged(ps, old)) {
+                if ((isLocked(old, receiptedScheduleIds) || isLocked(ps, receiptedScheduleIds))
+                    && splitChanged(ps, old)) {
                     ps.addError('The split on "' + nameOf(ps)
-                        + '" cannot be changed because its demand has been raised.');
+                        + '" cannot be changed because the milestone is locked '
+                        + '(demand raised, completed, or payment received).');
                 }
             }
         }
 
         // 2) Build the full per-booking picture (DB rows overridden by Trigger.new rows).
         Set<Id> newIds = new Set<Id>();
-        for (Payment_Schedule__c ps : newList) {
+        for (Payment_Schedule__c ps : relevantRows) {
             if (ps.Id != null) newIds.add(ps.Id);
         }
 
         Map<Id, Payment_Schedule__c> inFlightById = new Map<Id, Payment_Schedule__c>();
-        for (Payment_Schedule__c ps : newList) {
+        for (Payment_Schedule__c ps : relevantRows) {
             if (ps.Id != null) inFlightById.put(ps.Id, ps);
         }
 
         Map<Id, List<Payment_Schedule__c>> rowsByBooking = new Map<Id, List<Payment_Schedule__c>>();
-        for (Payment_Schedule__c db : [
-            SELECT Id, Booking__c, Milestone_Name__c, Bank_Flat_Amount__c, Customer_Flat_Prorata__c,
-                   Bank_GST_Amount__c, Customer_GST_Prorata__c, GST_Amount__c,
-                   Payment_Schedule_Amount__c, Demand_Raised__c, Status__c, Amount_Paid__c
-            FROM Payment_Schedule__c
-            WHERE Booking__c IN :bookings.keySet()
-        ]) {
+        for (Payment_Schedule__c db : bookingSchedules) {
             if (newIds.contains(db.Id)) continue; // superseded by the in-flight version
             addRow(rowsByBooking, db);
         }
-        for (Payment_Schedule__c ps : newList) {
+        for (Payment_Schedule__c ps : relevantRows) {
             if (bookings.containsKey(ps.Booking__c)) addRow(rowsByBooking, ps);
         }
 
@@ -111,13 +130,20 @@ public with sharing class ProrataInvariantService {
                     || ps.Bank_GST_Amount__c != null || ps.Customer_GST_Prorata__c != null;
                 if (hasSplit) hasAnySplit = true;
 
-                // Locked and never split: treated as already settled by the customer and
-                // subtracted from the Deficit target. The row itself is never written.
-                if (!hasSplit && isLocked(ps)) {
-                    lockedUnsplitTotal += nz(ps.Payment_Schedule_Amount__c) + nz(ps.GST_Amount__c);
+                if (!hasSplit) {
+                    Decimal unsplitAmount =
+                        nz(ps.Payment_Schedule_Amount__c) + nz(ps.GST_Amount__c);
+                    if (isLocked(ps, receiptedScheduleIds)) {
+                        // Locked and never split: treated as already settled by the customer
+                        // and subtracted from the Deficit target. The row itself is never written.
+                        lockedUnsplitTotal += unsplitAmount;
+                    } else {
+                        // The editor defaults editable unsplit milestones to fully Customer-payable.
+                        // Include that implicit allocation when another milestone is being split.
+                        sumCustPayable += unsplitAmount;
+                    }
                     continue;
                 }
-                if (!hasSplit) continue;
 
                 Decimal bf = nz(ps.Bank_Flat_Amount__c);
                 Decimal cf = nz(ps.Customer_Flat_Prorata__c);
@@ -166,12 +192,12 @@ public with sharing class ProrataInvariantService {
             // never-split milestones. TDS is excluded by the definition of Deficit__c.
             if (FUNDING_PRORATA.contains(book.Funding_Type__c) && book.Deficit__c != null) {
                 Decimal targetDeficit = book.Deficit__c - lockedUnsplitTotal;
-                if ((sumCustPayable - targetDeficit).abs() > TOLERANCE) {
+                if ((sumCustPayable - targetDeficit).abs() > CUSTOMER_ROUNDING_TOLERANCE) {
                     errors.add('Total Customer Payable (Flat + GST) across editable milestones is '
                         + money(sumCustPayable) + ', but the target is ' + money(targetDeficit)
                         + ' (Deficit ' + money(book.Deficit__c)
                         + ' less ' + money(lockedUnsplitTotal)
-                        + ' already settled on demand-raised milestones).');
+                        + ' on locked, unsplit milestones).');
                 }
             }
 
@@ -180,7 +206,7 @@ public with sharing class ProrataInvariantService {
 
         // 4) Surface booking-level errors on the in-flight rows.
         if (!errorsByBooking.isEmpty()) {
-            for (Payment_Schedule__c ps : newList) {
+            for (Payment_Schedule__c ps : relevantRows) {
                 if (errorsByBooking.containsKey(ps.Booking__c)) {
                     ps.addError('The split does not balance:\n• '
                         + String.join(errorsByBooking.get(ps.Booking__c), '\n• '));
@@ -190,6 +216,23 @@ public with sharing class ProrataInvariantService {
     }
 
     // ─── helpers ──────────────────────────────────────────────────────────────────
+
+    /**
+     * Validate inserts that carry split values and updates that change split or split-capacity
+     * values. Ordinary status, demand, due-date, and payment updates must not revalidate splits.
+     */
+    private static Boolean isRelevantChange(Payment_Schedule__c row, Payment_Schedule__c oldRow) {
+        if (oldRow == null) {
+            return row.Bank_Flat_Amount__c != null
+                || row.Customer_Flat_Prorata__c != null
+                || row.Bank_GST_Amount__c != null
+                || row.Customer_GST_Prorata__c != null;
+        }
+        return row.Booking__c != oldRow.Booking__c
+            || row.Payment_Schedule_Amount__c != oldRow.Payment_Schedule_Amount__c
+            || row.GST_Amount__c != oldRow.GST_Amount__c
+            || splitChanged(row, oldRow);
+    }
 
     /**
      * @description Raises a per-milestone error on the in-flight row where possible, so the
@@ -217,20 +260,35 @@ public with sharing class ProrataInvariantService {
     }
 
     private static Boolean splitChanged(Payment_Schedule__c n, Payment_Schedule__c o) {
-        return nz(n.Bank_Flat_Amount__c)      != nz(o.Bank_Flat_Amount__c)
-            || nz(n.Customer_Flat_Prorata__c) != nz(o.Customer_Flat_Prorata__c)
-            || nz(n.Bank_GST_Amount__c)       != nz(o.Bank_GST_Amount__c)
-            || nz(n.Customer_GST_Prorata__c)  != nz(o.Customer_GST_Prorata__c);
+        return n.Bank_Flat_Amount__c      != o.Bank_Flat_Amount__c
+            || n.Customer_Flat_Prorata__c != o.Customer_Flat_Prorata__c
+            || n.Bank_GST_Amount__c       != o.Bank_GST_Amount__c
+            || n.Customer_GST_Prorata__c  != o.Customer_GST_Prorata__c;
     }
 
-    /**
-     * @description A milestone is locked if and only if its demand has been raised.
-     *              Must stay identical to PaymentScheduleEditorController.computeLockReason:
-     *              if the two diverge, the editor offers rows the trigger then rejects.
-     *              Closed status and part-payment are NOT lock conditions.
-     */
-    private static Boolean isLocked(Payment_Schedule__c ps) {
-        return ps.Demand_Raised__c == true;
+    private static Boolean isLocked(Payment_Schedule__c ps, Set<Id> receiptedScheduleIds) {
+        return ps != null && (ps.Demand_Raised__c == true
+            || 'Completed'.equalsIgnoreCase(ps.Status__c)
+            || nz(ps.Amount_Paid__c) > 0
+            || (receiptedScheduleIds != null && receiptedScheduleIds.contains(ps.Id)));
+    }
+
+    private static Set<Id> schedulesWithReceipts(Set<Id> scheduleIds) {
+        Set<Id> result = new Set<Id>();
+        if (scheduleIds == null || scheduleIds.isEmpty()) return result;
+
+        for (Receipt_Line_Item__c line : [
+            SELECT Payment_Schedule__c, Allocated_Amount__c, Receipt__c, Receipt__r.Approval_Status__c
+            FROM Receipt_Line_Item__c
+            WHERE Payment_Schedule__c IN :scheduleIds
+        ]) {
+            if (nz(line.Allocated_Amount__c) > 0
+                && (line.Receipt__c == null
+                    || line.Receipt__r.Approval_Status__c != PostSalesConstants.APPROVAL_STATUS_REJECTED)) {
+                result.add(line.Payment_Schedule__c);
+            }
+        }
+        return result;
     }
 
     private static String nameOf(Payment_Schedule__c ps) {

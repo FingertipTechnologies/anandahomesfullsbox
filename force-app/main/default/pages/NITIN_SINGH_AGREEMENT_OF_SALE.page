@@ -64,9 +64,9 @@
 <p>&#160;</p>
 <p style="margin:0pt 0 8pt 0;text-align:justify;margin-left:36pt">(Vide <b>A.G.P.A. Registered as Document No. 6959 of 2025,</b> dated: 16/04/2025, Registered at S.R.O. Gandipet, Ranga Reddy District, Telangana State).</p>
 <p style="margin:0pt 0 8pt 0;text-align:justify"><b>Hereinafter</b> called the<b> (DEVELOPER/AGPA HOLDER) </b>which term shall mean and include their legal heirs, executors, successors, representatives’ administrators and assignees etc., of the<b> ONE PART.</b></p>
-<p style="margin:0pt 0 0pt 0;text-align:center"><b><u>IN FAVOUR OF</u></b></p>
+<div class="ag-keep"><p style="margin:0pt 0 0pt 0;text-align:center"><b><u>IN FAVOUR OF</u></b></p>
 <p style="margin:0">&#160;</p>
-<apex:repeat value="{!allApplicants}" var="applicant"><p style="margin:0pt 0 8pt 0;text-align:justify;margin-left:36pt;text-indent:-22.5pt"><span style="display:inline-block;width:22.5pt;text-indent:0">{!applicant.sequence}.</span><b>{!applicant.deedNameLine}</b>{!applicant.deedDetails}<b>{!applicant.deedIds}</b></p></apex:repeat><apex:outputPanel layout="none" rendered="{!NOT(hasApplicants)}"><p>Applicant information is missing.</p></apex:outputPanel>
+<apex:repeat value="{!allApplicants}" var="applicant"><p style="margin:0pt 0 8pt 0;text-align:justify;margin-left:36pt;text-indent:-22.5pt"><span style="display:inline-block;width:22.5pt;text-indent:0">{!applicant.sequence}.</span><b>{!applicant.deedNameLine}</b>{!applicant.deedDetails}<b>{!applicant.deedIds}</b></p></apex:repeat><apex:outputPanel layout="none" rendered="{!NOT(hasApplicants)}"><p>Applicant information is missing.</p></apex:outputPanel></div>
 <p style="margin:0pt 0 0pt 0;text-align:justify"><b>Hereinafter</b> called the <b>“VENDEE(S)/ PURCHASER(S)”</b>, which term shall mean and include all his/her heirs, executors, administrators, legal representatives, nominees and assignees etc., of the <b>OTHER PART</b>.</p>
 <p style="margin:0">&#160;</p>
 <p style="margin:0pt 0 8pt 0;text-align:justify;text-indent:36pt">WHEREAS the father of the Vendor is son of late Satyanarayana Singh having share in the land in Sy.No.127, 129, 130, 133, 134, 145, 147, 148 &amp; 149 total admeasuring Ac.21: 19 guntas, situated at Puppalguda Village, Rajendra Nagar Mandal, presently in Gandipet Mandal, Ranga Reddy District, Telangana State.</p>

@@ -148,6 +148,28 @@ public with sharing class LegacySaleDeedController {
         return line.removeEnd(oldSuffix) + ', ' + (String.isBlank(relation) ? '' : relation + ' ') + parent;
     }
 
+    private static final Set<String> SALUTATION_WORDS = new Set<String>{ 'mr', 'mrs', 'ms', 'dr', 'smt', 'sri', 'kum' };
+
+    /**
+     * The first applicant's line with the booking's Salutation__c in front ("TEST APPLICANT1, ..." becomes
+     * "MRS. TEST APPLICANT1, ..."), formatted like the Drizzle deed's salutations. Left as it is when the
+     * Drizzle deed already printed one (salutation_Applicant1__c filled) or Salutation__c is blank.
+     * Co-applicants already print their own Salutation__c.
+     */
+    @TestVisible
+    private static String withPrimarySalutation(String line, Booking__c booking) {
+        if (String.isBlank(line) || booking == null || String.isBlank(booking.Salutation__c)
+            || String.isNotBlank(booking.salutation_Applicant1__c)
+            || (String.isBlank(booking.First_Applicant_Name__c) && String.isBlank(booking.Applicant_Name__c))) {
+            return line;
+        }
+        String title = booking.Salutation__c.trim();
+        if (SALUTATION_WORDS.contains(title.toLowerCase())) {
+            title += '.';
+        }
+        return title.toUpperCase() + ' ' + line;
+    }
+
     /** "W/o" -> "W/o." (blank stays blank). */
     private static String relationText(String relation) {
         if (String.isBlank(relation)) {
@@ -172,7 +194,8 @@ public with sharing class LegacySaleDeedController {
         if (standardController != null && standardController.getId() != null) {
             List<Booking__c> rows = [
                 SELECT Total_Payable_Amount__c, S_o_D_o_W_o__c, Relation_Details_Applicant1__c,
-                       Son_Daughter_Wife_of__c, First_Applicant_Name__c, Applicant_Name__c
+                       Son_Daughter_Wife_of__c, First_Applicant_Name__c, Applicant_Name__c,
+                       Salutation__c, salutation_Applicant1__c
                 FROM Booking__c
                 WHERE Id = :standardController.getId()
                 LIMIT 1
@@ -193,7 +216,9 @@ public with sharing class LegacySaleDeedController {
         Integer total = deed.vendees == null ? 0 : deed.vendees.size();
         for (Integer i = 0; i < total; i++) {
             DrizzleSaleDeedController.Vendee v = deed.vendees[i];
-            String name = orDash(i == 0 ? withPrimaryRelation(v.nameLine, legacyBooking) : v.nameLine);
+            String name = orDash(i == 0
+                ? withPrimarySalutation(withPrimaryRelation(v.nameLine, legacyBooking), legacyBooking)
+                : v.nameLine);
             if (!name.endsWith(',')) {
                 name += ',';
             }

@@ -170,6 +170,36 @@ public with sharing class LegacySaleDeedController {
         return title.toUpperCase() + ' ' + line;
     }
 
+    private static final Pattern RELATION_IN_LINE = Pattern.compile('^(.*?), ([SsDdWw])/[Oo]\\. ');
+    private static final Pattern LEADING_TITLE = Pattern.compile('(?i)^(MRS|MR|MS|SMT|SRI|KUM|DR)\\.?\\s+');
+
+    /**
+     * A purchaser's title follows their relation, as in the sale deed document (2026-11-14):
+     * "S/o." -> MR., "D/o." -> MS., "W/o." -> MRS. - "X, W/o. Y" becomes "MRS. X, W/o. Y".
+     * A doctor's "DR." is kept; a line with no relation keeps the salutation it already has.
+     */
+    @TestVisible
+    private static String withRelationTitle(String line) {
+        if (String.isBlank(line)) {
+            return line;
+        }
+        Matcher m = RELATION_IN_LINE.matcher(line);
+        if (!m.find()) {
+            return line;
+        }
+        String person = m.group(1);
+        Matcher t = LEADING_TITLE.matcher(person);
+        if (t.find()) {
+            if (t.group(1).equalsIgnoreCase('DR')) {
+                return line;
+            }
+            person = person.substring(t.end());
+        }
+        String rel = m.group(2).toUpperCase();
+        String title = rel == 'S' ? 'MR.' : (rel == 'D' ? 'MS.' : 'MRS.');
+        return title + ' ' + person + line.substring(m.group(1).length());
+    }
+
     /** "W/o" -> "W/o." (blank stays blank). */
     private static String relationText(String relation) {
         if (String.isBlank(relation)) {
@@ -216,9 +246,9 @@ public with sharing class LegacySaleDeedController {
         Integer total = deed.vendees == null ? 0 : deed.vendees.size();
         for (Integer i = 0; i < total; i++) {
             DrizzleSaleDeedController.Vendee v = deed.vendees[i];
-            String name = orDash(i == 0
+            String name = orDash(withRelationTitle(i == 0
                 ? withPrimarySalutation(withPrimaryRelation(v.nameLine, legacyBooking), legacyBooking)
-                : v.nameLine);
+                : v.nameLine));
             if (!name.endsWith(',')) {
                 name += ',';
             }

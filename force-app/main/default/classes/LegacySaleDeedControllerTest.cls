@@ -92,5 +92,11 @@ private class LegacySaleDeedControllerTest {
         System.assert(controller.considerationWords.startsWith('Rupees '), controller.considerationWords);
         System.assert(controller.purchasers[0].nameLine.contains('MRS. LEGACY DEED CUSTOMER, W/o. DEED SPOUSE'),
             controller.purchasers[0].nameLine);
+        // the title follows the relation: S/o MR., D/o MS., W/o MRS.; DR. kept; no relation, unchanged
+        System.assertEquals('MR. A, S/o. B', LegacySaleDeedController.withRelationTitle('MRS. A, S/o. B'));
+        System.assertEquals('MS. A, D/o. B', LegacySaleDeedController.withRelationTitle('A, D/o. B'));
+        System.assertEquals('MRS. A, W/o. B', LegacySaleDeedController.withRelationTitle('SMT. A, W/o. B'));
+        System.assertEquals('DR. A, S/o. B', LegacySaleDeedController.withRelationTitle('DR. A, S/o. B'));
+        System.assertEquals('MRS. A, B', LegacySaleDeedController.withRelationTitle('MRS. A, B'));
     }
 }

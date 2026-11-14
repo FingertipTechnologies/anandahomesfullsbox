@@ -127,86 +127,94 @@ public with sharing class LegacySaleDeedController {
     }
 
     /**
-     * The first applicant's line as the Drizzle deed builds it ("MRS. A, <relation> B"), with the relation
-     * taken from the booking's S/o,D/o,W/o field (Primary Applicant Relation Details when that is blank):
-     * "TEST APPLICANT1, EW" becomes "TEST APPLICANT1, W/o. EW". Any other line is returned unchanged.
+     * Purchaser name lines in the wording of the Legacey sale agreements (AgreementOfSaleController):
+     * "SRI. A, S/O. SRI. B" / "SMT. C, W/O. SRI. D". Title from the stored salutation (Mr -> SRI.,
+     * Mrs -> SMT., Ms -> KUM., Dr -> DR.); relation from S/o,D/o,W/o plus the relative's name.
+     * Same order as the Drizzle deed's purchasers: first applicant, second applicant, co-applicants.
      */
     @TestVisible
-    private static String withPrimaryRelation(String line, Booking__c booking) {
-        if (String.isBlank(line) || booking == null || String.isBlank(booking.Son_Daughter_Wife_of__c)
-            || (String.isBlank(booking.First_Applicant_Name__c) && String.isBlank(booking.Applicant_Name__c))) {
-            return line;
-        }
-        String parent = booking.Son_Daughter_Wife_of__c.trim().toUpperCase();
-        String oldRelation = relationText(booking.Relation_Details_Applicant1__c);
-        String oldSuffix = ', ' + (String.isBlank(oldRelation) ? '' : oldRelation + ' ') + parent;
-        if (!line.endsWith(oldSuffix)) {
-            return line;
-        }
-        String relation = relationText(String.isNotBlank(booking.S_o_D_o_W_o__c)
-            ? booking.S_o_D_o_W_o__c : booking.Relation_Details_Applicant1__c);
-        return line.removeEnd(oldSuffix) + ', ' + (String.isBlank(relation) ? '' : relation + ' ') + parent;
-    }
-
-    private static final Set<String> SALUTATION_WORDS = new Set<String>{ 'mr', 'mrs', 'ms', 'dr', 'smt', 'sri', 'kum' };
-
-    /**
-     * The first applicant's line with the booking's Salutation__c in front ("TEST APPLICANT1, ..." becomes
-     * "MRS. TEST APPLICANT1, ..."), formatted like the Drizzle deed's salutations. Left as it is when the
-     * Drizzle deed already printed one (salutation_Applicant1__c filled) or Salutation__c is blank.
-     * Co-applicants already print their own Salutation__c.
-     */
-    @TestVisible
-    private static String withPrimarySalutation(String line, Booking__c booking) {
-        if (String.isBlank(line) || booking == null || String.isBlank(booking.Salutation__c)
-            || String.isNotBlank(booking.salutation_Applicant1__c)
-            || (String.isBlank(booking.First_Applicant_Name__c) && String.isBlank(booking.Applicant_Name__c))) {
-            return line;
-        }
-        String title = booking.Salutation__c.trim();
-        if (SALUTATION_WORDS.contains(title.toLowerCase())) {
-            title += '.';
-        }
-        return title.toUpperCase() + ' ' + line;
-    }
-
-    private static final Pattern RELATION_IN_LINE = Pattern.compile('^(.*?), ([SsDdWw])/[Oo]\\. ');
-    private static final Pattern LEADING_TITLE = Pattern.compile('(?i)^(MRS|MR|MS|SMT|SRI|KUM|DR)\\.?\\s+');
-
-    /**
-     * A purchaser's title follows their relation, as in the sale deed document (2026-11-14):
-     * "S/o." -> MR., "D/o." -> MS., "W/o." -> MRS. - "X, W/o. Y" becomes "MRS. X, W/o. Y".
-     * A doctor's "DR." is kept; a line with no relation keeps the salutation it already has.
-     */
-    @TestVisible
-    private static String withRelationTitle(String line) {
-        if (String.isBlank(line)) {
-            return line;
-        }
-        Matcher m = RELATION_IN_LINE.matcher(line);
-        if (!m.find()) {
-            return line;
-        }
-        String person = m.group(1);
-        Matcher t = LEADING_TITLE.matcher(person);
-        if (t.find()) {
-            if (t.group(1).equalsIgnoreCase('DR')) {
-                return line;
-            }
-            person = person.substring(t.end());
-        }
-        String rel = m.group(2).toUpperCase();
-        String title = rel == 'S' ? 'MR.' : (rel == 'D' ? 'MS.' : 'MRS.');
-        return title + ' ' + person + line.substring(m.group(1).length());
-    }
-
-    /** "W/o" -> "W/o." (blank stays blank). */
-    private static String relationText(String relation) {
-        if (String.isBlank(relation)) {
+    private static String formalSalutation(String salutation) {
+        if (String.isBlank(salutation)) {
             return '';
         }
-        String rel = relation.trim();
-        return rel.endsWith('.') ? rel : rel + '.';
+        String key = salutation.trim().replace('.', '').toLowerCase();
+        if (key == 'mr') {
+            return 'Sri.';
+        }
+        if (key == 'mrs') {
+            return 'Smt.';
+        }
+        if (key == 'ms' || key == 'miss') {
+            return 'Kum.';
+        }
+        if (key == 'dr') {
+            return 'Dr.';
+        }
+        if (key == 'm/s') {
+            return 'M/s.';
+        }
+        return salutation.trim();
+    }
+
+    /** "S/O. SRI. FATHER NAME" from a relation picklist and the relative's name ('' when either is blank). */
+    @TestVisible
+    private static String buildRelation(String relation, String relativeName) {
+        if (String.isBlank(relation) || String.isBlank(relativeName)) {
+            return '';
+        }
+        String label = relation.trim().toUpperCase();
+        if (!label.endsWith('.')) {
+            label += '.';
+        }
+        String relative = relativeName.trim();
+        Boolean hasSalutation = Pattern.compile('(?i)^(sri|smt|late|mr|mrs|ms|dr|kum)\\b').matcher(relative).find();
+        return label + ' ' + (hasSalutation ? '' : 'SRI. ') + relative.toUpperCase();
+    }
+
+    /** "SRI. NAME, S/O. SRI. FATHER" - the bold opening of a purchaser paragraph. */
+    @TestVisible
+    private static String deedNameLine(String salutation, String name, String relation) {
+        String title = formalSalutation(salutation);
+        String line = (String.isBlank(title) ? '' : title.toUpperCase() + ' ') + name.trim().toUpperCase();
+        return String.isBlank(relation) ? line : line + ', ' + relation;
+    }
+
+    private static String firstFilled(String a, String b) {
+        return String.isNotBlank(a) ? a.trim() : (String.isNotBlank(b) ? b.trim() : '');
+    }
+
+    /** Name lines for every purchaser of the booking, in the Drizzle deed's order. */
+    private static List<String> purchaserNameLines(Booking__c booking) {
+        List<String> lines = new List<String>();
+        if (booking == null) {
+            return lines;
+        }
+        String primaryName = firstFilled(booking.First_Applicant_Name__c, booking.Applicant_Name__c);
+        if (String.isNotBlank(primaryName)) {
+            lines.add(deedNameLine(
+                firstFilled(booking.Salutation__c, booking.salutation_Applicant1__c), primaryName,
+                buildRelation(firstFilled(booking.S_o_D_o_W_o__c, booking.Relation_Details_Applicant1__c),
+                    booking.Son_Daughter_Wife_of__c)));
+        }
+        if (String.isNotBlank(booking.Second_Applicant_Name__c)) {
+            lines.add(deedNameLine(booking.salutation_Applicant2__c, booking.Second_Applicant_Name__c,
+                buildRelation(booking.Relation_Details_Applicant2__c, booking.Son_Daughter_Wife_of1__c)));
+        }
+        for (Co_Applicant__c co : [
+            SELECT Salutation__c, Full_Name__c, First_Name__c, Last_Name__c, S_o_D_o_W_o__c, W_o_S_o_C_o_c__c
+            FROM Co_Applicant__c
+            WHERE Booking__c = :booking.Id
+            ORDER BY CreatedDate ASC, Name ASC
+        ]) {
+            String fullName = firstFilled(co.Full_Name__c,
+                ((co.First_Name__c == null ? '' : co.First_Name__c.trim()) + ' ' +
+                 (co.Last_Name__c == null ? '' : co.Last_Name__c.trim())).trim());
+            if (String.isBlank(fullName)) {
+                continue;
+            }
+            lines.add(deedNameLine(co.Salutation__c, fullName, buildRelation(co.S_o_D_o_W_o__c, co.W_o_S_o_C_o_c__c)));
+        }
+        return lines;
     }
 
     private void loadDeedDetails(ApexPages.StandardController standardController) {
@@ -219,13 +227,14 @@ public with sharing class LegacySaleDeedController {
         bhk = orDash(deed.bhkNumber);
         area = orDash(deed.flatSizeNumber);
         // Legacey deed only (2026-11-14): the consideration is the booking's Total Payable Amount, and the
-        // first applicant's relation comes from the booking's "S/o,D/o,W/o" field. The Drizzle deed is unchanged.
+        // purchaser names follow the Legacey sale agreements (SRI./SMT.). The Drizzle deed is unchanged.
         Booking__c legacyBooking = null;
         if (standardController != null && standardController.getId() != null) {
             List<Booking__c> rows = [
-                SELECT Total_Payable_Amount__c, S_o_D_o_W_o__c, Relation_Details_Applicant1__c,
+                SELECT Id, Total_Payable_Amount__c, S_o_D_o_W_o__c, Relation_Details_Applicant1__c,
                        Son_Daughter_Wife_of__c, First_Applicant_Name__c, Applicant_Name__c,
-                       Salutation__c, salutation_Applicant1__c
+                       Salutation__c, salutation_Applicant1__c, salutation_Applicant2__c,
+                       Second_Applicant_Name__c, Relation_Details_Applicant2__c, Son_Daughter_Wife_of1__c
                 FROM Booking__c
                 WHERE Id = :standardController.getId()
                 LIMIT 1
@@ -244,11 +253,11 @@ public with sharing class LegacySaleDeedController {
         purchasers = new List<Purchaser>();
         List<String> names = new List<String>();
         Integer total = deed.vendees == null ? 0 : deed.vendees.size();
+        List<String> sriLines = purchaserNameLines(legacyBooking);
+        Boolean useSriLines = sriLines.size() == total;
         for (Integer i = 0; i < total; i++) {
             DrizzleSaleDeedController.Vendee v = deed.vendees[i];
-            String name = orDash(withRelationTitle(i == 0
-                ? withPrimarySalutation(withPrimaryRelation(v.nameLine, legacyBooking), legacyBooking)
-                : v.nameLine));
+            String name = orDash(useSriLines ? sriLines[i] : v.nameLine);
             if (!name.endsWith(',')) {
                 name += ',';
             }

@@ -90,13 +90,16 @@ private class LegacySaleDeedControllerTest {
         // consideration from Total Payable Amount, first applicant's relation from S/o,D/o,W/o
         System.assertEquals('10,50,000', controller.considerationAmount);
         System.assert(controller.considerationWords.startsWith('Rupees '), controller.considerationWords);
-        System.assert(controller.purchasers[0].nameLine.contains('MRS. LEGACY DEED CUSTOMER, W/o. DEED SPOUSE'),
+        System.assert(controller.purchasers[0].nameLine.contains('SMT. LEGACY DEED CUSTOMER, W/O. SRI. DEED SPOUSE'),
             controller.purchasers[0].nameLine);
-        // the title follows the relation: S/o MR., D/o MS., W/o MRS.; DR. kept; no relation, unchanged
-        System.assertEquals('MR. A, S/o. B', LegacySaleDeedController.withRelationTitle('MRS. A, S/o. B'));
-        System.assertEquals('MS. A, D/o. B', LegacySaleDeedController.withRelationTitle('A, D/o. B'));
-        System.assertEquals('MRS. A, W/o. B', LegacySaleDeedController.withRelationTitle('SMT. A, W/o. B'));
-        System.assertEquals('DR. A, S/o. B', LegacySaleDeedController.withRelationTitle('DR. A, S/o. B'));
-        System.assertEquals('MRS. A, B', LegacySaleDeedController.withRelationTitle('MRS. A, B'));
+        // SRI./SMT. wording of the Legacey sale agreements
+        System.assertEquals('Sri.', LegacySaleDeedController.formalSalutation('Mr'));
+        System.assertEquals('Kum.', LegacySaleDeedController.formalSalutation('Ms.'));
+        System.assertEquals('Dr.', LegacySaleDeedController.formalSalutation('Dr'));
+        System.assertEquals('S/O. SRI. B', LegacySaleDeedController.buildRelation('S/o', 'B'));
+        System.assertEquals('D/O. LATE B', LegacySaleDeedController.buildRelation('D/o', 'Late B'));
+        System.assertEquals('', LegacySaleDeedController.buildRelation('S/o', ''));
+        System.assertEquals('SRI. A, S/O. SRI. B', LegacySaleDeedController.deedNameLine('Mr.', 'a', 'S/O. SRI. B'));
+        System.assertEquals('A', LegacySaleDeedController.deedNameLine('', 'a', ''));
     }
 }

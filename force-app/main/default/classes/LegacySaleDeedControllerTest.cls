@@ -22,7 +22,10 @@ private class LegacySaleDeedControllerTest {
             Booking_Date__c = Date.today(),
             Status__c = 'Booked',
             First_Applicant_Name__c = 'Legacy Deed Customer',
-            Total_Flat_Cost__c = 1000000
+            S_o_D_o_W_o__c = 'W/o',
+            Son_Daughter_Wife_of__c = 'Deed Spouse',
+            Total_Flat_Cost__c = 1000000,
+            Total_Payable_Amount__c = 1050000
         );
         insert booking;
 
@@ -83,5 +86,10 @@ private class LegacySaleDeedControllerTest {
         );
         System.assertEquals(500, controller.totalTdsAmount);
         System.assert(controller.getHasPaymentEntries());
+        // consideration from Total Payable Amount, first applicant's relation from S/o,D/o,W/o
+        System.assertEquals('10,50,000', controller.considerationAmount);
+        System.assert(controller.considerationWords.startsWith('Rupees '), controller.considerationWords);
+        System.assert(controller.purchasers[0].nameLine.contains('LEGACY DEED CUSTOMER, W/o. DEED SPOUSE'),
+            controller.purchasers[0].nameLine);
     }
 }

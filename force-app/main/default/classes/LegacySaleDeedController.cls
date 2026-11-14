@@ -84,7 +84,7 @@ public with sharing class LegacySaleDeedController {
     // =====================================================================
     // Read from the booking, its unit and its applicants, with the same mapping the Drizzle sale
     // deed uses (DrizzleSaleDeedController): first applicant, second applicant and every
-    // Co-Applicant record; flat details from the unit; consideration from Total Flat Cost.
+    // Co-Applicant record; flat details from the unit; consideration from Total Payable Amount.
     // A value that is missing prints as a dash line, never as nothing.
     private static final String DASH = '________';
 
@@ -126,6 +126,37 @@ public with sharing class LegacySaleDeedController {
         return String.isBlank(stripped) ? towerName.trim() : stripped;
     }
 
+    /**
+     * The first applicant's line as the Drizzle deed builds it ("MRS. A, <relation> B"), with the relation
+     * taken from the booking's S/o,D/o,W/o field (Primary Applicant Relation Details when that is blank):
+     * "TEST APPLICANT1, EW" becomes "TEST APPLICANT1, W/o. EW". Any other line is returned unchanged.
+     */
+    @TestVisible
+    private static String withPrimaryRelation(String line, Booking__c booking) {
+        if (String.isBlank(line) || booking == null || String.isBlank(booking.Son_Daughter_Wife_of__c)
+            || (String.isBlank(booking.First_Applicant_Name__c) && String.isBlank(booking.Applicant_Name__c))) {
+            return line;
+        }
+        String parent = booking.Son_Daughter_Wife_of__c.trim().toUpperCase();
+        String oldRelation = relationText(booking.Relation_Details_Applicant1__c);
+        String oldSuffix = ', ' + (String.isBlank(oldRelation) ? '' : oldRelation + ' ') + parent;
+        if (!line.endsWith(oldSuffix)) {
+            return line;
+        }
+        String relation = relationText(String.isNotBlank(booking.S_o_D_o_W_o__c)
+            ? booking.S_o_D_o_W_o__c : booking.Relation_Details_Applicant1__c);
+        return line.removeEnd(oldSuffix) + ', ' + (String.isBlank(relation) ? '' : relation + ' ') + parent;
+    }
+
+    /** "W/o" -> "W/o." (blank stays blank). */
+    private static String relationText(String relation) {
+        if (String.isBlank(relation)) {
+            return '';
+        }
+        String rel = relation.trim();
+        return rel.endsWith('.') ? rel : rel + '.';
+    }
+
     private void loadDeedDetails(ApexPages.StandardController standardController) {
         DrizzleSaleDeedController deed = new DrizzleSaleDeedController(standardController);
 
@@ -135,8 +166,23 @@ public with sharing class LegacySaleDeedController {
         tower = orDash(towerNumber(deed.blockName));
         bhk = orDash(deed.bhkNumber);
         area = orDash(deed.flatSizeNumber);
-        considerationAmount = orDash(deed.considerationAmount);
-        considerationWords = orDash(deed.considerationWords);
+        // Legacey deed only (2026-11-14): the consideration is the booking's Total Payable Amount, and the
+        // first applicant's relation comes from the booking's "S/o,D/o,W/o" field. The Drizzle deed is unchanged.
+        Booking__c legacyBooking = null;
+        if (standardController != null && standardController.getId() != null) {
+            List<Booking__c> rows = [
+                SELECT Total_Payable_Amount__c, S_o_D_o_W_o__c, Relation_Details_Applicant1__c,
+                       Son_Daughter_Wife_of__c, First_Applicant_Name__c, Applicant_Name__c
+                FROM Booking__c
+                WHERE Id = :standardController.getId()
+                LIMIT 1
+            ];
+            legacyBooking = rows.isEmpty() ? null : rows[0];
+        }
+        Decimal payable = legacyBooking == null ? null : legacyBooking.Total_Payable_Amount__c;
+        considerationAmount = orDash(indianNumber(payable));
+        considerationWords = payable == null ? DASH
+            : 'Rupees ' + new NumberTOWordConvertion().getNumberTOWordConvertion(payable);
         boundaryNorth = orDash(deed.boundaryNorth);
         boundarySouth = orDash(deed.boundarySouth);
         boundaryEast = orDash(deed.boundaryEast);
@@ -147,7 +193,7 @@ public with sharing class LegacySaleDeedController {
         Integer total = deed.vendees == null ? 0 : deed.vendees.size();
         for (Integer i = 0; i < total; i++) {
             DrizzleSaleDeedController.Vendee v = deed.vendees[i];
-            String name = orDash(v.nameLine);
+            String name = orDash(i == 0 ? withPrimaryRelation(v.nameLine, legacyBooking) : v.nameLine);
             if (!name.endsWith(',')) {
                 name += ',';
             }

@@ -300,6 +300,8 @@ private class DynamicDocumentRendererTest {
         String partP = plain.substringBetween('P:', '|Q:');
         String partQ = plain.substringAfter('|Q:');
         System.assert(!partP.contains('aged about') && !partP.contains('Occupation'), partP);
+        System.assert(partP.contains('<p style="text-align:left">'), partP);
+        System.assert(partQ.contains('<p style="text-align:justify">'), partQ);
         System.assert(partP.contains('<b>Mr. First Co, S/o. Father One</b>, Resident of Variant Address.'), partP);
         System.assert(partQ.contains('Occupation: Farmer'), partQ);
     }

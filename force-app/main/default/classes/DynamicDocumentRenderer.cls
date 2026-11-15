@@ -752,7 +752,9 @@ public with sharing class DynamicDocumentRenderer {
                 ? '<p style="text-align:justify;margin-left:36pt;text-indent:-22.5pt">'
                     + '<span style="display:inline-block;width:22.5pt;text-indent:0">'
                     + applicantNumber + '.</span>'
-                : '<p style="text-align:justify">';
+                // {!CO_APPLICANTS_NO_AGE_OCCUPATION} sits in narrow table cells: left-aligned, so the short
+                // first line is not stretched with wide gaps between the words (2026-11-15)
+                : (includeOccupation ? '<p style="text-align:justify">' : '<p style="text-align:left">');
             renderedApplicants.add(
                 opening + String.join(details, ', ') + '.'
                 + '<span style="display:block;text-indent:0;font-weight:bold">(Aadhaar No. '

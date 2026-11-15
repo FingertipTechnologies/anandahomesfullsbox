@@ -54,8 +54,8 @@ private class ProrataForecastReminderServiceTest {
     }
 
     @isTest
-    static void forecastDue_selfFunded_sendsOneMailForSameDateMilestones() {
-        Booking__c b = makeBooking('Self-Funded', true);
+    static void forecastDue_prorata_sendsOneMailForSameDateMilestones() {
+        Booking__c b = makeBooking('Prorata', true);
         Date demandDate = Date.newInstance(2026, 1, 2);
         Master_Payment_Schedule__c m1 = makeMaster(Date.today(), demandDate, 1);
         Master_Payment_Schedule__c m2 = makeMaster(Date.today(), demandDate, 2);
@@ -74,7 +74,7 @@ private class ProrataForecastReminderServiceTest {
 
     @isTest
     static void buildEmail_followsTheCoveringLetter() {
-        Booking__c b = makeBooking('Loan', true);
+        Booking__c b = makeBooking('Partial', true);
         Master_Payment_Schedule__c m = makeMaster(Date.today(), Date.newInstance(2026, 1, 2), 1);
         makeSchedule(b.Id, m.Id, 'On Completion of Footings', 1);
         List<Payment_Schedule__c> lines = [
@@ -120,8 +120,21 @@ private class ProrataForecastReminderServiceTest {
     }
 
     @isTest
+    static void otherFundingTypes_noReminder() {
+        Booking__c b = makeBooking('Loan', true);
+        Master_Payment_Schedule__c m = makeMaster(Date.today(), Date.today().addDays(30), 1);
+        makeSchedule(b.Id, m.Id, 'Foundation', 1);
+
+        Test.startTest();
+        Integer sent = ProrataForecastReminderService.processDueForecastReminders();
+        Test.stopTest();
+
+        System.assertEquals(0, sent, 'Only Prorata and Partial bookings get the forecast reminder');
+    }
+
+    @isTest
     static void projectWithoutFlag_noReminder() {
-        Booking__c b = makeBooking('Self-Funded', false);
+        Booking__c b = makeBooking('Prorata', false);
         Master_Payment_Schedule__c m = makeMaster(Date.today(), Date.today().addDays(30), 1);
         makeSchedule(b.Id, m.Id, 'Foundation', 1);
 

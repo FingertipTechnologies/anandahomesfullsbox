@@ -3,7 +3,7 @@
  *              (BRD §8.4). When a Master Payment Schedule's Forecast Date is reached, every booking
  *              payment-schedule line of that milestone whose demand is not yet raised gets the reminder.
  *              The wording follows "FORECASTING MILESTONE REMINDER MAIL 1.docx" (2026-11-15): it covers
- *              self-funding, bank-loan and pro-rata customers, so it goes to every funding type.
+ *              self-funding, bank-loan and pro-rata cases; it is sent to Prorata and Partial bookings only.
  *              Milestones of one booking that share the same demand date go out as ONE mail
  *              ("... Footings ... & ... Transfer Slab ...").
  *
@@ -14,6 +14,7 @@
 public with sharing class ProrataForecastReminderService {
 
     private static final Set<String> CLOSED_STATUSES = new Set<String>{ 'Paid', 'Completed', 'Waived' };
+    private static final Set<String> FUNDING_PRORATA = new Set<String>{ 'Prorata', 'Partial' };
     private static final List<String> MONTHS = new List<String>{
         'January', 'February', 'March', 'April', 'May', 'June',
         'July', 'August', 'September', 'October', 'November', 'December'
@@ -35,6 +36,7 @@ public with sharing class ProrataForecastReminderService {
             AND Forecast_Reminder_Sent__c = false
             AND Demand_Raised__c = false
             AND Status__c NOT IN :CLOSED_STATUSES
+            AND Booking__r.Funding_Type__c IN :FUNDING_PRORATA
             AND Booking__r.Project__r.Legacy_Split_Demand_Receipt__c = true
             ORDER BY Booking__c, Sequence__c
             LIMIT 500

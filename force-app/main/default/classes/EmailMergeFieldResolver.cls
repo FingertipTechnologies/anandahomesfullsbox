@@ -7,7 +7,46 @@ public with sharing class EmailMergeFieldResolver {
     
     // Merge field pattern:  {! FieldName} or {! Relationship. FieldName}
     private static final Pattern MERGE_FIELD_PATTERN = Pattern.compile('\\{!([\\w\\.]+)\\}');
-    
+    // The user sending the email: {!$User.Name}, {!$User.Title}, {!$User.MobilePhone}, {!$User.Email} ...
+    // (2026-11-15, Demand Letter covering mail signature)
+    private static final Pattern USER_FIELD_PATTERN = Pattern.compile('\\{!\\$User\\.(\\w+)\\}');
+
+    /**
+     * @description Replace {!$User.Field} with the running user's values (blank for an unknown field).
+     */
+    @TestVisible
+    private static String resolveUserFields(String template) {
+        if (String.isBlank(template) || !template.contains('{!$User.')) {
+            return template;
+        }
+        Map<String, Schema.SObjectField> userFields = Schema.SObjectType.User.fields.getMap();
+        Set<String> fieldNames = new Set<String>();
+        Matcher m = USER_FIELD_PATTERN.matcher(template);
+        while (m.find()) {
+            if (userFields.containsKey(m.group(1).toLowerCase())) {
+                fieldNames.add(m.group(1));
+            }
+        }
+        SObject currentUser = null;
+        if (!fieldNames.isEmpty()) {
+            Id userId = UserInfo.getUserId();
+            List<SObject> users = Database.query(
+                'SELECT ' + String.join(new List<String>(fieldNames), ', ') + ' FROM User WHERE Id = :userId LIMIT 1'
+            );
+            currentUser = users.isEmpty() ? null : users[0];
+        }
+        String result = template;
+        m = USER_FIELD_PATTERN.matcher(template);
+        while (m.find()) {
+            String value = null;
+            if (currentUser != null && fieldNames.contains(m.group(1))) {
+                value = formatValue(currentUser.get(m.group(1)));
+            }
+            result = result.replace(m.group(0), value == null ? '' : value);
+        }
+        return result;
+    }
+
     /**
      * @description Resolve all merge fields in a text string
      * @param template Text with merge fields
@@ -17,10 +56,18 @@ public with sharing class EmailMergeFieldResolver {
      */
     @AuraEnabled
     public static String resolveMergeFields(String template, Id recordId, String objectApiName) {
-        if (String.isBlank(template) || recordId == null) {
+        if (String.isBlank(template)) {
             return template;
         }
-        
+        try {
+            template = resolveUserFields(template);
+        } catch (Exception e) {
+            System.debug('Error resolving user merge fields: ' + e.getMessage());
+        }
+        if (recordId == null) {
+            return template;
+        }
+
         try {
             // Extract all merge fields from template
             Set<String> fieldsToQuery = extractMergeFields(template);

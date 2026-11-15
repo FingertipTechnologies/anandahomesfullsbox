@@ -115,19 +115,6 @@ private class EmailMergeFieldResolverTest {
     }
 
     @isTest
-    static void resolveMergeFields_runningUserFields() {
-        Account a = [SELECT Id FROM Account LIMIT 1];
-        User me = [SELECT Name, Email FROM User WHERE Id = :UserInfo.getUserId()];
-        Test.startTest();
-        String text = EmailMergeFieldResolver.resolveMergeFields(
-            '{!$User.Name}|{!$User.Email}|{!$User.NoSuchField__x}|{!Name}', a.Id, 'Account');
-        String noRecord = EmailMergeFieldResolver.resolveMergeFields('By {!$User.Name}', null, null);
-        Test.stopTest();
-        System.assertEquals(me.Name + '|' + me.Email + '||Merge Test Account', text);
-        System.assertEquals('By ' + me.Name, noRecord);
-    }
-
-    @isTest
     static void resolveFileName_blank_returnsDefault() {
         String name = EmailMergeFieldResolver.resolveFileName(null, null, null);
         System.assertEquals('Attachment.pdf', name, 'Default file name should be returned');

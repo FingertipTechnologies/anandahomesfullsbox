@@ -91,4 +91,12 @@
         <shortDescription>Enable_Payment_Schedule_Trigger</shortDescription>
         <value>true</value>
     </labels>
+    <labels>
+        <fullName>Forecast_Reminder_CRM_Team_Email</fullName>
+        <categories>Post Sales</categories>
+        <language>en_US</language>
+        <protected>false</protected>
+        <shortDescription>Forecast Reminder CRM Team Email</shortDescription>
+        <value>teamcrm.TL@anandahomes.co.in</value>
+    </labels>
 </CustomLabels>

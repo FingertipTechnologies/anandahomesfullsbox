@@ -285,6 +285,23 @@ private class DynamicDocumentRendererTest {
         System.assert(!partA.contains('aged about'), partA);
         System.assert(partA.contains('<b>Mr. First Co, S/o. Father One</b>, Resident of Variant Address.'), partA);
         System.assert(partB.contains('aged about 40 years'), partB);
+
+        // without age and without occupation
+        update new Co_Applicant__c(
+            Id = [SELECT Id FROM Co_Applicant__c WHERE Full_Name__c = 'First Co' LIMIT 1].Id,
+            Occupation__c = 'Farmer'
+        );
+        String plainJson = JSON.serialize(new Map<String, Object>{
+            'sections' => new List<Object>{
+                new Map<String, Object>{ 'type' => 'content', 'content' => 'P:{!CO_APPLICANTS_NO_AGE_OCCUPATION}|Q:{!CO_APPLICANTS}' }
+            }
+        });
+        String plain = DynamicDocumentRenderer.renderDocument(plainJson, booking.Id, 'Booking__c');
+        String partP = plain.substringBetween('P:', '|Q:');
+        String partQ = plain.substringAfter('|Q:');
+        System.assert(!partP.contains('aged about') && !partP.contains('Occupation'), partP);
+        System.assert(partP.contains('<b>Mr. First Co, S/o. Father One</b>, Resident of Variant Address.'), partP);
+        System.assert(partQ.contains('Occupation: Farmer'), partQ);
     }
 
     @isTest

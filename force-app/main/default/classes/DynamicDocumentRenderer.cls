@@ -688,11 +688,22 @@ public with sharing class DynamicDocumentRenderer {
             content = content.replace(
                 '{!CO_APPLICANTS_NO_AGE}', buildCoApplicantParagraphs(record, false, false));
         }
+        // without age and without occupation: name, relation, address, Aadhaar / PAN (2026-11-15)
+        if (content.contains('{!CO_APPLICANTS_NO_AGE_OCCUPATION}')) {
+            content = content.replace(
+                '{!CO_APPLICANTS_NO_AGE_OCCUPATION}', buildCoApplicantParagraphs(record, false, false, false));
+        }
         return content;
     }
 
     private static String buildCoApplicantParagraphs(
         SObject record, Boolean includeAge, Boolean numbered
+    ) {
+        return buildCoApplicantParagraphs(record, includeAge, numbered, true);
+    }
+
+    private static String buildCoApplicantParagraphs(
+        SObject record, Boolean includeAge, Boolean numbered, Boolean includeOccupation
     ) {
         List<String> renderedApplicants = new List<String>();
         Integer applicantNumber = 1;
@@ -727,7 +738,7 @@ public with sharing class DynamicDocumentRenderer {
                     'aged about ' + calculateAge(applicant.Date_of_Birth__c) + ' years'
                 );
             }
-            if (String.isNotBlank(applicant.Occupation__c)) {
+            if (includeOccupation && String.isNotBlank(applicant.Occupation__c)) {
                 details.add('Occupation: ' + escapeHtmlValue(applicant.Occupation__c));
             }
             // The co-applicant's own permanent address; the booking's only when theirs is blank.

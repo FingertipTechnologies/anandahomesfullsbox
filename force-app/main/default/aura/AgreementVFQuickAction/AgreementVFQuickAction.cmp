@@ -1,4 +1,9 @@
-<aura:component implements="force:hasRecordId,force:lightningQuickActionWithoutHeader" access="global">
+<!--
+    Preview window for a booking's PDF document. On its own it shows the Agreement of Sale;
+    SaleDeedVFQuickAction extends it and only changes documentType. The pages each document uses
+    are listed in AgreementVFQuickActionHelper.js (DOCUMENTS).
+-->
+<aura:component extensible="true" implements="force:hasRecordId,force:lightningQuickActionWithoutHeader" access="global">
     <aura:attribute name="recordId" type="String" />
     <aura:attribute name="booking" type="Object" />
     <aura:attribute name="project" type="Object" />
@@ -12,13 +17,16 @@
     <aura:attribute name="showPreview" type="Boolean" default="false" />
     <aura:attribute name="vfUrl" type="String" />
     <aura:attribute name="selectedPage" type="String" />
+    <aura:attribute name="subtitle" type="String" />
+    <aura:attribute name="documentType" type="String" default="agreement" />
+    <aura:attribute name="heading" type="String" default="Agreement of sale" />
     <aura:attribute name="errorMessage" type="String" />
 
     <aura:handler name="init" value="{!this}" action="{!c.doInit}" />
 
     <force:recordData aura:id="bookingLoader"
         recordId="{!v.recordId}"
-        fields="Project__c,Plot__c"
+        fields="Name,Project__c,Plot__c"
         targetFields="{!v.booking}"
         recordUpdated="{!c.handleBookingUpdated}" />
     <aura:if isTrue="{!not(empty(v.projectId))}">
@@ -31,25 +39,35 @@
     <aura:if isTrue="{!not(empty(v.unitId))}">
         <force:recordData aura:id="unitLoader"
             recordId="{!v.unitId}"
-            fields="LL_Share_Name__c"
+            fields="Name,LL_Share_Name__c"
             targetFields="{!v.unit}"
             recordUpdated="{!c.handleUnitUpdated}" />
     </aura:if>
 
+    <!--
+        The quick-action modal keeps 48px + 80px of padding around its body and scrolls it
+        (.quick-actions-panel). The window is sized here so that the frame, the scrolling panel and
+        this component are all exactly the same height: one even margin, and the only scrollbar
+        left is the PDF viewer's own.
+    -->
     <aura:html tag="style">
         .slds-modal__container {
-            width: 94vw !important;
-            max-width: 94vw !important;
+            width: 96vw !important;
+            max-width: 96vw !important;
             min-width: 0 !important;
-            height: 94vh !important;
-            max-height: 94vh !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
             margin: 0 auto !important;
+            padding: 2vh 0 !important;
         }
-        .slds-modal__content, .cuf-content {
+        .slds-modal__content, .cuf-content, .quick-actions-panel {
             padding: 0 !important;
-            height: 94vh !important;
-            max-height: 94vh !important;
+            height: 96vh !important;
+            max-height: 96vh !important;
             overflow: hidden !important;
+        }
+        .slds-modal__content {
+            border-radius: 0.5rem !important;
         }
         .slds-p-around--medium {
             padding: 0 !important;
@@ -58,12 +76,12 @@
             .slds-modal__container {
                 width: 100vw !important;
                 max-width: 100vw !important;
-                height: 100vh !important;
-                max-height: 100vh !important;
+                padding: 0 !important;
             }
-            .slds-modal__content, .cuf-content {
+            .slds-modal__content, .cuf-content, .quick-actions-panel {
                 height: 100vh !important;
                 max-height: 100vh !important;
+                border-radius: 0 !important;
             }
         }
     </aura:html>
@@ -71,22 +89,29 @@
     <section class="agreement-preview">
         <header class="preview-header">
             <div class="preview-title">
-                <lightning:icon iconName="doctype:pdf" size="small" alternativeText="PDF" />
-                <div>
-                    <h2 class="slds-text-heading_medium">Agreement Preview</h2>
-                    <aura:if isTrue="{!not(empty(v.selectedPage))}">
-                        <p class="preview-subtitle">{!v.selectedPage}</p>
+                <lightning:icon iconName="doctype:pdf" size="medium" alternativeText="PDF" />
+                <div class="preview-title-text">
+                    <h2 class="preview-heading">{!v.heading}</h2>
+                    <aura:if isTrue="{!not(empty(v.subtitle))}">
+                        <p class="preview-subtitle" title="{!v.subtitle}">{!v.subtitle}</p>
                     </aura:if>
                 </div>
             </div>
-            <lightning:button label="Close" variant="neutral" onclick="{!c.close}" />
+            <div class="preview-actions">
+                <lightning:button label="Download" iconName="utility:download" iconPosition="left"
+                    variant="neutral" disabled="{!not(v.showPreview)}" onclick="{!c.download}" />
+                <lightning:button label="Open in new tab" iconName="utility:new_window" iconPosition="left"
+                    variant="neutral" disabled="{!not(v.showPreview)}" onclick="{!c.openInNewTab}" />
+                <lightning:buttonIcon iconName="utility:close" variant="border-filled"
+                    alternativeText="Close" title="Close" onclick="{!c.close}" />
+            </div>
         </header>
 
         <div class="preview-stage">
             <aura:if isTrue="{!v.isLoading}">
                 <div class="preview-loading">
-                    <lightning:spinner alternativeText="Loading agreement preview" size="medium" />
-                    <p>Preparing your agreement preview…</p>
+                    <lightning:spinner alternativeText="Loading preview" size="medium" />
+                    <p>Preparing your preview…</p>
                 </div>
             </aura:if>
 
@@ -101,7 +126,7 @@
             </aura:if>
 
             <aura:if isTrue="{!v.showPreview}">
-                <iframe src="{!v.vfUrl}" title="Agreement PDF preview" class="agreement-frame" />
+                <iframe src="{!v.vfUrl}" title="{!v.heading + ' PDF preview'}" class="agreement-frame" />
             </aura:if>
         </div>
     </section>

@@ -140,32 +140,62 @@
         </itemInstances>
         <itemInstances>
             <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
                 <fieldItem>Record.Tower_Lookup__c</fieldItem>
                 <identifier>RecordTower_Lookup__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
             <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
                 <fieldItem>Record.Lake_Premium__c</fieldItem>
                 <identifier>RecordLake_Premium__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
             <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
                 <fieldItem>Record.Piped_Gas__c</fieldItem>
                 <identifier>RecordPiped_Gas__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
             <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
                 <fieldItem>Record.PLC__c</fieldItem>
                 <identifier>RecordPLC__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
             <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
                 <fieldItem>Record.East_North_Facing__c</fieldItem>
                 <identifier>RecordEast_North_Facing__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Club_House__c</fieldItem>
+                <identifier>RecordClub_House__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <name>Facet-c62cc08e-73eb-4af5-8a1e-fb99b019b20d</name>
@@ -302,6 +332,16 @@
                 </fieldInstanceProperties>
                 <fieldItem>Record.Floor__c</fieldItem>
                 <identifier>RecordFloor_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Floor_Rise__c</fieldItem>
+                <identifier>RecordFloor_Rise_cField</identifier>
             </fieldInstance>
         </itemInstances>
         <name>Facet-dc3507e5-dc8c-4251-b71d-00eab4078fd6</name>
@@ -504,16 +544,6 @@
                 </fieldInstanceProperties>
                 <fieldItem>Record.GST_Amount__c</fieldItem>
                 <identifier>RecordGST_Amount_cField</identifier>
-            </fieldInstance>
-        </itemInstances>
-        <itemInstances>
-            <fieldInstance>
-                <fieldInstanceProperties>
-                    <name>uiBehavior</name>
-                    <value>readonly</value>
-                </fieldInstanceProperties>
-                <fieldItem>Record.Sub_total__c</fieldItem>
-                <identifier>RecordSub_total_cField</identifier>
             </fieldInstance>
         </itemInstances>
         <name>Facet-660fd930-ea11-4cac-8ffc-f74ef9b4e290</name>

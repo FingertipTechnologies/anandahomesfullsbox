@@ -2,7 +2,8 @@
  * Controller extension for the landowner / builder-share "Agreement of Sale"
  * Visualforce PDFs (ARJUN_SINGH_, MAGHAN_SINGH_, SURESH_SINGH_, NAVEEN_SINGH_,
  * NITIN_SINGH_ and BUILDER_SHARE_AGREEMENT_OF_SALE) and for THE DRIZZLE builder
- * agreements (SaleAgreementDrizzil and MortgageAgreementofSaleDrizzle).
+ * agreement (SaleAgreementDrizzle - one page: it prints the HMDA mortgage clause
+ * itself when the booked unit is ticked "Mortgaged to HMDA").
  *
  * The landowner whose template is being rendered is derived from the page
  * name. The units that belong to that landowner are identified by the
@@ -159,6 +160,11 @@ public with sharing class AgreementOfSaleController {
                 line += ', ' + relation;
             }
             return line + ', ';
+        }
+
+        /** Same as getDeedNameLine; the name the MAGHAN page was built against. */
+        public String getDeedNameRelationLine() {
+            return getDeedNameLine();
         }
 
         /** e.g. "aged about 30 years, Occupation: Business, Resident of Hyderabad. " */
@@ -362,9 +368,22 @@ public with sharing class AgreementOfSaleController {
             this.receipt = receipt;
         }
 
+        /**
+         * How the money came in (NEFT, Cheque, UPI ...): the receipt's Payment Method, else the
+         * older Mode of Payment field. Never the receipt type (Advance / Installment Payment),
+         * which is what the deed's "Mode" column was wrongly showing.
+         */
+        public String getPaymentMethod() {
+            if (!String.isBlank(receipt.Payment_Method__c)) {
+                return receipt.Payment_Method__c;
+            }
+            return receipt.Mode_of_payment__c;
+        }
+
         public String getMode() {
-            if (!String.isBlank(receipt.Mode_of_payment__c)) {
-                return receipt.Mode_of_payment__c;
+            String method = getPaymentMethod();
+            if (!String.isBlank(method)) {
+                return method;
             }
             return receipt.Receipt_Type__c;
         }
@@ -403,7 +422,15 @@ public with sharing class AgreementOfSaleController {
             this.schedule = schedule;
         }
 
+        /**
+         * The milestone wording of the project's master payment schedule (e.g. "On Completion of
+         * 4 slabs of Block B & C"); older lines without a master use their own name.
+         */
         public String getInstallmentName() {
+            if (schedule.Master_Payment_Schedule__r != null
+                && !String.isBlank(schedule.Master_Payment_Schedule__r.Name)) {
+                return schedule.Master_Payment_Schedule__r.Name;
+            }
             if (!String.isBlank(schedule.Milestone_Name__c)) {
                 return schedule.Milestone_Name__c;
             }
@@ -499,6 +526,23 @@ public with sharing class AgreementOfSaleController {
         return paymentScheduleRows != null && !paymentScheduleRows.isEmpty();
     }
 
+    /**
+     * "Download" in the Agreement Preview window opens the agreement page with download=1:
+     * the PDF is then sent as a file (named by fileName) instead of being shown in the browser.
+     */
+    private static void applyDownloadHeader() {
+        PageReference page = ApexPages.currentPage();
+        if (page == null || page.getParameters().get('download') != '1') {
+            return;
+        }
+        String fileName = page.getParameters().get('fileName');
+        fileName = String.isBlank(fileName) ? '' : fileName.replaceAll('[^A-Za-z0-9 _.-]', '').trim();
+        if (String.isBlank(fileName)) {
+            fileName = 'Agreement of Sale';
+        }
+        page.getHeaders().put('content-disposition', 'attachment; filename="' + fileName + '.pdf"');
+    }
+
     public AgreementOfSaleController(ApexPages.StandardController standardController) {
         ownerUnits = new List<OwnerUnitRow>();
         applicants = new List<ApplicantEntry>();
@@ -520,10 +564,10 @@ public with sharing class AgreementOfSaleController {
         buyerNames = '';
         ownerDisplayName = '';
         String pageUrl = currentPageUrl();
+        applyDownloadHeader();
         // Builder (developer share) templates: the unit must not belong to a landowner.
         isBuilderSharePage = pageUrl.contains('BUILDER_SHARE_AGREEMENT_OF_SALE') ||
-            pageUrl.contains('SALEAGREEMENTDRIZZIL') ||
-            pageUrl.contains('MORTGAGEAGREEMENTOFSALEDRIZZLE');
+            pageUrl.contains('SALEAGREEMENTDRIZZLE');
         if (standardController == null || standardController.getId() == null) {
             return;
         }
@@ -553,7 +597,7 @@ public with sharing class AgreementOfSaleController {
                    // THE DRIZZLE price break-up
                    Rate_Per_Sqft__c, GST__c, Covered_Park_Parking__c, Car_Parking_Charges__c,
                    Extra_Covered_Parking_Charges__c,
-                   Quote__r.Price_Per_Sq_Ft__c, Quote__r.Infrastructure_Charges__c,
+                   Quote__r.Price_Per_Sq_Ft__c, Quote__r.Infrastructure_Charges__c, Quote__r.Club_House__c,
                    Quote__r.Amenities_Car_Parking__c, Quote__r.Extra_Covered_Car_Parking_Charges__c,
                    Quote__r.GST1__c,
                    Project__r.Name, Project__r.GST_Percentage__c, Project__r.GST_Other_Percentage__c,
@@ -634,7 +678,7 @@ public with sharing class AgreementOfSaleController {
             selectedUnit = [
                 SELECT Id, Name, Project__r.Name, Plot_Number__c, Tower__c, Tower_Block__c,
                        Floor__c, BHK_Type__c, Facing__c, Carpet_Area__c, Balcony_Area__c,
-                       Built_up_area__c, Saleable_Area_Sft__c,
+                       Built_up_area__c, Saleable_Area_Sft__c, Wall_Area__c, Plinth_Area__c,
                        Common_Area_Allotted_to_Association__c, UDS__c, UDS_Sq_mts__c, Utility_Area__c,
                        East_North_Facing__c,
                        Boundary_North__c, Boundary_South__c, Boundary_East__c, Boundary_West__c,
@@ -680,7 +724,7 @@ public with sharing class AgreementOfSaleController {
 
     private void loadPaymentRecords(Id bookingId) {
         for (Receipt__c receipt : [
-            SELECT Id, Receipt_Date__c, Mode_of_payment__c, Payment_Reference_Number__c,
+            SELECT Id, Receipt_Date__c, Mode_of_payment__c, Payment_Method__c, Payment_Reference_Number__c,
                    Cheque_Number__c, Check_Transaction_Nmber__c, Amount_received__c,
                    Receipt_Type__c
             FROM Receipt__c
@@ -694,6 +738,7 @@ public with sharing class AgreementOfSaleController {
 
         for (Payment_Schedule__c schedule : [
             SELECT Id, Name, Milestone_Name__c, Payment_Schedule_Name__c, Description__c,
+                   Master_Payment_Schedule__r.Name,
                    Percentage__c, Flat_Cost__c, GST_Amount__c, Amount__c
             FROM Payment_Schedule__c
             WHERE Booking__c = :bookingId
@@ -989,6 +1034,19 @@ public with sharing class AgreementOfSaleController {
                 : towerName.trim();
         }
         return selectedTowerName;
+    }
+
+    /**
+     * The tower as the deeds write it after the word "Tower" ("Tower no. 1", "Tower-1"):
+     * the tower name without a leading "Tower" / "T" word, so a tower named "Tower A"
+     * prints "Tower-A" and not "Tower-Tower A".
+     */
+    public String getSelectedTowerLabel() {
+        String name = getSelectedTowerName();
+        if (String.isBlank(name)) {
+            return '';
+        }
+        return name.replaceFirst('(?i)^tower\\s*[-:]?\\s*', '').trim();
     }
 
     @TestVisible
@@ -1415,7 +1473,14 @@ public with sharing class AgreementOfSaleController {
             otherGstPercent = 18;
         }
 
-        Decimal club = booking.Quote__r == null ? null : positive(booking.Quote__r.Infrastructure_Charges__c);
+        // "Club House Membership & Infrastructure Charges" = the quote's Club House charge plus its
+        // Infrastructure charge (THE DRIZZLE units carry the club house amount in Club House).
+        Decimal club = null;
+        if (booking.Quote__r != null) {
+            Decimal clubSum = nz(positive(booking.Quote__r.Club_House__c))
+                + nz(positive(booking.Quote__r.Infrastructure_Charges__c));
+            club = clubSum > 0 ? clubSum : null;
+        }
         Decimal parking = firstPositive(new List<Decimal>{
             booking.Quote__r == null ? null : booking.Quote__r.Amenities_Car_Parking__c,
             booking.Covered_Park_Parking__c,
@@ -1452,13 +1517,21 @@ public with sharing class AgreementOfSaleController {
         }
 
         Integer parkingCount = carParkingCount();
-        drizzlePriceLines.add(new ChargeLine('Basic Price', plainNumber(rate), basic, percentOf(basic, gstPercent)));
+        // GST is charged once on the agreed cost, so the GST column has to add up to that figure:
+        // the Basic Price row takes whatever is left after the other two rows (rounding included).
+        Decimal clubGst = percentOf(nz(club), gstPercent);
+        Decimal parkingGst = percentOf(nz(parking), gstPercent);
+        Decimal basicGst = percentOf(basic, gstPercent);
+        if (total != null && basic != null) {
+            basicGst = percentOf(total, gstPercent) - clubGst - parkingGst;
+        }
+        drizzlePriceLines.add(new ChargeLine('Basic Price', plainNumber(rate), basic, basicGst));
         drizzlePriceLines.add(new ChargeLine(
-            'Club House Membership & Infrastructure Charges', '', nz(club), percentOf(nz(club), gstPercent)
+            'Club House Membership & Infrastructure Charges', '', nz(club), clubGst
         ));
         drizzlePriceLines.add(new ChargeLine(
             'Car Parking (' + (parkingCount == 0 ? 'Nil' : String.valueOf(parkingCount) + ' No.') + ')',
-            '', nz(parking), percentOf(nz(parking), gstPercent)
+            '', nz(parking), parkingGst
         ));
         drizzlePriceTotal = sumLines('Total', drizzlePriceLines);
 
@@ -1567,12 +1640,9 @@ public with sharing class AgreementOfSaleController {
 
     /**
      * True when the HMDA mortgage clause must be printed: the booked unit is ticked
-     * "Mortgaged to HMDA", or the dedicated mortgage agreement page is being rendered.
+     * "Mortgaged to HMDA". (There is no separate mortgage agreement page any more.)
      */
     public Boolean getIsMortgagedUnit() {
-        if (currentPageUrl().contains('MORTGAGEAGREEMENTOFSALEDRIZZLE')) {
-            return true;
-        }
         return selectedUnit != null && selectedUnit.Mortgaged_to_HMDA__c == true;
     }
 
@@ -1665,20 +1735,24 @@ public with sharing class AgreementOfSaleController {
         return selectedUnit == null ? '' : plainNumber(selectedUnit.Internal_Wall_Area__c);
     }
 
-    /** "32.60" - Unit "UDS (Sq yards.)" only. */
+    /** "32.60" - Unit "UDS Area (Sq Yards)" (UDS__c; UDS_Sq_mts__c is square metres). */
     public String getDrizzleUds() {
-        return selectedUnit == null || selectedUnit.UDS_Sq_mts__c == null
-            ? ''
-            : selectedUnit.UDS_Sq_mts__c.setScale(2, System.RoundingMode.HALF_UP).toPlainString();
+        if (selectedUnit == null) {
+            return '';
+        }
+        Decimal uds = selectedUnit.UDS__c;
+        return uds == null ? '' : uds.setScale(2, System.RoundingMode.HALF_UP).toPlainString();
     }
 
+    /** The project's name as recorded, upper case (e.g. "THE DRIZZLE") - the PROJECT rows of the apartment tables. */
     public String getDrizzleProjectName() {
-        if (booking != null && booking.Project__r != null && !String.isBlank(booking.Project__r.Name)) {
-            return booking.Project__r.Name.trim().toUpperCase();
+        String name = booking != null && booking.Project__r != null && !String.isBlank(booking.Project__r.Name)
+            ? booking.Project__r.Name
+            : (selectedUnit == null || selectedUnit.Project__r == null ? null : selectedUnit.Project__r.Name);
+        if (String.isBlank(name)) {
+            return '';
         }
-        return selectedUnit == null || selectedUnit.Project__r == null || selectedUnit.Project__r.Name == null
-            ? ''
-            : selectedUnit.Project__r.Name.trim().toUpperCase();
+        return name.trim().toUpperCase();
     }
 
     private static String upperOrBlank(String value) {

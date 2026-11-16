@@ -6,8 +6,8 @@ private class CreateQuoteControllerTest {
         Project__c testProject = new Project__c(Name = 'Test Project', Project_Type__c = 'Residential');
         insert testProject;
 
-        Plot__c plot1 = new Plot__c(Project__c = testProject.Id, Status__c = 'Available');
-        Plot__c plot2 = new Plot__c(Project__c = testProject.Id, Status__c = 'Available');
+        Plot__c plot1 = new Plot__c(Project__c = testProject.Id, Status__c = 'Available', East_North_Facing__c = 75, Club_House__c = 1234);
+        Plot__c plot2 = new Plot__c(Project__c = testProject.Id, Status__c = 'Available', East_North_Facing__c = 75, Club_House__c = 1234);
         insert new List<Plot__c>{plot1, plot2};
 
         Test.startTest();
@@ -15,6 +15,11 @@ private class CreateQuoteControllerTest {
         Test.stopTest();
 
         System.assertEquals(2, plots.size());
+        // The Drizzle fields must come back from this query too (it is the one used when the project
+        // is picked on the screen); reading an unqueried field would throw here.
+        Object plc = plots[0].PLC__c;
+        System.assertEquals(75, plots[0].East_North_Facing__c);
+        System.assertEquals(1234, plots[0].Club_House__c);
     }
 
   @IsTest
@@ -151,7 +156,8 @@ static void testGetAllocatedProjectValue() {
             Percentage__c = 10,
             Sequence__c = 1,
             Payment_Percent__c = 10,
-            Amount__c = 1000
+            Amount__c = 1000,
+            Is_Active__c = true
         );
         insert mps;
 
@@ -225,5 +231,68 @@ static void testGetAllocatedProjectValue() {
         for (Cost_Sheet_Line_Item__c item : insertedItems) {
             System.assertEquals(q.Id, item.Quote__c, 'Quote__c must be assigned correctly');
         }
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Only the lead owner or a System Administrator may create a quote from a lead
+    // ---------------------------------------------------------------------------------------
+
+    @IsTest
+    static void quoteCreationRuleAllowsOnlyOwnerOrAdmin() {
+        Id ownerId = UserInfo.getUserId();
+        Id otherId = [SELECT Id FROM User WHERE Id != :ownerId AND IsActive = true LIMIT 1].Id;
+
+        System.assert(CreateQuoteController.isQuoteCreationAllowed(ownerId, ownerId, 'CRM User'), 'Lead owner is allowed');
+        System.assert(CreateQuoteController.isQuoteCreationAllowed(ownerId, otherId, CreateQuoteController.ADMIN_PROFILE), 'Admin is allowed on any lead');
+        System.assert(!CreateQuoteController.isQuoteCreationAllowed(ownerId, otherId, 'CRM User'), 'Another user is not allowed');
+        System.assert(!CreateQuoteController.isQuoteCreationAllowed(null, otherId, 'CRM User'), 'No owner and not admin: not allowed');
+    }
+
+    @IsTest
+    static void anotherUserIsBlockedFromCreatingAQuote() {
+        Lead__c lead = new Lead__c(Name__c = 'Owner Rule Lead', Phone__c = '9876501234');
+        insert lead;   // owned by the user running the test
+
+        User outsider = new User(
+            Username = 'quote.outsider@anandahomes.test.invalid',
+            LastName = 'Outsider',
+            Email = 'quote.outsider@example.com',
+            Alias = 'qouts',
+            ProfileId = [SELECT Id FROM Profile WHERE Name = 'Standard User' LIMIT 1].Id,
+            TimeZoneSidKey = 'Asia/Kolkata',
+            LocaleSidKey = 'en_IN',
+            EmailEncodingKey = 'UTF-8',
+            LanguageLocaleKey = 'en_US'
+        );
+        insert outsider;
+
+        String message;
+        String saveResult;
+        Test.startTest();
+        System.runAs(outsider) {
+            message = CreateQuoteController.checkQuoteAccess(lead.Id);
+            saveResult = CreateQuoteController.saveOppPlot(new Quote__c(CLead__c = lead.Id));
+        }
+        Test.stopTest();
+
+        System.assertEquals(CreateQuoteController.QUOTE_ACCESS_DENIED, message, 'Screen check returns the error message');
+        System.assertEquals('ERROR: ' + CreateQuoteController.QUOTE_ACCESS_DENIED, saveResult, 'Save is refused with the same message');
+        System.assertEquals(0, [SELECT COUNT() FROM Quote__c WHERE CLead__c = :lead.Id], 'No quote is created');
+    }
+
+    @IsTest
+    static void leadOwnerAndNonLeadRecordsAreNotBlocked() {
+        Lead__c lead = new Lead__c(Name__c = 'Owner Rule Lead 2', Phone__c = '9876501235');
+        insert lead;   // the running user is the owner
+
+        Test.startTest();
+        String ownerMessage = CreateQuoteController.checkQuoteAccess(lead.Id);
+        String noRecordMessage = CreateQuoteController.checkQuoteAccess(null);
+        String otherObjectMessage = CreateQuoteController.checkQuoteAccess(UserInfo.getUserId());
+        Test.stopTest();
+
+        System.assertEquals(null, ownerMessage, 'The lead owner may create a quote');
+        System.assertEquals(null, noRecordMessage, 'No record: nothing to restrict');
+        System.assertEquals(null, otherObjectMessage, 'Not a lead: nothing to restrict');
     }
 }

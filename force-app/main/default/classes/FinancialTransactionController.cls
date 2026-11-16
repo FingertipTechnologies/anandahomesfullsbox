@@ -50,7 +50,7 @@ public without sharing class FinancialTransactionController {
             summary.originalAgreementValue = booking.Total_Payable_Amount__c ?? 0;
             summary.netAgreementValue = booking.Total_Payable_Amount__c ?? 0;
 
-            summary.totalDemandRaised = computeTotalDemandRaised(bookingId);
+            summary.totalDemandRaised = booking.Total_Demand_Raised__c ?? 0;
             summary.totalReceiptAmount = booking.Total_Receipt_Amount__c ?? 0;
             summary.outstandingDemandAmount = (booking.Total_Demand_Raised__c - booking.Total_Receipt_Amount__c) ?? 0;
 
@@ -500,7 +500,7 @@ public without sharing class FinancialTransactionController {
     public static ReceiptResult createReceipt(String receiptData) {
         Savepoint sp = Database.setSavepoint();
         
-        
+        try {
             ReceiptWrapper wrapper = (ReceiptWrapper) JSON.deserialize(receiptData, ReceiptWrapper.class);
 
             if (wrapper.bookingId != null && wrapper.receiptType == 'GST Amount') {
@@ -571,6 +571,13 @@ public without sharing class FinancialTransactionController {
             created.creditApplied = 0;
             created.excessAmount = 0;
             return created;
+        } catch (Exception e) {
+            Database.rollback(sp);
+            if (e instanceof AuraHandledException) {
+                throw e;
+            }
+            throw new AuraHandledException('Unable to create receipt: ' + e.getMessage());
+        }
     }
 
     // ==================== ALLOCATE RECEIPT (runs on approval) ====================
@@ -1135,6 +1142,7 @@ public without sharing class FinancialTransactionController {
                 w.bookingId         = req.bookingId;
                 w.amountReceived    = req.amountReceived;
                 w.receiptDate       = (req.receiptDate != null) ? req.receiptDate : Date.today();
+                w.chequeDate        = req.chequeDate;
                 w.receiptType       = String.isNotBlank(req.receiptType) ? req.receiptType : 'Installment Payment';
                 w.paymentMode       = req.paymentMode;
                 w.paymentFrom       = req.paymentFrom;
@@ -1627,6 +1635,8 @@ public without sharing class FinancialTransactionController {
         public Decimal amountReceived;
         @InvocableVariable(label='Receipt Date (defaults to today)')
         public Date receiptDate;
+        @InvocableVariable(label='Cheque Date')
+        public Date chequeDate;
         @InvocableVariable(label='Receipt Type (defaults to Advance)')
         public String receiptType;
         @InvocableVariable(label='Payment Mode')

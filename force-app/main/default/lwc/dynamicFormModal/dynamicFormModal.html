@@ -200,121 +200,118 @@
                         </div>
                     </template>
 
-                    <!-- Child Record Sections -->
+                    <!-- Child Record Sections: one card per child record, fields in two columns -->
                     <template for:each={renderedChildSections} for:item="childSection">
                         <div key={childSection.id} class="form-section child-form-section">
                             <div class="form-section-header child-section-header">
                                 <span class="form-section-title">{childSection.sectionLabel}</span>
-                                <lightning-button label="Add Row" variant="neutral"
+                                <lightning-button label={childSection.addLabel} variant="neutral"
                                     icon-name="utility:add" data-child-id={childSection.id}
                                     onclick={handleAddChildRow}></lightning-button>
                             </div>
 
                             <template if:true={childSection.hasRows}>
-                                <div class="table-wrapper">
-                                    <table class="slds-table slds-table_bordered slds-table_cell-buffer slds-table_striped">
-                                        <thead>
-                                            <tr>
-                                                <th scope="col" class="row-num-col">#</th>
-                                                <template for:each={childSection.fields} for:item="hField">
-                                                    <th key={hField.apiName} scope="col">{hField.label}</th>
+                                <div class="child-cards">
+                                    <template for:each={childSection.rows} for:item="row">
+                                        <div key={row.tempId} class="child-card">
+                                            <div class="child-card-header">
+                                                <span class="child-card-title">{row.title}</span>
+                                                <lightning-button-icon icon-name="utility:delete"
+                                                    alternative-text={row.deleteLabel}
+                                                    title={row.deleteLabel}
+                                                    data-child-id={childSection.id}
+                                                    data-row-id={row.tempId}
+                                                    onclick={handleDeleteChildRow}
+                                                    variant="bare"
+                                                    size="medium"></lightning-button-icon>
+                                            </div>
+                                            <div class="form-grid child-card-grid">
+                                                <template for:each={row.cells} for:item="cell">
+                                                    <div key={cell.apiName} class={cell.colClass}>
+                                                        <template if:true={cell.isTextField}>
+                                                            <lightning-input label={cell.label}
+                                                                value={cell.value}
+                                                                data-child-id={childSection.id}
+                                                                data-row-id={row.tempId}
+                                                                data-field={cell.apiName}
+                                                                onchange={handleChildFieldChange}
+                                                                required={cell.isRequired}
+                                                                pattern={cell.pattern}
+                                                                message-when-pattern-mismatch={cell.messageWhenPatternMismatch}></lightning-input>
+                                                        </template>
+                                                        <template if:true={cell.isTextArea}>
+                                                            <lightning-textarea label={cell.label}
+                                                                value={cell.value}
+                                                                data-child-id={childSection.id}
+                                                                data-row-id={row.tempId}
+                                                                data-field={cell.apiName}
+                                                                onchange={handleChildFieldChange}
+                                                                required={cell.isRequired}></lightning-textarea>
+                                                        </template>
+                                                        <template if:true={cell.isNumber}>
+                                                            <lightning-input type="number" label={cell.label}
+                                                                value={cell.value}
+                                                                data-child-id={childSection.id}
+                                                                data-row-id={row.tempId}
+                                                                data-field={cell.apiName}
+                                                                onchange={handleChildFieldChange}
+                                                                required={cell.isRequired}
+                                                                min={cell.min}
+                                                                max={cell.max}
+                                                                step={cell.step}
+                                                                message-when-range-overflow={cell.messageWhenRangeOverflow}
+                                                                message-when-range-underflow={cell.messageWhenRangeUnderflow}></lightning-input>
+                                                        </template>
+                                                        <template if:true={cell.isDate}>
+                                                            <lightning-input type="date" label={cell.label}
+                                                                value={cell.value}
+                                                                data-child-id={childSection.id}
+                                                                data-row-id={row.tempId}
+                                                                data-field={cell.apiName}
+                                                                onchange={handleChildFieldChange}
+                                                                required={cell.isRequired}
+                                                                min={cell.min}
+                                                                max={cell.max}></lightning-input>
+                                                        </template>
+                                                        <template if:true={cell.isBoolean}>
+                                                            <lightning-input type="checkbox" label={cell.label}
+                                                                checked={cell.value}
+                                                                data-child-id={childSection.id}
+                                                                data-row-id={row.tempId}
+                                                                data-field={cell.apiName}
+                                                                onchange={handleChildFieldChange}></lightning-input>
+                                                        </template>
+                                                        <template if:true={cell.isPicklist}>
+                                                            <lightning-combobox label={cell.label}
+                                                                value={cell.value}
+                                                                options={cell.picklistOptions}
+                                                                placeholder="Select an Option"
+                                                                data-child-id={childSection.id}
+                                                                data-row-id={row.tempId}
+                                                                data-field={cell.apiName}
+                                                                onchange={handleChildFieldChange}
+                                                                required={cell.isRequired}></lightning-combobox>
+                                                        </template>
+                                                        <template if:true={cell.isOther}>
+                                                            <lightning-input label={cell.label}
+                                                                value={cell.value}
+                                                                data-child-id={childSection.id}
+                                                                data-row-id={row.tempId}
+                                                                data-field={cell.apiName}
+                                                                onchange={handleChildFieldChange}
+                                                                required={cell.isRequired}></lightning-input>
+                                                        </template>
+                                                    </div>
                                                 </template>
-                                                <th scope="col" class="action-col">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <template for:each={childSection.rows} for:item="row">
-                                                <tr key={row.tempId}>
-                                                    <td class="row-num-col">{row.rowNum}</td>
-                                                    <template for:each={row.cells} for:item="cell">
-                                                        <td key={cell.apiName}>
-                                                            <template if:true={cell.isTextField}>
-                                                                <lightning-input value={cell.value}
-                                                                    data-child-id={childSection.id}
-                                                                    data-row-id={row.tempId}
-                                                                    data-field={cell.apiName}
-                                                                    onchange={handleChildFieldChange}
-                                                                    variant="label-hidden"
-                                                                    required={cell.isRequired}
-                                                                    pattern={cell.pattern}
-                                                                    message-when-pattern-mismatch={cell.messageWhenPatternMismatch}></lightning-input>
-                                                            </template>
-                                                            <template if:true={cell.isNumber}>
-                                                                <lightning-input type="number"
-                                                                    value={cell.value}
-                                                                    data-child-id={childSection.id}
-                                                                    data-row-id={row.tempId}
-                                                                    data-field={cell.apiName}
-                                                                    onchange={handleChildFieldChange}
-                                                                    variant="label-hidden"
-                                                                    required={cell.isRequired}
-                                                                    min={cell.min}
-                                                                    max={cell.max}
-                                                                    step={cell.step}
-                                                                    message-when-range-overflow={cell.messageWhenRangeOverflow}
-                                                                    message-when-range-underflow={cell.messageWhenRangeUnderflow}></lightning-input>
-                                                            </template>
-                                                            <template if:true={cell.isDate}>
-                                                                <lightning-input type="date"
-                                                                    value={cell.value}
-                                                                    data-child-id={childSection.id}
-                                                                    data-row-id={row.tempId}
-                                                                    data-field={cell.apiName}
-                                                                    onchange={handleChildFieldChange}
-                                                                    variant="label-hidden"
-                                                                    required={cell.isRequired}
-                                                                    min={cell.min}
-                                                                    max={cell.max}></lightning-input>
-                                                            </template>
-                                                            <template if:true={cell.isBoolean}>
-                                                                <lightning-input type="checkbox"
-                                                                    checked={cell.value}
-                                                                    data-child-id={childSection.id}
-                                                                    data-row-id={row.tempId}
-                                                                    data-field={cell.apiName}
-                                                                    onchange={handleChildFieldChange}
-                                                                    variant="label-hidden"></lightning-input>
-                                                            </template>
-                                                            <template if:true={cell.isPicklist}>
-                                                                <lightning-combobox value={cell.value}
-                                                                    options={cell.picklistOptions}
-                                                                    data-child-id={childSection.id}
-                                                                    data-row-id={row.tempId}
-                                                                    data-field={cell.apiName}
-                                                                    onchange={handleChildFieldChange}
-                                                                    variant="label-hidden"
-                                                                    required={cell.isRequired}></lightning-combobox>
-                                                            </template>
-                                                            <template if:true={cell.isOther}>
-                                                                <lightning-input value={cell.value}
-                                                                    data-child-id={childSection.id}
-                                                                    data-row-id={row.tempId}
-                                                                    data-field={cell.apiName}
-                                                                    onchange={handleChildFieldChange}
-                                                                    variant="label-hidden"
-                                                                    required={cell.isRequired}></lightning-input>
-                                                            </template>
-                                                        </td>
-                                                    </template>
-                                                    <td class="action-col">
-                                                        <lightning-button-icon icon-name="utility:delete"
-                                                            alternative-text="Delete Row"
-                                                            data-child-id={childSection.id}
-                                                            data-row-id={row.tempId}
-                                                            onclick={handleDeleteChildRow}
-                                                            variant="bare"
-                                                            size="medium"></lightning-button-icon>
-                                                    </td>
-                                                </tr>
-                                            </template>
-                                        </tbody>
-                                    </table>
+                                            </div>
+                                        </div>
+                                    </template>
                                 </div>
                             </template>
                             <template if:false={childSection.hasRows}>
                                 <div class="empty-child-state">
-                                    <lightning-icon icon-name="utility:table" size="small" class="slds-m-right_small"></lightning-icon>
-                                    <span>No rows added. Click "Add Row" to begin.</span>
+                                    <lightning-icon icon-name="utility:adduser" size="small" class="slds-m-right_small"></lightning-icon>
+                                    <span>{childSection.emptyText}</span>
                                 </div>
                             </template>
                         </div>

@@ -102,6 +102,102 @@ public with sharing class DemandComponentService {
         return component == FLAT || component == FLAT_AND_GST;
     }
 
+    public static Boolean isFlatDemandedOnEitherSide(Payment_Schedule__c schedule) {
+        return isComponentRaised(schedule, FLAT, true)
+            || isComponentRaised(schedule, FLAT, false);
+    }
+
+    public static Decimal undemandedTdsFromPaidFlat(Payment_Schedule__c schedule) {
+        Decimal paidFlat = nz(schedule.Payment_Schedule_Amount_Paid__c);
+        Decimal pendingTds = nz(schedule.TDS_Amount_Pending__c);
+        if (paidFlat <= 0 || pendingTds <= 0) return 0;
+
+        Decimal unpaidTdsOnPaidFlat = (paidFlat * 0.01)
+            .setScale(2, System.RoundingMode.HALF_UP)
+            - nz(schedule.TDS_Amount_Paid__c);
+        return Math.min(pendingTds, Math.max(0, unpaidTdsOnPaidFlat));
+    }
+
+    public class TdsCarryForwardAllocation {
+        public Map<Id, Decimal> amountByDemandSchedule = new Map<Id, Decimal>();
+        public Map<Id, Map<Id, Decimal>> sourcesByDemandSchedule = new Map<Id, Map<Id, Decimal>>();
+    }
+
+    public static TdsCarryForwardAllocation getTdsCarryForwardAllocation(
+        Set<Id> bookingIds,
+        Set<Id> demandScheduleIds
+    ) {
+        TdsCarryForwardAllocation allocation = new TdsCarryForwardAllocation();
+        if (bookingIds == null || bookingIds.isEmpty()
+            || demandScheduleIds == null || demandScheduleIds.isEmpty()) {
+            return allocation;
+        }
+
+        List<Payment_Schedule__c> history = [
+            SELECT Id, Booking__c, Sequence__c, Payment_Schedule_Amount_Paid__c,
+                   TDS_Amount_Paid__c, TDS_Amount_Pending__c, Bank_Flat_Amount__c,
+                   Demand_Raised__c, Bank_Demand_Raised__c, Customer_Demand_Raised__c,
+                   Bank_Flat_Demand_Raised__c, Customer_Flat_Demand_Raised__c,
+                   Bank_GST_Demand_Raised__c, Customer_GST_Demand_Raised__c
+            FROM Payment_Schedule__c
+            WHERE Booking__c IN :bookingIds
+            ORDER BY Booking__c, Sequence__c ASC, CreatedDate ASC
+        ];
+
+        Map<Id, Decimal> carryForwardByBooking = new Map<Id, Decimal>();
+        Map<Id, Map<Id, Decimal>> sourcesByBooking = new Map<Id, Map<Id, Decimal>>();
+        for (Payment_Schedule__c schedule : history) {
+            Decimal carryForward = carryForwardByBooking.containsKey(schedule.Booking__c)
+                ? carryForwardByBooking.get(schedule.Booking__c) : 0;
+            Map<Id, Decimal> sources = sourcesByBooking.containsKey(schedule.Booking__c)
+                ? sourcesByBooking.get(schedule.Booking__c) : new Map<Id, Decimal>();
+
+            Boolean flatDemanded = isFlatDemandedOnEitherSide(schedule);
+            if (!flatDemanded) {
+                Decimal unpaidTds = undemandedTdsFromPaidFlat(schedule);
+                if (unpaidTds > 0) {
+                    carryForward += unpaidTds;
+                    sources.put(schedule.Id, unpaidTds);
+                }
+            }
+
+            if (demandScheduleIds.contains(schedule.Id)
+                && !flatDemanded
+                && amount(schedule, FLAT, true) > 0) {
+                allocation.amountByDemandSchedule.put(schedule.Id, carryForward);
+                Map<Id, Decimal> sourcesForDemand = new Map<Id, Decimal>();
+                sourcesForDemand.putAll(sources);
+                allocation.sourcesByDemandSchedule.put(schedule.Id, sourcesForDemand);
+                carryForward = 0;
+                sources = new Map<Id, Decimal>();
+            }
+            carryForwardByBooking.put(schedule.Booking__c, carryForward);
+            sourcesByBooking.put(schedule.Booking__c, sources);
+        }
+        return allocation;
+    }
+
+    public static void addTdsCarryForwardDemandedUpdates(
+        TdsCarryForwardAllocation allocation,
+        Set<Id> demandScheduleIds,
+        Map<Id, Payment_Schedule__c> updatesById
+    ) {
+        if (allocation == null || demandScheduleIds == null || updatesById == null) return;
+        for (Id demandScheduleId : demandScheduleIds) {
+            Map<Id, Decimal> sourceAmounts =
+                allocation.sourcesByDemandSchedule.get(demandScheduleId);
+            if (sourceAmounts == null) continue;
+            for (Id sourceScheduleId : sourceAmounts.keySet()) {
+                Payment_Schedule__c updateRecord = updatesById.get(sourceScheduleId);
+                if (updateRecord == null) {
+                    updateRecord = new Payment_Schedule__c(Id = sourceScheduleId);
+                    updatesById.put(sourceScheduleId, updateRecord);
+                }
+                markRaised(updateRecord, FLAT, true);
+            }
+        }
+    }
+
     public static Decimal nz(Decimal value) {
         return value == null ? 0 : value;
     }

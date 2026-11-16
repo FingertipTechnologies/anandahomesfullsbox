@@ -24,7 +24,7 @@ img { border:0; }
 .c3{font-size:9.57pt;font-family:Arial, Helvetica, sans-serif}
 .c4{font-weight:bold;font-size:9.57pt;font-family:Arial, Helvetica, sans-serif}
 .c5{text-align:justify;padding-left:1.25pt;padding-right:1.5pt;text-indent:-1.25pt;font-size:9.57pt;font-family:Arial, Helvetica, sans-serif}
-.c6{border-collapse:collapse;table-layout:fixed;width:466.55pt;margin-left:-0.45pt}
+.c6{border-collapse:collapse;table-layout:fixed;width:450pt;margin-left:0}
 .c7{height:57pt}
 .c8{text-align:center;font-size:9.57pt;font-family:Arial, Helvetica, sans-serif}
 .c9{border-top:none;border-right:none;border-bottom:none;border-left:none;padding:0 5.4pt 0 5.4pt;white-space:nowrap;vertical-align:top}
@@ -32,7 +32,7 @@ img { border:0; }
 .cb{text-align:justify;font-size:9.57pt;font-family:Arial, Helvetica, sans-serif}
 .cc{border-top:none;border-right:none;border-bottom:none;border-left:none;padding:0 5.4pt 0 5.4pt;vertical-align:top}
 .cd{height:53.1pt}
-.ce{border-collapse:collapse;table-layout:fixed;width:467.35pt;margin-left:-0.45pt}
+.ce{border-collapse:collapse;table-layout:fixed;width:450pt;margin-left:0}
 .cf{border:none}
 .cg{height:59.85pt}
 .ch{height:71.25pt}
@@ -98,7 +98,7 @@ img { border:0; }
 .c25{height:51pt}
 .c26{height:46.8pt}
 .c27{height:52.65pt}
-.c28{border-collapse:collapse;table-layout:fixed;width:466.85pt;margin-left:-0.45pt}
+.c28{border-collapse:collapse;table-layout:fixed;width:450pt;margin-left:0}
 .c29{height:49.8pt}
 .c2a{height:62.1pt}
 .c2b{height:56.35pt}
@@ -158,7 +158,7 @@ img { border:0; }
 .c3t{border-top:none;border-right:0.5pt solid #000;border-bottom:0.5pt solid #000;border-left:none;padding:0 5.4pt 0 5.4pt;white-space:nowrap;vertical-align:bottom}
 .c3u{height:12.05pt}
 .c3v{height:13.25pt}
-.c3w{border-collapse:collapse;table-layout:fixed;width:452.3pt}
+.c3w{border-collapse:collapse;table-layout:fixed;width:450pt}
 .c3x{height:6.1pt}
 .c3y{text-align:center;padding-left:5.5pt;font-size:9.57pt;font-family:Arial, Helvetica, sans-serif}
 .c3z{border-top:0.5pt solid #000000;border-right:0.5pt solid #000000;border-bottom:0.5pt solid #000000;border-left:0.5pt solid #000000;padding:0 0pt 0 0pt;vertical-align:top}
@@ -205,7 +205,7 @@ img { border:0; }
 .c54{display:inline-block;width:36pt}
 .c55{font-size:9.57pt;font-family:Arial, Helvetica, sans-serif;white-space:nowrap}
 .c56{text-align:center;padding-bottom:1pt;font-size:9.57pt;font-family:Arial, Helvetica, sans-serif}
-.c57{border-collapse:collapse;table-layout:fixed;width:469.5pt;margin-left:-6.15pt}
+.c57{border-collapse:collapse;table-layout:fixed;width:450pt;margin-left:0}
 .c58{height:90pt}
 .c59{border-top:none;border-right:none;border-bottom:none;border-left:none;padding:0 5.4pt 0 5.4pt;vertical-align:middle}
 .c5a{height:2.75pt}
@@ -261,13 +261,13 @@ img { border:0; }
 <div class="c0">&#160;</div>
 <div class="c2"><span class="c1">S A L E D E E D</span></div>
 <div class="c3">&#160;</div>
-<div class="c5"><span class="c3">This </span><span class="c4">DEED OF SALE</span><span class="c3"> is made and executed on this the </span><span class="c4"><apex:outputText value="{0,date,dd}"><apex:param value="{!Booking__c.Sale_Deed_Execution_Date__c}"/></apex:outputText> day of <apex:outputText value="{0,date,MMMM yyyy}"><apex:param value="{!Booking__c.Sale_Deed_Execution_Date__c}"/></apex:outputText></span><span class="c3">, at S.R.O., Gandipet, Ranga Reddy District, Telangana State, by &amp; between:</span></div>
+<div class="c5"><span class="c3">This </span><span class="c4">DEED OF SALE</span><span class="c3"> is made and executed on this the </span><apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(Booking__c.Sale_Deed_Execution_Date__c))}"><span class="c4"><apex:outputText value="{0,date,dd}"><apex:param value="{!Booking__c.Sale_Deed_Execution_Date__c}"/></apex:outputText> day of <apex:outputText value="{0,date,MMMM yyyy}"><apex:param value="{!Booking__c.Sale_Deed_Execution_Date__c}"/></apex:outputText></span></apex:outputPanel><apex:outputPanel layout="none" rendered="{!ISBLANK(Booking__c.Sale_Deed_Execution_Date__c)}"><span class="c3">________ </span><span class="c4">day of</span><span class="c3"> ______________</span></apex:outputPanel><span class="c3">, at S.R.O., Gandipet, Ranga Reddy District, Telangana State, by &amp; between:</span></div>
 <div class="c5">&#160;</div>
 <table class="c6">
 <colgroup>
-<col style="width:29.1pt"/>
-<col style="width:25.35pt"/>
-<col style="width:412.1pt"/>
+<col style="width:28.07pt"/>
+<col style="width:24.45pt"/>
+<col style="width:397.48pt"/>
 </colgroup>
 <tr class="c7">
 <td class="c9"><div class="c8"><span class="c4">1</span></div></td>
@@ -290,10 +290,10 @@ img { border:0; }
 <div class="c3">&#160;</div>
 <table class="ce">
 <colgroup>
-<col style="width:29.35pt"/>
-<col style="width:25.4pt"/>
-<col style="width:412.1pt"/>
-<col style="width:0.5pt"/>
+<col style="width:28.26pt"/>
+<col style="width:24.46pt"/>
+<col style="width:396.8pt"/>
+<col style="width:0.48pt"/>
 </colgroup>
 <tr class="c7">
 <td class="c9"><div class="c8"><span class="c4">4</span></div></td>
@@ -1597,9 +1597,9 @@ img { border:0; }
 <div style="page-break-after:always;height:0"></div>
 <table class="c28">
 <colgroup>
-<col style="width:29.35pt"/>
-<col style="width:25.4pt"/>
-<col style="width:412.1pt"/>
+<col style="width:28.29pt"/>
+<col style="width:24.48pt"/>
+<col style="width:397.23pt"/>
 </colgroup>
 <tr class="cp">
 <td class="c9"><div class="c8"><span class="c4">197</span></div></td>
@@ -1661,9 +1661,9 @@ img { border:0; }
 <div style="page-break-after:always;height:0"></div>
 <table class="c28">
 <colgroup>
-<col style="width:29.35pt"/>
-<col style="width:25.4pt"/>
-<col style="width:412.1pt"/>
+<col style="width:28.29pt"/>
+<col style="width:24.48pt"/>
+<col style="width:397.23pt"/>
 </colgroup>
 <tr class="c7">
 <td class="c9"><div class="c8"><span class="c4">208</span></div></td>
@@ -1719,9 +1719,9 @@ img { border:0; }
 <div style="page-break-after:always;height:0"></div>
 <table class="c28">
 <colgroup>
-<col style="width:29.35pt"/>
-<col style="width:25.4pt"/>
-<col style="width:412.1pt"/>
+<col style="width:28.29pt"/>
+<col style="width:24.48pt"/>
+<col style="width:397.23pt"/>
 </colgroup>
 <tr class="c2c">
 <td class="c9"><div class="c8"><span class="c4">216</span></div></td>
@@ -1782,9 +1782,9 @@ img { border:0; }
 <div style="page-break-after:always;height:0"></div>
 <table class="c28">
 <colgroup>
-<col style="width:29.35pt"/>
-<col style="width:25.4pt"/>
-<col style="width:412.1pt"/>
+<col style="width:28.29pt"/>
+<col style="width:24.48pt"/>
+<col style="width:397.23pt"/>
 </colgroup>
 <tr class="c2g">
 <td class="c9"><div class="c8"><span class="c4">227</span></div></td>
@@ -1830,7 +1830,7 @@ img { border:0; }
 <div class="c2o"><span class="c2p">AND</span></div>
 <div class="c2q">&#160;</div>
 <apex:repeat value="{!vendees}" var="v">
-<div class="c2t"><span class="c2r"><apex:outputText value="{!v.nameLine}"/>, </span><span class="c2s"><apex:outputText value="{!v.ageText}"/></span><span class="c2r">, </span><span class="c2s">Occupation: <apex:outputText value="{!v.occupation}"/>; R/o: <apex:outputText value="{!v.address}"/>. </span><br/><span class="c2r">(AADHAR NO: <apex:outputText value="{!v.aadhar}"/>, PAN NO: <apex:outputText value="{!v.pan}"/>).</span></div>
+<div class="c2t"><span class="c2r"><apex:outputText value="{!v.nameLine}"/>, </span><span class="c2s"><apex:outputText value="{!v.ageText}"/></span><span class="c2r">, </span><span class="c2s">Occupation: <apex:outputText value="{!v.occupation}"/>; R/o: <apex:outputText value="{!v.address}"/>.</span></div><div class="c2t"><span class="c2r">(AADHAR NO: <apex:outputText value="{!v.aadhar}"/>, PAN NO: <apex:outputText value="{!v.pan}"/>).</span></div>
 <apex:outputPanel layout="none" rendered="{!NOT(v.isLast)}"><div class="c2t">&#160;</div></apex:outputPanel>
 </apex:repeat>
 <div class="c2u">&#160;</div>
@@ -2459,14 +2459,14 @@ img { border:0; }
 <div style="page-break-after:always;height:0"></div>
 <div class="cb"><span class="c2i">NOW THIS DEED OF SALE WITNESSETH AS FOLLOWS</span><span class="c4">: -</span></div>
 <div class="c3">&#160;</div>
-<div class="cb"><span class="c3">THAT</span><span class="c4"> </span><span class="c3">in pursuance of the aforesaid offer and acceptance the VENDEE(S) has paid the entire sale consideration of </span><span class="c3p">Rs.<apex:outputText value="{!considerationAmount}"/>/- (<apex:outputText value="{!considerationWords}"/>)</span><span class="c4"> </span><span class="c3">to the Vendor (Developer) in the following manners:</span></div>
+<div class="cb"><span class="c3">THAT</span><span class="c4"> </span><span class="c3">in pursuance of the aforesaid offer and acceptance the VENDEE(S) has paid the entire sale consideration of </span><span class="c3p">Rs.<apex:outputText value="{!paidAmount}"/>/- (<apex:outputText value="{!paidWords}"/>)</span><span class="c4"> </span><span class="c3">to the Vendor (Developer) in the following manners:</span></div>
 <div class="cb">&#160;</div>
 <table class="c3w">
 <colgroup>
-<col style="width:73.5pt"/>
-<col style="width:153.8pt"/>
-<col style="width:132.15pt"/>
-<col style="width:92.85pt"/>
+<col style="width:73.13pt"/>
+<col style="width:153.02pt"/>
+<col style="width:131.48pt"/>
+<col style="width:92.38pt"/>
 </colgroup>
 <tr class="c3x">
 <td class="c3z"><div class="c3y"><span class="c4">DATE</span></div></td>
@@ -2476,7 +2476,7 @@ img { border:0; }
 </tr>
 <apex:repeat value="{!paymentEntries}" var="entry">
 <tr class="c42">
-<td class="c44"><div class="c43"><span class="c3s"><apex:outputText value="{!entry.dateText}"/></span></div></td>
+<td class="c44"><div class="c8"><span class="c3s"><apex:outputText value="{!entry.dateText}"/></span></div></td>
 <td class="c45"><div class="c8"><span class="c3s"><apex:outputText value="{!entry.mode}"/></span></div></td>
 <td class="c45"><div class="c8"><span class="c3s"><apex:outputText value="{!entry.reference}"/></span></div></td>
 <td class="c45"><div class="c8"><span class="c3s"><apex:outputText value="{!entry.amountText}"/></span></div></td>
@@ -2659,8 +2659,8 @@ img { border:0; }
 <div class="c56"><span class="c2i">ANNEXURE &#8211; 1A</span></div>
 <table class="c57">
 <colgroup>
-<col style="width:141.15pt"/>
-<col style="width:328.35pt"/>
+<col style="width:135.29pt"/>
+<col style="width:314.71pt"/>
 </colgroup>
 <tr class="c58">
 <td class="c59"><div class="c3"><span class="c4">1.Description of the Property: -</span></div></td>
@@ -2746,50 +2746,48 @@ img { border:0; }
 <div class="c4n">&#160;</div>
 <div class="c5k"><span class="c4i">VENDORS/DEVELOPERS</span><span class="c2y">: - SMT. BHUPATHI PADMA, W/O. ERRAM SAMPATH KUMAR AND OTHERS </span><span class="c4i">REP.BY THEIR DAGPA HOLDERS:</span><span class="c2y"> - M/s. ANANDA HOMES &amp; M/s. ANANDA PROSPER PROJECTS and M/s. THE DRIZZLE JV, REP. BY SRI P.V. SREENIVASULU S/O. LATE P.C.V. RAMANAIAH</span></div>
 <div class="c5l">&#160;</div>
-<div class="c4n"><span class="c4i">VENDEE(S</span><span class="c2y">): - </span><apex:repeat value="{!vendees}" var="v"><apex:outputPanel layout="none" rendered="{!v.isFirst}"><span class="c5i"><apex:outputText value="{!v.nameLine}"/><apex:outputText value="{!IF(v.isLast, '.', ' &amp;')}"/></span></apex:outputPanel></apex:repeat></div>
-<apex:repeat value="{!vendees}" var="v"><apex:outputPanel layout="none" rendered="{!NOT(v.isFirst)}"><div class="c32"><span class="c5i">&#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; &#160; <apex:outputText value="{!v.nameLine}"/><apex:outputText value="{!IF(v.isLast, '.', ' &amp;')}"/></span></div></apex:outputPanel></apex:repeat>
-<div class="c32">&#160;</div>
-<!--<img src="{!URLFOR($Resource.Drizzle_SD_FloorPlan)}" style="float:left;margin-left:4.2pt;margin-top:0.7pt;margin-right:6pt;width:298.9pt;height:329.9pt"/><div class="c32">&#160;</div>-->
-<div class="c5m"><span class="c2y"> Reference</span></div>
-<table class="c5n">
+<table style="width:451pt;border-collapse:collapse;table-layout:fixed">
 <colgroup>
-<col style="width:61.35pt"/>
-<col style="width:54.35pt"/>
+<col style="width:56pt"/>
+<col style="width:395pt"/>
+</colgroup>
+<tr>
+<td style="vertical-align:top;padding:0"><div class="c4n"><span class="c4i">VENDEE(S</span><span class="c2y">): -</span></div></td>
+<td style="vertical-align:top;padding:0 0 0 4pt"><apex:repeat value="{!vendees}" var="v"><div class="c4n"><span class="c5i"><apex:outputText value="{!v.nameLine}"/><apex:outputPanel layout="none" rendered="{!v.isLast}">.</apex:outputPanel><apex:outputPanel layout="none" rendered="{!NOT(v.isLast)}"> &amp;</apex:outputPanel></span></div></apex:repeat></td>
+</tr>
+</table>
+<div class="c4n">&#160;</div>
+<table style="width:451pt;border-collapse:collapse;table-layout:fixed;page-break-inside:avoid">
+<colgroup>
+<col style="width:304pt"/>
+<col style="width:147pt"/>
+</colgroup>
+<tr>
+<td style="vertical-align:top;padding:4pt;border:0.75pt solid #000;text-align:center"><img src="{!URLFOR($Resource.Drizzle_Sale_Deed_Floor_Plan)}" style="width:294pt;height:auto"/></td>
+<td style="vertical-align:top;padding:0 0 0 18pt">
+<div class="c4n" style="text-align:center"><span class="c2y">Reference</span></div>
+<table style="border-collapse:collapse;table-layout:fixed;width:118pt">
+<colgroup>
+<col style="width:62pt"/>
+<col style="width:56pt"/>
 </colgroup>
 <tr class="c5o">
 <td class="c5p"><div class="c4n"><span class="c32">Included</span></div></td>
 <td class="c5p"><div class="c4n">&#160;</div></td>
 </tr>
-<tr class="c5q">
+<tr class="c5o">
 <td class="c5p"><div class="c4n"><span class="c32">Excluded</span></div></td>
 <td class="c5p"><div class="c4n">&#160;</div></td>
 </tr>
 </table>
-<div class="c5m">&#160;</div>
-<div class="c4n">&#160;</div>
-<div class="c4n"> &#160;</div>
-<div class="c4n">&#160;</div>
-<div class="c4n">&#160;</div>
+<div style="height:60pt">&#160;</div>
+<div style="width:72pt;border:0.75pt solid #000;padding:3pt;text-align:center"><img src="{!URLFOR($Resource.Drizzle_Sale_Deed_Compass)}" style="width:62pt;height:auto"/></div>
+</td>
+</tr>
+</table>
 <div class="c4n">&#160;</div>
 <!--<img src="{!URLFOR($Resource.Drizzle_SD_Compass)}" style="float:left;margin-left:50.2pt;margin-top:9.4pt;margin-right:6pt;width:70.8pt;height:74.5pt"/>-->
-<div class="c4n">&#160;</div>
-<div class="c4n">&#160;</div>
-<div class="c4n">&#160;</div>
-<div class="c4n">&#160;</div>
-<div class="c4n">&#160;</div>
-<div class="c4n">&#160;</div>
-<div class="c4n">&#160;</div>
-<div class="c4n">&#160;</div>
-<div class="c4n">&#160;</div>
 <div class="c52">&#160;</div>
-<div class="c52"><span class="c4z">Floor Plan Accordingly-Including SFT with Direction Image</span></div>
-<div class="c4n">&#160;</div>
-<div class="c4n">&#160;</div>
-<div class="c4n">&#160;</div>
-<div class="c4n">&#160;</div>
-<div class="c4n">&#160;</div>
-<div class="c4n">&#160;</div>
-<div class="c4n">&#160;</div>
 <div class="c32"><span class="c4i">WITNESSES:</span></div>
 <div class="c32">&#160;</div>
 <div class="c32">&#160;</div>

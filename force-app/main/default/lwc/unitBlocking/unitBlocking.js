@@ -4,9 +4,25 @@ import { CloseActionScreenEvent } from 'lightning/actions';
 import getProjectOptions from '@salesforce/apex/UnitBlockingController.getProjectOptions';
 import searchUnits from '@salesforce/apex/UnitBlockingController.searchUnits';
 import saveUnitBlock from '@salesforce/apex/UnitBlockingController.saveUnitBlock';
+import checkBlockAccess from '@salesforce/apex/UnitBlockingController.checkBlockAccess';
 
 export default class UnitBlocking extends LightningElement {
-    @api recordId;
+    // A record action hands over recordId after the component is created, so the access check
+    // runs from the setter rather than connectedCallback.
+    _recordId;
+    _accessChecked = false;
+
+    @api
+    get recordId() {
+        return this._recordId;
+    }
+    set recordId(value) {
+        this._recordId = value;
+        if (value && !this._accessChecked) {
+            this._accessChecked = true;
+            this.checkAccess();
+        }
+    }
 
     isLoading = false;
     projectOptions = [];
@@ -21,6 +37,21 @@ export default class UnitBlocking extends LightningElement {
 
     connectedCallback() {
         this.loadProjectOptions();
+    }
+
+    // Only the lead owner or a System Administrator may block a unit. Anyone else gets the error
+    // message and the window closes (the same rule is enforced again in Apex on save).
+    checkAccess() {
+        checkBlockAccess({ leadId: this._recordId })
+            .then(message => {
+                if (message) {
+                    this.showToast('Error', message, 'error');
+                    this.dispatchEvent(new CloseActionScreenEvent());
+                }
+            })
+            .catch(() => {
+                // If the check itself cannot run, the save-time check in Apex still applies.
+            });
     }
 
     get comboboxClass() {

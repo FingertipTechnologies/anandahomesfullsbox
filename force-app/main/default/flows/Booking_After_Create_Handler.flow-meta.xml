@@ -9,6 +9,12 @@
         <actionType>apex</actionType>
         <flowTransactionModel>Automatic</flowTransactionModel>
         <inputParameters>
+            <name>accountName</name>
+            <value>
+                <elementReference>$Record.Booking_Account_Name__r.Id</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
             <name>amountReceived</name>
             <value>
                 <elementReference>$Record.Booking_Amount__c</elementReference>
@@ -30,6 +36,12 @@
             <name>bookingId</name>
             <value>
                 <elementReference>$Record.Id</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>chequeDate</name>
+            <value>
+                <elementReference>$Record.Cheque_Date__c</elementReference>
             </value>
         </inputParameters>
         <inputParameters>
@@ -122,7 +134,7 @@
         <actionName>PaymentScheduleGeneratorService</actionName>
         <actionType>apex</actionType>
         <connector>
-            <targetReference>Receipt_Creation</targetReference>
+            <targetReference>Check_Booking_Amount</targetReference>
         </connector>
         <flowTransactionModel>CurrentTransaction</flowTransactionModel>
         <inputParameters>
@@ -136,6 +148,55 @@
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </actionCalls>
     <apiVersion>65.0</apiVersion>
+    <decisions>
+        <description>A receipt is created only when a booking amount was captured. Without an amount there is nothing to receipt, and the receipt action would otherwise stop the booking from saving.</description>
+        <name>Check_Booking_Amount</name>
+        <label>Check Booking Amount</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnectorLabel>No Booking Amount</defaultConnectorLabel>
+        <rules>
+            <name>Has_Booking_Amount</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Booking_Amount__c</leftValueReference>
+                <operator>GreaterThan</operator>
+                <rightValue>
+                    <numberValue>0.0</numberValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Receipt_Creation</targetReference>
+            </connector>
+            <label>Has Booking Amount</label>
+        </rules>
+    </decisions>
+    <decisions>
+        <description>Bookings created from a Quote get the Quote values first; a booking without a Quote goes straight to schedule generation instead of failing on the mapping step.</description>
+        <name>Check_Quote_Exists</name>
+        <label>Check Quote Exists</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnector>
+            <targetReference>Step_3_Generate_Payment_Schedules</targetReference>
+        </defaultConnector>
+        <defaultConnectorLabel>No Quote</defaultConnectorLabel>
+        <rules>
+            <name>Has_Quote</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Quote__c</leftValueReference>
+                <operator>IsNull</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Step_1_Map_Fields_From_Unit</targetReference>
+            </connector>
+            <label>Has Quote</label>
+        </rules>
+    </decisions>
     <description>Consolidated after-insert handler for Booking. Runs Field Mapping, Formula Calculation, and Payment Schedule Generation in guaranteed sequential order to ensure calculated values are available before payment schedules are created.</description>
     <environments>Default</environments>
     <interviewLabel>Booking After Create Handler {!$Flow.CurrentDateTime}</interviewLabel>
@@ -163,7 +224,7 @@
         <locationX>0</locationX>
         <locationY>0</locationY>
         <connector>
-            <targetReference>Step_1_Map_Fields_From_Unit</targetReference>
+            <targetReference>Check_Quote_Exists</targetReference>
         </connector>
         <filterLogic>and</filterLogic>
         <filters>
@@ -177,5 +238,5 @@
         <recordTriggerType>Create</recordTriggerType>
         <triggerType>RecordAfterSave</triggerType>
     </start>
-    <status>Obsolete</status>
+    <status>Active</status>
 </Flow>

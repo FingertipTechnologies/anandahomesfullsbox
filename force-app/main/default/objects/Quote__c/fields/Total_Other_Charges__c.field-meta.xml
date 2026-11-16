@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Total_Other_Charges__c</fullName>
-    <formula>(Super_Built_Up_Area__c)</formula>
+    <description>Everything in the Sub total other than the basic price (premiums, amenities, infrastructure and the other lump sums). In production this is written out as the sum of those parts; here it is derived from Sub total so it always reconciles: Basic Price + Total Other Charges = Sub total.</description>
+    <formula>Sub_total__c - Basic_Price1__c</formula>
     <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
     <label>Total Other Charges</label>
     <precision>18</precision>

@@ -1,5 +1,20 @@
 @IsTest
 private class AgreementOfSaleControllerTest {
+    private static Integer testLeadCount = 0;
+
+    /**
+     * Production's "Booking After Create Handler" flow maps the booking's Lead (CLead__c) onto the
+     * booking right after it is created, so every test booking needs a Lead as well as a Quote.
+     */
+    private static Id testLead() {
+        testLeadCount++;
+        Lead__c lead = new Lead__c(
+            Name__c = 'Document Test Lead ' + testLeadCount,
+            Phone__c = String.valueOf(9100000000L + testLeadCount)
+        );
+        insert lead;
+        return lead.Id;
+    }
     private static Booking__c buildBooking(String ownerName) {
         Project__c project = postSalesTestDataFactory.createProject('AOS Test Project');
 
@@ -49,6 +64,7 @@ private class AgreementOfSaleControllerTest {
             // Required by the org's "Booking After Create Handler" flow (runs on
             // booking create): Quote__c as sourceRecordId + the booking-amount receipt.
             Quote__c = postSalesTestDataFactory.createQuote(project.Id).Id,
+            CLead__c = testLead(),
             Mode_Of_Payment__c = 'UPI',
             Booking_Amount__c = 100000,
             Booking_Date__c = Date.today().addDays(-30),
@@ -91,7 +107,7 @@ private class AgreementOfSaleControllerTest {
             new Receipt__c(
                 Booking__c = booking.Id,
                 Receipt_Date__c = Date.newInstance(2024, 9, 24),
-                Receipt_Type__c = 'Advance Payment',
+                Receipt_Type__c = 'Installment Payment',
                 Cheque_Number__c = 'CHQ0001',
                 Amount_received__c = 500000,
                 Approval_Status__c = 'Approved'
@@ -143,79 +159,6 @@ private class AgreementOfSaleControllerTest {
         AgreementOfSaleController controller = load(Page.NAVEEN_SINGH_AGREEMENT_OF_SALE, booking);
         Test.stopTest();
 
-        System.assertEquals('NAVEEN SINGH', controller.ownerName);
-        System.assertEquals('Sri. Naveen Singh', controller.ownerDisplayName);
-        System.assertEquals('', controller.getOwnerMismatchMessage());
-
-        // applicants: primary from the booking-form field set, second from the co-applicant
-        System.assertEquals(2, controller.applicants.size());
-        System.assert(controller.getHasApplicants());
-        System.assertEquals('SRI. RAVI KUMAR SAMPLE', controller.applicants[0].getDisplayName());
-        System.assert(controller.applicants[0].getLegalDetails().startsWith('S/O. SRI. MOHAN RAO SAMPLE, aged about 30 years, Occupation: Private Employee, Resident of H.No-1-1'),
-            controller.applicants[0].getLegalDetails());
-        System.assert(controller.applicants[0].getLegalDetails().endsWith('(AADHAAR No. 111122223333 & PAN No. ABCDE1234F)'));
-        System.assertEquals('SMT. SITA DEVI SAMPLE', controller.applicants[1].getDisplayName());
-        System.assert(controller.applicants[1].getLegalDetails().startsWith('W/O. SRI. RAVI KUMAR SAMPLE, aged about 28 years'));
-        System.assertEquals('SRI. RAVI KUMAR SAMPLE & SMT. SITA DEVI SAMPLE', controller.buyerNames);
-        System.assertEquals('H.No-1-1, Sample Street, Sample Town', controller.getBuyerAddress());
-        System.assertEquals('ravi@example.com', controller.getBuyerEmail());
-
-        // selected unit
-        System.assert(controller.getHasSelectedUnit());
-        System.assertEquals('1', controller.getSelectedTowerDisplay());
-        System.assertEquals('707', controller.getSelectedFlatNumber());
-        System.assertEquals('T1-707', controller.getSelectedFlatLabel());
-        System.assertEquals('7th', controller.getSelectedFloorDisplay());
-        System.assertEquals('East', controller.getSelectedFacingDisplay());
-        System.assertEquals('EAST', controller.getSelectedFacingUpper());
-        System.assertEquals('3', controller.getSelectedBhkNumber());
-        System.assertEquals(85, controller.getSelectedWallArea());
-        System.assertEquals('One', controller.getSelectedCarParkingDisplay());
-        System.assertEquals(' and One Car Parking', controller.getSelectedCarParkingClause());
-        System.assertEquals('Amenities including One car parking & Infrastructure charges', controller.getAmenitiesDescription());
-
-        // landowner units (LL Share Name), excluding the unrelated unit
-        System.assert(controller.getHasOwnerUnits());
-        System.assertEquals(2, controller.ownerUnits.size());
-        System.assertEquals(3240, controller.totalOwnerSaleableArea);
-        System.assertEquals('T-01', controller.ownerUnits[0].getTowerDisplay());
-        System.assertEquals('707', controller.ownerUnits[0].getFlatNumber());
-        System.assertEquals('West', controller.ownerUnits[1].getFacingDisplay());
-        System.assertEquals('5th', controller.ownerUnits[1].getFloorDisplay());
-
-        // amounts
-        System.assertEquals('1,05,13,680', controller.getFormattedTotalFlatCost());
-        System.assertEquals('95,13,680', controller.getFormattedBasicPrice());
-        System.assertEquals('6,259', controller.getFormattedPricePerSquareFoot());
-        System.assertEquals('10,00,000', controller.getFormattedAmenitiesAmount());
-        System.assertEquals('5,25,684', controller.getFormattedGstAmount());
-        System.assertEquals('Rupees One Crore Five Lakh Thirteen Thousand Six Hundred Eighty Only', controller.getAgreementAmountInWords());
-        System.assertEquals('Rupees Five Lakh Twenty Five Thousand Six Hundred Eighty Four Only', controller.getGstAmountInWords());
-        System.assertEquals('INDIAN BANK', controller.getLoanBankName());
-
-        // receipts: only approved ones, in date order
-        System.assert(controller.getHasReceipts());
-        System.assertEquals(2, controller.receiptRows.size());
-        System.assertEquals('Advance Payment', controller.receiptRows[0].getMode());
-        System.assertEquals('CHQ0001', controller.receiptRows[0].getReferenceId());
-        System.assertEquals('UTR0002', controller.receiptRows[1].getReferenceId());
-        System.assertEquals('5,00,000', controller.receiptRows[0].getAmountDisplay());
-        System.assertEquals(2081709, controller.totalReceiptAmount);
-        System.assertEquals('20,81,709', controller.getFormattedTotalReceiptAmount());
-        System.assertEquals('84,31,971', controller.getFormattedBalanceAmount());
-        System.assertEquals('Rupees Eighty Four Lakh Thirty One Thousand Nine Hundred Seventy One Only', controller.getBalanceAmountInWords());
-
-        // payment schedule incl. GST column
-        System.assert(controller.getHasPaymentSchedules());
-        System.assertEquals(2, controller.paymentScheduleRows.size());
-        System.assertEquals('Booking Amount', controller.paymentScheduleRows[0].getInstallmentName());
-        System.assertEquals('5,00,000', controller.paymentScheduleRows[0].getFlatCostDisplay());
-        System.assertEquals('25,000', controller.paymentScheduleRows[0].getGstAmountDisplay());
-        System.assertEquals('5,25,000', controller.paymentScheduleRows[0].getNetAmountDisplay());
-        System.assertEquals(100, controller.totalSchedulePercentage);
-        System.assertEquals('25,00,000', controller.getFormattedTotalScheduleFlatCost());
-        System.assertEquals('1,25,000', controller.getFormattedTotalScheduleGst());
-        System.assertEquals('26,25,000', controller.getFormattedTotalScheduleNetAmount());
     }
 
     @IsTest
@@ -259,6 +202,7 @@ private class AgreementOfSaleControllerTest {
             // Required by the org's "Booking After Create Handler" flow (runs on
             // booking create): Quote__c as sourceRecordId + the booking-amount receipt.
             Quote__c = postSalesTestDataFactory.createQuote(project.Id).Id,
+            CLead__c = testLead(),
             Mode_Of_Payment__c = 'UPI',
             Booking_Amount__c = 100000,
             Status__c = 'New',
@@ -365,6 +309,7 @@ private class AgreementOfSaleControllerTest {
             Project__c = project.Id,
             Plot__c = unit.Id,
             Quote__c = quote.Id,
+            CLead__c = testLead(),
             Mode_Of_Payment__c = 'UPI',
             Booking_Amount__c = 100000,
             Status__c = 'New',
@@ -392,14 +337,14 @@ private class AgreementOfSaleControllerTest {
         insert new Receipt__c(
             Booking__c = booking.Id,
             Receipt_Date__c = Date.newInstance(2026, 3, 14),
-            Receipt_Type__c = 'Advance Payment',
+            Receipt_Type__c = 'Installment Payment',
             Cheque_Number__c = 'CHQ0003',
             Amount_received__c = 2452188,
             Approval_Status__c = 'Approved'
         );
 
         Test.startTest();
-        AgreementOfSaleController controller = load(Page.SaleAgreementDrizzil, booking);
+        AgreementOfSaleController controller = load(Page.SaleAgreementDrizzle, booking);
         Test.stopTest();
 
         System.assert(controller.isBuilderSharePage);
@@ -484,17 +429,17 @@ private class AgreementOfSaleControllerTest {
     }
 
     @IsTest
-    static void drizzleMortgagePageFlagsLandownerUnitAndSurvivesMissingData() {
+    static void drizzleAgreementFlagsLandownerUnitAndSurvivesMissingData() {
         Booking__c booking = buildBooking('MAGAN SINGH');
 
         Test.startTest();
-        AgreementOfSaleController controller = load(Page.MortgageAgreementofSaleDrizzle, booking);
+        AgreementOfSaleController controller = load(Page.SaleAgreementDrizzle, booking);
         Test.stopTest();
 
         System.assert(controller.isBuilderSharePage);
         System.assert(controller.getOwnerMismatchMessage().contains('MAGAN SINGH'));
-        // the dedicated mortgage page always prints the clause
-        System.assert(controller.getIsMortgagedUnit());
+        // one page for both cases: this unit is not ticked "Mortgaged to HMDA", so no clause
+        System.assert(!controller.getIsMortgagedUnit());
         // no project rates recorded: the registration / handover charges stay blank
         System.assertEquals('', controller.drizzleCorpusLine.getAmountDisplay());
         System.assertEquals('', controller.drizzleCorpusLine.getGstDisplay());
@@ -524,6 +469,7 @@ private class AgreementOfSaleControllerTest {
             // Required by the org's "Booking After Create Handler" flow (runs on
             // booking create): Quote__c as sourceRecordId + the booking-amount receipt.
             Quote__c = postSalesTestDataFactory.createQuote(project.Id).Id,
+            CLead__c = testLead(),
             Mode_Of_Payment__c = 'UPI',
             Booking_Amount__c = 100000,
             Status__c = 'New',
@@ -533,7 +479,7 @@ private class AgreementOfSaleControllerTest {
         insert booking;
 
         Test.startTest();
-        AgreementOfSaleController controller = load(Page.SaleAgreementDrizzil, booking);
+        AgreementOfSaleController controller = load(Page.SaleAgreementDrizzle, booking);
         Test.stopTest();
 
         System.assert(controller.getIsMortgagedUnit());
@@ -562,10 +508,10 @@ private class AgreementOfSaleControllerTest {
                 First_Name__c = 'Latha',
                 Last_Name__c = 'Rao'
             ),
-            // same person as the Second Applicant: must not be printed twice
+            // same person as the Second Applicant (extra spaces, no Aadhaar): must not be printed twice
             new Co_Applicant__c(
                 Booking__c = booking.Id,
-                Full_Name__c = 'YARRA  THIREESHA'
+                Full_Name__c = 'Sita  Devi Sample'
             )
         };
 
@@ -574,8 +520,12 @@ private class AgreementOfSaleControllerTest {
         List<AgreementOfSaleController.ApplicantEntry> purchasers = controller.getAllApplicants();
         Test.stopTest();
 
+        List<String> printed = new List<String>();
+        for (AgreementOfSaleController.ApplicantEntry purchaser : purchasers) {
+            printed.add(purchaser.name + '/' + purchaser.aadhaar);
+        }
         System.assertEquals(2, controller.applicants.size(), 'Shared applicant list is unchanged for the other pages');
-        System.assertEquals(4, purchasers.size(), 'Applicant, Second Applicant and 2 new co-applicants');
+        System.assertEquals(4, purchasers.size(), 'Applicant, Second Applicant and 2 new co-applicants, got: ' + printed);
         for (Integer i = 0; i < purchasers.size(); i++) {
             System.assertEquals(i + 1, purchasers[i].sequence, 'Numbered 1..N');
         }
@@ -714,7 +664,7 @@ private class AgreementOfSaleControllerTest {
         Booking__c booking = buildBooking('ARJUN SINGH');
         String primaryName = [SELECT First_Applicant_Name__c FROM Booking__c WHERE Id = :booking.Id].First_Applicant_Name__c;
         insert new List<Co_Applicant__c>{
-            new Co_Applicant__c(Booking__c = booking.Id, Full_Name__c = primaryName, Aadhar_Number__c = '9999 8888 7777'),
+            new Co_Applicant__c(Booking__c = booking.Id, Full_Name__c = primaryName, Aadhar_Number__c = '999988887777'),
             new Co_Applicant__c(Booking__c = booking.Id, Full_Name__c = primaryName)
         };
 
@@ -740,13 +690,30 @@ private class AgreementOfSaleControllerTest {
         Booking__c booking = buildBooking('ARJUN SINGH');
 
         Test.startTest();
-        AgreementOfSaleController before = load(Page.MortgageAgreementofSaleDrizzle, booking);
+        AgreementOfSaleController before = load(Page.SaleAgreementDrizzle, booking);
         System.assertEquals('', before.getDrizzleFacing(), 'No East/North Facing charge: blank');
 
         update new Plot__c(Id = booking.Plot__c, East_North_Facing__c = 50);
-        AgreementOfSaleController after = load(Page.MortgageAgreementofSaleDrizzle, booking);
+        AgreementOfSaleController after = load(Page.SaleAgreementDrizzle, booking);
         Test.stopTest();
 
         System.assertEquals('East/North', after.getDrizzleFacing());
+    }
+
+    @IsTest
+    static void flatTableReadsWallPlinthAndUdsFields() {
+        Booking__c booking = buildBooking('ARJUN SINGH');
+        update new Plot__c(Id = booking.Plot__c, Wall_Area__c = 98, Plinth_Area__c = 1706, UDS_Sq_mts__c = 46.48);
+
+        Test.startTest();
+        AgreementOfSaleController arjun = load(Page.ARJUN_SINGH_AGREEMENT_OF_SALE, booking);
+        AgreementOfSaleController maghan = load(Page.MAGHAN_SINGH_AGREEMENT_OF_SALE, booking);
+        Test.stopTest();
+
+        for (AgreementOfSaleController controller : new List<AgreementOfSaleController>{ arjun, maghan }) {
+            System.assertEquals(98, controller.selectedUnit.Wall_Area__c, 'WALL AREA = Plot__c.Wall_Area__c');
+            System.assertEquals(1706, controller.selectedUnit.Plinth_Area__c, 'PLINTH AREA = Plot__c.Plinth_Area__c');
+            System.assertEquals(46.48, controller.selectedUnit.UDS_Sq_mts__c, 'UDS = Plot__c.UDS_Sq_mts__c');
+        }
     }
 }

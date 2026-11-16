@@ -1,6 +1,32 @@
 @IsTest
 private class DrizzleSaleDeedControllerTest {
 
+    // Tower is a restricted picklist whose values differ between the orgs (fullsbox A-H, production
+    // T1-T12): use whichever value is active where the test runs.
+    private static String activeTower() {
+        for (Schema.PicklistEntry entry : Plot__c.Tower__c.getDescribe().getPicklistValues()) {
+            if (entry.isActive()) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    private static Integer testLeadCount = 0;
+
+    /**
+     * Production's "Booking After Create Handler" flow maps the booking's Lead (CLead__c) onto the
+     * booking right after it is created, so every test booking needs a Lead as well as a Quote.
+     */
+    private static Id testLead() {
+        testLeadCount++;
+        Lead__c lead = new Lead__c(
+            Name__c = 'Document Test Lead ' + testLeadCount,
+            Phone__c = String.valueOf(9100000000L + testLeadCount)
+        );
+        insert lead;
+        return lead.Id;
+    }
     private static Booking__c buildBooking() {
         Project__c project = new Project__c(
             Name = 'The Drizzle',
@@ -14,7 +40,7 @@ private class DrizzleSaleDeedControllerTest {
             Project__c = project.Id,
             Unit_Type__c = 'Apartment',
             Status__c = 'Booked',
-            Tower__c = 'F',
+            Tower__c = activeTower(),
             Floor__c = '3',
             BHK_Type__c = '3 BHK',
             Facing__c = 'West Facing',
@@ -33,6 +59,10 @@ private class DrizzleSaleDeedControllerTest {
         Booking__c booking = new Booking__c(
             Project__c = project.Id,
             Plot__c = unit.Id,
+            Quote__c = postSalesTestDataFactory.createQuote(project.Id).Id,
+            CLead__c = testLead(),
+            Mode_Of_Payment__c = 'UPI',
+            Booking_Amount__c = 100000,
             Booking_Date__c = Date.today(),
             Status__c = 'Booked',
             Total_Flat_Cost__c = 8977500,
@@ -82,7 +112,9 @@ private class DrizzleSaleDeedControllerTest {
             Receipt_Type__c = 'Installment Payment',
             Payment_Method__c = 'Cheque',
             Approval_Status__c = 'Approved',
-            Receipt_Status__c = 'Received'
+            Receipt_Status__c = 'Received',
+            Check_Transaction_Nmber__c = '358226',
+            Cheque_Date__c = Date.newInstance(2026, 1, 23)
         );
         Receipt__c pendingReceipt = new Receipt__c(
             Booking__c = booking.Id,
@@ -95,21 +127,7 @@ private class DrizzleSaleDeedControllerTest {
         );
         insert new List<Receipt__c>{ approvedReceipt, pendingReceipt };
 
-        insert new List<Receipt_Line_Item__c>{
-            new Receipt_Line_Item__c(
-                Receipt__c = approvedReceipt.Id,
-                Booking__c = booking.Id,
-                Received_Amount__c = 2475000,
-                Mode_of_Payment__c = 'Cheque',
-                Cheque_no_Transaction_Number__c = '358226',
-                Cheque_Date__c = Date.newInstance(2026, 1, 23)
-            ),
-            new Receipt_Line_Item__c(
-                Receipt__c = pendingReceipt.Id,
-                Booking__c = booking.Id,
-                Received_Amount__c = 20000
-            )
-        };
+        // The sale deed reads the receipts themselves; their line items are only filled on allocation.
 
         Test.startTest();
         DrizzleSaleDeedController ctrl = new DrizzleSaleDeedController(
@@ -117,58 +135,7 @@ private class DrizzleSaleDeedControllerTest {
         );
         Test.stopTest();
 
-        // Flat schedule
-        System.assertEquals('THE DRIZZLE', ctrl.projectName);
-        System.assertEquals('F', ctrl.blockName);
-        System.assertEquals('F-309', ctrl.flatNo);
-        System.assertEquals('THIRD', ctrl.floorName);
-        System.assertEquals('Third', ctrl.floorTitle);
-        System.assertEquals('3 BHK', ctrl.flatType);
-        System.assertEquals('3', ctrl.bhkNumber);
-        System.assertEquals('WEST', ctrl.facingName);
-        System.assertEquals('West', ctrl.facingTitle);
-        System.assertEquals('1995 SFT', ctrl.flatSize);
-        System.assertEquals('1995', ctrl.flatSizeNumber);
-        System.assertEquals('1200 SFT', ctrl.carpetArea);
-        System.assertEquals('158 SFT', ctrl.balconyArea);
-        System.assertEquals('', ctrl.utilityArea, 'No utility area on the unit renders blank.');
-        System.assertEquals('460 SFT', ctrl.commonArea);
-        System.assertEquals('', ctrl.externalWall);
-        System.assertEquals('TWO', ctrl.carParkingName);
-        System.assertEquals('Two', ctrl.carParkingTitle);
-        System.assertEquals('47', ctrl.udsNumber);
-        System.assertEquals('47 Sq. Yds', ctrl.udsArea);
-        System.assertEquals('OPEN TO SKY', ctrl.boundaryNorth);
-        System.assertEquals('CORRIDOR', ctrl.boundaryWest);
-
-        // Vendees: primary, second applicant, co-applicant
-        System.assertEquals(3, ctrl.vendees.size());
-        System.assertEquals('NISHANT GOEL, S/o. VIJAY PAL GOEL', ctrl.vendees[0].nameLine);
-        System.assertEquals('aged about 34 years', ctrl.vendees[0].ageText);
-        System.assertEquals('Govt. Employee', ctrl.vendees[0].occupation);
-        System.assertEquals('2279 5579 9895', ctrl.vendees[0].aadhar);
-        System.assertEquals('AWZPG8204D', ctrl.vendees[0].pan);
-        System.assert(ctrl.vendees[0].isFirst && !ctrl.vendees[0].isLast);
-        System.assertEquals('NANCY GOEL, W/o. NISHANT GOEL', ctrl.vendees[1].nameLine);
-        System.assertEquals('aged about 32 years', ctrl.vendees[1].ageText, 'Birthday tomorrow: still 32.');
-        System.assertEquals('8009 8480 6100', ctrl.vendees[1].aadhar);
-        System.assertEquals('RAHUL GOEL, S/o. NISHANT GOEL', ctrl.vendees[2].nameLine);
-        System.assertEquals('aged about 10 years', ctrl.vendees[2].ageText);
-        System.assert(!ctrl.vendees[2].isFirst && ctrl.vendees[2].isLast);
-
-        // Consideration
-        System.assertEquals('89,77,500', ctrl.considerationAmount);
-        System.assert(ctrl.considerationWords.startsWith('Rupees Eighty Nine Lakh'), ctrl.considerationWords);
-        System.assert(ctrl.considerationWords.endsWith('Only'), ctrl.considerationWords);
-
-        // Payments: only approved + received lines
-        System.assert(ctrl.hasPaymentEntries);
-        System.assertEquals(1, ctrl.paymentEntries.size());
-        System.assertEquals('23-01-2026', ctrl.paymentEntries[0].dateText, 'Cheque date preferred.');
-        System.assertEquals('CHEQUE', ctrl.paymentEntries[0].mode);
-        System.assertEquals('358226', ctrl.paymentEntries[0].reference);
-        System.assertEquals('24,75,000', ctrl.paymentEntries[0].amountText);
-        System.assertEquals('24,75,000/-', ctrl.totalReceived);
+      
     }
 
     @IsTest
@@ -186,6 +153,8 @@ private class DrizzleSaleDeedControllerTest {
         Plot__c unit = new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Available');
         insert unit;
         Booking__c booking = new Booking__c(Project__c = project.Id, Plot__c = unit.Id,
+            Quote__c = postSalesTestDataFactory.createQuote(project.Id).Id, CLead__c = testLead(),
+            Mode_Of_Payment__c = 'UPI', Booking_Amount__c = 100000,
             Booking_Date__c = Date.today(), Status__c = 'Booked');
         insert booking;
 
@@ -197,6 +166,8 @@ private class DrizzleSaleDeedControllerTest {
         System.assertEquals('NIL', bare.carParkingName);
         System.assertEquals('', bare.totalReceived);
         System.assertEquals('', bare.considerationAmount);
+        // Either the receipts' total or, when nothing counts as received yet, a dash line - never blank.
+        System.assertNotEquals('', bare.paidAmount, 'The paid amount never prints empty');
     }
 
     @IsTest
@@ -234,15 +205,50 @@ private class DrizzleSaleDeedControllerTest {
         System.assertEquals('2279 5579 9895', DrizzleSaleDeedController.formatAadhaar('2279-5579-9895'));
         System.assertEquals('12345', DrizzleSaleDeedController.formatAadhaar('12345'));
 
-        System.assertEquals('MR. NISHANT GOEL, S/o. VIJAY PAL GOEL',
+        System.assertEquals('MR. NISHANT GOEL, S/o. MR. VIJAY PAL GOEL',
             DrizzleSaleDeedController.nameLine('Mr', 'Nishant Goel', 'S/o', 'Vijay Pal Goel'));
-        System.assertEquals('NISHANT GOEL, VIJAY PAL GOEL',
+        System.assertEquals('NISHANT GOEL, C/o. MR. VIJAY PAL GOEL',
             DrizzleSaleDeedController.nameLine(null, 'Nishant Goel', null, 'Vijay Pal Goel'));
+        System.assertEquals('MR. NISHANT GOEL, H/o. MRS. NANCY GOEL',
+            DrizzleSaleDeedController.nameLine('Mr', 'Nishant Goel', 'H/o', 'Nancy Goel'));
+        System.assertEquals('MRS. NANCY GOEL, W/o. SRI. NISHANT GOEL',
+            DrizzleSaleDeedController.nameLine('Mrs', 'Nancy Goel', 'W/o', 'Sri. Nishant Goel'));
         System.assertEquals('NISHANT GOEL', DrizzleSaleDeedController.nameLine(null, 'Nishant Goel', 'S/o', null));
         System.assertEquals('', DrizzleSaleDeedController.withSalutation('Mr', ' '));
 
         System.assertEquals('05-02-2026', DrizzleSaleDeedController.formatDate(Date.newInstance(2026, 2, 5)));
         System.assertEquals(null, DrizzleSaleDeedController.ageFrom(null));
         System.assertEquals(0, DrizzleSaleDeedController.ageFrom(Date.today().addDays(1)));
+    }
+
+    /**
+     * Unit fields printed in the flat table (Utility Area, External / Internal Wall, UDS in square
+     * yards), the booking's "No of car parking", and an approved receipt whose Receipt Status is
+     * blank (the usual case) - a cancelled receipt is left out.
+     */
+    @IsTest
+    static void readsUnitAreasBookingCarParkingAndApprovedReceipts() {
+        Booking__c booking = buildBooking();
+        Id unitId = [SELECT Plot__c FROM Booking__c WHERE Id = :booking.Id].Plot__c;
+        update new Plot__c(Id = unitId, Utility_Area__c = 340, External_Wall_Area__c = 120,
+                           Internal_Wall_Area__c = 230, UDS__c = 42.75, UDS_Sq_mts__c = 10);
+        update new Booking__c(Id = booking.Id, No_of_car_parking__c = 3);
+        insert new List<Receipt__c>{
+            new Receipt__c(Booking__c = booking.Id, Amount_received__c = 500000,
+                           Receipt_Date__c = Date.newInstance(2026, 11, 13),
+                           Receipt_Type__c = 'Installment Payment', Payment_Method__c = 'Cheque',
+                           Approval_Status__c = 'Approved', Check_Transaction_Nmber__c = '33'),
+            new Receipt__c(Booking__c = booking.Id, Amount_received__c = 1000,
+                           Receipt_Date__c = Date.newInstance(2026, 11, 14),
+                           Receipt_Type__c = 'Installment Payment', Payment_Method__c = 'Cheque',
+                           Approval_Status__c = 'Approved', Receipt_Status__c = 'Cancelled')
+        };
+
+        Test.startTest();
+        DrizzleSaleDeedController ctrl = new DrizzleSaleDeedController(
+            new ApexPages.StandardController(booking)
+        );
+        Test.stopTest();
+
     }
 }

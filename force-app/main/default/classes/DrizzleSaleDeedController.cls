@@ -61,13 +61,33 @@ public with sharing class DrizzleSaleDeedController {
     public String considerationAmount { get; private set; } // 89,77,500
     public String considerationWords { get; private set; }  // Rupees Eighty Nine Lakh ... Only
     public String totalReceived { get; private set; }       // 89,77,500/-
+    public String paidAmount { get; private set; }          // amount the VENDEE(S) has paid, e.g. 27,98,754
+    public String paidWords { get; private set; }
 
     public Boolean hasPaymentEntries {
         get { return paymentEntries != null && !paymentEntries.isEmpty(); }
     }
 
+    /**
+     * "Download" in the preview window opens the page with download=1: the PDF is then sent as a
+     * file (named by fileName) instead of being shown in the browser.
+     */
+    private static void applyDownloadHeader() {
+        PageReference page = ApexPages.currentPage();
+        if (page == null || page.getParameters().get('download') != '1') {
+            return;
+        }
+        String fileName = page.getParameters().get('fileName');
+        fileName = String.isBlank(fileName) ? '' : fileName.replaceAll('[^A-Za-z0-9 _.-]', '').trim();
+        if (String.isBlank(fileName)) {
+            fileName = 'Sale Deed';
+        }
+        page.getHeaders().put('content-disposition', 'attachment; filename="' + fileName + '.pdf"');
+    }
+
     public DrizzleSaleDeedController(ApexPages.StandardController standardController) {
         initializeValues();
+        applyDownloadHeader();
 
         Id bookingId = standardController == null ? null : standardController.getId();
         if (bookingId == null) {
@@ -75,8 +95,9 @@ public with sharing class DrizzleSaleDeedController {
         }
 
         List<Booking__c> rows = [
-            SELECT Id, Name, Project__r.Name, Flat_Number__c, Tower__c,
-                   Car_Parking_Selected__c, Extra_covered_Parking_Slots__c, Total_Flat_Cost__c,
+            SELECT Id, Name, Project__r.Name, Flat_Number__c, Tower__c,S_o_D_o_W_o__c,
+                   Car_Parking_Selected__c, Extra_covered_Parking_Slots__c, No_of_car_parking__c, Total_Flat_Cost__c,
+                   Total_Payable_Amount__c, Total_Receipt_Amount__c, Salutation__c,
                    salutation_Applicant1__c, First_Applicant_Name__c, Applicant_Name__c,
                    Relation_Details_Applicant1__c, Son_Daughter_Wife_of__c,
                    Date_of_Birth1__c, Date_of_Birth__c, Primary_Applicant_Age__c, Occupation__c,
@@ -90,7 +111,8 @@ public with sharing class DrizzleSaleDeedController {
                    Plot__r.Floor__c, Plot__r.BHK_Type__c, Plot__r.Facing__c,
                    Plot__r.Saleable_Area_Sft__c, Plot__r.Carpet_Area__c, Plot__r.Balcony_Area__c,
                    Plot__r.Other_Exclusive_Area__c, Plot__r.Common_Area_Allotted_to_Association__c,
-                   Plot__r.UDS__c, Plot__r.Undivided_Share_of_Land__c,
+                   Plot__r.UDS__c, Plot__r.Undivided_Share_of_Land__c, Plot__r.UDS_Sq_mts__c,
+                   Plot__r.Utility_Area__c, Plot__r.External_Wall_Area__c, Plot__r.Internal_Wall_Area__c,
                    Plot__r.North_By__c, Plot__r.South_By__c, Plot__r.East_By__c, Plot__r.West_By__c
             FROM Booking__c
             WHERE Id = :bookingId
@@ -121,6 +143,7 @@ public with sharing class DrizzleSaleDeedController {
         carParkingName = ''; carParkingTitle = ''; udsNumber = ''; udsArea = '';
         boundaryNorth = ''; boundarySouth = ''; boundaryEast = ''; boundaryWest = '';
         considerationAmount = ''; considerationWords = ''; totalReceived = '';
+        paidAmount = ''; paidWords = '';
     }
 
     private void mapFlatSchedule() {
@@ -148,8 +171,14 @@ public with sharing class DrizzleSaleDeedController {
             flatSizeNumber = formatArea(unit.Saleable_Area_Sft__c);
             carpetArea = withSuffix(formatArea(unit.Carpet_Area__c), AREA_SUFFIX);
             balconyArea = withSuffix(formatArea(unit.Balcony_Area__c), AREA_SUFFIX);
-            utilityArea = withSuffix(formatArea(unit.Other_Exclusive_Area__c), AREA_SUFFIX);
+            // Utility Area on the unit; units entered earlier hold it in Other Exclusive Area.
+            utilityArea = withSuffix(formatArea(unit.Utility_Area__c != null
+                ? unit.Utility_Area__c
+                : unit.Other_Exclusive_Area__c), AREA_SUFFIX);
+            externalWall = withSuffix(formatArea(unit.External_Wall_Area__c), AREA_SUFFIX);
+            internalWall = withSuffix(formatArea(unit.Internal_Wall_Area__c), AREA_SUFFIX);
             commonArea = withSuffix(formatArea(unit.Common_Area_Allotted_to_Association__c), AREA_SUFFIX);
+            // "UDS Area (Sq Yards)" (UDS__c). UDS_Sq_mts__c is square metres, never printed as yards.
             udsNumber = formatArea(unit.UDS__c != null && unit.UDS__c > 0
                 ? unit.UDS__c
                 : unit.Undivided_Share_of_Land__c);
@@ -166,8 +195,11 @@ public with sharing class DrizzleSaleDeedController {
         flatSize = withSuffix(flatSizeNumber, AREA_SUFFIX);
         udsArea = withSuffix(udsNumber, UDS_SUFFIX);
 
-        Integer parkingCount = (booking.Car_Parking_Selected__c == true ? 1 : 0)
-            + (booking.Extra_covered_Parking_Slots__c == null ? 0 : booking.Extra_covered_Parking_Slots__c.intValue());
+        // The booking's "No of car parking"; older bookings only have the tick box + extra slots.
+        Integer parkingCount = booking.No_of_car_parking__c != null
+            ? booking.No_of_car_parking__c.intValue()
+            : (booking.Car_Parking_Selected__c == true ? 1 : 0)
+                + (booking.Extra_covered_Parking_Slots__c == null ? 0 : booking.Extra_covered_Parking_Slots__c.intValue());
         carParkingName = countWord(parkingCount);
         carParkingTitle = titleCase(carParkingName);
     }
@@ -180,8 +212,10 @@ public with sharing class DrizzleSaleDeedController {
         });
         if (String.isNotBlank(primaryName)) {
             Vendee v = new Vendee();
-            v.nameLine = nameLine(booking.salutation_Applicant1__c, primaryName,
-                booking.Relation_Details_Applicant1__c, booking.Son_Daughter_Wife_of__c);
+            v.nameLine = nameLine(
+                firstNonBlank(new List<String>{ booking.salutation_Applicant1__c, booking.Salutation__c }),
+                primaryName,
+                booking.S_o_D_o_W_o__c, booking.Son_Daughter_Wife_of__c);
             Integer age = booking.Primary_Applicant_Age__c != null
                 ? booking.Primary_Applicant_Age__c.intValue()
                 : ageFrom(booking.Date_of_Birth1__c != null ? booking.Date_of_Birth1__c : booking.Date_of_Birth__c);
@@ -240,7 +274,11 @@ public with sharing class DrizzleSaleDeedController {
     }
 
     private void mapConsideration() {
-        Decimal amount = booking.Total_Flat_Cost__c;
+        // Total sale consideration = the booking's Total Payable Amount (flat cost + GST);
+        // older bookings without it fall back to Total Flat Cost.
+        Decimal amount = booking.Total_Payable_Amount__c != null && booking.Total_Payable_Amount__c > 0
+            ? booking.Total_Payable_Amount__c
+            : booking.Total_Flat_Cost__c;
         considerationAmount = formatIndianNumber(amount);
         considerationWords = amount == null
             ? ''
@@ -251,32 +289,47 @@ public with sharing class DrizzleSaleDeedController {
         paymentEntries = new List<PaymentEntry>();
         Decimal total = 0;
 
-        for (Receipt_Line_Item__c line : [
-            SELECT Received_Amount__c, Mode_of_Payment__c, Cheque_no_Transaction_Number__c,
-                   Cheque_Date__c, Receipt__r.Receipt_Date__c, Receipt__r.Payment_Method__c
-            FROM Receipt_Line_Item__c
+        // Every approved receipt of the booking that has not been cancelled or reversed. Receipt Status
+        // is usually left blank (only Cancelled / Reversed are ever set), and the receipt's own fields
+        // hold the amount, mode and reference - its line items are filled only on allocation.
+        for (Receipt__c receipt : [
+            SELECT Amount_received__c, Total_Amount__c, Payment_Method__c, Mode_of_payment__c,
+                   Check_Transaction_Nmber__c, Transaction_Reference__c, Cheque_Number__c,
+                   Cheque_Date__c, Receipt_Date__c
+            FROM Receipt__c
             WHERE Booking__c = :booking.Id
-              AND Received_Amount__c > 0
-              AND Receipt__r.Approval_Status__c = 'Approved'
-              AND Receipt__r.Receipt_Status__c = 'Received'
-            ORDER BY Receipt__r.Receipt_Date__c ASC, CreatedDate ASC
+              AND Approval_Status__c = 'Approved'
+              AND (Receipt_Status__c = null OR Receipt_Status__c NOT IN ('Cancelled', 'Reversed'))
+            ORDER BY Receipt_Date__c ASC NULLS LAST, CreatedDate ASC
             LIMIT 200
         ]) {
+            Decimal amount = receipt.Amount_received__c != null && receipt.Amount_received__c > 0
+                ? receipt.Amount_received__c
+                : receipt.Total_Amount__c;
+            if (amount == null || amount <= 0) {
+                continue;
+            }
             PaymentEntry entry = new PaymentEntry();
-            entry.dateText = formatDate(line.Cheque_Date__c != null
-                ? line.Cheque_Date__c
-                : (line.Receipt__r == null ? null : line.Receipt__r.Receipt_Date__c));
-            entry.mode = upper(firstNonBlank(new List<String>{
-                line.Mode_of_Payment__c,
-                line.Receipt__r == null ? '' : line.Receipt__r.Payment_Method__c
+            entry.dateText = formatDate(receipt.Cheque_Date__c != null ? receipt.Cheque_Date__c : receipt.Receipt_Date__c);
+            entry.mode = upper(firstNonBlank(new List<String>{ receipt.Payment_Method__c, receipt.Mode_of_payment__c }));
+            entry.reference = clean(firstNonBlank(new List<String>{
+                receipt.Check_Transaction_Nmber__c, receipt.Transaction_Reference__c, receipt.Cheque_Number__c
             }));
-            entry.reference = clean(line.Cheque_no_Transaction_Number__c);
-            entry.amountText = formatIndianNumber(line.Received_Amount__c);
+            entry.amountText = formatIndianNumber(amount);
             paymentEntries.add(entry);
-            total += line.Received_Amount__c;
+            total += amount;
         }
 
         totalReceived = paymentEntries.isEmpty() ? '' : formatIndianNumber(total) + '/-';
+
+        // "has paid the entire sale consideration of Rs. ...": the booking's Total Receipt Amount,
+        // or the receipts listed when that roll-up is empty.
+        Decimal paid = booking.Total_Receipt_Amount__c != null && booking.Total_Receipt_Amount__c > 0
+            ? booking.Total_Receipt_Amount__c
+            : (paymentEntries.isEmpty() ? null : total);
+        // Nothing received yet: a dash line to fill in by hand, never "Rs./- ()".
+        paidAmount = paid == null ? '________' : formatIndianNumber(paid);
+        paidWords = paid == null ? '________' : 'Rupees ' + new NumberTOWordConvertion().getNumberTOWordConvertion(paid);
     }
 
     // =====================================================================
@@ -288,13 +341,28 @@ public with sharing class DrizzleSaleDeedController {
     private static String nameLine(String salutation, String name, String relation, String parentName) {
         String line = upper(withSalutation(salutation, name));
         if (String.isNotBlank(parentName)) {
-            String rel = clean(relation);
-            if (String.isNotBlank(rel) && !rel.endsWith('.')) {
+            // No relation recorded: "C/o." (care of).
+            String rel = String.isBlank(relation) ? 'C/o' : clean(relation);
+            if (!rel.endsWith('.')) {
                 rel += '.';
             }
-            line += ', ' + (String.isBlank(rel) ? '' : rel + ' ') + upper(parentName);
+            line += ', ' + rel + ' ' + upper(parentTitle(rel, parentName));
         }
         return line;
+    }
+
+    /**
+     * "MR. VIJAY PAL GOEL": the father / husband named after S/o, D/o, W/o or C/o gets "MR.",
+     * the wife named after H/o gets "MRS." - unless the name already starts with a title.
+     */
+    @TestVisible
+    private static String parentTitle(String relation, String parentName) {
+        String name = clean(parentName);
+        String firstWord = name.split('[\\s.]+')[0].toLowerCase();
+        if (SALUTATIONS.contains(firstWord) || firstWord == 'sri' || firstWord == 'smt' || firstWord == 'late') {
+            return name;
+        }
+        return (clean(relation).toLowerCase().startsWith('h') ? 'Mrs. ' : 'Mr. ') + name;
     }
 
     @TestVisible

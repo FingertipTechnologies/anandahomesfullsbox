@@ -44,7 +44,8 @@ public without sharing class CreateQuoteController {
                     Block1__r.Name, Block__c,Total_Other_Charges__c,Solar_Charges__c,Other_Charges__c, Sub_total__c,Block1__c,Facing__c,Share__c,Status__c,Built_up_area__c,Basic_Price__c,Basic_Sale_Price_Rs__c,Miscellaneous_Charges__c,GST_Amount__c,Total__c,
                     Saleable_Area_Sft__c, East_Facing_Charges__c, Corner_Charges__c, Hi_Rise_Charges__c,Piped_Gas__c,Floor_Rise_Charge__c,
                     Central_Court_Yard_Premium__c, Meadow_Premium__c, Roadside_Premium__c,Lake_Premium__c,Extra_Car_Parking__c,
-                    Court_Yard_Premium__c, Outer_Premium__c, Amenities_Car_Parking__c, Infrastructure_Charges__c
+                    Court_Yard_Premium__c, Outer_Premium__c, Amenities_Car_Parking__c, Infrastructure_Charges__c,
+                    PLC__c, East_North_Facing__c, Club_House__c
                     from Plot__c
                     where Project__r.Name =:project and Status__c = 'Available' order by Plot_Number__c,Name asc ];
         
@@ -125,7 +126,7 @@ public without sharing class CreateQuoteController {
                        Basic_Sale_Price_Rs__c, Miscellaneous_Charges__c, GST_Amount__c, Total__c,
                        Saleable_Area_Sft__c, East_Facing_Charges__c, Corner_Charges__c, Hi_Rise_Charges__c,
                        Central_Court_Yard_Premium__c, Meadow_Premium__c, Roadside_Premium__c,Lake_Premium__c,Extra_Car_Parking__c,Piped_Gas__c,Floor_Rise_Charge__c,
-                       Court_Yard_Premium__c, Outer_Premium__c, Amenities_Car_Parking__c, Infrastructure_Charges__c,PLC__c,East_North_Facing__c
+                       Court_Yard_Premium__c, Outer_Premium__c, Amenities_Car_Parking__c, Infrastructure_Charges__c,PLC__c,East_North_Facing__c,Club_House__c
                 FROM Plot__c
                 WHERE Project__r.Name = :allocatedProjectName
                 AND Status__c = 'Available'
@@ -157,8 +158,45 @@ public without sharing class CreateQuoteController {
         return 'Scheduled';
     }
 
+    // ------------------------------------------------------------------------------------------
+    // Who may create a quote from a lead: a System Administrator, or the lead's owner. Nobody else.
+    // ------------------------------------------------------------------------------------------
+    @TestVisible
+    private static final String ADMIN_PROFILE = 'System Administrator';
+    @TestVisible
+    private static final String QUOTE_ACCESS_DENIED =
+        'You cannot create a quote for this lead. Only the lead owner or a System Administrator can create a quote.';
+
+    /** The rule itself, kept free of queries so it can be tested directly. */
+    @TestVisible
+    private static Boolean isQuoteCreationAllowed(Id leadOwnerId, Id userId, String userProfileName) {
+        return userProfileName == ADMIN_PROFILE || (leadOwnerId != null && leadOwnerId == userId);
+    }
+
+    /**
+     * Called by the Create Quote screen when it opens. Returns null when the current user may create
+     * a quote for this lead, otherwise the message to show. A record that is not a lead is not restricted.
+     */
+    @AuraEnabled
+    public static String checkQuoteAccess(Id leadId) {
+        if (leadId == null || leadId.getSObjectType() != Lead__c.SObjectType) {
+            return null;
+        }
+        List<Lead__c> leads = [SELECT OwnerId FROM Lead__c WHERE Id = :leadId LIMIT 1];
+        if (leads.isEmpty()) {
+            return null;
+        }
+        String profileName = [SELECT Name FROM Profile WHERE Id = :UserInfo.getProfileId() LIMIT 1].Name;
+        return isQuoteCreationAllowed(leads[0].OwnerId, UserInfo.getUserId(), profileName) ? null : QUOTE_ACCESS_DENIED;
+    }
+
     @AuraEnabled
     public static String saveOppPlot(Quote__c oppPlot) {
+        // Same rule again at save time, so it holds even if the screen's own check is skipped.
+        String denied = (oppPlot == null) ? null : checkQuoteAccess(oppPlot.CLead__c);
+        if (denied != null) {
+            return 'ERROR: ' + denied;
+        }
         try {
             System.debug('oppPlot: ' + oppPlot);
             insert oppPlot;

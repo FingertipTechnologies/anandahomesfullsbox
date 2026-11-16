@@ -1,0 +1,8 @@
+<!--
+    Booking quick action "Generate Sale Deed": the same preview window as Generate Agreement
+    (AgreementVFQuickAction), showing the sale deed instead. Which page each project uses is set
+    in AgreementVFQuickActionHelper.js under DOCUMENTS.saleDeed.
+-->
+<aura:component extends="c:AgreementVFQuickAction" implements="force:hasRecordId,force:lightningQuickActionWithoutHeader" access="global">
+    <aura:set attribute="documentType" value="saleDeed" />
+</aura:component>

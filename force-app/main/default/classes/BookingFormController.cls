@@ -241,7 +241,7 @@ public with sharing class BookingFormController {
                    Plot__r.BHK_Type__c, Plot__r.Tower__c, Plot__r.Block1__r.Name,
                    Plot__r.Floor__c, Plot__r.Series__c, Plot__r.PLC__c, Quote__r.BHK_Type__c,
 
-                   salutation_Applicant1__c, First_Applicant_Name__c,
+                   salutation_Applicant1__c, Salutation__c, First_Applicant_Name__c,
                    Son_Daughter_Wife_of__c, Mobile_Primary__c, Mobile__c,
                    Email1__c, Email__c, Customer_Email__c,
                    Date_of_Birth1__c, Date_of_Birth__c, Occupation__c,
@@ -325,8 +325,10 @@ public with sharing class BookingFormController {
     }
 
     private void mapApplicant(Booking__c booking) {
+        // The Create Booking form saves the applicant's title in Salutation__c; older bookings
+        // carry it in salutation_Applicant1__c.
         applicantName = withSalutation(
-            textOf(booking, 'salutation_Applicant1__c'),
+            firstText(booking, new List<String>{ 'salutation_Applicant1__c', 'Salutation__c' }),
             textOf(booking, 'First_Applicant_Name__c')
         );
         applicantFatherName = textOf(booking, 'Son_Daughter_Wife_of__c');
@@ -455,19 +457,36 @@ public with sharing class BookingFormController {
 
     /**
      * @description Price details are read straight from the records:
-     *                - Booking Amount Payable : Project__c.Booking_Amount__c (unit's project)
+     *                - Booking Amount Payable : flat-cost part of the booking's first payment schedule
+     *                                           line (Payment Schedule Amount + TDS Amount);
+     *                                           Project__c.Booking_Amount__c when there is no line
      *                - Everything else        : Booking__c Financial Summary /
      *                                           New Stage fields
      *              Only the two lines that have no field are derived:
      *                - Balance Booking Amount = Booking Amount Payable - Advance Paid
-     *                - GST On Booking Amount  = Booking Amount Payable x Plot__c.GST1__c %
+     *                - GST On Booking Amount  = that first line's GST Amount (without a line:
+     *                                           Booking Amount Payable x Plot__c.GST1__c %)
      */
     private void mapPriceDetails(Booking__c booking) {
         Decimal flatCost = decimalOf(booking, 'Total_Flat_Cost__c');
         Decimal gstAmount = decimalOf(booking, 'GST_Amount__c');
         SObject unit = parentOf(booking, 'Plot__r');
-        Decimal bookingAmount = decimalOf(parentOf(unit, 'Project__r'), 'Booking_Amount__c');
+        Decimal projectBookingAmount = decimalOf(parentOf(unit, 'Project__r'), 'Booking_Amount__c');
         Decimal advance = decimalOf(booking, 'Booking_Amount__c');
+
+        // THE LEGACEY form: the booking amount is the first instalment of the payment schedule -
+        // its share of the flat cost (Payment Schedule Amount + TDS Amount, before GST) - and the
+        // GST on it is that line's GST Amount.
+        SObject firstLine = firstScheduleLine(booking.Id);
+        Decimal bookingAmount = projectBookingAmount;
+        Decimal gstOnBooking = percentOf(projectBookingAmount, decimalOf(unit, 'GST1__c'));
+        Decimal firstBase = decimalOf(firstLine, 'Payment_Schedule_Amount__c');
+        if (firstBase != null) {
+            Decimal firstTds = decimalOf(firstLine, 'TDS_Amount__c');
+            Decimal firstGst = decimalOf(firstLine, 'GST_Amount__c');
+            bookingAmount = firstBase + (firstTds == null ? 0 : firstTds);
+            gstOnBooking = firstGst != null ? firstGst : percentOf(bookingAmount, decimalOf(unit, 'GST1__c'));
+        }
 
         Decimal balance = null;
         if (bookingAmount != null) {
@@ -481,9 +500,7 @@ public with sharing class BookingFormController {
         balanceBookingAmount = formatAmount(balance);
         tdsPayable = formatAmount(decimalOf(booking, 'TDS__c'));
         gstPayable = formatAmount(gstAmount);
-        gstOnBookingAmount = formatAmount(
-            percentOf(bookingAmount, decimalOf(unit, 'GST1__c'))
-        );
+        gstOnBookingAmount = formatAmount(gstOnBooking);
         loanAmount = formatAmount(decimalOf(booking, 'Loan_Sanctioned_Amount__c'));
 
         String fundingType = textOf(booking, 'Funding_Type__c').toLowerCase();
@@ -496,8 +513,8 @@ public with sharing class BookingFormController {
         Decimal total = flatCost == null && gstAmount == null
             ? null
             : (flatCost == null ? 0 : flatCost) + (gstAmount == null ? 0 : gstAmount);
-        Decimal firstInstalment = firstScheduleAmount(booking.Id);
-        Decimal payable = firstInstalment != null ? firstInstalment : bookingAmount;
+        Decimal firstInstalment = firstScheduleAmount(firstLine);
+        Decimal payable = firstInstalment != null ? firstInstalment : projectBookingAmount;
         Decimal balanceFlat = total == null ? null : total - (advance == null ? 0 : advance);
 
         totalCost = formatAmount(total);
@@ -505,17 +522,28 @@ public with sharing class BookingFormController {
         balanceFlatAmount = formatAmount(balanceFlat == null ? null : (balanceFlat > 0 ? balanceFlat : 0));
     }
 
-    /** Amount of the booking's first payment schedule line (lowest S No), or null when there is none. */
-    private static Decimal firstScheduleAmount(Id bookingId) {
+    /**
+     * Amount of the booking's first payment schedule line (lowest S No), or null when there is none.
+     * The form's cell is "(INCLUDING GST)", so this is the line's full Amount (base + GST + TDS);
+     * Payment Schedule Amount is only the base part and is used when Amount is empty.
+     */
+    private static Decimal firstScheduleAmount(SObject firstLine) {
+        Decimal full = decimalOf(firstLine, 'Amount__c');
+        return full != null ? full : decimalOf(firstLine, 'Payment_Schedule_Amount__c');
+    }
+
+    /** The booking's first payment schedule line (lowest S No), or null when there is none. */
+    private static SObject firstScheduleLine(Id bookingId) {
         List<Payment_Schedule__c> lines = [
-            SELECT Payment_Schedule_Amount__c
+            SELECT Amount__c, Payment_Schedule_Amount__c, GST_Amount__c, TDS_Amount__c
             FROM Payment_Schedule__c
-            WHERE Booking__c = :bookingId AND Payment_Schedule_Amount__c != null
+            WHERE Booking__c = :bookingId
+              AND (Amount__c != null OR Payment_Schedule_Amount__c != null)
             ORDER BY S_No__c ASC NULLS LAST, CreatedDate ASC
             LIMIT 1
         ];
         List<SObject> readable = stripInaccessible(lines);
-        return readable.isEmpty() ? null : decimalOf(readable[0], 'Payment_Schedule_Amount__c');
+        return readable.isEmpty() ? null : readable[0];
     }
 
     private void mapAcknowledgement(Booking__c booking) {

@@ -5,6 +5,11 @@
             <componentInstance>
                 <componentInstanceProperties>
                     <name>actionNames</name>
+                    <valueList>
+                        <valueListItems>
+                            <value>Clone</value>
+                        </valueListItems>
+                    </valueList>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>collapsed</name>
@@ -146,220 +151,27 @@
         <itemInstances>
             <componentInstance>
                 <componentInstanceProperties>
-                    <name>actionNames</name>
-                    <valueList>
-                        <valueListItems>
-                            <value>New</value>
-                        </valueListItems>
-                    </valueList>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>maxRecordsToDisplay</name>
-                    <value>10</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
                     <name>parentFieldApiName</name>
                     <value>Plot__c.Id</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
                     <name>relatedListApiName</name>
-                    <value>Payment_schedules__r</value>
+                    <value>Unit_Block_Histories__r</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
-                    <name>relatedListDisplayType</name>
-                    <value>ADVGRID</value>
+                    <name>relatedListComponentOverride</name>
+                    <value>NONE</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
-                    <name>relatedListFieldAliases</name>
-                    <valueList>
-                        <valueListItems>
-                            <value>NAME</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Amount1__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Booking__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Project_Name__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Quote__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Status__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>CREATEDBY_USER</value>
-                        </valueListItems>
-                    </valueList>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>relatedListLabel</name>
-                    <value>Payment schedules</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>showActionBar</name>
-                    <value>true</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>sortFieldAlias</name>
-                    <value>__DEFAULT__</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>sortFieldOrder</name>
-                    <value>Default</value>
-                </componentInstanceProperties>
-                <componentName>lst:dynamicRelatedList</componentName>
-                <identifier>lst_dynamicRelatedList2</identifier>
-            </componentInstance>
-        </itemInstances>
-        <itemInstances>
-            <componentInstance>
-                <componentInstanceProperties>
-                    <name>actionNames</name>
-                    <valueList>
-                        <valueListItems>
-                            <value>New</value>
-                        </valueListItems>
-                    </valueList>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>maxRecordsToDisplay</name>
+                    <name>rowsToDisplay</name>
                     <value>10</value>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
-                    <name>parentFieldApiName</name>
-                    <value>Plot__c.Id</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>relatedListApiName</name>
-                    <value>Swap_Requests__r</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>relatedListDisplayType</name>
-                    <value>ADVGRID</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>relatedListFieldAliases</name>
-                    <valueList>
-                        <valueListItems>
-                            <value>NAME</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Approval_Comments__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>New_Booking__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Old_Booking__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>New_Quote__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>New_Unit__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Status__c</value>
-                        </valueListItems>
-                    </valueList>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>relatedListLabel</name>
-                    <value>Swap Requests</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
                     <name>showActionBar</name>
                     <value>true</value>
                 </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>sortFieldAlias</name>
-                    <value>__DEFAULT__</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>sortFieldOrder</name>
-                    <value>Default</value>
-                </componentInstanceProperties>
-                <componentName>lst:dynamicRelatedList</componentName>
-                <identifier>lst_dynamicRelatedList3</identifier>
-            </componentInstance>
-        </itemInstances>
-        <itemInstances>
-            <componentInstance>
-                <componentInstanceProperties>
-                    <name>actionNames</name>
-                    <valueList>
-                        <valueListItems>
-                            <value>New</value>
-                        </valueListItems>
-                    </valueList>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>maxRecordsToDisplay</name>
-                    <value>10</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>parentFieldApiName</name>
-                    <value>Plot__c.Id</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>relatedListApiName</name>
-                    <value>Swap_Requests1__r</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>relatedListDisplayType</name>
-                    <value>ADVGRID</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>relatedListFieldAliases</name>
-                    <valueList>
-                        <valueListItems>
-                            <value>NAME</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Approval_Comments__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>New_Booking__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Old_Booking__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Old_Unit__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>New_Quote__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>Status__c</value>
-                        </valueListItems>
-                        <valueListItems>
-                            <value>CREATEDBY_USER</value>
-                        </valueListItems>
-                    </valueList>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>relatedListLabel</name>
-                    <value>Swap Requests (New Unit)</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>showActionBar</name>
-                    <value>true</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>sortFieldAlias</name>
-                    <value>__DEFAULT__</value>
-                </componentInstanceProperties>
-                <componentInstanceProperties>
-                    <name>sortFieldOrder</name>
-                    <value>Default</value>
-                </componentInstanceProperties>
-                <componentName>lst:dynamicRelatedList</componentName>
-                <identifier>lst_dynamicRelatedList4</identifier>
+                <componentName>force:relatedListSingleContainer</componentName>
+                <identifier>force_relatedListSingleContainer4</identifier>
             </componentInstance>
         </itemInstances>
         <itemInstances>
@@ -469,28 +281,8 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Record.LL_Share_Name__c</fieldItem>
-                <identifier>RecordLL_Share_Name__cField</identifier>
-            </fieldInstance>
-        </itemInstances>
-        <itemInstances>
-            <fieldInstance>
-                <fieldInstanceProperties>
-                    <name>uiBehavior</name>
-                    <value>none</value>
-                </fieldInstanceProperties>
                 <fieldItem>Record.Wall_Area__c</fieldItem>
                 <identifier>RecordWall_Area__cField</identifier>
-            </fieldInstance>
-        </itemInstances>
-        <itemInstances>
-            <fieldInstance>
-                <fieldInstanceProperties>
-                    <name>uiBehavior</name>
-                    <value>none</value>
-                </fieldInstanceProperties>
-                <fieldItem>Record.Utility_Area__c</fieldItem>
-                <identifier>RecordUtility_Area__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
@@ -509,28 +301,8 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Record.Internal_Wall_Area__c</fieldItem>
-                <identifier>RecordInternal_Wall_Area__cField</identifier>
-            </fieldInstance>
-        </itemInstances>
-        <itemInstances>
-            <fieldInstance>
-                <fieldInstanceProperties>
-                    <name>uiBehavior</name>
-                    <value>none</value>
-                </fieldInstanceProperties>
-                <fieldItem>Record.UDS_Sq_mts__c</fieldItem>
-                <identifier>RecordUDS_Sq_mts__cField</identifier>
-            </fieldInstance>
-        </itemInstances>
-        <itemInstances>
-            <fieldInstance>
-                <fieldInstanceProperties>
-                    <name>uiBehavior</name>
-                    <value>none</value>
-                </fieldInstanceProperties>
-                <fieldItem>Record.Series__c</fieldItem>
-                <identifier>RecordSeries__cField</identifier>
+                <fieldItem>Record.UDS__c</fieldItem>
+                <identifier>RecordUDS_cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
@@ -549,16 +321,6 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Record.Facing__c</fieldItem>
-                <identifier>RecordFacing__cField</identifier>
-            </fieldInstance>
-        </itemInstances>
-        <itemInstances>
-            <fieldInstance>
-                <fieldInstanceProperties>
-                    <name>uiBehavior</name>
-                    <value>none</value>
-                </fieldInstanceProperties>
                 <fieldItem>Record.Plinth_Area__c</fieldItem>
                 <identifier>RecordPlinth_Area__cField</identifier>
             </fieldInstance>
@@ -569,8 +331,8 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Record.Extra_Car_Parking__c</fieldItem>
-                <identifier>RecordExtra_Car_Parking__cField</identifier>
+                <fieldItem>Record.East_By__c</fieldItem>
+                <identifier>RecordEast_By_cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
@@ -579,20 +341,28 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Record.Lake_Premium__c</fieldItem>
-                <identifier>RecordLake_Premium__cField</identifier>
+                <fieldItem>Record.West_By__c</fieldItem>
+                <identifier>RecordWest_By_cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
             <fieldInstance>
-                <fieldItem>Record.PLC__c</fieldItem>
-                <identifier>RecordPLC__cField</identifier>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.North_By__c</fieldItem>
+                <identifier>RecordNorth_By_cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
             <fieldInstance>
-                <fieldItem>Record.East_North_Facing__c</fieldItem>
-                <identifier>RecordEast_North_Facing__cField</identifier>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.South_By__c</fieldItem>
+                <identifier>RecordSouth_By_cField</identifier>
             </fieldInstance>
         </itemInstances>
         <name>Facet-3f820b0c-d28b-4f12-a7c3-a6b0b44f8f8e</name>
@@ -655,6 +425,16 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
+                <fieldItem>Record.LL_Share_Name__c</fieldItem>
+                <identifier>RecordLL_Share_Name__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
                 <fieldItem>Record.Mortgaged_to_HMDA__c</fieldItem>
                 <identifier>RecordMortgaged_to_HMDA_cField</identifier>
             </fieldInstance>
@@ -665,8 +445,68 @@
                     <name>uiBehavior</name>
                     <value>none</value>
                 </fieldInstanceProperties>
-                <fieldItem>Record.Piped_Gas__c</fieldItem>
-                <identifier>RecordPiped_Gas_cField</identifier>
+                <fieldItem>Record.Utility_Area__c</fieldItem>
+                <identifier>RecordUtility_Area__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Internal_Wall_Area__c</fieldItem>
+                <identifier>RecordInternal_Wall_Area__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Carpet_Area__c</fieldItem>
+                <identifier>RecordCarpet_Area__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Balcony_Area__c</fieldItem>
+                <identifier>RecordBalcony_Area__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Common_Area_Allotted_to_Association__c</fieldItem>
+                <identifier>RecordCommon_Area_Allotted_to_Association__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Series__c</fieldItem>
+                <identifier>RecordSeries__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Facing__c</fieldItem>
+                <identifier>RecordFacing__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <name>Facet-7fbb5486-99c3-4e73-963a-ff1c60c8d5e7</name>
@@ -721,6 +561,30 @@
                 </fieldInstanceProperties>
                 <fieldItem>Record.East_Facing_Charges__c</fieldItem>
                 <identifier>RecordEast_Facing_Charges_cField</identifier>
+                <visibilityRule>
+                    <criteria>
+                        <leftValue>{!Record.Project_Name__c}</leftValue>
+                        <operator>NE</operator>
+                        <rightValue>The Drizzle</rightValue>
+                    </criteria>
+                </visibilityRule>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.East_North_Facing__c</fieldItem>
+                <identifier>RecordEast_North_Facing__cField</identifier>
+                <visibilityRule>
+                    <criteria>
+                        <leftValue>{!Record.Project_Name__c}</leftValue>
+                        <operator>CONTAINS</operator>
+                        <rightValue>The Drizzle</rightValue>
+                    </criteria>
+                </visibilityRule>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
@@ -731,6 +595,13 @@
                 </fieldInstanceProperties>
                 <fieldItem>Record.Hi_Rise_Charges__c</fieldItem>
                 <identifier>RecordHi_Rise_Charges_cField</identifier>
+                <visibilityRule>
+                    <criteria>
+                        <leftValue>{!Record.Project_Name__c}</leftValue>
+                        <operator>NE</operator>
+                        <rightValue>The Drizzle</rightValue>
+                    </criteria>
+                </visibilityRule>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
@@ -741,6 +612,13 @@
                 </fieldInstanceProperties>
                 <fieldItem>Record.Meadow_Premium__c</fieldItem>
                 <identifier>RecordMeadow_Premium_cField</identifier>
+                <visibilityRule>
+                    <criteria>
+                        <leftValue>{!Record.Project_Name__c}</leftValue>
+                        <operator>NE</operator>
+                        <rightValue>The Drizzle</rightValue>
+                    </criteria>
+                </visibilityRule>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
@@ -751,6 +629,13 @@
                 </fieldInstanceProperties>
                 <fieldItem>Record.Court_Yard_Premium__c</fieldItem>
                 <identifier>RecordCourt_Yard_Premium_cField</identifier>
+                <visibilityRule>
+                    <criteria>
+                        <leftValue>{!Record.Project_Name__c}</leftValue>
+                        <operator>NE</operator>
+                        <rightValue>The Drizzle</rightValue>
+                    </criteria>
+                </visibilityRule>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
@@ -767,6 +652,16 @@
                 </fieldInstanceProperties>
                 <fieldItem>Record.Amenities_Car_Parking__c</fieldItem>
                 <identifier>RecordAmenities_Car_Parking_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Extra_Car_Parking__c</fieldItem>
+                <identifier>RecordExtra_Car_Parking__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
@@ -798,6 +693,26 @@
                 <componentName>flexipage:blankSpace</componentName>
                 <identifier>flexipage_blankSpace2</identifier>
             </componentInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.PLC__c</fieldItem>
+                <identifier>RecordPLC__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Lake_Premium__c</fieldItem>
+                <identifier>RecordLake_Premium__cField</identifier>
+            </fieldInstance>
         </itemInstances>
         <itemInstances>
             <fieldInstance>
@@ -837,13 +752,31 @@
                 </fieldInstanceProperties>
                 <fieldItem>Record.Outer_Premium__c</fieldItem>
                 <identifier>RecordOuter_Premium_cField</identifier>
+                <visibilityRule>
+                    <criteria>
+                        <leftValue>{!Record.Project_Name__c}</leftValue>
+                        <operator>NE</operator>
+                        <rightValue>The Drizzle</rightValue>
+                    </criteria>
+                </visibilityRule>
             </fieldInstance>
         </itemInstances>
         <itemInstances>
-            <componentInstance>
-                <componentName>flexipage:blankSpace</componentName>
-                <identifier>flexipage_blankSpace4</identifier>
-            </componentInstance>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Piped_Gas__c</fieldItem>
+                <identifier>RecordPiped_Gas_cField2</identifier>
+                <visibilityRule>
+                    <criteria>
+                        <leftValue>{!Record.Project_Name__c}</leftValue>
+                        <operator>CONTAINS</operator>
+                        <rightValue>The Drizzle</rightValue>
+                    </criteria>
+                </visibilityRule>
+            </fieldInstance>
         </itemInstances>
         <itemInstances>
             <fieldInstance>
@@ -853,6 +786,23 @@
                 </fieldInstanceProperties>
                 <fieldItem>Record.Infrastructure_Charges__c</fieldItem>
                 <identifier>RecordInfrastructure_Charges_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.Club_House__c</fieldItem>
+                <identifier>RecordClub_House_cField2</identifier>
+                <visibilityRule>
+                    <criteria>
+                        <leftValue>{!Record.Project_Name__c}</leftValue>
+                        <operator>CONTAINS</operator>
+                        <rightValue>The Drizzle</rightValue>
+                    </criteria>
+                </visibilityRule>
             </fieldInstance>
         </itemInstances>
         <name>Facet-84b8779a-9a04-46f8-ac2d-f89e3bda2194</name>

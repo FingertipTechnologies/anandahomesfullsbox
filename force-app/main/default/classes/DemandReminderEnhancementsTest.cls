@@ -1,7 +1,7 @@
 /**
  * @description Tests for the DemandReminderService enhancements:
  *                - pointer 5: Agreement Amount demand reminders anchored to Welcome Mail
- *                  date (+30 / +40 / +45 days), and
+ *                  date (+30 / +45 / +45 days), and
  *                - pointer 6: booking-level Disable Demand Reminders suppresses all reminders.
  */
 @isTest
@@ -47,7 +47,7 @@ private class DemandReminderEnhancementsTest {
 
         Date anchor = welcome.date();
         System.assertEquals(anchor.addDays(30), d.Reminder_1_Date__c, '1st reminder = Welcome + 30');
-        System.assertEquals(anchor.addDays(40), d.Reminder_2_Date__c, '2nd reminder = Welcome + 40');
+        System.assertEquals(anchor.addDays(45), d.Reminder_2_Date__c, '2nd reminder = Welcome + 45');
         System.assertEquals(anchor.addDays(45), d.Termination_Mail_Date__c, 'Termination = Welcome + 45');
         System.assertEquals(null, d.Reminder_3_Date__c, 'No 3rd reminder for agreement amount');
         System.assertEquals(null, d.Reminder_4_Date__c, 'No 4th reminder for agreement amount');

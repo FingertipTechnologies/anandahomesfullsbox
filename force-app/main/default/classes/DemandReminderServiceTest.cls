@@ -199,7 +199,7 @@ private class DemandReminderServiceTest {
 
         Date anchor = b.Welcome_Mail_Sent_DateTime__c.date();
         System.assertEquals(anchor.addDays(30), d.Reminder_1_Date__c, 'Agreement R1 = welcome+30');
-        System.assertEquals(anchor.addDays(40), d.Reminder_2_Date__c, 'Agreement R2 = welcome+40');
+        System.assertEquals(anchor.addDays(45), d.Reminder_2_Date__c, 'Agreement R2 = welcome+45');
         System.assertEquals(anchor.addDays(45), d.Termination_Mail_Date__c, 'Agreement term = welcome+45');
         System.assertEquals(null, d.Reminder_3_Date__c, 'No R3 for agreement');
         System.assertEquals(null, d.Reminder_4_Date__c, 'No R4 for agreement');

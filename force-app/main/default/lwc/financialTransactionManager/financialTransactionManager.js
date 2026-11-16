@@ -32,6 +32,9 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
     
     // State Management
     @track isLoading = false;
+    // True while a Create Receipt / Credit Note / Debit Note / Refund save is in flight:
+    // blocks double clicks from creating the record twice.
+    isSubmitting = false;
     @track showSummary = true;
     @track activeTab = 'receipt';
     
@@ -942,20 +945,29 @@ export default class FinancialTransactionManager extends NavigationMixin(Lightni
     }
     
     // Submit Handler
-    handleSubmit() {
-        switch (this.activeTab) {
-            case 'receipt':
-                this.handleCreateReceipt();
-                break;
-            case 'credit': 
-                this.handleCreateCreditNote();
-                break;
-            case 'debit': 
-                this.handleCreateDebitNote();
-                break;
-            case 'refund':
-                this.handleCreateRefund();
-                break;
+    async handleSubmit() {
+        // Ignore repeat clicks while a save is running (double click created two receipts).
+        if (this.isSubmitting) {
+            return;
+        }
+        this.isSubmitting = true;
+        try {
+            switch (this.activeTab) {
+                case 'receipt':
+                    await this.handleCreateReceipt();
+                    break;
+                case 'credit':
+                    await this.handleCreateCreditNote();
+                    break;
+                case 'debit':
+                    await this.handleCreateDebitNote();
+                    break;
+                case 'refund':
+                    await this.handleCreateRefund();
+                    break;
+            }
+        } finally {
+            this.isSubmitting = false;
         }
     }
     

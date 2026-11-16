@@ -453,7 +453,7 @@
                         <lightning-icon icon-name="utility:close" size="x-small"></lightning-icon>
                         <span>Cancel</span>
                     </button>
-                    <button class={primaryButtonClass} onclick={handleSubmit}>
+                    <button class={primaryButtonClass} onclick={handleSubmit} disabled={isSubmitting}>
                         <lightning-icon icon-name="utility:check" size="x-small"></lightning-icon>
                         <span>{submitButtonLabel}</span>
                     </button>

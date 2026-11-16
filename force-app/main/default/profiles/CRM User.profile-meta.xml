@@ -175,7 +175,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>AgentDetailsAPI</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>AgentDetailsAPITest</apexClass>
@@ -183,7 +183,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>AgreementOfSaleController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>AgreementOfSaleControllerTest</apexClass>
@@ -259,7 +259,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>BookingAgreementController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>BookingAgreementControllerTest</apexClass>
@@ -291,7 +291,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>BookingFormController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>BookingFormControllerTest</apexClass>
@@ -299,7 +299,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>BookingQuoteFinancialFields</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>BookingQuoteFinancialFieldsTest</apexClass>
@@ -339,7 +339,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>BookingUnitBookingValidationService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>BulkDemandController</apexClass>
@@ -371,11 +371,11 @@
     </classAccesses>
     <classAccesses>
         <apexClass>CAPRI_CANCELLATION_LETTER</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>CapriNocApprovedEmailInvocable</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>CapriNocApprovedEmailInvocableTest</apexClass>
@@ -383,7 +383,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>CapriNocPdfController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>CapriNocPdfControllerTest</apexClass>
@@ -535,11 +535,11 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DemandComponentService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DemandLetterPDFController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DemandLetterPDFControllerTest</apexClass>
@@ -603,7 +603,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>DrizzleSaleDeedController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>DrizzleSaleDeedControllerTest</apexClass>
@@ -794,6 +794,14 @@
         <enabled>false</enabled>
     </classAccesses>
     <classAccesses>
+        <apexClass>ForecastReminderSchedulable</apexClass>
+        <enabled>false</enabled>
+    </classAccesses>
+    <classAccesses>
+        <apexClass>ForecastReminderSchedulableTest</apexClass>
+        <enabled>false</enabled>
+    </classAccesses>
+    <classAccesses>
         <apexClass>ForgotPasswordController</apexClass>
         <enabled>true</enabled>
     </classAccesses>
@@ -875,7 +883,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>InterestWaiverService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>InterestWaiverServiceTest</apexClass>
@@ -899,7 +907,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>LeadStatusDateHandler</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>LeadStatusDateHandlerTest</apexClass>
@@ -911,7 +919,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>LegacySaleDeedController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>LegacySaleDeedControllerTest</apexClass>
@@ -1171,7 +1179,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>ReceiptAllocationService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>ReceiptAllocationServiceTest</apexClass>
@@ -1299,7 +1307,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>SwapQuoteService</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>SwapQuoteServiceTest</apexClass>
@@ -1391,7 +1399,7 @@
     </classAccesses>
     <classAccesses>
         <apexClass>click2callController</apexClass>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </classAccesses>
     <classAccesses>
         <apexClass>contactFormatterTest</apexClass>
@@ -2698,6 +2706,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
+        <field>Booking__c.Booking_Account_Name__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
         <field>Booking__c.Booking_Amount1__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -2884,6 +2897,11 @@
     <fieldPermissions>
         <editable>true</editable>
         <field>Booking__c.Cheque_DD_NEFT_RTGS_No__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>true</editable>
+        <field>Booking__c.Cheque_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -3364,11 +3382,6 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Booking__c.Lead_Name__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>true</editable>
-        <field>Booking__c.Lead__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -15313,6 +15326,10 @@
     </flowAccesses>
     <flowAccesses>
         <enabled>false</enabled>
+        <flow>Update_Booking_Sources</flow>
+    </flowAccesses>
+    <flowAccesses>
+        <enabled>false</enabled>
         <flow>Update_Fields_From_Booking</flow>
     </flowAccesses>
     <flowAccesses>
@@ -16456,27 +16473,27 @@
     </pageAccesses>
     <pageAccesses>
         <apexPage>BookingForm_DJV</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>BookingForm_LEGACY</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>CAPRI_CANCELLATION_LETTER</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>CAPRI_NOC_FORMAT_LOAN</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>CAPRI_NOC_FORMAT_SWAP</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>COST_SHEET_TD</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>COST_SHEET_TL</apexPage>
@@ -16516,15 +16533,15 @@
     </pageAccesses>
     <pageAccesses>
         <apexPage>DemandLetterFlat</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>DemandLetterFull</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>DemandLetterGST</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>DynamicDocumentPDF</apexPage>
@@ -16579,10 +16596,6 @@
         <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
-        <apexPage>MortgageAgreementofSaleDrizzle</apexPage>
-        <enabled>false</enabled>
-    </pageAccesses>
-    <pageAccesses>
         <apexPage>MyProfilePage</apexPage>
         <enabled>true</enabled>
     </pageAccesses>
@@ -16619,12 +16632,12 @@
         <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
-        <apexPage>SaleAgreementDrizzil</apexPage>
+        <apexPage>SaleAgreementDrizzle</apexPage>
         <enabled>false</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>SaleDeedDrizzle</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>SiteLogin</apexPage>
@@ -16648,11 +16661,11 @@
     </pageAccesses>
     <pageAccesses>
         <apexPage>T11004_saledeed_Legacy</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>T8910_saledeed_Legacy</apexPage>
-        <enabled>false</enabled>
+        <enabled>true</enabled>
     </pageAccesses>
     <pageAccesses>
         <apexPage>UNION_BANK_TPA_VF_PAGE</apexPage>

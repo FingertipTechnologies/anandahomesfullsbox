@@ -3,7 +3,7 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { CloseActionScreenEvent } from 'lightning/actions';
 import { getRecord } from 'lightning/uiRecordApi';
 import getPaymentSchedules from '@salesforce/apex/PaymentScheduleViewController.getPaymentSchedules';
-import raiseDemandForBooking from '@salesforce/apex/PaymentScheduleViewController.raiseDemandForBooking';
+import raiseDemandForBookingInMode from '@salesforce/apex/PaymentScheduleViewController.raiseDemandForBookingInMode';
 
 export default class PaymentScheduleViewer extends LightningElement {
     @api recordId; // Booking ID from Quick Action
@@ -29,7 +29,16 @@ export default class PaymentScheduleViewer extends LightningElement {
 
     @track isRaisingDemand = false;
     @track demandComponent = 'Flat';
+    @track demandMode = 'Normal';
     @track includeInterest = true;
+
+    get demandModeOptions() {
+        const options = [{ label: 'Normal', value: 'Normal' }];
+        if (this.nextDemand.hasAgreementMilestone === true) {
+            options.push({ label: 'Agreement Amount only', value: 'Agreement Amount' });
+        }
+        return options;
+    }
 
     get demandComponentOptions() {
         return this.nextDemand.legacySplitDemandReceipt
@@ -128,9 +137,15 @@ export default class PaymentScheduleViewer extends LightningElement {
     }
 
     processData(result) {
-        this.schedules = result.schedules || [];
+        this.schedules = (result.schedules || []).map(schedule => ({
+            ...schedule,
+            formattedBasePending: this.formatCurrency(schedule.basePending),
+            formattedGstPending: this.formatCurrency(schedule.gstPending),
+            formattedTdsPending: this.formatCurrency(schedule.tdsPending)
+        }));
         this.nextDemand = result.nextDemand || {};
         this.demandComponent = this.nextDemand.legacySplitDemandReceipt ? 'Flat' : 'Flat + GST';
+        this.demandMode = 'Normal';
         this.bookingName = result.bookingName || '';
         this.projectName = result.projectName || 'N/A';
         this.unitName = result.unitName || 'N/A';
@@ -196,13 +211,19 @@ export default class PaymentScheduleViewer extends LightningElement {
 
     handleRaiseDemand() {
         if (this.isRaisingDemand) return;
+        if (this.selectedDemand.totalAmount <= 0) {
+            this.showToast('Cannot Raise Demand', 'Zero amount demand cannot be raised.', 'error');
+            return;
+        }
+
         this.isRaisingDemand = true;
-        raiseDemandForBooking({
+        raiseDemandForBookingInMode({
             bookingId: this.recordId,
             demandComponent: this.demandComponent,
-            includeInterest: this.demandComponent !== 'GST' && this.includeInterest
+            includeInterest: this.demandComponent !== 'GST' && this.includeInterest,
+            demandMode: this.demandMode
         })
-            .then(demandId => {
+            .then(() => {
                 this.showToast('Success',
                     'Demand raised. The email-on-create flow will pick it up.', 'success');
                 this.handleClose();
@@ -224,6 +245,13 @@ export default class PaymentScheduleViewer extends LightningElement {
 
     handleDemandComponentChange(event) {
         this.demandComponent = event.detail.value;
+        if (!this.isFirstDemand) {
+            this.demandMode = 'Normal';
+        }
+    }
+
+    handleDemandModeChange(event) {
+        this.demandMode = event.detail.value;
     }
 
     handleInterestChange(event) {
@@ -263,32 +291,75 @@ export default class PaymentScheduleViewer extends LightningElement {
     // ==================== COMPUTED PROPERTIES ====================
 
     get hasSchedules() {
-        return this.schedules && this.schedules.length > 0;
+        return this.demandEligibleSchedules.length > 0;
+    }
+
+    get demandEligibleSchedules() {
+        return (this.schedules || []).filter(schedule => !schedule.isTimeBased);
     }
 
     get hasNextDemand() {
         return this.selectedDemand.totalAmount > 0;
     }
 
-    get isRaiseDisabled() {
-        return this.isRaisingDemand || !this.hasNextDemand;
+    get isFirstDemand() {
+        if (!this.nextDemand) return false;
+        if (this.nextDemand.legacySplitDemandReceipt === true) {
+            return this.demandComponent === 'Flat'
+                ? this.nextDemand.isFirstFlatDemand === true
+                : this.demandComponent === 'GST'
+                    && this.nextDemand.isFirstGstDemand === true;
+        }
+        return this.nextDemand.isFirstCombinedDemand === true;
+    }
+
+    get isAgreementAmountOnly() {
+        return this.demandMode === 'Agreement Amount';
     }
 
     get showSourceBreakdown() {
-        return this.nextDemand && this.nextDemand.hasSplitFunding === true;
+        return this.nextDemand
+            && this.nextDemand.hasSplitFunding === true
+            && this.nextDemand.legacySplitDemandReceipt === true
+            && this.completedSchedules.some(schedule => schedule.isBankDemand);
+    }
+
+    get isFlatOnlyDemand() {
+        return this.demandComponent === 'Flat';
+    }
+
+    get isGstOnlyDemand() {
+        return this.demandComponent === 'GST';
+    }
+
+    get isCombinedDemand() {
+        return this.demandComponent === 'Flat + GST';
     }
 
     get selectedDemand() {
-        let totalAmount = 0;
-        let tdsAmount = 0;
+        const amounts = this.calculatedDemandAmounts;
+        const flatAmount = amounts.flatAmount;
+        const gstAmount = amounts.gstAmount;
+        const tdsAmount = amounts.tdsAmount;
+        const totalAmount = flatAmount + gstAmount + tdsAmount;
         let bankAmount = 0;
         let customerAmount = 0;
         let interestAmount = 0;
+        let fullScheduleWithTdsAmount = 0;
+        let fullScheduleFlatAmount = 0;
+        let fullScheduleGstAmount = 0;
+        let receivedFlatAmount = 0;
+        let receivedGstAmount = 0;
+        let receivedTdsAmount = 0;
         this.demandLines.forEach(line => {
-            totalAmount += line.selectedDemandAmount;
-            tdsAmount += line.selectedDemandTdsAmount;
             if (line.isBankDemand) bankAmount += line.selectedDemandAmount;
             else customerAmount += line.selectedDemandAmount;
+            fullScheduleWithTdsAmount += line.fullScheduleWithTdsAmount;
+            fullScheduleFlatAmount += line.fullScheduleFlatAmount;
+            fullScheduleGstAmount += line.fullScheduleGstAmount;
+            receivedFlatAmount += line.receivedFlatAmount;
+            receivedGstAmount += line.receivedGstAmount;
+            receivedTdsAmount += line.receivedTdsAmount;
             if (this.demandComponent !== 'GST') interestAmount += line.interestPending || 0;
         });
         const includedInterest = this.demandComponent !== 'GST' && this.includeInterest
@@ -300,20 +371,57 @@ export default class PaymentScheduleViewer extends LightningElement {
         const netAmount = totalAmount + netInterest;
         return {
             totalAmount,
+            flatAmount,
+            gstAmount,
             tdsAmount,
             hasTdsAmount: tdsAmount > 0,
             interestAmount: netInterest,
             interestWaivedOff: waivedInterest,
             netAmount,
+            fullScheduleWithTdsAmount,
+            fullScheduleFlatAmount,
+            fullScheduleGstAmount,
+            receivedFlatAmount,
+            receivedGstAmount,
+            receivedTdsAmount,
             formattedTotal: this.formatCurrency(netAmount),
+            formattedComponentAmount: this.formatCurrency(totalAmount),
+            formattedFlatAmount: this.formatCurrency(flatAmount),
+            formattedDemandFlatWithTdsAmount: this.formatCurrency(flatAmount + tdsAmount),
+            formattedInstallmentPayable: this.formatCurrency(totalAmount - tdsAmount),
+            formattedGstAmount: this.formatCurrency(gstAmount),
             formattedTdsAmount: this.formatCurrency(tdsAmount),
+            formattedFullScheduleWithTdsAmount: this.formatCurrency(fullScheduleWithTdsAmount),
+            formattedFullScheduleFlatAmount: this.formatCurrency(fullScheduleFlatAmount),
+            formattedFullScheduleGstAmount: this.formatCurrency(fullScheduleGstAmount),
+            formattedReceivedFlatAmount: this.formatCurrency(receivedFlatAmount),
+            formattedReceivedGstAmount: this.formatCurrency(receivedGstAmount),
+            formattedReceivedTdsAmount: this.formatCurrency(receivedTdsAmount),
             formattedGrossInterest: this.formatCurrency(interestAmount),
             formattedInterestWaivedOff: this.formatCurrency(waivedInterest),
             formattedInterest: this.formatCurrency(netInterest),
             formattedBankAmount: this.formatCurrency(bankAmount),
             formattedCustomerAmount: this.formatCurrency(customerAmount),
-            formattedComponentAmount: this.formatCurrency(totalAmount)
         };
+    }
+
+    get calculatedDemandAmounts() {
+        const amounts = this.demandLines.reduce((totals, line) => {
+            totals.flatAmount += line.selectedFlatDemandAmount;
+            totals.gstAmount += line.selectedGstDemandAmount;
+            totals.tdsAmount += line.selectedDemandTdsAmount;
+            totals.demandAmount += line.selectedDemandAmount;
+            return totals;
+        }, { flatAmount: 0, gstAmount: 0, tdsAmount: 0, demandAmount: 0 });
+
+        if (this.demandComponent !== 'GST') {
+            amounts.tdsAmount = Number(amounts.tdsAmount.toFixed(2));
+            amounts.flatAmount = Number(Math.max(
+                0,
+                amounts.demandAmount - amounts.gstAmount - amounts.tdsAmount
+            ).toFixed(2));
+        }
+        return amounts;
     }
 
     get nextDemandTitle() {
@@ -337,11 +445,11 @@ export default class PaymentScheduleViewer extends LightningElement {
 
     // Expanded detail calculation values
     get isFlatDemand() {
-        return this.demandComponent !== 'GST';
+        return this.demandComponent === 'Flat' || this.demandComponent === 'Flat + GST';
     }
 
     get isGstDemand() {
-        return this.demandComponent !== 'Flat';
+        return this.demandComponent === 'GST' || this.demandComponent === 'Flat + GST';
     }
 
     get totalBaseAmount() {
@@ -353,6 +461,12 @@ export default class PaymentScheduleViewer extends LightningElement {
     get totalGstAmount() {
         let total = 0;
         this.schedules.forEach(s => { total += s.gstAmount || 0; });
+        return this.formatCurrency(total);
+    }
+
+    get totalTdsScheduleAmount() {
+        let total = 0;
+        this.schedules.forEach(s => { total += s.tdsAmount || 0; });
         return this.formatCurrency(total);
     }
 
@@ -368,15 +482,15 @@ export default class PaymentScheduleViewer extends LightningElement {
     }
 
     get completedSchedules() {
-        return this.schedules.filter(s => s.isCompleted);
+        return this.demandEligibleSchedules.filter(s => s.isCompleted);
     }
 
     get paidSchedules() {
-        return this.schedules.filter(s => s.isPaid);
+        return this.demandEligibleSchedules.filter(s => s.isPaid);
     }
 
     get pendingSchedules() {
-        return this.schedules.filter(s => !s.isPaid && !s.isCompleted);
+        return this.demandEligibleSchedules.filter(s => !s.isPaid && !s.isCompleted);
     }
 
     get completedCount() {
@@ -392,11 +506,11 @@ export default class PaymentScheduleViewer extends LightningElement {
     }
 
     get totalCount() {
-        return this.schedules.length;
+        return this.demandEligibleSchedules.length;
     }
 
     get progressPercent() {
-        if (!this.schedules.length) return 0;
+        if (!this.totalCount) return 0;
         return Math.round(((this.paidCount + this.completedCount) / this.totalCount) * 100);
     }
 
@@ -407,25 +521,78 @@ export default class PaymentScheduleViewer extends LightningElement {
     // The milestones actually contributing to the next demand, each tagged with its source
     // (Bank or Customer) so the raising UI can show the user where the money is coming from.
     get demandLines() {
-        return this.completedSchedules
-            .map(s => ({
-                ...s,
-                selectedDemandAmount: this.demandComponent === 'Flat + GST'
-                    ? (s.combinedDemandableAmount || 0)
-                    : (s[this.demandComponent === 'Flat'
-                        ? 'flatDemandableAmount'
-                        : 'gstDemandableAmount'] || 0),
-                selectedDemandTdsAmount: this.demandComponent !== 'GST' && !s.isBankDemand
-                    ? (s.tdsDemandableAmount || 0)
-                    : 0,
-                formattedSelectedDemand: this.formatCurrency(
-                    this.demandComponent === 'Flat + GST'
-                        ? (s.combinedDemandableAmount || 0)
-                        : (s[this.demandComponent === 'Flat'
-                            ? 'flatDemandableAmount'
-                            : 'gstDemandableAmount'] || 0)
-                )
-            }))
+        const schedules = this.completedSchedules.filter(schedule => {
+            if (!this.isAgreementAmountOnly) return true;
+            const agreementSequence = Number(this.nextDemand.agreementSequence);
+            return Number.isFinite(agreementSequence)
+                && schedule.sequenceNumber !== null
+                && schedule.sequenceNumber !== undefined
+                && Number(schedule.sequenceNumber) <= agreementSequence;
+        });
+        return schedules
+            .map(schedule => {
+                const fullScheduleWithTdsAmount =
+                    (Number(schedule.baseAmount) || 0) + (Number(schedule.tdsAmount) || 0);
+                const fullScheduleFlatAmount = Number(schedule.baseAmount) || 0;
+                const fullScheduleGstAmount = Number(schedule.gstAmount) || 0;
+                const receivedFlatAmount = Number(schedule.basePaid) || 0;
+                const receivedGstAmount = Number(schedule.gstPaid) || 0;
+                const receivedTdsAmount = Number(schedule.tdsPaid) || 0;
+                const selectedDemandAmount = this.isCombinedDemand
+                    ? (schedule.combinedDemandableAmount || 0)
+                    : (this.isFlatOnlyDemand
+                        ? (schedule.flatDemandableAmount || 0)
+                        : (schedule.gstDemandableAmount || 0));
+                const selectedGstDemandAmount = this.isFlatOnlyDemand
+                    ? 0
+                    : (schedule.gstDemandableAmount || 0);
+                const selectedDemandTdsAmount = this.isGstOnlyDemand
+                    ? 0
+                    : (schedule.tdsDemandableAmount || 0);
+                const selectedFlatDemandAmount = Math.max(
+                    0,
+                    selectedDemandAmount - selectedGstDemandAmount - selectedDemandTdsAmount
+                );
+
+                return {
+                    ...schedule,
+                    selectedDemandAmount,
+                    selectedFlatDemandAmount,
+                    selectedGstDemandAmount,
+                    selectedDemandTdsAmount,
+                    fullScheduleWithTdsAmount,
+                    fullScheduleFlatAmount,
+                    fullScheduleGstAmount,
+                    receivedFlatAmount,
+                    receivedGstAmount,
+                    receivedTdsAmount,
+                    formattedAmountA: this.formatCurrency(selectedDemandAmount),
+                    formattedTds: this.formatCurrency(selectedDemandTdsAmount),
+                    formattedFlatAmount: this.formatCurrency(selectedFlatDemandAmount),
+                    formattedGstAmount: this.formatCurrency(selectedGstDemandAmount),
+                    formattedDemandFlatWithTds: this.formatCurrency(
+                        selectedFlatDemandAmount + selectedDemandTdsAmount
+                    ),
+                    formattedDemandPayable: this.formatCurrency(
+                        Math.max(0, selectedDemandAmount - selectedDemandTdsAmount)
+                    ),
+                    formattedFullScheduleWithTdsAmount: this.formatCurrency(fullScheduleWithTdsAmount),
+                    formattedFullScheduleFlatAmount: this.formatCurrency(fullScheduleFlatAmount),
+                    formattedFullScheduleGstAmount: this.formatCurrency(fullScheduleGstAmount),
+                    formattedReceivedFlatAmount: this.formatCurrency(receivedFlatAmount),
+                    formattedReceivedGstAmount: this.formatCurrency(receivedGstAmount),
+                    formattedReceivedTdsAmount: this.formatCurrency(receivedTdsAmount),
+                    formattedNetAmount: this.formatCurrency(
+                        Math.max(0, selectedDemandAmount - selectedDemandTdsAmount)
+                    ),
+                    formattedSelectedDemand: this.formatCurrency(selectedDemandAmount)
+                };
+            })
+            .filter(s => !(
+                this.showSourceBreakdown
+                && this.nextDemand.legacySplitDemandReceipt
+                && !s.isBankDemand
+            ))
             .filter(s => s.selectedDemandAmount > 0);
     }
 

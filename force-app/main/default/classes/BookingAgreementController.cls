@@ -2,6 +2,8 @@ public with sharing class BookingAgreementController {
     public Booking__c booking { get; private set; }
     public List<Receipt__c> receipts { get; private set; }
     public List<Payment_Schedule__c> paymentSchedules { get; private set; }
+    /** Co-applicants of the booking, oldest first - printed with the applicant(s) as purchasers. */
+    public List<Co_Applicant__c> coApplicants { get; private set; }
     public String flatNumber { get; private set; }
 
     public BookingAgreementController(ApexPages.StandardController standardController) {
@@ -60,6 +62,14 @@ public with sharing class BookingAgreementController {
             FROM Payment_Schedule__c
             WHERE Booking__c = :booking.Id
             ORDER BY CreatedDate ASC
+        ];
+
+        coApplicants = [
+            SELECT Id, Salutation__c, Full_Name__c, First_Name__c, Last_Name__c,
+                Permenent_Address__c, Address__c, Email__c
+            FROM Co_Applicant__c
+            WHERE Booking__c = :booking.Id
+            ORDER BY CreatedDate ASC, Name ASC
         ];
     }
 }

@@ -6,8 +6,8 @@ private class CreateQuoteControllerTest {
         Project__c testProject = new Project__c(Name = 'Test Project', Project_Type__c = 'Residential');
         insert testProject;
 
-        Plot__c plot1 = new Plot__c(Project__c = testProject.Id, Status__c = 'Available');
-        Plot__c plot2 = new Plot__c(Project__c = testProject.Id, Status__c = 'Available');
+        Plot__c plot1 = new Plot__c(Project__c = testProject.Id, Status__c = 'Available', East_North_Facing__c = 75, Club_House__c = 1234);
+        Plot__c plot2 = new Plot__c(Project__c = testProject.Id, Status__c = 'Available', East_North_Facing__c = 75, Club_House__c = 1234);
         insert new List<Plot__c>{plot1, plot2};
 
         Test.startTest();
@@ -15,6 +15,11 @@ private class CreateQuoteControllerTest {
         Test.stopTest();
 
         System.assertEquals(2, plots.size());
+        // The Drizzle fields must come back from this query too (it is the one used when the project
+        // is picked on the screen); reading an unqueried field would throw here.
+        Object plc = plots[0].PLC__c;
+        System.assertEquals(75, plots[0].East_North_Facing__c);
+        System.assertEquals(1234, plots[0].Club_House__c);
     }
 
   @IsTest

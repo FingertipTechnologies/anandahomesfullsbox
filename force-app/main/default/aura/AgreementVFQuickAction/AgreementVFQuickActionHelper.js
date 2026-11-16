@@ -1,25 +1,60 @@
 ({
-    DEFAULT_PAGE: "BUILDER_SHARE_AGREEMENT_OF_SALE",
-
-    // Configure each Project__r.Name separately.
-    // separationPages optionally maps the Unit's LL_Share_Name__c to a VF page.
-    // If the LL share name is blank or has no entry, defaultPage is used.
-    // If defaultPage is omitted, DEFAULT_PAGE is used.
-    PROJECT_PAGE_MAP: {
-        "The Legacey": {
-            defaultPage: "BUILDER_SHARE_AGREEMENT_OF_SALE",
-            separationPages: {
-                "ARJUN SINGH": "ARJUN_SINGH_AGREEMENT_OF_SALE",
-                "MAGAN SINGH": "MAGHAN_SINGH_AGREEMENT_OF_SALE",
-                "SURESH SINGH": "SURESH_SINGH_AGREEMENT_OF_SALE",
-                "NAVEEN SINGH": "NAVEEN_SINGH_AGREEMENT_OF_SALE",
-                "NITIN SINGH": "NITIN_SINGH_AGREEMENT_OF_SALE",
-                "BUILDER SHARE": "BUILDER_SHARE_AGREEMENT_OF_SALE"
+    // One entry per document this preview window can show. The quick action picks its entry
+    // through the documentType attribute: AgreementVFQuickAction is "agreement" (the default),
+    // SaleDeedVFQuickAction extends it and sets "saleDeed".
+    //
+    //   heading      : title shown in the window header
+    //   fileLabel    : start of the downloaded file's name
+    //   fallbackPage : page used when the project has no route ("" = show a message instead)
+    //   projects     : Project__r.Name -> route. Configure each project separately.
+    //                  separationPages optionally maps the Unit's LL_Share_Name__c to a VF page;
+    //                  if the LL share name is blank or has no entry, defaultPage is used, and
+    //                  if defaultPage is omitted, fallbackPage is used.
+    DOCUMENTS: {
+        agreement: {
+            heading: "Agreement of sale",
+            fileLabel: "Agreement of Sale",
+            fallbackPage: "BUILDER_SHARE_AGREEMENT_OF_SALE",
+            projects: {
+                "The Legacey": {
+                    defaultPage: "BUILDER_SHARE_AGREEMENT_OF_SALE",
+                    separationPages: {
+                        "ARJUN SINGH": "ARJUN_SINGH_AGREEMENT_OF_SALE",
+                        "MAGAN SINGH": "MAGHAN_SINGH_AGREEMENT_OF_SALE",
+                        "SURESH SINGH": "SURESH_SINGH_AGREEMENT_OF_SALE",
+                        "NAVEEN SINGH": "NAVEEN_SINGH_AGREEMENT_OF_SALE",
+                        "NITIN SINGH": "NITIN_SINGH_AGREEMENT_OF_SALE",
+                        "BUILDER SHARE": "BUILDER_SHARE_AGREEMENT_OF_SALE"
+                    }
+                },
+                // One page for THE DRIZZLE: it prints the HMDA mortgage clause by itself when
+                // the booked unit is ticked "Mortgaged to HMDA".
+                "The Drizzle": {
+                    defaultPage: "SaleAgreementDrizzle"
+                }
             }
         },
-        "The Drizzle": {
-            defaultPage: "SaleAgreementDrizzil"
+        saleDeed: {
+            heading: "Sale deed",
+            fileLabel: "Sale Deed",
+            fallbackPage: "",
+            projects: {
+                "The Drizzle": {
+                    defaultPage: "SaleDeedDrizzle"
+                },
+                "The Legacey": {
+                    defaultPage: "T8910_saledeed_Legacy"
+                }
+            }
         }
+    },
+
+    getDocument: function(component) {
+        return this.DOCUMENTS[component.get("v.documentType")] || this.DOCUMENTS.agreement;
+    },
+
+    applyDocumentType: function(component) {
+        component.set("v.heading", this.getDocument(component).heading);
     },
 
     handleBookingUpdated: function(component, event) {
@@ -68,12 +103,24 @@
             return;
         }
 
+        var doc = this.getDocument(component);
         var project = component.get("v.project") || {};
         var unit = component.get("v.unit") || {};
         var projectName = (project.Name || "").trim();
         var llShareName = (unit.LL_Share_Name__c || "").trim();
-        var route = this.findRoute(this.PROJECT_PAGE_MAP, projectName);
-        var pageName = this.resolveProjectPage(route, llShareName);
+        var route = this.findRoute(doc.projects, projectName);
+        var pageName = this.resolveProjectPage(route, llShareName, doc.fallbackPage);
+
+        if (!pageName) {
+            component.set("v.isLoading", false);
+            component.set("v.showPreview", false);
+            component.set(
+                "v.errorMessage",
+                "No " + doc.heading.toLowerCase() + " template is set up for "
+                    + (projectName || "this booking's project") + " yet."
+            );
+            return;
+        }
 
         if (!this.isValidPageName(pageName)) {
             component.set("v.isLoading", false);
@@ -86,6 +133,7 @@
         }
 
         component.set("v.selectedPage", pageName);
+        component.set("v.subtitle", this.buildSubtitle(component, projectName, llShareName));
         component.set(
             "v.vfUrl",
             "/apex/" + pageName + "?id=" + encodeURIComponent(component.get("v.recordId"))
@@ -95,15 +143,32 @@
         component.set("v.showPreview", true);
     },
 
-    resolveProjectPage: function(route, llShareName) {
+    // "The Drizzle · BUILDER SHARE · B-0113 · Unit TW1-1204" - whichever parts are known.
+    buildSubtitle: function(component, projectName, llShareName) {
+        var booking = component.get("v.booking") || {};
+        var unit = component.get("v.unit") || {};
+        var parts = [];
+        if (projectName) { parts.push(projectName); }
+        if (llShareName) { parts.push(llShareName); }
+        if (booking.Name) { parts.push(booking.Name); }
+        if (unit.Name) { parts.push("Unit " + unit.Name); }
+        return parts.join(" · ");
+    },
+
+    downloadFileName: function(component) {
+        var booking = component.get("v.booking") || {};
+        return this.getDocument(component).fileLabel + (booking.Name ? " - " + booking.Name : "");
+    },
+
+    resolveProjectPage: function(route, llShareName, fallbackPage) {
         if (typeof route === "string") {
-            return route || this.DEFAULT_PAGE;
+            return route || fallbackPage;
         }
         if (!route || typeof route !== "object") {
-            return this.DEFAULT_PAGE;
+            return fallbackPage;
         }
 
-        var defaultPage = route.defaultPage || this.DEFAULT_PAGE;
+        var defaultPage = route.defaultPage || fallbackPage;
         var separationPages = route.separationPages || {};
         return this.findRoute(separationPages, llShareName) || defaultPage;
     },

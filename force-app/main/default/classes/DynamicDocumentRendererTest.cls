@@ -181,6 +181,7 @@ private class DynamicDocumentRendererTest {
                     'type' => 'content',
                     'content' => 'Borrowers: {!CO_APPLICANTS}<p>Co-applicant names: {!CO_APPLICANT_NAMES}</p>'
                         + '<p>Joint: First Applicant{!AND_CO_APPLICANT_NAMES}|</p>'
+                        + '<p>Joint relation: First Applicant S/o. Father{!AND_CO_APPLICANT_NAMES_RELATION}|</p>'
                 }
             }
         });
@@ -199,6 +200,8 @@ private class DynamicDocumentRendererTest {
         System.assert(html.contains('<span style="display:block;text-indent:0;font-weight:bold">(Aadhaar No. 123412341234'), html);
         // "&" only before the last name
         System.assert(html.contains('Joint: First Applicant, Mrs. Co Applicant &amp; Mr. Second Co Applicant|'), html);
+        // names with their relation, for "Mr. A S/o. X &amp; Mrs. B W/o. Y" lines
+        System.assert(html.contains('Joint relation: First Applicant S/o. Father, Mrs. Co Applicant W/o. Applicant Spouse &amp; Mr. Second Co Applicant S/o. Second Father|'), html);
         System.assert(html.contains('aged about 32 years'));
         System.assert(html.contains('Occupation: Engineer'));
         // own address when filled, the booking's address for the co-applicant without one
@@ -282,6 +285,60 @@ private class DynamicDocumentRendererTest {
         System.assert(!partA.contains('aged about'), partA);
         System.assert(partA.contains('<b>Mr. First Co, S/o. Father One</b>, Resident of Variant Address.'), partA);
         System.assert(partB.contains('aged about 40 years'), partB);
+
+        // without age and without occupation
+        update new Co_Applicant__c(
+            Id = [SELECT Id FROM Co_Applicant__c WHERE Full_Name__c = 'First Co' LIMIT 1].Id,
+            Occupation__c = 'Farmer'
+        );
+        String plainJson = JSON.serialize(new Map<String, Object>{
+            'sections' => new List<Object>{
+                new Map<String, Object>{ 'type' => 'content', 'content' => 'P:{!CO_APPLICANTS_NO_AGE_OCCUPATION}|Q:{!CO_APPLICANTS}' }
+            }
+        });
+        String plain = DynamicDocumentRenderer.renderDocument(plainJson, booking.Id, 'Booking__c');
+        String partP = plain.substringBetween('P:', '|Q:');
+        String partQ = plain.substringAfter('|Q:');
+        System.assert(!partP.contains('aged about') && !partP.contains('Occupation'), partP);
+        System.assert(partP.contains('<p style="text-align:left">'), partP);
+        System.assert(partQ.contains('<p style="text-align:justify">'), partQ);
+        System.assert(partP.contains('<b>Mr. First Co, S/o. Father One</b>, Resident of Variant Address.'), partP);
+        System.assert(partQ.contains('Occupation: Farmer'), partQ);
+    }
+
+    @isTest
+    static void renderDocument_dateWords() {
+        System.assertEquals('1st day of January, 2026', DynamicDocumentRenderer.dateInWords(Date.newInstance(2026, 1, 1)));
+        System.assertEquals('2nd day of February, 2026', DynamicDocumentRenderer.dateInWords(Date.newInstance(2026, 2, 2)));
+        System.assertEquals('3rd day of March, 2026', DynamicDocumentRenderer.dateInWords(Date.newInstance(2026, 3, 3)));
+        System.assertEquals('11th day of April, 2026', DynamicDocumentRenderer.dateInWords(Date.newInstance(2026, 4, 11)));
+        System.assertEquals('12th day of May, 2026', DynamicDocumentRenderer.dateInWords(Date.newInstance(2026, 5, 12)));
+        System.assertEquals('13th day of June, 2026', DynamicDocumentRenderer.dateInWords(Date.newInstance(2026, 6, 13)));
+        System.assertEquals('22nd day of July, 2026', DynamicDocumentRenderer.dateInWords(Date.newInstance(2026, 7, 22)));
+        System.assertEquals('19th day of November, 2026',
+            DynamicDocumentRenderer.dateInWords(Datetime.newInstance(2026, 11, 19, 10, 0, 0)));
+        System.assert(DynamicDocumentRenderer.dateInWords(null).contains('day of ____'));
+
+        Project__c project = new Project__c(
+            Name = 'Date Words Project', Project_Type__c = 'Residential', Interest_Rate__c = 18
+        );
+        insert project;
+        Booking__c booking = new Booking__c(
+            Project__c = project.Id, Booking_Date__c = Date.newInstance(2026, 11, 19), Status__c = 'Booked'
+        );
+        insert booking;
+        String templateJson = JSON.serialize(new Map<String, Object>{
+            'sections' => new List<Object>{
+                new Map<String, Object>{
+                    'type' => 'content',
+                    'content' => 'on this {!DATEWORDS(Booking_Date__c)} between|{!DATEWORDS(Booking__c.Agreement_Date__c)}|'
+                }
+            }
+        });
+        String html = DynamicDocumentRenderer.renderDocument(templateJson, booking.Id, 'Booking__c');
+        System.assert(html.contains('on this 19th day of November, 2026 between'), html);
+        System.assert(html.contains('|________ day of ______________, 20____|'), html);
+        System.assert(!html.contains('DATEWORDS'), html);
     }
 
     @isTest

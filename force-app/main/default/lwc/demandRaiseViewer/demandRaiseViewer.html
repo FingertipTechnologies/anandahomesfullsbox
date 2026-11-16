@@ -128,18 +128,25 @@
                                             <table class="slds-table slds-table_cell-buffer slds-table_bordered slds-table_striped custom-table">
                                                 <thead>
                                                     <tr class="slds-line-height_reset">
+                                                        <th scope="col" class="custom-th slds-text-align_center"><div class="slds-truncate">S. No.</div></th>
                                                         <th scope="col" class="custom-th"><div class="slds-truncate">Name</div></th>
                                                         <th scope="col" class="custom-th"><div class="slds-truncate">Milestone</div></th>
                                                         <th scope="col" class="custom-th slds-text-align_right"><div class="slds-truncate">Amount</div></th>
                                                         <th scope="col" class="custom-th slds-text-align_center"><div class="slds-truncate">%</div></th>
                                                         <th scope="col" class="custom-th slds-text-align_center"><div class="slds-truncate">Status</div></th>
-                                                        <th scope="col" class="custom-th slds-text-align_right"><div class="slds-truncate">Pending</div></th>
+                                                        <th scope="col" class="custom-th slds-text-align_right"><div class="slds-truncate">Demandable Total</div></th>
+                                                        <th scope="col" class="custom-th slds-text-align_right"><div class="slds-truncate">Flat Pending</div></th>
+                                                        <th scope="col" class="custom-th slds-text-align_right"><div class="slds-truncate">GST Pending</div></th>
+                                                        <th scope="col" class="custom-th slds-text-align_right"><div class="slds-truncate">TDS Pending</div></th>
                                                         <th scope="col" class="custom-th slds-text-align_right"><div class="slds-truncate">Interest</div></th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    <template for:each={schedules} for:item="schedule">
+                                                    <template for:each={demandEligibleSchedules} for:item="schedule">
                                                         <tr key={schedule.id} class="slds-hint-parent">
+                                                            <td data-label="S. No." class="slds-text-align_center">
+                                                                <div class="slds-truncate">{schedule.serialNumber}</div>
+                                                            </td>
                                                             <th scope="row" data-label="Name">
                                                                 <div class="slds-truncate" title={schedule.name}>{schedule.name}</div>
                                                             </th>
@@ -176,8 +183,17 @@
                                                                     </template>
                                                                 </template>
                                                             </td>
-                                                            <td data-label="Pending" class="slds-text-align_right">
+                                                            <td data-label="Demandable Total" class="slds-text-align_right">
                                                                 <span class="pending-text">{schedule.formattedDemandable}</span>
+                                                            </td>
+                                                            <td data-label="Flat Pending" class="slds-text-align_right">
+                                                                <span>{schedule.formattedBasePending}</span>
+                                                            </td>
+                                                            <td data-label="GST Pending" class="slds-text-align_right">
+                                                                <span>{schedule.formattedGstPending}</span>
+                                                            </td>
+                                                            <td data-label="TDS Pending" class="slds-text-align_right">
+                                                                <span>{schedule.formattedTdsPending}</span>
                                                             </td>
                                                             <td data-label="Interest" class="slds-text-align_right">
                                                                 <span class="interest-text">{schedule.formattedInterest}</span>
@@ -291,6 +307,24 @@
                             </div>
                         </div>
 
+                        <template if:true={isFirstDemand}>
+                            <lightning-radio-group
+                                name="demandMode"
+                                label="Demand mode"
+                                options={demandModeOptions}
+                                value={demandMode}
+                                type="button"
+                                onchange={handleDemandModeChange}
+                                class="slds-m-bottom_medium">
+                            </lightning-radio-group>
+                            <template if:false={nextDemand.hasAgreementMilestone}>
+                                <div class="info-banner slds-m-bottom_medium">
+                                    <lightning-icon icon-name="utility:info" size="small" class="slds-m-right_small"></lightning-icon>
+                                    <span>Agreement Amount mode is unavailable because no Agreement milestone with a sequence is configured.</span>
+                                </div>
+                            </template>
+                        </template>
+
                         <lightning-radio-group
                             name="demandComponent"
                             label="Demand component"
@@ -301,86 +335,167 @@
                             class="slds-m-bottom_medium">
                         </lightning-radio-group>
 
-                        <!-- Schedule totals are shown before the demandable amount to distinguish
-                             full schedule value from the amount being raised now. -->
-                        <div class="slds-m-bottom_medium">
-                            <h3 class="slds-text-heading_small slds-m-bottom_small custom-section-title">
-                                <lightning-icon icon-name="utility:table" size="x-small"></lightning-icon>
-                                SCHEDULE TOTALS
-                            </h3>
-                            <div class="demand-card calc-card">
-                                <div class="calc-group">
-                                    <template if:true={isFlatDemand}>
-                                        <div class="demand-row">
-                                            <span class="demand-label">Total Flat Amount:</span>
-                                            <span class="demand-value">{totalBaseAmount}</span>
-                                        </div>
-                                    </template>
-                                    <template if:true={isGstDemand}>
-                                        <div class="demand-row">
-                                            <span class="demand-label">Total GST Amount:</span>
-                                            <span class="demand-value">{totalGstAmount}</span>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Demand Source Breakdown: which milestones are Bank-funded vs Customer-payable -->
-                        <template if:true={hasDemandLines}>
+                        <template if:true={isFlatOnlyDemand}>
                             <div class="slds-m-bottom_medium">
                                 <h3 class="slds-text-heading_small slds-m-bottom_small custom-section-title">
-                                    <lightning-icon icon-name="utility:money" size="x-small"></lightning-icon>
-                                    DEMAND SOURCE BREAKDOWN
+                                    <lightning-icon icon-name="utility:table" size="x-small"></lightning-icon>
+                                    FLAT DEMAND BREAKDOWN
                                 </h3>
-                                <div class="demand-card">
-                                    <template for:each={demandLines} for:item="line">
-                                        <div key={line.id} class="demand-row">
-                                            <span class="demand-label">
-                                                {line.milestoneName}
-                                                <template if:true={line.isBankDemand}>
-                                                    <span class="slds-badge slds-theme_info slds-m-left_x-small">Bank</span>
-                                                </template>
-                                                <template if:false={line.isBankDemand}>
-                                                    <span class="slds-badge slds-theme_warning slds-m-left_x-small">Customer</span>
-                                                </template>
-                                            </span>
-                                            <span class="demand-value">{line.formattedSelectedDemand}</span>
-                                        </div>
-                                    </template>
+                                <div class="demand-card flat-demand-table-wrap">
+                                    <table class="slds-table slds-table_cell-buffer slds-table_bordered flat-demand-table flat-demand-wide">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Instalment Description</th>
+                                                <th scope="col">% as per stage</th>
+                                                <th scope="col">Full Instalment Amount (Flat + TDS)</th>
+                                                <th scope="col">Flat Received Till Date</th>
+                                                <th scope="col">TDS Received Till Date</th>
+                                                <th scope="col">Instalment Amount to Demand (with TDS)</th>
+                                                <th scope="col">TDS to Remit (Full Pending)</th>
+                                                <th scope="col">Net Instalment Payable</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template for:each={demandLines} for:item="line">
+                                                <tr key={line.id}>
+                                                    <th scope="row">{line.milestoneName}</th>
+                                                    <td>{line.percentage}%</td>
+                                                    <td>{line.formattedFullScheduleWithTdsAmount}</td>
+                                                    <td>{line.formattedReceivedFlatAmount}</td>
+                                                    <td>{line.formattedReceivedTdsAmount}</td>
+                                                    <td>{line.formattedAmountA}</td>
+                                                    <td>{line.formattedTds}</td>
+                                                    <td>{line.formattedNetAmount}</td>
+                                                </tr>
+                                            </template>
+                                            <tr class="flat-demand-total-row">
+                                                <th scope="row">TOTAL</th>
+                                                <td></td>
+                                                <td>{selectedDemand.formattedFullScheduleWithTdsAmount}</td>
+                                                <td>{selectedDemand.formattedReceivedFlatAmount}</td>
+                                                <td>{selectedDemand.formattedReceivedTdsAmount}</td>
+                                                <td>{selectedDemand.formattedComponentAmount}</td>
+                                                <td>{selectedDemand.formattedTdsAmount}</td>
+                                                <td>{selectedDemand.formattedFlatAmount}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template if:true={isGstOnlyDemand}>
+                            <div class="slds-m-bottom_medium">
+                                <h3 class="slds-text-heading_small slds-m-bottom_small custom-section-title">
+                                    <lightning-icon icon-name="utility:table" size="x-small"></lightning-icon>
+                                    GST DEMAND BREAKDOWN
+                                </h3>
+                                <div class="demand-card flat-demand-table-wrap">
+                                    <table class="slds-table slds-table_cell-buffer slds-table_bordered flat-demand-table gst-demand-wide">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Instalment Description</th>
+                                                <th scope="col">% as per stage</th>
+                                                <th scope="col">Total Flat Amount (without GST)</th>
+                                                <th scope="col">Total Flat Amount (with TDS)</th>
+                                                <th scope="col">Full GST Amount</th>
+                                                <th scope="col">GST Received Till Date</th>
+                                                <th scope="col">GST Amount to Demand</th>
+                                                <th scope="col">GST Payable</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template for:each={demandLines} for:item="line">
+                                                <tr key={line.id}>
+                                                    <th scope="row">{line.milestoneName}</th>
+                                                    <td>{line.percentage}%</td>
+                                                    <td>{line.formattedFullScheduleFlatAmount}</td>
+                                                    <td>{line.formattedFullScheduleWithTdsAmount}</td>
+                                                    <td>{line.formattedFullScheduleGstAmount}</td>
+                                                    <td>{line.formattedReceivedGstAmount}</td>
+                                                    <td>{line.formattedGstAmount}</td>
+                                                    <td>{line.formattedGstAmount}</td>
+                                                </tr>
+                                            </template>
+                                            <tr class="flat-demand-total-row">
+                                                <th scope="row">TOTAL</th>
+                                                <td></td>
+                                                <td>{selectedDemand.formattedFullScheduleFlatAmount}</td>
+                                                <td>{selectedDemand.formattedFullScheduleWithTdsAmount}</td>
+                                                <td>{selectedDemand.formattedFullScheduleGstAmount}</td>
+                                                <td>{selectedDemand.formattedReceivedGstAmount}</td>
+                                                <td>{selectedDemand.formattedGstAmount}</td>
+                                                <td>{selectedDemand.formattedGstAmount}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </template>
+
+                        <template if:true={isCombinedDemand}>
+                            <div class="slds-m-bottom_medium">
+                                <h3 class="slds-text-heading_small slds-m-bottom_small custom-section-title">
+                                    <lightning-icon icon-name="utility:table" size="x-small"></lightning-icon>
+                                    FULL DEMAND
+                                </h3>
+                                <div class="demand-card flat-demand-table-wrap">
+                                    <table class="slds-table slds-table_cell-buffer slds-table_bordered flat-demand-table full-demand-table">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Instalment Description</th>
+                                                <th scope="col">% as per stage</th>
+                                                <th scope="col">Total Amount to Demand (Flat + GST + TDS)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <template for:each={demandLines} for:item="line">
+                                                <tr key={line.id}>
+                                                    <th scope="row">{line.milestoneName}</th>
+                                                    <td>{line.percentage}%</td>
+                                                    <td>{line.formattedSelectedDemand}</td>
+                                                </tr>
+                                            </template>
+                                            <tr class="flat-demand-total-row">
+                                                <th scope="row">TOTAL</th>
+                                                <td></td>
+                                                <td>{selectedDemand.formattedComponentAmount}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </template>
 
                         <!-- Detailed Calculation Breakdown -->
+                        <template if:true={isGstOnlyDemand}>
                         <div class="slds-m-bottom_medium">
                             <h3 class="slds-text-heading_small slds-m-bottom_small custom-section-title">
                                 <lightning-icon icon-name="utility:calculator" size="x-small"></lightning-icon>
                                 CALCULATION BREAKDOWN
                             </h3>
                             <div class="demand-card calc-card">
-                                <template if:true={selectedDemand.hasTdsAmount}>
-                                    <div class="calc-group">
-                                        <div class="calc-group-title">Demand TDS</div>
+                                <div class="calc-group">
+                                    <div class="calc-group-title">Demand Components</div>
+                                    <template if:true={isFlatDemand}>
                                         <div class="demand-row">
-                                            <span class="demand-label">TDS included in this demand:</span>
+                                            <span class="demand-label">Flat Amount:</span>
+                                            <span class="demand-value">{selectedDemand.formattedFlatAmount}</span>
+                                        </div>
+                                    </template>
+                                    <template if:true={isGstDemand}>
+                                        <div class="demand-row">
+                                            <span class="demand-label">GST Amount:</span>
+                                            <span class="demand-value">{selectedDemand.formattedGstAmount}</span>
+                                        </div>
+                                    </template>
+                                    <template if:true={isFlatDemand}>
+                                        <div class="demand-row">
+                                            <span class="demand-label">TDS Amount:</span>
                                             <span class="demand-value">{selectedDemand.formattedTdsAmount}</span>
                                         </div>
-                                    </div>
-                                </template>
-
-                                <!-- Total Paid -->
-                                <div class="calc-group">
-                                    <div class="calc-group-title">Amount Paid</div>
-                                    <div class="demand-row">
-                                        <span class="demand-label">Total paid till now:</span>
-                                        <span class="demand-value amount-paid">{formattedPaidAmount}</span>
-                                    </div>
+                                    </template>
                                 </div>
-
-                                <!-- Pending Breakdown -->
-                                
-
                                 <!-- Interest -->
                                 <template if:true={hasAnyInterest}>
                                     <div class="calc-group">
@@ -407,27 +522,6 @@
                                     </div>
                                 </template>
 
-                                <!-- Bank vs Customer split of this demand -->
-                                <template if:true={showSourceBreakdown}>
-                                    <div class="calc-group">
-                                        <div class="calc-group-title">This Demand — By Source</div>
-                                        <div class="demand-row">
-                                            <span class="demand-label">
-                                                Bank Portion
-                                                <span class="slds-badge slds-theme_info slds-m-left_x-small">Bank</span>:
-                                            </span>
-                                            <span class="demand-value">{selectedDemand.formattedBankAmount}</span>
-                                        </div>
-                                        <div class="demand-row">
-                                            <span class="demand-label">
-                                                Customer Portion
-                                                <span class="slds-badge slds-theme_warning slds-m-left_x-small">Customer</span>:
-                                            </span>
-                                            <span class="demand-value">{selectedDemand.formattedCustomerAmount}</span>
-                                        </div>
-                                    </div>
-                                </template>
-
                                 <!-- Grand Total -->
                                 <div class="demand-row demand-total">
                                     <span class="demand-label">TOTAL AMOUNT DUE:</span>
@@ -435,6 +529,54 @@
                                 </div>
                             </div>
                         </div>
+                        </template>
+
+                        <template if:true={isCombinedDemand}>
+                            <template if:true={hasAnyInterest}>
+                                <div class="demand-card calc-card slds-m-bottom_medium">
+                                    <div class="calc-group">
+                                        <div class="demand-row">
+                                            <span class="demand-label">Interest: {selectedDemand.formattedInterest}</span>
+                                            <lightning-input
+                                                type="checkbox"
+                                                label="Include interest in this demand"
+                                                checked={includeInterest}
+                                                onchange={handleInterestChange}>
+                                            </lightning-input>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
+                        </template>
+
+                        <template if:true={isFlatOnlyDemand}>
+                            <template if:true={hasAnyInterest}>
+                                <div class="demand-card calc-card slds-m-bottom_medium">
+                                    <div class="calc-group">
+                                        <div class="calc-group-title">Interest</div>
+                                        <div class="demand-row">
+                                            <span class="demand-label">Gross Interest Accrued:</span>
+                                            <span class="demand-value amount-interest">{selectedDemand.formattedGrossInterest}</span>
+                                        </div>
+                                        <div class="demand-row">
+                                            <span class="demand-label">Approved Waiver Applied:</span>
+                                            <span class="demand-value amount-interest">{selectedDemand.formattedInterestWaivedOff}</span>
+                                        </div>
+                                        <div class="demand-row">
+                                            <span class="demand-label">Interest Charged:</span>
+                                            <span class="demand-value amount-interest">{selectedDemand.formattedInterest}</span>
+                                        </div>
+                                        <lightning-input
+                                            type="checkbox"
+                                            label="Include interest in this demand"
+                                            checked={includeInterest}
+                                            onchange={handleInterestChange}
+                                            class="slds-m-top_small">
+                                        </lightning-input>
+                                    </div>
+                                </div>
+                            </template>
+                        </template>
 
                         <!-- Payment Due Date -->
                         <div class="slds-m-bottom_medium">
@@ -451,12 +593,14 @@
                         </div>
 
                         <!-- Completed Schedules Count -->
+                        <template if:true={isGstOnlyDemand}>
                         <div class="slds-m-bottom_small">
                             <div class="info-banner">
                                 <lightning-icon icon-name="utility:info" size="small" class="slds-m-right_small"></lightning-icon>
                                 <span>{completedSchedulesText} with pending amounts</span>
                             </div>
                         </div>
+                        </template>
 
                     </div>
                     <footer class="slds-modal__footer custom-modal-footer">
@@ -464,7 +608,7 @@
                             <lightning-icon icon-name="utility:back" size="x-small" class="slds-m-right_x-small"></lightning-icon>
                             Back
                         </button>
-                        <button class="slds-button slds-button_brand" onclick={handleRaiseDemand} disabled={isRaiseDisabled}>
+                        <button type="button" class="slds-button slds-button_brand" onclick={handleRaiseDemand}>
                             <template if:true={isRaisingDemand}>
                                 <lightning-spinner alternative-text="Raising..." size="small" class="slds-m-right_x-small"></lightning-spinner>
                             </template>

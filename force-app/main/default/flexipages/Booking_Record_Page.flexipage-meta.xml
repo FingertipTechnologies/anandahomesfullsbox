@@ -108,6 +108,16 @@
                                 </criteria>
                             </visibilityRule>
                         </valueListItems>
+                        <valueListItems>
+                            <value>Booking__c.Generate_Sale_Deed</value>
+                            <visibilityRule>
+                                <criteria>
+                                    <leftValue>{!Record.Status__c}</leftValue>
+                                    <operator>EQUAL</operator>
+                                    <rightValue>Registration</rightValue>
+                                </criteria>
+                            </visibilityRule>
+                        </valueListItems>
                     </valueList>
                 </componentInstanceProperties>
                 <componentInstanceProperties>
@@ -383,6 +393,18 @@
                 </fieldInstanceProperties>
                 <fieldItem>Record.Balance_Flat_Amount__c</fieldItem>
                 <identifier>RecordBalance_Flat_Amount__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.Cheque_Date__c</fieldItem>
+                <identifier>RecordCheque_Date__cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldItem>Record.Booking_Account_Name__c</fieldItem>
+                <identifier>RecordBooking_Account_Name__cField</identifier>
             </fieldInstance>
         </itemInstances>
         <name>Facet-9aab23cb-bcdb-46d0-9933-b28d3e66a8f8</name>

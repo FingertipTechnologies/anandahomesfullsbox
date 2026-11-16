@@ -3,7 +3,7 @@
     <fullName>UDS_Sq_mts__c</fullName>
     <externalId>false</externalId>
     <inlineHelpText>Undivided share of land in Square Yards, printed in the Agreement of Sale and Sale Deed.</inlineHelpText>
-    <label>UDS (Sq yards.)</label>
+    <label>UDS (Sq mts)</label>
     <precision>18</precision>
     <required>false</required>
     <scale>2</scale>

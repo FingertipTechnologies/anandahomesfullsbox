@@ -59,9 +59,9 @@
                 <tr>
                     <th>Instalment Description</th>
                     <th>% AS PER STAGE</th>
-                    <th>Instalment Amount Payable<br/>(A)</th>
-                    <th>TDS to be Remitted<br/>(1% of A) (B)</th>
-                    <th>Net Amount Payable<br/>(A - B)</th>
+                    <th>Instalment Amount Payable</th>
+                    <th>TDS to be Remitted</th>
+                    <th>Net Amount Payable</th>
                 </tr>
             </thead>
             <tbody>

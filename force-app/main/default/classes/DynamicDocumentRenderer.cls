@@ -591,6 +591,25 @@ public with sharing class DynamicDocumentRenderer {
             content = content.replace(key, fnReplacements.get(key));
         }
 
+        // ---- Function: {!DATEWORDS(Date_Field__c)} -> "19th day of November, 2026" ----
+        if (content.containsIgnoreCase('DATEWORDS')) {
+            Matcher dwM = Pattern.compile(
+                '(?i)\\{!\\s*DATEWORDS\\s*\\(\\s*([A-Za-z0-9_.]+)\\s*\\)\\s*\\}'
+            ).matcher(content);
+            Map<String, String> dwReplacements = new Map<String, String>();
+            while (dwM.find()) {
+                String dwPath = dwM.group(1);
+                if (dwPath.contains('.') && !dwPath.contains('__r.')
+                    && dwPath.substringBefore('.').equalsIgnoreCase(objectApiName)) {
+                    dwPath = dwPath.substringAfter('.');
+                }
+                dwReplacements.put(dwM.group(0), dateInWords(getFieldValue(record, dwPath)));
+            }
+            for (String key : dwReplacements.keySet()) {
+                content = content.replace(key, dwReplacements.get(key));
+            }
+        }
+
         // Pattern: {!FieldName__c} or {!Object__c.Field__c} or {!Parent__r.Field__c}
         Pattern p = Pattern.compile('\\{!([A-Za-z0-9_.]+)\\}');
         Matcher m = p.matcher(content);
@@ -620,6 +639,32 @@ public with sharing class DynamicDocumentRenderer {
         return content;
     }
 
+    /**
+     * A date as the agreements write it: "19th day of November, 2026". A blank date gives the
+     * line to fill by hand: "________ day of ______________, 20____".
+     */
+    @TestVisible
+    private static String dateInWords(Object value) {
+        Date d;
+        if (value instanceof Date) {
+            d = (Date) value;
+        } else if (value instanceof Datetime) {
+            d = ((Datetime) value).date();
+        }
+        if (d == null) {
+            return '________ day of ______________, 20____';
+        }
+        Integer day = d.day();
+        Integer lastDigit = Math.mod(day, 10);
+        String suffix = (day >= 11 && day <= 13) ? 'th'
+            : lastDigit == 1 ? 'st' : lastDigit == 2 ? 'nd' : lastDigit == 3 ? 'rd' : 'th';
+        List<String> months = new List<String>{
+            'January', 'February', 'March', 'April', 'May', 'June', 'July',
+            'August', 'September', 'October', 'November', 'December'
+        };
+        return day + suffix + ' day of ' + months[d.month() - 1] + ', ' + d.year();
+    }
+
     private static String resolveCoApplicantDetails(
         String content, SObject record, String objectApiName
     ) {
@@ -643,11 +688,22 @@ public with sharing class DynamicDocumentRenderer {
             content = content.replace(
                 '{!CO_APPLICANTS_NO_AGE}', buildCoApplicantParagraphs(record, false, false));
         }
+        // without age and without occupation: name, relation, address, Aadhaar / PAN (2026-11-15)
+        if (content.contains('{!CO_APPLICANTS_NO_AGE_OCCUPATION}')) {
+            content = content.replace(
+                '{!CO_APPLICANTS_NO_AGE_OCCUPATION}', buildCoApplicantParagraphs(record, false, false, false));
+        }
         return content;
     }
 
     private static String buildCoApplicantParagraphs(
         SObject record, Boolean includeAge, Boolean numbered
+    ) {
+        return buildCoApplicantParagraphs(record, includeAge, numbered, true);
+    }
+
+    private static String buildCoApplicantParagraphs(
+        SObject record, Boolean includeAge, Boolean numbered, Boolean includeOccupation
     ) {
         List<String> renderedApplicants = new List<String>();
         Integer applicantNumber = 1;
@@ -682,7 +738,7 @@ public with sharing class DynamicDocumentRenderer {
                     'aged about ' + calculateAge(applicant.Date_of_Birth__c) + ' years'
                 );
             }
-            if (String.isNotBlank(applicant.Occupation__c)) {
+            if (includeOccupation && String.isNotBlank(applicant.Occupation__c)) {
                 details.add('Occupation: ' + escapeHtmlValue(applicant.Occupation__c));
             }
             // The co-applicant's own permanent address; the booking's only when theirs is blank.
@@ -696,7 +752,9 @@ public with sharing class DynamicDocumentRenderer {
                 ? '<p style="text-align:justify;margin-left:36pt;text-indent:-22.5pt">'
                     + '<span style="display:inline-block;width:22.5pt;text-indent:0">'
                     + applicantNumber + '.</span>'
-                : '<p style="text-align:justify">';
+                // {!CO_APPLICANTS_NO_AGE_OCCUPATION} sits in narrow table cells: left-aligned, so the short
+                // first line is not stretched with wide gaps between the words (2026-11-15)
+                : (includeOccupation ? '<p style="text-align:justify">' : '<p style="text-align:left">');
             renderedApplicants.add(
                 opening + String.join(details, ', ') + '.'
                 + '<span style="display:block;text-indent:0;font-weight:bold">(Aadhaar No. '
@@ -736,34 +794,51 @@ public with sharing class DynamicDocumentRenderer {
     /**
      * {!AND_CO_APPLICANT_NAMES} continues the first applicant's name: nothing when there is no
      * co-applicant, " &amp; B" for one, ", B, C &amp; D" for several ("&" only before the last name).
+     * {!AND_CO_APPLICANT_NAMES_RELATION} does the same with each co-applicant's relation after the
+     * name (" &amp; Mrs. B W/o. C"), for lines such as "Mr. A S/o. X &amp; Mrs. B W/o. Y" (2026-11-13).
      */
     private static String resolveAndCoApplicantNames(
         String content, SObject record, String objectApiName
     ) {
         if (String.isBlank(content) || record == null
             || !'Booking__c'.equalsIgnoreCase(objectApiName)
-            || !content.contains('{!AND_CO_APPLICANT_NAMES}')) {
+            || !(content.contains('{!AND_CO_APPLICANT_NAMES}')
+                 || content.contains('{!AND_CO_APPLICANT_NAMES_RELATION}'))) {
             return content;
         }
 
         List<String> names = new List<String>();
+        List<String> namesWithRelation = new List<String>();
         for (Co_Applicant__c applicant : [
-            SELECT Salutation__c, Full_Name__c
+            SELECT Salutation__c, Full_Name__c, S_o_D_o_W_o__c, Relalation_Details__c, W_o_S_o_C_o_c__c
             FROM Co_Applicant__c
             WHERE Booking__c = :record.Id
             ORDER BY CreatedDate ASC
         ]) {
             String name = coApplicantDisplayName(applicant);
-            if (String.isNotBlank(name)) {
-                names.add(name);
+            if (String.isBlank(name)) {
+                continue;
             }
+            names.add(name);
+            String relationType = String.isNotBlank(applicant.S_o_D_o_W_o__c)
+                ? applicant.S_o_D_o_W_o__c : applicant.Relalation_Details__c;
+            namesWithRelation.add(String.isNotBlank(applicant.W_o_S_o_C_o_c__c)
+                ? name + ' ' + joinDisplayValues(withFullStop(relationType), applicant.W_o_S_o_C_o_c__c)
+                : name);
         }
 
+        return content
+            .replace('{!AND_CO_APPLICANT_NAMES_RELATION}', joinWithAmpersand(namesWithRelation))
+            .replace('{!AND_CO_APPLICANT_NAMES}', joinWithAmpersand(names));
+    }
+
+    /** ", B, C &amp; D": a comma before every name but the last, which gets " &amp; ". */
+    private static String joinWithAmpersand(List<String> names) {
         String joined = '';
         for (Integer i = 0; i < names.size(); i++) {
             joined += (i == names.size() - 1 ? ' &amp; ' : ', ') + names[i];
         }
-        return content.replace('{!AND_CO_APPLICANT_NAMES}', joined);
+        return joined;
     }
 
     private static String coApplicantDisplayName(Co_Applicant__c applicant) {
@@ -1061,7 +1136,7 @@ public with sharing class DynamicDocumentRenderer {
         // 1. {!Relationship.Relationship....Field} patterns (any depth) in content
         scanReferencedPaths('\\{!([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)\\}', templateJson, fieldSet, fieldMap);
         // 1b. {!INWORDS(...)} calls too — e.g. {!INWORDS(Booking__r.Unit__r.Cost__c)}
-        scanReferencedPaths('(?i)\\{!\\s*INWORDS\\s*\\(\\s*([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)\\s*\\)\\s*\\}', templateJson, fieldSet, fieldMap);
+        scanReferencedPaths('(?i)\\{!\\s*(?:INWORDS|DATEWORDS)\\s*\\(\\s*([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)\\s*\\)\\s*\\}', templateJson, fieldSet, fieldMap);
         // 1c. Relationship fields used as operands in amount/area expressions.
         scanReferencedPaths('(?i)(?:INR|MULTIPLY|ADD|SUBTRACT)\\s*\\(\\s*([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)', templateJson, fieldSet, fieldMap);
         scanReferencedPaths('(?i)(?:MULTIPLY|ADD|SUBTRACT)\\s*\\(\\s*[A-Za-z0-9_.-]+\\s*,\\s*([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+)', templateJson, fieldSet, fieldMap);

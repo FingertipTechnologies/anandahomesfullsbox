@@ -470,6 +470,11 @@
     color: #000 !important;
 }
 
+.demand-amount-input {
+    width: 180px;
+    max-width: 45%;
+}
+
 .amount-paid { color: #2e844a !important; }
 .amount-pending { color: #ea001e !important; }
 .amount-interest { color: #ff9a3c !important; }
@@ -530,6 +535,43 @@
     border-left: none !important;
     border-right: none !important;
     border-bottom: none !important;
+}
+
+.flat-demand-table-wrap {
+    overflow-x: auto;
+}
+
+.flat-demand-table {
+    min-width: 760px;
+    margin-bottom: 0;
+}
+
+.full-demand-table {
+    min-width: 760px;
+}
+
+.flat-demand-wide {
+    min-width: 1450px;
+}
+
+.gst-demand-wide {
+    min-width: 1100px;
+}
+
+.flat-demand-table th,
+.flat-demand-table td {
+    text-align: right;
+    vertical-align: middle;
+}
+
+.flat-demand-table th:first-child,
+.flat-demand-table td:first-child {
+    text-align: left;
+}
+
+.flat-demand-total-row {
+    font-weight: 700;
+    background: #f3f3f3;
 }
 
 /* ==================== INFO BANNER ==================== */

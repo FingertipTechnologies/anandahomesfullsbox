@@ -301,6 +301,7 @@ private class DemandReminderServiceTest {
 
     @isTest
     static void processReminders1to4_fallbackEmail() {
+        BookingStageValidationService.bypass = true; // unit unblocking auto-cancels without a Cancellation approval (BUG-0514 gate)
         Booking__c b = getBooking();
         Demands__c d = newDemand(b.Id, b.Project__c);
         d.Reminder_1_Date__c = Date.today().addDays(-1); d.Reminder_1_Sent__c = false;
@@ -329,6 +330,7 @@ private class DemandReminderServiceTest {
 
     @isTest
     static void processReminders_withConfigAndMaster_fallbackDoc() {
+        BookingStageValidationService.bypass = true; // unit unblocking auto-cancels without a Cancellation approval (BUG-0514 gate)
         // Reminder-type configs present but NO Email_Template -> config != null / fallback body path
         insert new List<Post_Sales_Configuration__c>{
             cfg('Demand', 'DR1 Config'),
@@ -355,6 +357,7 @@ private class DemandReminderServiceTest {
 
     @isTest
     static void processTerminationMail_withInterest() {
+        BookingStageValidationService.bypass = true; // unit unblocking auto-cancels without a Cancellation approval (BUG-0514 gate)
         Booking__c b = getBooking();
         Demands__c d = newDemand(b.Id, b.Project__c);
         d.Termination_Mail_Date__c = Date.today().addDays(-1);
@@ -373,6 +376,7 @@ private class DemandReminderServiceTest {
 
     @isTest
     static void processUnitUnblocking_cancelsBookingAndReleasesUnit() {
+        BookingStageValidationService.bypass = true; // unit unblocking auto-cancels without a Cancellation approval (BUG-0514 gate)
         Booking__c b = getBooking();
         Demands__c d = newDemand(b.Id, b.Project__c);
         d.Unit_Unblocking_Date__c = Date.today().addDays(-1);
@@ -391,6 +395,7 @@ private class DemandReminderServiceTest {
 
     @isTest
     static void processReminder_blankEmail_skipsEmailButStillProcesses() {
+        BookingStageValidationService.bypass = true; // unit unblocking auto-cancels without a Cancellation approval (BUG-0514 gate)
         Booking__c b = getBooking();
         update new Booking__c(Id = b.Id, Email__c = null);
 

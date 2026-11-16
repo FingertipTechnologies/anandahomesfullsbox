@@ -107,9 +107,10 @@ public with sharing class ProrataDemandService {
         if (bypass || scheduleIds == null || scheduleIds.isEmpty()) return 0;
 
         List<Payment_Schedule__c> rows = [
-            SELECT Id, Booking__c, Milestone_Name__c, Due_Date__c, Status__c,
+            SELECT Id, Booking__c, Sequence__c, Milestone_Name__c, Due_Date__c, Status__c,
                    Bank_Flat_Amount__c, Bank_GST_Amount__c, Customer_Flat_Prorata__c,
-                   Customer_GST_Prorata__c, TDS_Amount__c, With_GST__c,
+                   Customer_GST_Prorata__c, Payment_Schedule_Amount_Paid__c,
+                   TDS_Amount__c, TDS_Amount_Paid__c, TDS_Amount_Pending__c,
                    Bank_Demand_Raised__c, Customer_Demand_Raised__c,
                    Bank_Flat_Demand_Raised__c, Bank_GST_Demand_Raised__c,
                    Customer_Flat_Demand_Raised__c, Customer_GST_Demand_Raised__c,
@@ -124,16 +125,58 @@ public with sharing class ProrataDemandService {
 
         List<Demands__c> demands = new List<Demands__c>();
         Map<Id, Payment_Schedule__c> flags = new Map<Id, Payment_Schedule__c>();
+        Set<Id> demandScheduleIds = new Set<Id>();
+        if (bankSide) {
+            for (Payment_Schedule__c schedule : rows) {
+                if (!CLOSED_STATUSES.contains(schedule.Status__c)
+                    && !DemandComponentService.isComponentRaised(
+                        schedule, DemandComponentService.FLAT, true
+                    )
+                    && DemandComponentService.amount(
+                        schedule, DemandComponentService.FLAT, true
+                    ) > 0) {
+                    demandScheduleIds.add(schedule.Id);
+                }
+            }
+        }
+        Set<Id> bookingIds = new Set<Id>();
+        for (Payment_Schedule__c schedule : rows) {
+            bookingIds.add(schedule.Booking__c);
+        }
+        DemandComponentService.TdsCarryForwardAllocation carryForwardAllocation = bankSide
+            ? DemandComponentService.getTdsCarryForwardAllocation(
+                bookingIds, demandScheduleIds
+            )
+            : new DemandComponentService.TdsCarryForwardAllocation();
+        Set<Id> carryForwardDemandScheduleIds = new Set<Id>();
 
         for (Payment_Schedule__c ps : rows) {
             if (CLOSED_STATUSES.contains(ps.Status__c)) continue;
 
-            Decimal flat = bankSide ? nz(ps.Bank_Flat_Amount__c) : nz(ps.Customer_Flat_Prorata__c);
-            Decimal gst  = bankSide ? nz(ps.Bank_GST_Amount__c)  : nz(ps.Customer_GST_Prorata__c);
+            Decimal flat = bankSide
+                ? DemandComponentService.amount(ps, DemandComponentService.FLAT, true)
+                : nz(ps.Customer_Flat_Prorata__c);
+            Decimal gst  = bankSide
+                ? DemandComponentService.amount(ps, DemandComponentService.GST, true)
+                : nz(ps.Customer_GST_Prorata__c);
             for (String component : new List<String>{ DemandComponentService.FLAT, DemandComponentService.GST }) {
                 if (DemandComponentService.isComponentRaised(ps, component, bankSide)) continue;
                 Decimal amount = component == DemandComponentService.FLAT ? flat : gst;
                 if (amount <= 0) continue;
+
+                Decimal tdsAmount = 0;
+                Decimal demandAmount = amount;
+                if (bankSide && component == DemandComponentService.FLAT) {
+                    Decimal carryForward =
+                        carryForwardAllocation.amountByDemandSchedule.containsKey(ps.Id)
+                            ? carryForwardAllocation.amountByDemandSchedule.get(ps.Id) : 0;
+                    tdsAmount = (amount * 0.01).setScale(2, System.RoundingMode.HALF_UP)
+                        + carryForward;
+                    demandAmount += carryForward;
+                    if (carryForward > 0) carryForwardDemandScheduleIds.add(ps.Id);
+                }
+                Decimal flatAmount = component == DemandComponentService.FLAT
+                    ? Math.max(0, demandAmount - tdsAmount) : 0;
 
                 demands.add(new Demands__c(
                     Booking__c = ps.Booking__c,
@@ -142,12 +185,12 @@ public with sharing class ProrataDemandService {
                     Demand_Component__c = component,
                     Demand_Audience__c = bankSide ? 'Bank' : 'Customer',
                     Funding_Type__c = ps.Booking__r.Funding_Type__c,
-                    Base_Amount__c = component == DemandComponentService.FLAT ? amount : 0,
-                    Flat_Amount__c = component == DemandComponentService.FLAT ? amount : 0,
+                    Base_Amount__c = flatAmount,
+                    Flat_Amount__c = flatAmount,
                     GST_Amount__c = component == DemandComponentService.GST ? amount : 0,
-                    TDS_Amount__c = 0,
-                    Demand_Amount__c = amount,
-                    Pending_Amount__c = amount,
+                    TDS_Amount__c = tdsAmount,
+                    Demand_Amount__c = demandAmount,
+                    Pending_Amount__c = demandAmount,
                     Status__c = PostSalesConstants.DEMAND_STATUS_RAISED,
                     Demand_Date__c = Date.today(),
                     Due_Date__c = ps.Due_Date__c != null
@@ -165,13 +208,21 @@ public with sharing class ProrataDemandService {
 
         if (demands.isEmpty()) return 0;
         insert demands;
-        if (!flags.isEmpty()) {
+        Map<Id, Payment_Schedule__c> updatesById =
+            new Map<Id, Payment_Schedule__c>();
+        updatesById.putAll(flags);
+        DemandComponentService.addTdsCarryForwardDemandedUpdates(
+            carryForwardAllocation,
+            carryForwardDemandScheduleIds,
+            updatesById
+        );
+        if (!updatesById.isEmpty()) {
             // Only demand-raised flags change here (not the split), so suspend the §8.3.1
             // invariant re-validation while stamping them.
             Boolean prior = ProrataInvariantService.bypass;
             ProrataInvariantService.bypass = true;
             try {
-                update flags.values();
+                update updatesById.values();
             } finally {
                 ProrataInvariantService.bypass = prior;
             }

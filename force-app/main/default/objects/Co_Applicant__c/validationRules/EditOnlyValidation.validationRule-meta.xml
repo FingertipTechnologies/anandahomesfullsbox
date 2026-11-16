@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>EditOnlyValidation</fullName>
+    <active>true</active>
+    <errorConditionFormula>AND(
+NOT(ISBLANK(Booking__c)),
+ISPICKVAL(Booking__r.Booking_Verification_Approval_Status__c, &quot;Approved&quot;),
+Booking__r.Owner:User.UserRole.Name = &quot;CRM Executive&quot;,
+NOT(
+OR(
+$User.Id = Booking__r.OwnerId,
+$Profile.Name = &quot;CRM Manager&quot;,
+$Profile.Name = &quot;Admin&quot;,
+$Profile.Name = &quot;System Administrator&quot;
+)
+)
+)</errorConditionFormula>
+    <errorMessage>Only the booking owner/CRM Executive, can add or edit co-applicant details after the booking is pushed to CRM.</errorMessage>
+</ValidationRule>

@@ -1,6 +1,44 @@
 // Last updated: 2026-04-22
 public with sharing class UnitBlockingController {
 
+    // ------------------------------------------------------------------------------------------
+    // Who may block a unit from a lead: a System Administrator, or the lead's owner. Nobody else.
+    // (Same rule as the lead's Create Quote button - CreateQuoteController.checkQuoteAccess.)
+    // ------------------------------------------------------------------------------------------
+    @TestVisible
+    private static final String ADMIN_PROFILE = 'System Administrator';
+    @TestVisible
+    private static final String BLOCK_ACCESS_DENIED =
+        'You cannot block a unit for this lead. Only the lead owner or a System Administrator can block a unit.';
+
+    /** The rule itself, kept free of queries so it can be tested directly. */
+    @TestVisible
+    private static Boolean isBlockingAllowed(Id leadOwnerId, Id userId, String userProfileName) {
+        return userProfileName == ADMIN_PROFILE || (leadOwnerId != null && leadOwnerId == userId);
+    }
+
+    /**
+     * Called by the Block Unit screen when it opens. Returns null when the current user may block a
+     * unit for this lead, otherwise the message to show. A record that is not a lead is not restricted.
+     */
+    @AuraEnabled
+    public static String checkBlockAccess(Id leadId) {
+        if (leadId == null || leadId.getSObjectType() != Lead__c.SObjectType) {
+            return null;
+        }
+        Id ownerId = new LeadOwnerReader().ownerOf(leadId);
+        String profileName = [SELECT Name FROM Profile WHERE Id = :UserInfo.getProfileId() LIMIT 1].Name;
+        return isBlockingAllowed(ownerId, UserInfo.getUserId(), profileName) ? null : BLOCK_ACCESS_DENIED;
+    }
+
+    /** Reads the lead's owner regardless of sharing, so the rule can be evaluated for any user. */
+    private without sharing class LeadOwnerReader {
+        Id ownerOf(Id leadId) {
+            List<Lead__c> leads = [SELECT OwnerId FROM Lead__c WHERE Id = :leadId LIMIT 1];
+            return leads.isEmpty() ? null : leads[0].OwnerId;
+        }
+    }
+
     @AuraEnabled(cacheable=true)
     public static List<PicklistOption> getProjectOptions() {
         try {
@@ -75,6 +113,13 @@ public with sharing class UnitBlockingController {
         try {
             if (leadId == null) {
                 throw new AuraHandledException('Lead is required.');
+            }
+            // Same rule again at save time, so it holds even if the screen's own check is skipped.
+            String denied = checkBlockAccess(leadId);
+            if (denied != null) {
+                AuraHandledException deniedEx = new AuraHandledException(denied);
+                deniedEx.setMessage(denied);
+                throw deniedEx;
             }
             if (unitId == null) {
                 throw new AuraHandledException('Unit is required.');

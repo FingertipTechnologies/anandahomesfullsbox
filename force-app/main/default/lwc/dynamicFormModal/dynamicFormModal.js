@@ -281,9 +281,10 @@ export default class DynamicFormModal extends NavigationMixin(LightningElement) 
                 id: `section-${idx}`,
                 label: section.label,
                 columns: cols,
-                gridClass: 'slds-grid slds-gutters slds-wrap',
-                colClass: cols === '1' ? 'slds-col slds-size_1-of-1 slds-p-bottom_small'
-                    : 'slds-col slds-size_1-of-2 slds-p-bottom_small',
+                // Component-owned CSS grid (see .form-grid in the stylesheet) so the two-column
+                // layout does not depend on the page's shared SLDS grid classes.
+                gridClass: cols === '1' ? 'form-grid form-grid_1' : 'form-grid',
+                colClass: 'form-col',
                 fields
             };
         });
@@ -310,11 +311,19 @@ export default class DynamicFormModal extends NavigationMixin(LightningElement) 
                 };
             });
 
+            // Each child record is shown as its own card ("Co Applicant 1", "Co Applicant 2", ...).
+            // itemLabel can be set in the config; otherwise it is the section label without its plural "s".
+            const sectionLabel = cc.sectionLabel || cc.childObject;
+            const itemLabel = cc.itemLabel || sectionLabel.replace(/s$/i, '');
+
             return {
                 id: `child-${idx}`,
                 childObject: cc.childObject,
                 relationshipField: cc.relationshipField,
-                sectionLabel: cc.sectionLabel || cc.childObject,
+                sectionLabel: sectionLabel,
+                itemLabel: itemLabel,
+                addLabel: `Add ${itemLabel}`,
+                emptyText: `None added. Click "Add ${itemLabel}" to begin.`,
                 fields: fields,
                 rows: [],
                 hasRows: false
@@ -575,9 +584,13 @@ export default class DynamicFormModal extends NavigationMixin(LightningElement) 
                 const v = f.validation || {};
                 return {
                     apiName: f.apiName,
+                    label: f.label,
                     value: null,
                     isRequired: f.isRequired,
-                    isTextField: ['STRING', 'URL', 'EMAIL', 'PHONE', 'TEXTAREA'].includes(fType),
+                    // Long text gets a full-width textarea at the bottom of the card's two columns.
+                    colClass: fType === 'TEXTAREA' ? 'form-col form-col_full' : 'form-col',
+                    isTextField: ['STRING', 'URL', 'EMAIL', 'PHONE'].includes(fType),
+                    isTextArea: fType === 'TEXTAREA',
                     isNumber: ['INTEGER', 'DOUBLE', 'CURRENCY', 'PERCENT'].includes(fType),
                     isDate: fType === 'DATE' || fType === 'DATETIME',
                     isBoolean: fType === 'BOOLEAN',
@@ -598,7 +611,12 @@ export default class DynamicFormModal extends NavigationMixin(LightningElement) 
                 };
             });
 
-            const newRow = { tempId, rowNum: cs.rows.length + 1, values, cells };
+            const rowNum = cs.rows.length + 1;
+            const newRow = {
+                tempId, rowNum, values, cells,
+                title: `${cs.itemLabel} ${rowNum}`,
+                deleteLabel: `Remove ${cs.itemLabel} ${rowNum}`
+            };
             const newRows = [...cs.rows, newRow];
             return { ...cs, rows: newRows, hasRows: true };
         });
@@ -612,7 +630,12 @@ export default class DynamicFormModal extends NavigationMixin(LightningElement) 
             if (cs.id !== childId) return cs;
             const newRows = cs.rows
                 .filter(r => r.tempId !== rowId)
-                .map((r, i) => ({ ...r, rowNum: i + 1 }));
+                .map((r, i) => ({
+                    ...r,
+                    rowNum: i + 1,
+                    title: `${cs.itemLabel} ${i + 1}`,
+                    deleteLabel: `Remove ${cs.itemLabel} ${i + 1}`
+                }));
             return { ...cs, rows: newRows, hasRows: newRows.length > 0 };
         });
     }

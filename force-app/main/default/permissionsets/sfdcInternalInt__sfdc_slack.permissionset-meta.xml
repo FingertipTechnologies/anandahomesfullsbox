@@ -1013,6 +1013,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Booking__c.Booking_Account_Name__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Booking__c.Booking_Amount1__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1199,6 +1204,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Booking__c.Cheque_DD_NEFT_RTGS_No__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Booking__c.Cheque_Date__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -1679,11 +1689,6 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Booking__c.Lead_Name__c</field>
-        <readable>true</readable>
-    </fieldPermissions>
-    <fieldPermissions>
-        <editable>false</editable>
-        <field>Booking__c.Lead__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -10369,6 +10374,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Quote__c.Central_Court_Yard_Premium__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Quote__c.Club_House__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

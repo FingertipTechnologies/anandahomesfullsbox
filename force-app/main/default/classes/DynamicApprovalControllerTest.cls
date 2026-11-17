@@ -611,7 +611,8 @@ private class DynamicApprovalControllerTest {
     static void pushToCrm_requiresAnApprovedReceipt() {
         Project__c project = new Project__c(Name = 'P', Project_Type__c = 'Residential');
         insert project;
-        Booking__c b = new Booking__c(Project__c = project.Id, Booking_Date__c = Date.today(), Status__c = 'New');
+        Booking__c b = new Booking__c(Project__c = project.Id, Booking_Date__c = Date.today(), Status__c = 'New',
+            Booking_Amount__c = 500000);
         insert b;
         Approval_Configuration__c cfg = new Approval_Configuration__c(
             Object_API_Name__c = 'Booking__c', Process_Type__c = DynamicApprovalController.PUSH_TO_CRM,
@@ -627,7 +628,8 @@ private class DynamicApprovalControllerTest {
         DynamicApprovalController.RequiredFieldStatus receiptRow = st[1];
         System.assertEquals('Approved_Receipt', receiptRow.fieldApiName);
         System.assertEquals(false, receiptRow.isFilled);
-        System.assertEquals('No approved receipt yet', receiptRow.currentValue);
+        System.assertEquals('Approved receipts: Rs. 0', receiptRow.currentValue);
+        System.assert(receiptRow.blockMessage.contains('Booking Amount'), receiptRow.blockMessage);
         try {
             DynamicApprovalController.submitForApproval(b.Id, cfg.Id, 'test');
             System.assert(false, 'submission must be blocked');

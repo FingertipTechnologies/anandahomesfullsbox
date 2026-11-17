@@ -621,16 +621,25 @@ public with sharing class DynamicApprovalController {
         Approval_Configuration__c cfg = [
             SELECT Process_Type__c, Object_API_Name__c FROM Approval_Configuration__c WHERE Id = :configId LIMIT 1
         ];
-        // Push To CRM: at least one approved receipt on the booking (2026-11-17).
+        // Push To CRM: the approved receipts on the booking (additional charges excluded) must add up to
+        // at least the Booking Amount (2026-11-17).
         if (cfg.Object_API_Name__c == 'Booking__c' && cfg.Process_Type__c == PUSH_TO_CRM) {
+            Booking__c bk = [SELECT Booking_Amount__c FROM Booking__c WHERE Id = :recordId];
+            Decimal required = bk.Booking_Amount__c == null ? 0 : bk.Booking_Amount__c;
+            AggregateResult ar = [
+                SELECT SUM(Amount_received__c) total FROM Receipt__c
+                WHERE Booking__c = :recordId AND Approval_Status__c = 'Approved'
+                AND (Receipt_Type__c = null OR Receipt_Type__c != :PostSalesConstants.RECEIPT_TYPE_ADDITIONAL_CHARGE)
+            ];
+            Decimal approved = ar.get('total') == null ? 0 : (Decimal) ar.get('total');
             RequiredFieldStatus fs = new RequiredFieldStatus();
             fs.fieldApiName = 'Approved_Receipt';
-            fs.fieldLabel = 'At least one approved receipt';
+            fs.fieldLabel = 'Approved receipts covering the Booking Amount (Rs. ' + required.setScale(0).format() + ')';
             fs.fieldType = 'document';
-            Integer approved = [SELECT COUNT() FROM Receipt__c WHERE Booking__c = :recordId AND Approval_Status__c = 'Approved'];
-            fs.isFilled = approved > 0;
-            fs.currentValue = approved > 0 ? approved + ' approved' : 'No approved receipt yet';
-            fs.blockMessage = 'At least one receipt must be approved before this booking can be pushed to CRM.';
+            fs.isFilled = approved > 0 && approved >= required;
+            fs.currentValue = 'Approved receipts: Rs. ' + approved.setScale(0).format();
+            fs.blockMessage = 'The approved receipts (Rs. ' + approved.setScale(0).format() + ') must be at least the Booking Amount '
+                + '(Rs. ' + required.setScale(0).format() + ') before this booking can be pushed to CRM.';
             result.add(fs);
         }
         return result;

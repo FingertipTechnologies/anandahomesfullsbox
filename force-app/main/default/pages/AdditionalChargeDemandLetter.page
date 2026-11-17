@@ -42,39 +42,23 @@
         </p>
         <p>
             Request your attention for clearing the amount of Rs. <strong>₹
-            <apex:outputText value="{0, number, #,##0.00}"><apex:param value="{!balanceAmount}" /></apex:outputText>/-</strong>,
+            <apex:outputText value="{0, number, #,##0.00}"><apex:param value="{!totalAmount}" /></apex:outputText>/-</strong>,
             receivable within 7 days from the date of this demand letter.
         </p>
         <table class="charge-table">
             <colgroup>
-                <col style="width:28%" /><col style="width:14%" /><col style="width:14%" />
-                <col style="width:15%" /><col style="width:14%" /><col style="width:15%" />
+                <col style="width:60%" /><col style="width:40%" />
             </colgroup>
             <thead>
                 <tr>
-                    <th>Charge Description</th>
-                    <th>Amount</th>
-                    <th>GST</th>
-                    <th>Total Amount Payable</th>
-                    <th>Received Amount</th>
-                    <th>Net Amount Payable</th>
+                    <th>Charge Name</th>
+                    <th>Total Payable Amount (Rs.)</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>
-                        <apex:outputText value="{!chargeLabel}" />
-                        <apex:outputPanel rendered="{!NOT(ISBLANK(charge.Description__c))}"><br/><apex:outputText value="{!charge.Description__c}" /></apex:outputPanel>
-                    </td>
-                    <td><apex:outputText value="{0, number, #,##0.00}"><apex:param value="{!baseAmount}" /></apex:outputText></td>
-                    <td><apex:outputText value="{0, number, #,##0.00}"><apex:param value="{!gstAmount}" /></apex:outputText></td>
-                    <td><apex:outputText value="{0, number, #,##0.00}"><apex:param value="{!totalAmount}" /></apex:outputText></td>
-                    <td><apex:outputText value="{0, number, #,##0.00}"><apex:param value="{!receivedAmount}" /></apex:outputText></td>
-                    <td><apex:outputText value="{0, number, #,##0.00}"><apex:param value="{!balanceAmount}" /></apex:outputText></td>
-                </tr>
-                <tr>
-                    <td colspan="5" class="total-label">TOTAL PAYABLE (Rs.)</td>
-                    <td><strong>₹ <apex:outputText value="{0, number, #,##0.00}"><apex:param value="{!balanceAmount}" /></apex:outputText>/-</strong></td>
+                    <td><apex:outputText value="{!chargeLabel}" /></td>
+                    <td><strong>₹ <apex:outputText value="{0, number, #,##0.00}"><apex:param value="{!totalAmount}" /></apex:outputText>/-</strong></td>
                 </tr>
             </tbody>
         </table>

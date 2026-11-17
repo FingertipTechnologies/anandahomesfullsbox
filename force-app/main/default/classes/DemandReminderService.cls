@@ -359,7 +359,7 @@ public without sharing class DemandReminderService {
                    Booking__r.Name, Booking__r.First_Applicant_Name__c,
                    Demand_Type__c, Demand_Date__c, Payment_Schedule__r.Is_Agreement__c,
                    Reminder_1_Date__c, Reminder_1_Sent_Date__c, Reminder_2_Date__c, Reminder_2_Sent_Date__c,
-                   Interest_Amount__c, Interest_Waived_Off_Amount__c,
+                   Interest_Amount__c, Interest_Waived_Off_Amount__c, Demand_Component__c, Payment_Schedule__c,
                    Booking__r.Plot__r.Name, Booking__r.Project__r.Name, Booking__r.Salutation__c,
                    Booking__r.Permanent_Address__c, Booking__r.Booking_Date__c, Booking__r.Total_Flat_Cost__c,
                    Demand_Amount__c, Pending_Amount__c, Due_Date__c,
@@ -379,6 +379,7 @@ public without sharing class DemandReminderService {
         List<Demands__c> toUpdate = new List<Demands__c>();
         List<Messaging.SingleEmailMessage> emails = new List<Messaging.SingleEmailMessage>();
 
+        liveInterestByDemand.putAll(loadLiveInterest(demands));
         for (Demands__c d : demands) {
             if (String.isNotBlank(d.Booking__r.Email__c)) {
                 Messaging.SingleEmailMessage email = buildReminderEmail(d, config, '3rd Reminder', masterDocTemplateId);
@@ -406,7 +407,7 @@ public without sharing class DemandReminderService {
                    Booking__r.Name, Booking__r.First_Applicant_Name__c,
                    Demand_Type__c, Demand_Date__c, Payment_Schedule__r.Is_Agreement__c,
                    Reminder_1_Date__c, Reminder_1_Sent_Date__c, Reminder_2_Date__c, Reminder_2_Sent_Date__c,
-                   Interest_Amount__c, Interest_Waived_Off_Amount__c,
+                   Interest_Amount__c, Interest_Waived_Off_Amount__c, Demand_Component__c, Payment_Schedule__c,
                    Booking__r.Plot__r.Name, Booking__r.Project__r.Name, Booking__r.Salutation__c,
                    Booking__r.Permanent_Address__c, Booking__r.Booking_Date__c, Booking__r.Total_Flat_Cost__c,
                    Reminder_3_Date__c, Reminder_3_Sent_Date__c,
@@ -427,6 +428,7 @@ public without sharing class DemandReminderService {
         List<Demands__c> toUpdate = new List<Demands__c>();
         List<Messaging.SingleEmailMessage> emails = new List<Messaging.SingleEmailMessage>();
 
+        liveInterestByDemand.putAll(loadLiveInterest(demands));
         for (Demands__c d : demands) {
             if (String.isNotBlank(d.Booking__r.Email__c)) {
                 Messaging.SingleEmailMessage email = buildReminderEmail(d, config, '4th Reminder', masterDocTemplateId);
@@ -594,6 +596,53 @@ public without sharing class DemandReminderService {
 
     // ==================== EMAIL BUILDING ====================
 
+    /** Reminders 3/4: demand Id -> live interest (filled by loadLiveInterest). */
+    private static Map<Id, Decimal> liveInterestByDemand = new Map<Id, Decimal>();
+
+    /**
+     * Live interest of each demand for the reminder 3/4 letters (2026-11-17): the CURRENT
+     * Interest_Pending__c of the demand's payment schedules (its Demand_Line__c schedules, else its
+     * Payment_Schedule__c) less the waiver applied on the demand. Interest_Amount__c is only a snapshot
+     * taken when the demand was raised (normally 0, as demands are raised before they fall due).
+     * Only flat demands (Flat / Flat + GST, or no component) carry interest - as when demands are raised.
+     */
+    @TestVisible
+    private static Map<Id, Decimal> loadLiveInterest(List<Demands__c> demands) {
+        Map<Id, Decimal> result = new Map<Id, Decimal>();
+        Map<Id, Set<Id>> schedulesByDemand = new Map<Id, Set<Id>>();
+        for (Demands__c d : demands) {
+            schedulesByDemand.put(d.Id, new Set<Id>());
+        }
+        for (Demand_Line__c line : [
+            SELECT Demand__c, Payment_Schedule__c FROM Demand_Line__c
+            WHERE Demand__c IN :schedulesByDemand.keySet() AND Payment_Schedule__c != null
+        ]) {
+            schedulesByDemand.get(line.Demand__c).add(line.Payment_Schedule__c);
+        }
+        Set<Id> allSchedules = new Set<Id>();
+        for (Demands__c d : demands) {
+            Set<Id> ids = schedulesByDemand.get(d.Id);
+            if (ids.isEmpty() && d.Payment_Schedule__c != null) ids.add(d.Payment_Schedule__c);
+            allSchedules.addAll(ids);
+        }
+        Map<Id, Payment_Schedule__c> schedules = new Map<Id, Payment_Schedule__c>(
+            [SELECT Id, Interest_Pending__c FROM Payment_Schedule__c WHERE Id IN :allSchedules]);
+        for (Demands__c d : demands) {
+            Boolean flat = String.isBlank(d.Demand_Component__c)
+                || DemandComponentService.includesFlat(d.Demand_Component__c);
+            Decimal gross = 0;
+            if (flat) {
+                for (Id psId : schedulesByDemand.get(d.Id)) {
+                    Payment_Schedule__c ps = schedules.get(psId);
+                    if (ps != null && ps.Interest_Pending__c != null) gross += ps.Interest_Pending__c;
+                }
+            }
+            Decimal waived = d.Interest_Waived_Off_Amount__c == null ? 0 : d.Interest_Waived_Off_Amount__c;
+            result.put(d.Id, Math.max(0, gross - waived));
+        }
+        return result;
+    }
+
     private static Messaging.SingleEmailMessage buildReminderEmail(
         Demands__c demand, Post_Sales_Configuration__c config, String reminderType, Id masterDocTemplateId
     ) {
@@ -666,7 +715,7 @@ public without sharing class DemandReminderService {
                     owner = owners.isEmpty() ? null : owners[0];
                 }
                 DemandReminderLetters.Letter letter = DemandReminderLetters.build(
-                    demand, REMINDER_LEVELS.get(reminderType), isMargin, owner);
+                    demand, REMINDER_LEVELS.get(reminderType), isMargin, owner, liveInterestByDemand.get(demand.Id));
                 email.setSubject(letter.subject);
                 email.setHtmlBody(letter.htmlBody);
                 Id letterDocId = (config != null && config.Document_Template__c != null) ? config.Document_Template__c : masterDocTemplateId;

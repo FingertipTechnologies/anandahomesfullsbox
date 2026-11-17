@@ -70,6 +70,11 @@ private class DemandReminderLettersTest {
         System.assert(l.htmlBody.contains('reminder letters dated <b>03/03/2026</b>, <b>09/03/2026</b> regarding'), l.htmlBody);
         System.assert(l.htmlBody.contains('interest of <b>&#8377; 4,000</b>'), l.htmlBody);
         System.assert(l.htmlBody.contains('total amount now payable by you is <b>&#8377; 1,29,000</b>'), l.htmlBody);
+
+        // Live interest (the schedules' current interest) wins over the demand's snapshot.
+        DemandReminderLetters.Letter live = DemandReminderLetters.build(d, 3, false, null, 7500);
+        System.assert(live.htmlBody.contains('interest of <b>&#8377; 7,500</b>'), live.htmlBody);
+        System.assert(live.htmlBody.contains('total amount now payable by you is <b>&#8377; 1,32,500</b>'), live.htmlBody);
     }
 
     @isTest

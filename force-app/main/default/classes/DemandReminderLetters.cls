@@ -27,6 +27,14 @@ public with sharing class DemandReminderLetters {
      * @return the letter, or null for any other level
      */
     public static Letter build(Demands__c d, Integer level, Boolean isMargin, User owner) {
+        return build(d, level, isMargin, owner, null);
+    }
+
+    /**
+     * @param liveInterest reminders 3/4: the demand's current interest (DemandReminderService.loadLiveInterest);
+     *                     null = use the demand's own Interest_Amount__c less its waiver
+     */
+    public static Letter build(Demands__c d, Integer level, Boolean isMargin, User owner, Decimal liveInterest) {
         if (d == null || level == null || level < 1 || level > 4) {
             return null;
         }
@@ -45,7 +53,7 @@ public with sharing class DemandReminderLetters {
         if (level == 3 || level == 4) {
             // Demand reminders 3 and 4 (2026-11-17): reminder 2 wording + the interest levied;
             // reminder 4 is the final notice / intimation of termination.
-            Decimal interest = netInterest(d);
+            Decimal interest = liveInterest != null ? liveInterest : netInterest(d);
             Decimal open = d.Pending_Amount__c == null ? 0 : d.Pending_Amount__c;
             String interestLine = P + 'Please note that, as per the terms of the Agreement, interest of <b>&#8377; ' + inr(interest)
                 + '</b> has been levied on the delayed payment as on date. The total amount now payable by you is <b>&#8377; '

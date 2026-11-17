@@ -469,6 +469,33 @@ private class DemandReminderServiceTest {
     // ===================================================================
 
     @isTest
+    static void loadLiveInterest_usesCurrentScheduleInterestLessWaiver() {
+        Booking__c b = [SELECT Id FROM Booking__c LIMIT 1];
+        Payment_Schedule__c ps = [SELECT Id FROM Payment_Schedule__c WHERE Booking__c = :b.Id AND Sequence__c = 1];
+        ps.Interest_Pending__c = 5000;
+        update ps;
+
+        Demands__c flat = new Demands__c(Id = fakeDemandId(1), Payment_Schedule__c = ps.Id,
+            Demand_Component__c = 'Flat', Interest_Waived_Off_Amount__c = 1000);
+        Demands__c gst = new Demands__c(Id = fakeDemandId(2), Payment_Schedule__c = ps.Id,
+            Demand_Component__c = 'GST');
+        Demands__c noSchedule = new Demands__c(Id = fakeDemandId(3));
+
+        Test.startTest();
+        Map<Id, Decimal> live = DemandReminderService.loadLiveInterest(
+            new List<Demands__c>{ flat, gst, noSchedule });
+        Test.stopTest();
+
+        System.assertEquals(4000, live.get(flat.Id), 'schedule interest less the demand waiver');
+        System.assertEquals(0, live.get(gst.Id), 'GST demands carry no interest');
+        System.assertEquals(0, live.get(noSchedule.Id));
+    }
+
+    private static Id fakeDemandId(Integer n) {
+        return Id.valueOf(Demands__c.SObjectType.getDescribe().getKeyPrefix() + String.valueOf(n).leftPad(12, '0'));
+    }
+
+    @isTest
     static void processingResult_sumsAndLogs() {
         DemandReminderService.ProcessingResult r = new DemandReminderService.ProcessingResult();
         r.reminder1Count = 1; r.reminder2Count = 2; r.reminder3Count = 3;

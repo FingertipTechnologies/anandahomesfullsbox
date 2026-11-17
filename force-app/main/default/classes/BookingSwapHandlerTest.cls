@@ -263,4 +263,44 @@ private class BookingSwapHandlerTest {
 
         System.assertEquals(true, threw, 'Blank status should throw a swap exception');
     }
+
+    // ==================== OLD BOOKING CLEAN-UP ====================
+    @isTest
+    static void oldBooking_receiptsRejectedAndSchedulesZeroed() {
+        Booking__c oldB = [SELECT Id, Project__c FROM Booking__c LIMIT 1];
+        Booking__c newB = new Booking__c(Project__c = oldB.Project__c, Booking_Date__c = Date.today(), Status__c = 'New');
+        insert newB;
+
+        ReceiptApprovalGateService.bypass = true;
+        Receipt__c approved = new Receipt__c(Booking__c = oldB.Id, Amount_received__c = 500000,
+            Receipt_Type__c = 'Installment Payment', Payment_Method__c = 'NEFT', Receipt_Date__c = Date.today(),
+            Approval_Status__c = 'Approved');
+        Receipt__c pending = new Receipt__c(Booking__c = oldB.Id, Amount_received__c = 1000,
+            Receipt_Type__c = 'Installment Payment', Payment_Method__c = 'NEFT', Receipt_Date__c = Date.today(),
+            Approval_Status__c = 'Pending Approval');
+        insert new List<Receipt__c>{ approved, pending };
+        // re-assert the statuses (a create flow may route new receipts for approval)
+        approved.Approval_Status__c = 'Approved';
+        pending.Approval_Status__c = 'Pending Approval';
+        update new List<Receipt__c>{ approved, pending };
+        insert new Payment_Schedule__c(Booking__c = oldB.Id, Status__c = 'Completed', Amount__c = 892527,
+            Amount_Paid__c = 500000, Payment_Schedule_Amount_Paid__c = 500000, TDS_Amount_Paid__c = 5000);
+        ReceiptApprovalGateService.bypass = false;
+
+        Test.startTest();
+        ReceiptApprovalGateService.bypass = true;
+        BookingSwapHandler.rejectOldBookingReceipts(oldB.Id, newB.Id);
+        BookingSwapHandler.zeroOldBookingSchedules(oldB.Id);
+        Test.stopTest();
+
+        for (Receipt__c r : [SELECT Approval_Status__c, Notes__c FROM Receipt__c WHERE Booking__c = :oldB.Id]) {
+            System.assertEquals('Rejected', r.Approval_Status__c);
+            System.assert(r.Notes__c.contains('booking swapped to'), r.Notes__c);
+        }
+        Payment_Schedule__c ps = [SELECT Amount_Paid__c, Payment_Schedule_Amount_Paid__c, TDS_Amount_Paid__c
+            FROM Payment_Schedule__c WHERE Booking__c = :oldB.Id];
+        System.assertEquals(0, ps.Amount_Paid__c);
+        System.assertEquals(0, ps.Payment_Schedule_Amount_Paid__c);
+        System.assertEquals(0, ps.TDS_Amount_Paid__c);
+    }
 }

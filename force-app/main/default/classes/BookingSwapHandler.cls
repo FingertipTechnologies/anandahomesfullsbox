@@ -234,6 +234,10 @@ public with sharing class BookingSwapHandler {
             // Step 6: Transfer files (ContentDocumentLinks)
             transferFiles(request.oldBookingId, newBooking.Id);
 
+            // Step 6a: The old booking's Approved receipts now live on the new booking (cloned
+            // above) and its Pending ones are void: reject them all on the old booking, with a note.
+            rejectOldBookingReceipts(request.oldBookingId, newBooking.Id);
+
             // Step 7: Record swap history on both bookings (BRD §12).
             insert new Swap_History__c(
                 Old_Booking__c = oldBooking.Id,
@@ -269,6 +273,9 @@ public with sharing class BookingSwapHandler {
                 new Set<Id>{ request.oldBookingId, newBooking.Id }
             );
 
+            // Step 9: Nothing is paid on the old booking any more - its schedules show 0 received.
+            zeroOldBookingSchedules(request.oldBookingId);
+
             return result;
 
         } finally {
@@ -277,6 +284,88 @@ public with sharing class BookingSwapHandler {
             ReceiptApprovalGateService.bypass = priorReceiptGateBypass;
             BookingFinancialRecalcService.bypass = priorRecalcBypass;
         }
+    }
+
+    // ==================== OLD BOOKING CLEAN-UP (2026-11-17) ====================
+
+    @TestVisible
+    private static final Set<String> RECEIPT_STATUSES_TO_REJECT = new Set<String>{
+        APPROVAL_STATUS_APPROVED, 'Pending Approval', 'Pending For Approval', 'Pending'
+    };
+
+    /**
+     * @description Rejects every Approved / Pending receipt left on the swapped (old) booking and
+     *              notes why. Approved receipts were cloned to the new booking; pending ones are
+     *              void. Open approval requests are withdrawn and approval locks released first.
+     */
+    @TestVisible
+    private static void rejectOldBookingReceipts(Id oldBookingId, Id newBookingId) {
+        List<Receipt__c> receipts = [
+            SELECT Id, Name, Approval_Status__c, Notes__c
+            FROM Receipt__c
+            WHERE Booking__c = :oldBookingId AND Approval_Status__c IN :RECEIPT_STATUSES_TO_REJECT
+        ];
+        if (receipts.isEmpty()) return;
+
+        String newBookingName = [SELECT Name FROM Booking__c WHERE Id = :newBookingId].Name;
+        Set<Id> receiptIds = new Map<Id, Receipt__c>(receipts).keySet();
+
+        // Withdraw open approval requests (pending receipts) so an approver cannot approve them later.
+        List<Approval.ProcessWorkitemRequest> withdrawals = new List<Approval.ProcessWorkitemRequest>();
+        for (ProcessInstanceWorkitem wi : [
+            SELECT Id FROM ProcessInstanceWorkitem WHERE ProcessInstance.TargetObjectId IN :receiptIds
+        ]) {
+            Approval.ProcessWorkitemRequest req = new Approval.ProcessWorkitemRequest();
+            req.setWorkitemId(wi.Id);
+            req.setAction('Removed');
+            req.setComments('Booking swapped to ' + newBookingName + ' - receipt rejected automatically.');
+            withdrawals.add(req);
+        }
+        if (!withdrawals.isEmpty()) {
+            for (Approval.ProcessResult pr : Approval.process(withdrawals, false)) {
+                if (!pr.isSuccess()) System.debug(LoggingLevel.WARN, 'Swap: approval withdrawal failed ' + pr.getErrors());
+            }
+        }
+        // Approved receipts are locked by the approval process. Approval.unlock() is not used: it needs
+        // the org setting "Enable record locking and unlocking in Apex" (off in both orgs) and then fails
+        // uncatchably. The update below works for users who may edit locked records (admins / Modify All
+        // on Receipt__c).
+
+        String stamp = Datetime.now().format('dd/MM/yyyy');
+        for (Receipt__c r : receipts) {
+            String note = 'Auto-rejected on ' + stamp + ': booking swapped to ' + newBookingName
+                + (r.Approval_Status__c == APPROVAL_STATUS_APPROVED
+                    ? ' (this approved receipt was transferred to the new booking).'
+                    : ' (receipt was pending approval at the time of the swap).');
+            r.Notes__c = String.isBlank(r.Notes__c) ? note : r.Notes__c + '\n' + note;
+            r.Approval_Status__c = 'Rejected';
+        }
+        // Partial: a receipt that cannot be changed (locked) must not undo the whole swap.
+        for (Database.SaveResult sr : Database.update(receipts, false)) {
+            if (!sr.isSuccess()) System.debug(LoggingLevel.ERROR, 'Swap: receipt not rejected ' + sr.getId() + ' ' + sr.getErrors());
+        }
+    }
+
+    /** @description Sets the received amounts of the swapped (old) booking's payment schedules to 0. */
+    @TestVisible
+    private static void zeroOldBookingSchedules(Id oldBookingId) {
+        List<Payment_Schedule__c> schedules = [
+            SELECT Id, Amount_Paid__c, Payment_Schedule_Amount_Paid__c, GST_Amount_Paid__c, TDS_Amount_Paid__c
+            FROM Payment_Schedule__c WHERE Booking__c = :oldBookingId
+        ];
+        List<Payment_Schedule__c> toUpdate = new List<Payment_Schedule__c>();
+        for (Payment_Schedule__c ps : schedules) {
+            if (nz(ps.Amount_Paid__c) != 0 || nz(ps.Payment_Schedule_Amount_Paid__c) != 0
+                || nz(ps.GST_Amount_Paid__c) != 0 || nz(ps.TDS_Amount_Paid__c) != 0) {
+                toUpdate.add(new Payment_Schedule__c(Id = ps.Id, Amount_Paid__c = 0,
+                    Payment_Schedule_Amount_Paid__c = 0, GST_Amount_Paid__c = 0, TDS_Amount_Paid__c = 0));
+            }
+        }
+        if (!toUpdate.isEmpty()) update toUpdate;
+    }
+
+    private static Decimal nz(Decimal v) {
+        return v == null ? 0 : v;
     }
 
     // ==================== SWAP ELIGIBILITY (BRD §12) ====================

@@ -47,6 +47,14 @@
         <connector>
             <targetReference>Submit_For_Dynamic_Approval</targetReference>
         </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Approval_Status__c</field>
+            <operator>NotEqualTo</operator>
+            <value>
+                <stringValue>Approved</stringValue>
+            </value>
+        </filters>
         <object>Receipt__c</object>
         <recordTriggerType>Create</recordTriggerType>
         <triggerType>RecordAfterSave</triggerType>

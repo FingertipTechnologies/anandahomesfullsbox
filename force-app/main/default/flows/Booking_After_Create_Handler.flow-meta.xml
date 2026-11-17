@@ -149,7 +149,7 @@
     </actionCalls>
     <apiVersion>65.0</apiVersion>
     <decisions>
-        <description>A receipt is created only when a booking amount was captured. Without an amount there is nothing to receipt, and the receipt action would otherwise stop the booking from saving.</description>
+        <description>A receipt is created only when a booking amount was captured. Without an amount there is nothing to receipt, and the receipt action would otherwise stop the booking from saving. Not for a booking created by a unit swap (Payment Schedules Created already ticked at creation): its receipts are copied from the old booking.</description>
         <name>Check_Booking_Amount</name>
         <label>Check Booking Amount</label>
         <locationX>0</locationX>
@@ -163,6 +163,13 @@
                 <operator>GreaterThan</operator>
                 <rightValue>
                     <numberValue>0.0</numberValue>
+                </rightValue>
+            </conditions>
+            <conditions>
+                <leftValueReference>$Record.Payment_Schedules_Created__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <booleanValue>false</booleanValue>
                 </rightValue>
             </conditions>
             <connector>

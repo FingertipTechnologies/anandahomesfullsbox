@@ -242,7 +242,33 @@ public with sharing class EmailSenderInvocable {
             if (anySet) toUpdate.add(rec);
         }
         if (!toUpdate.isEmpty()) {
-            Database.update(toUpdate, false);
+            // The sender may be allowed to email the record without being able to edit it
+            // (e.g. a CRM user on a booking owned by someone else). The configured "on send"
+            // stamp is part of sending the template, so it is saved without sharing.
+            new FieldUpdateWriter().save(toUpdate);
+        }
+    }
+
+    /**
+     * @description Saves the template's "Field Updates on Send" regardless of the sender's
+     *              record access. Only the fields listed in the template config are set.
+     */
+    @TestVisible
+    private static List<String> lastFieldUpdateErrors = new List<String>();
+
+    @TestVisible
+    private without sharing class FieldUpdateWriter {
+        public void save(List<SObject> records) {
+            lastFieldUpdateErrors = new List<String>();
+            List<Database.SaveResult> results = Database.update(records, false);
+            for (Integer i = 0; i < results.size(); i++) {
+                if (!results[i].isSuccess()) {
+                    String msg = 'Field update on send failed for ' + records[i].Id + ': '
+                        + results[i].getErrors()[0].getMessage();
+                    lastFieldUpdateErrors.add(msg);
+                    System.debug(LoggingLevel.WARN, msg);
+                }
+            }
         }
     }
 

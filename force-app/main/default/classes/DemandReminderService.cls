@@ -108,6 +108,10 @@ public without sharing class DemandReminderService {
             // Store project reference
             d.Project__c = projectId;
 
+            // Additional charge demands (AdditionalChargeDemandService) come with their own cadence:
+            // Reminder 1 = Demand Date + 15, Reminder 2 = + 7 more; nothing else.
+            if (d.Additional_Charge__c != null) continue;
+
             // BRD pointer 5: the Agreement Amount Payable demand uses a fixed cadence anchored
             // to the Welcome Mail date (Welcome Mail + 30 / 40 / 45 days) instead of the
             // project-level reminder configuration. A demand is the Agreement demand when its
@@ -256,6 +260,7 @@ public without sharing class DemandReminderService {
         List<Demands__c> demands = [
             SELECT Id, Name, Booking__c, Booking__r.Email__c, Booking__r.OwnerId,
                    Booking__r.Name, Booking__r.First_Applicant_Name__c,
+                   Additional_Charge__c, Additional_Charge__r.Name, Additional_Charge__r.Charge_Name__c,
                    Demand_Type__c, Demand_Date__c, Reminder_1_Sent_Date__c,
                    Payment_Schedule__r.Is_Agreement__c,
                    Booking__r.Plot__r.Name, Booking__r.Project__r.Name, Booking__r.Salutation__c,
@@ -305,6 +310,7 @@ public without sharing class DemandReminderService {
         List<Demands__c> demands = [
             SELECT Id, Name, Booking__c, Booking__r.Email__c, Booking__r.OwnerId,
                    Booking__r.Name, Booking__r.First_Applicant_Name__c,
+                   Additional_Charge__c, Additional_Charge__r.Name, Additional_Charge__r.Charge_Name__c,
                    Demand_Type__c, Demand_Date__c, Reminder_1_Date__c, Reminder_1_Sent_Date__c,
                    Payment_Schedule__r.Is_Agreement__c,
                    Booking__r.Plot__r.Name, Booking__r.Project__r.Name, Booking__r.Salutation__c,

@@ -18,6 +18,9 @@ private class AdditionalChargeReminderServiceTest {
      *              test exercise the "no recipient" skip branch.
      */
     private static Booking__c makeBooking(String email, Integer reminder1Days, Integer reminder2Days) {
+        // These tests cover the charge-level reminder engine, which only handles charges without
+        // a Demands__c record; keep AdditionalChargeDemandService from raising one.
+        AdditionalChargeDemandService.bypass = true;
         Project__c project = new Project__c(
             Name = 'P', Project_Type__c = 'Residential', Interest_Rate__c = 18,
             Reminder_1_Days__c = reminder1Days, Reminder_2_Days__c = reminder2Days

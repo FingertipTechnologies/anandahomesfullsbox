@@ -61,6 +61,11 @@
                 <isActive>false</isActive>
                 <label>Auto Demand</label>
             </value>
+            <value>
+                <fullName>Additional Charge</fullName>
+                <default>false</default>
+                <label>Additional Charge</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

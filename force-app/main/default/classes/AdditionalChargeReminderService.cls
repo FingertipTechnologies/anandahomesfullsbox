@@ -78,6 +78,7 @@ public with sharing class AdditionalChargeReminderService {
             FROM Additional_Charge__c
             WHERE Reminders_Disabled__c = false
             AND Is_Demanded__c = true
+            AND Id NOT IN (SELECT Additional_Charge__c FROM Demands__c WHERE Additional_Charge__c != null)
             AND Status__c NOT IN :CLOSED_STATUSES
             AND ((Reminder_1_Date__c <= :today AND Reminder_1_Sent__c = false)
                  OR (Reminder_2_Date__c <= :today AND Reminder_2_Sent__c = false))

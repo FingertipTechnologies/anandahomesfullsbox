@@ -172,6 +172,7 @@ public without sharing class BookingFinancialRecalcService {
             FROM Demands__c
             WHERE Booking__c IN :bookingIds
             AND Status__c NOT IN ('Cancelled')
+            AND Additional_Charge__c = null
         ];
 
         if (demands.isEmpty()) return;
@@ -267,6 +268,7 @@ public without sharing class BookingFinancialRecalcService {
             FROM Demands__c
             WHERE Booking__c IN :bookingIds
             AND Status__c NOT IN ('Paid', 'Cancelled')
+            AND Additional_Charge__c = null
             GROUP BY Booking__c
         ]) {
             outstandingByBooking.put((Id) ar.get('bkId'), (Decimal) ar.get('totalPending'));

@@ -60,6 +60,10 @@ private class AdditionalChargeTriggerTest {
 
     @isTest
     static void bulkInsertAndUpdate_isGovernorSafe() {
+        // Reminder-date seeding only: 200 Demands__c inserts at once would run the demand flows
+        // past the limits (the demand email sends one charge at a time); see
+        // AdditionalChargeDemandServiceTest.bulkDemand for the demand path.
+        AdditionalChargeDemandService.bypass = true;
         Booking__c b = makeBooking();
 
         List<Additional_Charge__c> charges = new List<Additional_Charge__c>();

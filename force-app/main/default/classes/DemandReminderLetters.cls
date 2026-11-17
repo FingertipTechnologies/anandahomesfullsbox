@@ -38,6 +38,10 @@ public with sharing class DemandReminderLetters {
         String pending = inr(d.Pending_Amount__c);
         String head = '';
 
+        if ((level == 1 || level == 2) && d.getPopulatedFieldsAsMap().get('Additional_Charge__c') != null) {
+            return additionalChargeLetter(d, level, flat, project);
+        }
+
         if (level == 3 || level == 4) {
             // Demand reminders 3 and 4 (2026-11-17): reminder 2 wording + the interest levied;
             // reminder 4 is the final notice / intimation of termination.
@@ -182,6 +186,44 @@ public with sharing class DemandReminderLetters {
             return d.Reminder_1_Sent_Date__c.date();
         }
         return d.Reminder_1_Date__c;
+    }
+
+    /**
+     * Reminders 1 and 2 of an Additional Charge demand (AdditionalChargeDemandService, 2026-11-17):
+     * reminder 1 at Demand Date + 15 days, reminder 2 seven days later.
+     */
+    private static Letter additionalChargeLetter(Demands__c d, Integer level, String flat, String project) {
+        Additional_Charge__c ac = (Additional_Charge__c) d.getPopulatedFieldsAsMap().get('Additional_Charge__r');
+        String charge = ac == null ? 'Additional Charge'
+            : esc(String.isNotBlank(ac.Charge_Name__c) ? ac.Charge_Name__c : ac.Name);
+        String pending = inr(d.Pending_Amount__c);
+        Letter l = new Letter();
+        if (level == 1) {
+            l.subject = 'Reminder for Payment of Additional Charge - ' + (ac == null ? '' : ac.Name);
+            l.htmlBody = P + 'Dear Sir/Madam,</p>'
+                + P + 'This is to kindly remind you regarding the demand raised on <b>' + fmt(d.Demand_Date__c)
+                    + '</b> towards the additional charge <b>' + charge + '</b> for your allotted unit bearing No. <b>'
+                    + flat + '</b> in the project <b>' + project.toUpperCase() + '</b>.</p>'
+                + P + 'As per our records, an amount of <b>&#8377; ' + pending + '</b> is still outstanding towards the said '
+                    + 'charge. You are requested to make the payment within ' + DAYS_TO_PAY + ' days from the date of this '
+                    + 'letter.</p>'
+                + P + 'Kindly ignore this reminder if the payment has already been made.</p>'
+                + P + 'Thanking you,</p>'
+                + signature(null);
+        } else {
+            l.subject = '2nd Reminder for Payment of Additional Charge - ' + (ac == null ? '' : ac.Name);
+            l.htmlBody = P + 'Dear Sir/Madam,</p>'
+                + P + 'This is in continuation of our demand dated <b>' + fmt(d.Demand_Date__c)
+                    + '</b> and reminder dated <b>' + fmt(reminderDate(d, 1)) + '</b> regarding the additional charge <b>'
+                    + charge + '</b> for your allotted unit bearing No. <b>' + flat + '</b> in the project <b>'
+                    + project.toUpperCase() + '</b>.</p>'
+                + P + 'We note that the amount of <b>&#8377; ' + pending + '</b> towards the said charge remains unpaid. '
+                    + 'You are requested to clear the outstanding amount at the earliest, and in any case within '
+                    + DAYS_TO_PAY + ' days from the date of this letter.</p>'
+                + P + 'Kindly treat this matter as urgent.</p>'
+                + signature(null);
+        }
+        return l;
     }
 
     /** Reminder N's date: when it was sent, else when it was due. */

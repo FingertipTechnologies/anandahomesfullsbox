@@ -222,6 +222,116 @@ private class DemandLetterPDFControllerTest {
     }
 
     @IsTest
+    static void extension_buildsRowsFromSavedDemandLines() {
+        Demands__c demand = [
+            SELECT Id
+            FROM Demands__c
+            WHERE Booking__r.Email__c = 'demandletter@example.com'
+            LIMIT 1
+        ];
+        if ([SELECT COUNT() FROM Demand_Line__c WHERE Demand__c = :demand.Id] == 0) {
+            Payment_Schedule__c schedule = [
+                SELECT Id FROM Payment_Schedule__c
+                WHERE Booking__r.Email__c = 'demandletter@example.com'
+                  AND Milestone_Name__c = 'On Completion of Slab'
+                LIMIT 1
+            ];
+            DemandLineService.insertForDemand(demand.Id, new List<Demand_Line__c>{
+                DemandLineService.createFromSchedule(schedule, 'Flat + GST', 100000, 5000, 0, 0)
+            });
+        }
+
+        Test.setCurrentPage(new PageReference('/apex/DemandLetterFull?id=' + demand.Id));
+        DemandLetterPDFController controller =
+            new DemandLetterPDFController(new ApexPages.StandardController(demand));
+
+        System.assertEquals(null, controller.errorMessage);
+        System.assert(!controller.demandLetterLineRows.isEmpty());
+        System.assertEquals(100000, controller.demandLetterLineRows[0].flatInstallmentAmount,
+            'Without prorata the flat installment is the schedule amount plus TDS.');
+        System.assertEquals(5000, controller.demandLetterLineRows[0].gstInstallmentAmount);
+    }
+
+    @IsTest
+    static void extension_buildsFallbackRowWhenDemandHasNoLines() {
+        Demands__c demand = [
+            SELECT Id
+            FROM Demands__c
+            WHERE Booking__r.Email__c = 'demandletter@example.com'
+            LIMIT 1
+        ];
+        delete [SELECT Id FROM Demand_Line__c WHERE Demand__c = :demand.Id];
+        update new Demands__c(Id = demand.Id, Demand_Component__c = 'Flat');
+
+        Test.setCurrentPage(new PageReference('/apex/DemandLetterFlat?id=' + demand.Id));
+        DemandLetterPDFController controller =
+            new DemandLetterPDFController(new ApexPages.StandardController(demand));
+
+        System.assertEquals(null, controller.errorMessage);
+        System.assertEquals(1, controller.demandLines.size());
+        System.assertEquals('On Completion of Slab', controller.demandLines[0].Milestone_Name__c);
+        System.assertEquals(110000, controller.demandLines[0].Demand_Amount__c);
+        System.assertEquals(1, controller.demandLetterLineRows.size());
+
+        update new Demands__c(Id = demand.Id, Demand_Component__c = 'GST');
+        DemandLetterPDFController gstController =
+            new DemandLetterPDFController(new ApexPages.StandardController(demand));
+        System.assertEquals(1, gstController.demandLetterLineRows.size());
+
+        update new Demands__c(Id = demand.Id, Demand_Component__c = 'Flat + GST', Payment_Schedule__c = null);
+        DemandLetterPDFController noScheduleController =
+            new DemandLetterPDFController(new ApexPages.StandardController(demand));
+        System.assertEquals('', noScheduleController.demandLines[0].Milestone_Name__c);
+    }
+
+    @IsTest
+    static void installmentAmounts_followProrataAndBankRules() {
+        Payment_Schedule__c schedule = new Payment_Schedule__c(
+            Payment_Schedule_Amount__c = 1000,
+            TDS_Amount__c = 10,
+            GST_Amount__c = 50,
+            Bank_Flat_Amount__c = 600,
+            Bank_GST_Amount__c = 30,
+            Customer_Flat_Prorata__c = 400,
+            Customer_GST_Prorata__c = 20
+        );
+        Demand_Line__c gstLine = new Demand_Line__c(
+            Demand_Component__c = 'GST', Flat_Amount__c = 200, TDS_Amount__c = 2, GST_Amount__c = 9
+        );
+        Demand_Line__c flatLine = new Demand_Line__c(
+            Demand_Component__c = 'Flat', Flat_Amount__c = 200, TDS_Amount__c = 2
+        );
+
+        System.assertEquals(600, DemandLetterPDFController.flatInstallmentAmount(gstLine, schedule, 'Prorata', true, 'Bank'));
+        System.assertEquals(400, DemandLetterPDFController.flatInstallmentAmount(gstLine, schedule, 'Partial', true, 'Customer'));
+        System.assertEquals(202, DemandLetterPDFController.flatInstallmentAmount(flatLine, schedule, 'Prorata', true, 'Bank'));
+        System.assertEquals(202, DemandLetterPDFController.flatInstallmentAmount(gstLine, null, 'Loan', false, null));
+        System.assertEquals(1010, DemandLetterPDFController.flatInstallmentAmount(flatLine, schedule, 'Prorata', false, 'Bank'));
+
+        System.assertEquals(30, DemandLetterPDFController.gstInstallmentAmount(gstLine, schedule, 'Prorata', true, 'Bank'));
+        System.assertEquals(20, DemandLetterPDFController.gstInstallmentAmount(gstLine, schedule, 'Partial', true, 'Customer'));
+        System.assertEquals(50, DemandLetterPDFController.gstInstallmentAmount(gstLine, schedule, 'Loan', true, 'Bank'));
+        System.assertEquals(9, DemandLetterPDFController.gstInstallmentAmount(gstLine, null, 'Prorata', true, 'Bank'));
+        System.assertEquals(null, DemandLetterPDFController.resolveAccountType(''));
+    }
+
+    @IsTest
+    static void extension_reportsDemandWithoutProject() {
+        Demands__c demand = [
+            SELECT Id
+            FROM Demands__c
+            WHERE Booking__r.Email__c = 'demandletter@example.com'
+            LIMIT 1
+        ];
+        update new Demands__c(Id = demand.Id, Project__c = null);
+
+        Test.setCurrentPage(new PageReference('/apex/DemandLetterFlat?id=' + demand.Id));
+        DemandLetterPDFController controller =
+            new DemandLetterPDFController(new ApexPages.StandardController(demand));
+        System.assert(controller.errorMessage.contains('linked to a project'));
+    }
+
+    @IsTest
     static void extension_reportsDemandDeletedBeforeAccountLookup() {
         Demands__c demand = [
             SELECT Id

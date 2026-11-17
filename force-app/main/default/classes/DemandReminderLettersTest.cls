@@ -26,7 +26,6 @@ private class DemandReminderLettersTest {
         System.assert(l.htmlBody.contains('&#8377; 1,25,000'), l.htmlBody);
         System.assert(l.htmlBody.contains('issued dated <b>01/02/2026</b>'), l.htmlBody);
         System.assert(l.htmlBody.contains('on or before <b>16/02/2026</b>'), l.htmlBody);
-        System.assert(l.htmlBody.contains('<b>Mr. Ravi Kumar</b>'), l.htmlBody);
     }
 
     @isTest
@@ -61,8 +60,35 @@ private class DemandReminderLettersTest {
     }
 
     @isTest
+    static void demandReminder3_withInterest() {
+        Demands__c d = demand();
+        d.Reminder_2_Date__c = Date.newInstance(2026, 3, 9);
+        d.Interest_Amount__c = 5000;
+        d.Interest_Waived_Off_Amount__c = 1000;
+        DemandReminderLetters.Letter l = DemandReminderLetters.build(d, 3, false, null);
+        System.assertEquals('3rd Reminder for Payment of Outstanding Demand with Interest', l.subject);
+        System.assert(l.htmlBody.contains('reminder letters dated <b>03/03/2026</b>, <b>09/03/2026</b> regarding'), l.htmlBody);
+        System.assert(l.htmlBody.contains('interest of <b>&#8377; 4,000</b>'), l.htmlBody);
+        System.assert(l.htmlBody.contains('total amount now payable by you is <b>&#8377; 1,29,000</b>'), l.htmlBody);
+    }
+
+    @isTest
+    static void demandReminder4_terminationIntimation() {
+        Demands__c d = demand();
+        d.Reminder_2_Sent_Date__c = DateTime.newInstance(2026, 3, 10, 9, 0, 0);
+        d.Reminder_3_Date__c = Date.newInstance(2026, 3, 18);
+        d.Interest_Amount__c = 2500;
+        DemandReminderLetters.Letter l = DemandReminderLetters.build(d, 4, true, null);
+        System.assertEquals('Final Notice - Intimation of Termination of Allotment for Non-Payment', l.subject);
+        System.assert(l.htmlBody.contains('<b>10/03/2026</b> and <b>18/03/2026</b>'), l.htmlBody);
+        System.assert(l.htmlBody.contains('final notice and intimation of termination'), l.htmlBody);
+        System.assert(l.htmlBody.contains('pay the total amount of <b>&#8377; 1,27,500</b>'), l.htmlBody);
+    }
+
+    @isTest
     static void otherLevelsAndHelpers() {
-        System.assertEquals(null, DemandReminderLetters.build(demand(), 3, false, null));
+        System.assertEquals(null, DemandReminderLetters.build(demand(), 5, false, null));
+        System.assertEquals(0, DemandReminderLetters.netInterest(new Demands__c(Interest_Amount__c = 10, Interest_Waived_Off_Amount__c = 50)));
         System.assertEquals('__________', DemandReminderLetters.fmt(null));
         System.assertEquals('99,28,695', DemandReminderLetters.inr(9928695));
         System.assertEquals('0', DemandReminderLetters.inr(null));

@@ -27,7 +27,7 @@ public with sharing class DemandReminderLetters {
      * @return the letter, or null for any other level
      */
     public static Letter build(Demands__c d, Integer level, Boolean isMargin, User owner) {
-        if (d == null || (level != 1 && level != 2)) {
+        if (d == null || level == null || level < 1 || level > 4) {
             return null;
         }
         Letter l = new Letter();
@@ -38,7 +38,53 @@ public with sharing class DemandReminderLetters {
         String pending = inr(d.Pending_Amount__c);
         String head = '';
 
-        if (!isMargin && level == 1) {
+        if (level == 3 || level == 4) {
+            // Demand reminders 3 and 4 (2026-11-17): reminder 2 wording + the interest levied;
+            // reminder 4 is the final notice / intimation of termination.
+            Decimal interest = netInterest(d);
+            Decimal open = d.Pending_Amount__c == null ? 0 : d.Pending_Amount__c;
+            String interestLine = P + 'Please note that, as per the terms of the Agreement, interest of <b>&#8377; ' + inr(interest)
+                + '</b> has been levied on the delayed payment as on date. The total amount now payable by you is <b>&#8377; '
+                + inr(open + interest) + '</b> (outstanding amount of &#8377; ' + pending + ' plus interest of &#8377; '
+                + inr(interest) + '), and interest will continue to accrue until the date of payment.</p>';
+            String earlier = 'our demand notice dated <b>' + fmt(d.Demand_Date__c) + '</b> and reminder letters dated <b>'
+                + fmt(reminderDate(d, 1)) + '</b>, <b>' + fmt(reminderDate(d, 2)) + '</b>'
+                + (level == 4 ? ' and <b>' + fmt(reminderDate(d, 3)) + '</b>' : '');
+            if (level == 3) {
+                l.subject = '3rd Reminder for Payment of Outstanding Demand with Interest';
+                l.htmlBody = P + 'Dear Sir/Madam,</p>'
+                    + P + 'This is in continuation of ' + earlier + ' regarding the outstanding payment towards your allotted '
+                        + 'unit bearing No <b>' + flat + '</b> in the project <b>' + project.toUpperCase() + '</b>.</p>'
+                    + P + 'Despite repeated requests, we note with concern that the outstanding amount of <b>&#8377; ' + pending
+                        + '</b>, which was due for payment on or before <b>' + fmt(d.Due_Date__c) + '</b>, remains unpaid. This '
+                        + 'delay is in violation of the terms and conditions agreed under the Allotment Letter/Agreement.</p>'
+                    + interestLine
+                    + P + 'You are hereby called upon to clear the total amount payable of <b>&#8377; ' + inr(open + interest)
+                        + '</b> within ' + DAYS_TO_PAY + ' days from the date of this letter, failing which we shall be '
+                        + 'constrained to initiate appropriate action in accordance with the terms of the Agreement, including '
+                        + 'cancellation of allotment and/or other legal remedies available under law, entirely at your risk as to '
+                        + 'cost and consequences.</p>'
+                    + P + 'Kindly treat this matter as most urgent.</p>'
+                    + signature(null);
+            } else {
+                l.subject = 'Final Notice - Intimation of Termination of Allotment for Non-Payment';
+                l.htmlBody = P + 'Dear Sir/Madam,</p>'
+                    + P + 'This is with reference to ' + earlier + ' regarding the outstanding payment towards your allotted '
+                        + 'unit bearing No <b>' + flat + '</b> in the project <b>' + project.toUpperCase() + '</b>.</p>'
+                    + P + 'In spite of our repeated reminders, the outstanding amount of <b>&#8377; ' + pending + '</b>, which was '
+                        + 'due for payment on or before <b>' + fmt(d.Due_Date__c) + '</b>, has not been paid till date, which '
+                        + 'amounts to a breach of the terms and conditions of the Allotment Letter/Agreement.</p>'
+                    + interestLine
+                    + P + 'This letter therefore serves as a <b>final notice and intimation of termination</b>. You are hereby '
+                        + 'called upon to pay the total amount of <b>&#8377; ' + inr(open + interest) + '</b> within '
+                        + DAYS_TO_PAY + ' days from the date of this letter. If the payment is not received within this period, '
+                        + 'the allotment of the said unit shall stand terminated/cancelled without any further notice, and the '
+                        + 'amounts paid by you shall be dealt with (including deductions/forfeiture) as per the terms of the '
+                        + 'Agreement, entirely at your risk as to cost and consequences.</p>'
+                    + P + 'Kindly treat this as the last opportunity to regularise your account and avoid termination.</p>'
+                    + signature(null);
+            }
+        } else if (!isMargin && level == 1) {
             l.subject = 'Reminder for Payment of Demand Raised';
             l.htmlBody = 
                 //+ P + '<b>Subject: Reminder for Payment of Demand Raised</b></p>'
@@ -137,6 +183,24 @@ public with sharing class DemandReminderLetters {
             return d.Reminder_1_Sent_Date__c.date();
         }
         return d.Reminder_1_Date__c;
+    }
+
+    /** Reminder N's date: when it was sent, else when it was due. */
+    private static Date reminderDate(Demands__c d, Integer n) {
+        Map<String, Object> f = d.getPopulatedFieldsAsMap();
+        Object sent = f.get('Reminder_' + n + '_Sent_Date__c');
+        if (sent != null) {
+            return ((DateTime) sent).date();
+        }
+        return (Date) f.get('Reminder_' + n + '_Date__c');
+    }
+
+    /** Interest levied on the demand less any interest waived; never negative. */
+    @TestVisible
+    private static Decimal netInterest(Demands__c d) {
+        Decimal interest = (d.Interest_Amount__c == null ? 0 : d.Interest_Amount__c)
+            - (d.Interest_Waived_Off_Amount__c == null ? 0 : d.Interest_Waived_Off_Amount__c);
+        return interest < 0 ? 0 : interest;
     }
 
     @TestVisible

@@ -29,6 +29,10 @@ public without sharing class DemandReminderService {
     // (reminder letters "WL+30days" / "WL+ 45days", 2026-11-16).
     @TestVisible private static final Integer AGREEMENT_REMINDER_1_DAYS = 30;
     @TestVisible private static final Integer AGREEMENT_REMINDER_2_DAYS = 45;
+    /** Reminder type -> DemandReminderLetters level. */
+    private static final Map<String, Integer> REMINDER_LEVELS = new Map<String, Integer>{
+        '1st Reminder' => 1, '2nd Reminder' => 2, '3rd Reminder' => 3, '4th Reminder' => 4
+    };
     @TestVisible private static final Integer AGREEMENT_TERMINATION_DAYS = 45;
 
     // ==================== PUBLIC METHODS ====================
@@ -347,6 +351,11 @@ public without sharing class DemandReminderService {
         List<Demands__c> demands = [
             SELECT Id, Name, Booking__c, Booking__r.Email__c, Booking__r.OwnerId,
                    Booking__r.Name, Booking__r.First_Applicant_Name__c,
+                   Demand_Type__c, Demand_Date__c, Payment_Schedule__r.Is_Agreement__c,
+                   Reminder_1_Date__c, Reminder_1_Sent_Date__c, Reminder_2_Date__c, Reminder_2_Sent_Date__c,
+                   Interest_Amount__c, Interest_Waived_Off_Amount__c,
+                   Booking__r.Plot__r.Name, Booking__r.Project__r.Name, Booking__r.Salutation__c,
+                   Booking__r.Permanent_Address__c, Booking__r.Booking_Date__c, Booking__r.Total_Flat_Cost__c,
                    Demand_Amount__c, Pending_Amount__c, Due_Date__c,
                    Reminder_3_Date__c, Project__c,Number_of_Reminders__c 
             FROM Demands__c
@@ -389,6 +398,12 @@ public without sharing class DemandReminderService {
         List<Demands__c> demands = [
             SELECT Id, Name, Booking__c, Booking__r.Email__c, Booking__r.OwnerId,
                    Booking__r.Name, Booking__r.First_Applicant_Name__c,
+                   Demand_Type__c, Demand_Date__c, Payment_Schedule__r.Is_Agreement__c,
+                   Reminder_1_Date__c, Reminder_1_Sent_Date__c, Reminder_2_Date__c, Reminder_2_Sent_Date__c,
+                   Interest_Amount__c, Interest_Waived_Off_Amount__c,
+                   Booking__r.Plot__r.Name, Booking__r.Project__r.Name, Booking__r.Salutation__c,
+                   Booking__r.Permanent_Address__c, Booking__r.Booking_Date__c, Booking__r.Total_Flat_Cost__c,
+                   Reminder_3_Date__c, Reminder_3_Sent_Date__c,
                    Demand_Amount__c, Pending_Amount__c, Due_Date__c,
                    Reminder_4_Date__c, Project__c,Number_of_Reminders__c 
             FROM Demands__c
@@ -635,8 +650,8 @@ public without sharing class DemandReminderService {
                 if (!fileAttachments.isEmpty()) {
                     email.setFileAttachments(fileAttachments);
                 }
-            } else if (reminderType == '1st Reminder' || reminderType == '2nd Reminder') {
-                // No admin template: the reminder letters (demand / AOS margin), 2026-11-16
+            } else if (REMINDER_LEVELS.containsKey(reminderType)) {
+                // No admin template: the reminder letters (demand 1-4 / AOS margin 1-2), 2026-11-16/17
                 Boolean isMargin = DEMAND_TYPE_AGREEMENT_AMOUNT.equalsIgnoreCase(demand.Demand_Type__c)
                     || (demand.Payment_Schedule__r != null && demand.Payment_Schedule__r.Is_Agreement__c == true);
                 User owner = null;
@@ -645,7 +660,7 @@ public without sharing class DemandReminderService {
                     owner = owners.isEmpty() ? null : owners[0];
                 }
                 DemandReminderLetters.Letter letter = DemandReminderLetters.build(
-                    demand, reminderType == '1st Reminder' ? 1 : 2, isMargin, owner);
+                    demand, REMINDER_LEVELS.get(reminderType), isMargin, owner);
                 email.setSubject(letter.subject);
                 email.setHtmlBody(letter.htmlBody);
                 Id letterDocId = (config != null && config.Document_Template__c != null) ? config.Document_Template__c : masterDocTemplateId;

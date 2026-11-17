@@ -35,7 +35,7 @@ public without sharing class AdditionalChargeDemandService {
         Set<Id> chargeIds = new Map<Id, Additional_Charge__c>(newList).keySet();
         Map<Id, Demands__c> demandByCharge = new Map<Id, Demands__c>();
         for (Demands__c d : [
-            SELECT Id, Additional_Charge__c, Demand_Amount__c, Paid_Amount__c, Pending_Amount__c, Status__c
+            SELECT Id, Additional_Charge__c, Base_Amount__c, Demand_Amount__c, Paid_Amount__c, Pending_Amount__c, Status__c
             FROM Demands__c
             WHERE Additional_Charge__c IN :chargeIds AND Status__c != 'Cancelled'
             ORDER BY CreatedDate DESC
@@ -113,6 +113,7 @@ public without sharing class AdditionalChargeDemandService {
         Decimal total = nz(c.Amount__c) + nz(c.GST_Amount__c);
         Decimal paid = Math.min(nz(c.Amount_Paid__c), total);
         Decimal pending = Math.max(0, total - paid);
+        Decimal base = nz(c.Amount__c); // Base Amount = the additional charge amount (2026-11-17)
         String status = d.Status__c;
         if (c.Status__c == 'Cancelled') {
             status = 'Cancelled';
@@ -124,7 +125,8 @@ public without sharing class AdditionalChargeDemandService {
             status = 'Emailed';
         }
         Boolean changed = d.Demand_Amount__c != total || d.Paid_Amount__c != paid
-            || d.Pending_Amount__c != pending || d.Status__c != status;
+            || d.Pending_Amount__c != pending || d.Status__c != status || d.Base_Amount__c != base;
+        d.Base_Amount__c = base;
         d.Demand_Amount__c = total;
         d.Paid_Amount__c = paid;
         d.Pending_Amount__c = pending;

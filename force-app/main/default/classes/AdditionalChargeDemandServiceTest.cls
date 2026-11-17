@@ -27,7 +27,7 @@ private class AdditionalChargeDemandServiceTest {
 
     private static List<Demands__c> demandsOf(Id chargeId) {
         return [
-            SELECT Id, Demand_Type__c, Demand_Amount__c, Paid_Amount__c, Pending_Amount__c, Status__c,
+            SELECT Id, Demand_Type__c, Base_Amount__c, Demand_Amount__c, Paid_Amount__c, Pending_Amount__c, Status__c,
                    Demand_Date__c, Due_Date__c, Reminder_1_Date__c, Reminder_2_Date__c, Reminder_3_Date__c,
                    Reminder_4_Date__c, Termination_Mail_Date__c, Unit_Unblocking_Date__c, Project__c
             FROM Demands__c WHERE Additional_Charge__c = :chargeId
@@ -51,6 +51,7 @@ private class AdditionalChargeDemandServiceTest {
         Demands__c d = ds[0];
         System.assertEquals('Additional Charge', d.Demand_Type__c);
         System.assertEquals(11800, d.Demand_Amount__c);
+        System.assertEquals(10000, d.Base_Amount__c);
         System.assertEquals(11800, d.Pending_Amount__c);
         System.assertEquals('Emailed', d.Status__c);
         System.assertEquals(today.addDays(15), d.Reminder_1_Date__c);

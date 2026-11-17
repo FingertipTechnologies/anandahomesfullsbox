@@ -1,0 +1,97 @@
+<apex:page standardController="Additional_Charge__c" extensions="AdditionalChargeDemandLetterController" renderAs="pdf"
+           showHeader="false" sidebar="false" applyBodyTag="false" applyHtmlTag="false" title="Additional Charge Demand Letter">
+<html>
+<head>
+    <style type="text/css">
+        @page { size: A4 portrait; margin: 18mm 17mm; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #111; line-height: 1.35; }
+        p { margin: 0 0 9px; }
+        .date { margin-bottom: 14px; }
+        .subject { margin-top: 4px; }
+        .charge-table, .account-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 10px 0 13px; }
+        .charge-table th, .charge-table td, .account-table td { border: 1px solid #222; padding: 5px; vertical-align: middle; }
+        .charge-table th { text-align: center; font-weight: bold; }
+        .charge-table td { text-align: right; }
+        .charge-table td:first-child, .account-table td:first-child { text-align: left; }
+        .charge-table .total-label { font-weight: bold; text-align: left; }
+        .account-table td:first-child { width: 32%; font-weight: bold; }
+        .signature { margin-top: 20px; }
+        .error { border: 1px solid #900; color: #900; padding: 10px; }
+    </style>
+</head>
+<body>
+    <apex:outputPanel layout="block" rendered="{!NOT(ISBLANK(errorMessage))}" styleClass="error">
+        <apex:outputText value="{!errorMessage}" />
+    </apex:outputPanel>
+    <apex:outputPanel layout="block" rendered="{!ISBLANK(errorMessage)}">
+        <p class="date">Date:
+            <apex:outputText value="{0, date, dd/MM/yyyy}"><apex:param value="{!letterDate}" /></apex:outputText>
+        </p>
+        <p>To,</p>
+        <p><strong><apex:outputText value="{!applicantName}" /></strong></p>
+        <p class="subject"><strong>Sub: Demand Letter for Additional Charge – <apex:outputText value="{!chargeLabel}" />.</strong></p>
+        <p>
+            Flat No. <apex:outputText value="{!charge.Booking__r.Plot__r.Name}" />;
+            Tower – <apex:outputText value="{!charge.Booking__r.Plot__r.Tower_Block__c}" />;
+            <apex:outputText value="{!charge.Booking__r.FloorNo__c}" /> Floor;
+            Project – “<apex:outputText value="{!charge.Booking__r.Project__r.Name}" />”
+        </p>
+        <p>
+            With reference to the subject mentioned, we have raised the demand towards the additional charge
+            “<apex:outputText value="{!chargeLabel}" />” for your above flat, as detailed in the table below.
+        </p>
+        <p>
+            Request your attention for clearing the amount of Rs. <strong>₹
+            <apex:outputText value="{0, number, #,##0.00}"><apex:param value="{!balanceAmount}" /></apex:outputText>/-</strong>,
+            receivable within 7 days from the date of this demand letter.
+        </p>
+        <table class="charge-table">
+            <colgroup>
+                <col style="width:28%" /><col style="width:14%" /><col style="width:14%" />
+                <col style="width:15%" /><col style="width:14%" /><col style="width:15%" />
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Charge Description</th>
+                    <th>Amount</th>
+                    <th>GST</th>
+                    <th>Total Amount Payable</th>
+                    <th>Received Amount</th>
+                    <th>Net Amount Payable</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <apex:outputText value="{!chargeLabel}" />
+                        <apex:outputPanel rendered="{!NOT(ISBLANK(charge.Description__c))}"><br/><apex:outputText value="{!charge.Description__c}" /></apex:outputPanel>
+                    </td>
+                    <td><apex:outputText value="{0, number, #,##0.00}"><apex:param value="{!baseAmount}" /></apex:outputText></td>
+                    <td><apex:outputText value="{0, number, #,##0.00}"><apex:param value="{!gstAmount}" /></apex:outputText></td>
+                    <td><apex:outputText value="{0, number, #,##0.00}"><apex:param value="{!totalAmount}" /></apex:outputText></td>
+                    <td><apex:outputText value="{0, number, #,##0.00}"><apex:param value="{!receivedAmount}" /></apex:outputText></td>
+                    <td><apex:outputText value="{0, number, #,##0.00}"><apex:param value="{!balanceAmount}" /></apex:outputText></td>
+                </tr>
+                <tr>
+                    <td colspan="5" class="total-label">TOTAL PAYABLE (Rs.)</td>
+                    <td><strong>₹ <apex:outputText value="{0, number, #,##0.00}"><apex:param value="{!balanceAmount}" /></apex:outputText>/-</strong></td>
+                </tr>
+            </tbody>
+        </table>
+        <apex:outputPanel layout="block" rendered="{!hasAccount}">
+            <p>We accept payments by way of A/c Payee Cheques or may do online transfer as stated hereunder:</p>
+            <table class="account-table">
+                <tbody>
+                    <tr><td>Payee’s Name:</td><td><apex:outputText value="{!accountHolder}" /></td></tr>
+                    <tr><td>Account No:</td><td><apex:outputText value="{!accountNumber}" /></td></tr>
+                    <tr><td>Bank &amp; Branch:</td><td><apex:outputText value="{!bankName}" />; <apex:outputText value="{!accountBranch}" /></td></tr>
+                    <tr><td>IFSC Code:</td><td><apex:outputText value="{!ifscCode}" /></td></tr>
+                </tbody>
+            </table>
+        </apex:outputPanel>
+        <p>Kindly share the transaction details once the payment is made, in order to credit the amount to your account.</p>
+        <p class="signature">Thanking you,<br/><strong>For M/S. <apex:outputText value="{!charge.Booking__r.Project__r.Name}" /></strong><br/>AUTHORISED SIGNATORY</p>
+    </apex:outputPanel>
+</body>
+</html>
+</apex:page>

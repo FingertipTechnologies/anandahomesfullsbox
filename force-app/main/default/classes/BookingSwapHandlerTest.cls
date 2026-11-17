@@ -288,9 +288,8 @@ private class BookingSwapHandlerTest {
         ReceiptApprovalGateService.bypass = false;
 
         Test.startTest();
-        ReceiptApprovalGateService.bypass = true;
-        BookingSwapHandler.rejectOldBookingReceipts(oldB.Id, newB.Id);
-        BookingSwapHandler.zeroOldBookingSchedules(oldB.Id);
+        // The swap enqueues this job; stopTest runs it.
+        System.enqueueJob(new BookingSwapHandler.OldBookingCleanup(oldB.Id, newB.Id));
         Test.stopTest();
 
         for (Receipt__c r : [SELECT Approval_Status__c, Notes__c FROM Receipt__c WHERE Booking__c = :oldB.Id]) {

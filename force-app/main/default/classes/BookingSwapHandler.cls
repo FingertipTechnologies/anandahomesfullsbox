@@ -234,10 +234,6 @@ public with sharing class BookingSwapHandler {
             // Step 6: Transfer files (ContentDocumentLinks)
             transferFiles(request.oldBookingId, newBooking.Id);
 
-            // Step 6a: The old booking's Approved receipts now live on the new booking (cloned
-            // above) and its Pending ones are void: reject them all on the old booking, with a note.
-            rejectOldBookingReceipts(request.oldBookingId, newBooking.Id);
-
             // Step 7: Record swap history on both bookings (BRD §12).
             insert new Swap_History__c(
                 Old_Booking__c = oldBooking.Id,
@@ -273,8 +269,11 @@ public with sharing class BookingSwapHandler {
                 new Set<Id>{ request.oldBookingId, newBooking.Id }
             );
 
-            // Step 9: Nothing is paid on the old booking any more - its schedules show 0 received.
-            zeroOldBookingSchedules(request.oldBookingId);
+            // Step 9: Clean up the old booking (reject its Approved/Pending receipts with a note,
+            // zero its schedules' received amounts) in its own transaction. Rejecting receipts
+            // fires the receipt flows (recalc + notifications) per receipt; inside the swap's
+            // approval transaction that ran past the 100-SOQL limit and the rejection was lost.
+            enqueueOldBookingCleanup(request.oldBookingId, newBooking.Id);
 
             return result;
 
@@ -287,6 +286,50 @@ public with sharing class BookingSwapHandler {
     }
 
     // ==================== OLD BOOKING CLEAN-UP (2026-11-17) ====================
+
+    /**
+     * @description Runs the old-booking clean-up after the swap commits, with fresh limits.
+     *              Public so a swap whose clean-up was missed can be re-run:
+     *              System.enqueueJob(new BookingSwapHandler.OldBookingCleanup(oldId, newId));
+     */
+    public class OldBookingCleanup implements Queueable {
+        private Id oldBookingId;
+        private Id newBookingId;
+        public OldBookingCleanup(Id oldBookingId, Id newBookingId) {
+            this.oldBookingId = oldBookingId;
+            this.newBookingId = newBookingId;
+        }
+        public void execute(QueueableContext ctx) {
+            runOldBookingCleanup(oldBookingId, newBookingId);
+        }
+    }
+
+    private static void enqueueOldBookingCleanup(Id oldBookingId, Id newBookingId) {
+        if (Limits.getQueueableJobs() < Limits.getLimitQueueableJobs()) {
+            System.enqueueJob(new OldBookingCleanup(oldBookingId, newBookingId));
+        } else {
+            // No queueable slot left (e.g. already inside an async job): do it inline.
+            runOldBookingCleanup(oldBookingId, newBookingId);
+        }
+    }
+
+    @TestVisible
+    private static void runOldBookingCleanup(Id oldBookingId, Id newBookingId) {
+        Boolean priorRecalcBypass = BookingFinancialRecalcService.bypass;
+        Boolean priorReceiptGateBypass = ReceiptApprovalGateService.bypass;
+        try {
+            // One recalculation at the end instead of one per rejected receipt.
+            BookingFinancialRecalcService.bypass = true;
+            ReceiptApprovalGateService.bypass = true;
+            rejectOldBookingReceipts(oldBookingId, newBookingId);
+        } finally {
+            BookingFinancialRecalcService.bypass = priorRecalcBypass;
+            ReceiptApprovalGateService.bypass = priorReceiptGateBypass;
+        }
+        BookingFinancialRecalcService.recalculateForBookings(new Set<Id>{ oldBookingId });
+        // Nothing is paid on the old booking any more - its schedules show 0 received.
+        zeroOldBookingSchedules(oldBookingId);
+    }
 
     @TestVisible
     private static final Set<String> RECEIPT_STATUSES_TO_REJECT = new Set<String>{

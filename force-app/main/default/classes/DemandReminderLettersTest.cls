@@ -79,10 +79,11 @@ private class DemandReminderLettersTest {
         d.Reminder_3_Date__c = Date.newInstance(2026, 3, 18);
         d.Interest_Amount__c = 2500;
         DemandReminderLetters.Letter l = DemandReminderLetters.build(d, 4, true, null);
-        System.assertEquals('Final Notice - Intimation of Termination of Allotment for Non-Payment', l.subject);
+        System.assertEquals('Intimation of Termination of Allotment for Non-Payment', l.subject);
         System.assert(l.htmlBody.contains('<b>10/03/2026</b> and <b>18/03/2026</b>'), l.htmlBody);
-        System.assert(l.htmlBody.contains('final notice and intimation of termination'), l.htmlBody);
-        System.assert(l.htmlBody.contains('pay the total amount of <b>&#8377; 1,27,500</b>'), l.htmlBody);
+        System.assert(l.htmlBody.contains('stands <b>terminated</b>'), l.htmlBody);
+        System.assert(l.htmlBody.contains('(total <b>&#8377; 1,27,500</b>)'), l.htmlBody);
+        System.assert(!l.htmlBody.contains('within ' + DemandReminderLetters.DAYS_TO_PAY + ' days'), l.htmlBody);
     }
 
     @isTest

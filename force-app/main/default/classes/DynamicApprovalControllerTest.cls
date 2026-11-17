@@ -606,4 +606,33 @@ private class DynamicApprovalControllerTest {
         System.assertEquals(true, st[0].isFilled);
         System.assertEquals('Uploaded', st[0].currentValue);
     }
+
+    @isTest
+    static void pushToCrm_requiresAnApprovedReceipt() {
+        Project__c project = new Project__c(Name = 'P', Project_Type__c = 'Residential');
+        insert project;
+        Booking__c b = new Booking__c(Project__c = project.Id, Booking_Date__c = Date.today(), Status__c = 'New');
+        insert b;
+        Approval_Configuration__c cfg = new Approval_Configuration__c(
+            Object_API_Name__c = 'Booking__c', Process_Type__c = DynamicApprovalController.PUSH_TO_CRM,
+            Process_Label__c = 'Push To CRM', Is_Active__c = true, Sequence_Order__c = 1,
+            Required_Fields_JSON__c = '[{"apiName":"Signed_Booking_Form_Uploaded__c","label":"Signed Booking Form Uploaded"}]'
+        );
+        insert cfg;
+        insert new ContentVersion(Title = 'Signed form', PathOnClient = 'signed.pdf', VersionData = Blob.valueOf('x'),
+            FirstPublishLocationId = b.Id, Document_Type__c = 'Signed Booking Form');
+
+        List<DynamicApprovalController.RequiredFieldStatus> st = DynamicApprovalController.getRequiredFieldsStatus(b.Id, cfg.Id);
+        System.assertEquals(2, st.size());
+        DynamicApprovalController.RequiredFieldStatus receiptRow = st[1];
+        System.assertEquals('Approved_Receipt', receiptRow.fieldApiName);
+        System.assertEquals(false, receiptRow.isFilled);
+        System.assertEquals('No approved receipt yet', receiptRow.currentValue);
+        try {
+            DynamicApprovalController.submitForApproval(b.Id, cfg.Id, 'test');
+            System.assert(false, 'submission must be blocked');
+        } catch (AuraHandledException e) {
+            System.assert(true);
+        }
+    }
 }

@@ -563,15 +563,15 @@ public with sharing class DynamicApprovalController {
             // Validate required fields before submitting
             List<RequiredFieldStatus> fieldStatuses = validateRequiredFieldsInternal(recordId, configId);
             for (RequiredFieldStatus fs : fieldStatuses) {
-                if (!fs.isFilled && fs.fieldType == 'document') {
-                    throw new AuraHandledException('Please upload the Signed Booking Form in the Documents section before submitting this booking for approval.');
+                if (!fs.isFilled && String.isNotBlank(fs.blockMessage)) {
+                    throw new AuraHandledException(fs.blockMessage);
                 }
                 if (!fs.isFilled) {
                     throw new AuraHandledException('Required field "' + fs.fieldLabel + '" must be filled before submitting for approval.');
                 }
                 // The file is there: make sure the booking's checkbox agrees (the stage gate to
                 // Booked checks the checkbox).
-                if (fs.fieldType == 'document') {
+                if (fs.fieldApiName == SIGNED_BOOKING_FORM_FLAG && fs.fieldType == 'document') {
                     Booking__c b = [SELECT Id, Signed_Booking_Form_Uploaded__c FROM Booking__c WHERE Id = :recordId];
                     if (b.Signed_Booking_Form_Uploaded__c != true) {
                         b.Signed_Booking_Form_Uploaded__c = true;
@@ -614,7 +614,29 @@ public with sharing class DynamicApprovalController {
         return validateRequiredFieldsInternal(recordId, configId);
     }
 
+    @TestVisible private static final String PUSH_TO_CRM = 'Push_to_CRM';
+
     private static List<RequiredFieldStatus> validateRequiredFieldsInternal(Id recordId, Id configId) {
+        List<RequiredFieldStatus> result = validateConfiguredFields(recordId, configId);
+        Approval_Configuration__c cfg = [
+            SELECT Process_Type__c, Object_API_Name__c FROM Approval_Configuration__c WHERE Id = :configId LIMIT 1
+        ];
+        // Push To CRM: at least one approved receipt on the booking (2026-11-17).
+        if (cfg.Object_API_Name__c == 'Booking__c' && cfg.Process_Type__c == PUSH_TO_CRM) {
+            RequiredFieldStatus fs = new RequiredFieldStatus();
+            fs.fieldApiName = 'Approved_Receipt';
+            fs.fieldLabel = 'At least one approved receipt';
+            fs.fieldType = 'document';
+            Integer approved = [SELECT COUNT() FROM Receipt__c WHERE Booking__c = :recordId AND Approval_Status__c = 'Approved'];
+            fs.isFilled = approved > 0;
+            fs.currentValue = approved > 0 ? approved + ' approved' : 'No approved receipt yet';
+            fs.blockMessage = 'At least one receipt must be approved before this booking can be pushed to CRM.';
+            result.add(fs);
+        }
+        return result;
+    }
+
+    private static List<RequiredFieldStatus> validateConfiguredFields(Id recordId, Id configId) {
         List<RequiredFieldStatus> result = new List<RequiredFieldStatus>();
 
         Approval_Configuration__c config = [
@@ -710,6 +732,7 @@ public with sharing class DynamicApprovalController {
                 fs.fieldType = 'document';
                 fs.fieldLabel = 'Signed Booking Form (upload it in the Documents section)';
                 fs.currentValue = fs.isFilled ? 'Uploaded' : 'Not uploaded';
+                fs.blockMessage = 'Please upload the Signed Booking Form in the Documents section before submitting this booking for approval.';
             }
 
             result.add(fs);
@@ -1035,6 +1058,8 @@ public with sharing class DynamicApprovalController {
         @AuraEnabled public Boolean isFilled { get; set; }
         @AuraEnabled public String currentValue { get; set; }
         @AuraEnabled public String fieldType { get; set; }
+        // Read-only requirement rows (fieldType 'document'): the error shown when it is not met.
+        @AuraEnabled public String blockMessage { get; set; }
         @AuraEnabled public List<Map<String, String>> picklistValues { get; set; }
         // For lookup (reference) fields: the API name of the referenced object so
         // the LWC can drive a search-as-you-type picker against it. Display name

@@ -566,11 +566,25 @@ public with sharing class ApprovalActionHandler {
         Boolean priorBypass = BookingStageValidationService.bypass;
         BookingStageValidationService.bypass = true;
         try {
-            update record;
+            // The approver can approve/reject without being able to edit the record (e.g. a
+            // CRM Manager on a sales-owned Booking with Private sharing). The configured field
+            // update is part of the approval itself, so it runs without sharing.
+            new SystemModeUpdater().updateRecord(record);
         } finally {
             BookingStageValidationService.bypass = priorBypass;
         }
         System.debug('Field updates completed successfully');
+    }
+
+    /**
+     * @description Saves the approval-config field update regardless of the approver's
+     * record access. Only the fields listed in the approval configuration are set.
+     */
+    @TestVisible
+    private without sharing class SystemModeUpdater {
+        public void updateRecord(SObject record) {
+            update record;
+        }
     }
 
     /**

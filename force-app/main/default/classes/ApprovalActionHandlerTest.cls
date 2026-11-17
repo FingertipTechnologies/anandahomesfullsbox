@@ -468,6 +468,38 @@ private class ApprovalActionHandlerTest {
     }
 
     @isTest
+    static void fieldUpdate_savesEvenWhenApproverCannotEditRecord() {
+        Booking__c b = getBooking();
+        Profile p = [SELECT Id FROM Profile WHERE Name = 'Standard User' LIMIT 1];
+        User approver = new User(
+            Alias = 'aprvx',
+            Email = 'approver.noedit@example.com',
+            EmailEncodingKey = 'UTF-8',
+            LastName = 'Approver No Edit',
+            LanguageLocaleKey = 'en_US',
+            LocaleSidKey = 'en_IN',
+            ProfileId = p.Id,
+            TimeZoneSidKey = 'Asia/Kolkata',
+            Username = 'approver.noedit.' + System.currentTimeMillis() + '@example.com'
+        );
+        insert approver;
+
+        String json = '{"actions":[{"actionType":"FIELD_UPDATE","fieldUpdates":'
+            + '[{"fieldName":"Booking_Verification_Approval_Status__c","value":"Rejected"}]}]}';
+
+        List<String> failures;
+        Test.startTest();
+        System.runAs(approver) {
+            failures = ApprovalActionHandler.executeActionsFromJson(b.Id, json, 'Rejection');
+        }
+        Test.stopTest();
+
+        System.assertEquals(0, failures.size(), 'The approval field update must not depend on the approver\'s record access: ' + failures);
+        System.assertEquals('Rejected',
+            [SELECT Booking_Verification_Approval_Status__c FROM Booking__c WHERE Id = :b.Id].Booking_Verification_Approval_Status__c);
+    }
+
+    @isTest
     static void executeActionsFromJson_nullInputsReturnEmpty() {
         Test.startTest();
         List<String> a = ApprovalActionHandler.executeActionsFromJson(null, '{}', 'ctx');

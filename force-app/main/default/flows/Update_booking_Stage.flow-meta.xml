@@ -34,7 +34,7 @@
                 <stringValue>Booked</stringValue>
             </value>
         </inputAssignments>
-        <inputReference>$Record.CLead__r</inputReference>
+        <inputReference>$Record.Quote__r.CLead__r</inputReference>
     </recordUpdates>
     <recordUpdates>
         <name>Update_Quote_Record</name>
@@ -53,8 +53,9 @@
         <inputReference>$Record.Quote__r</inputReference>
     </recordUpdates>
     <recordUpdates>
-        <name>UpdateBooking_record</name>
-        <label>UpdateBooking record</label>
+        <description>Marks the booked unit as Booked as soon as the booking is created.</description>
+        <name>Update_Unit_Status</name>
+        <label>Update Unit Status</label>
         <locationX>0</locationX>
         <locationY>0</locationY>
         <connector>
@@ -72,21 +73,21 @@
         <locationX>0</locationX>
         <locationY>0</locationY>
         <connector>
-            <targetReference>UpdateBooking_record</targetReference>
+            <targetReference>Update_Unit_Status</targetReference>
         </connector>
         <filterLogic>and</filterLogic>
         <filters>
             <field>Plot__c</field>
-            <operator>NotEqualTo</operator>
+            <operator>IsNull</operator>
             <value>
-                <stringValue></stringValue>
+                <booleanValue>false</booleanValue>
             </value>
         </filters>
         <filters>
             <field>Quote__c</field>
-            <operator>NotEqualTo</operator>
+            <operator>IsNull</operator>
             <value>
-                <stringValue></stringValue>
+                <booleanValue>false</booleanValue>
             </value>
         </filters>
         <object>Booking__c</object>

@@ -48,8 +48,8 @@ private class ProrataDemandServiceTest {
 
         System.assertEquals(2, n, 'Separate Flat and GST bank demands expected');
         List<Demands__c> demands = [
-            SELECT Demand_Type__c, Demand_Component__c, Base_Amount__c, GST_Amount__c,
-                   Demand_Amount__c, Payment_Schedule__c
+            SELECT Demand_Type__c, Demand_Component__c, Base_Amount__c, Flat_Amount__c,
+                   GST_Amount__c, TDS_Amount__c, Demand_Amount__c, Payment_Schedule__c
             FROM Demands__c WHERE Booking__c = :booking.Id
         ];
         System.assertEquals(2, demands.size());
@@ -58,6 +58,8 @@ private class ProrataDemandServiceTest {
             System.assertEquals(ps.Id, d.Payment_Schedule__c);
             if (d.Demand_Component__c == 'Flat') {
                 System.assertEquals(2000000, d.Demand_Amount__c, 'Bank Flat');
+                System.assertEquals(1980000, d.Flat_Amount__c, 'Net Bank Flat after 1% TDS');
+                System.assertEquals(20000, d.TDS_Amount__c, 'TDS is 1% of Bank Flat only');
                 System.assertEquals(0, d.GST_Amount__c);
             } else {
                 System.assertEquals('GST', d.Demand_Component__c);
@@ -72,6 +74,111 @@ private class ProrataDemandServiceTest {
         System.assertEquals(true, flagged.Bank_Demand_Raised__c);
         System.assertEquals(true, flagged.Bank_Flat_Demand_Raised__c);
         System.assertEquals(true, flagged.Bank_GST_Demand_Raised__c);
+    }
+
+    @isTest
+    static void bankFlatDemandCarriesOnlyUnpaidUndemandedTdsFromPriorFlatPayments() {
+        buildData('Prorata');
+        Payment_Schedule__c ps = makeSchedule('Foundation', Date.today());
+        ProrataInvariantService.bypass = true;
+        try {
+            update new Payment_Schedule__c(
+                Id = ps.Id,
+                Payment_Schedule_Amount_Paid__c = 500000,
+                TDS_Amount__c = 10000,
+                TDS_Amount_Paid__c = 0,
+                TDS_Amount_Pending__c = 10000
+            );
+        } finally {
+            ProrataInvariantService.bypass = false;
+        }
+
+        Test.startTest();
+        Integer countRaised = ProrataDemandService.raiseBankDemands(new Set<Id>{ ps.Id });
+        Test.stopTest();
+
+        System.assertEquals(2, countRaised);
+        Demands__c flatDemand = [
+            SELECT Flat_Amount__c, TDS_Amount__c, Demand_Amount__c
+            FROM Demands__c
+            WHERE Booking__c = :booking.Id AND Demand_Component__c = 'Flat'
+        ];
+        System.assertEquals(1485000, flatDemand.Flat_Amount__c,
+            'Net payable is the pending Bank Flat less 1% TDS on that Bank Flat.');
+        System.assertEquals(20000, flatDemand.TDS_Amount__c,
+            'TDS includes 1% of the Bank balance plus the unpaid, undemanded TDS on prior Flat paid.');
+        System.assertEquals(1505000, flatDemand.Demand_Amount__c,
+            'Demand amount includes Bank Flat and the TDS carried forward.');
+        Payment_Schedule__c scheduleAfterDemand = [
+            SELECT Bank_Flat_Demand_Raised__c
+            FROM Payment_Schedule__c
+            WHERE Id = :ps.Id
+        ];
+        System.assertEquals(true, scheduleAfterDemand.Bank_Flat_Demand_Raised__c,
+            'Use the existing Flat demand flag rather than a separate tracking field.');
+    }
+
+    @isTest
+    static void bankFlatDemandDoesNotCarryTheSameTdsTwice() {
+        buildData('Prorata');
+        Payment_Schedule__c prior = makeSchedule('Advance', Date.today());
+        ProrataInvariantService.bypass = true;
+        try {
+            update new Payment_Schedule__c(
+                Id = prior.Id,
+                Payment_Schedule_Amount_Paid__c = 500000,
+                TDS_Amount__c = 10000,
+                TDS_Amount_Paid__c = 0,
+                TDS_Amount_Pending__c = 10000
+            );
+            Payment_Schedule__c next = new Payment_Schedule__c(
+                Booking__c = booking.Id, Sequence__c = 2, Milestone_Name__c = 'Next',
+                Amount__c = 2100000, Payment_Schedule_Amount__c = 2000000,
+                Payment_Schedule_Amount_Pending__c = 2000000, GST_Amount__c = 100000,
+                GST_Amount_Pending__c = 100000, Bank_Flat_Amount__c = 1000000,
+                Bank_GST_Amount__c = 50000, Customer_Flat_Prorata__c = 1000000,
+                Customer_GST_Prorata__c = 50000, TDS_Amount__c = 10000,
+                TDS_Amount_Pending__c = 10000, Status__c = 'Pending', Due_Date__c = Date.today()
+            );
+            Payment_Schedule__c later = new Payment_Schedule__c(
+                Booking__c = booking.Id, Sequence__c = 3, Milestone_Name__c = 'Later',
+                Amount__c = 3150000, Payment_Schedule_Amount__c = 3000000,
+                Payment_Schedule_Amount_Pending__c = 3000000, GST_Amount__c = 150000,
+                GST_Amount_Pending__c = 150000, Bank_Flat_Amount__c = 1500000,
+                Bank_GST_Amount__c = 75000, Customer_Flat_Prorata__c = 1500000,
+                Customer_GST_Prorata__c = 75000, TDS_Amount__c = 15000,
+                TDS_Amount_Pending__c = 15000, Status__c = 'Pending', Due_Date__c = Date.today()
+            );
+            insert new List<Payment_Schedule__c>{ next, later };
+
+            Test.startTest();
+            ProrataDemandService.raiseBankDemands(new Set<Id>{ next.Id });
+            ProrataDemandService.raiseBankDemands(new Set<Id>{ later.Id });
+            Test.stopTest();
+
+            Map<Id, Demands__c> flatDemandBySchedule = new Map<Id, Demands__c>();
+            for (Demands__c demand : [
+                SELECT Payment_Schedule__c, TDS_Amount__c, Demand_Amount__c
+                FROM Demands__c
+                WHERE Booking__c = :booking.Id AND Demand_Component__c = 'Flat'
+            ]) {
+                flatDemandBySchedule.put(demand.Payment_Schedule__c, demand);
+            }
+            System.assertEquals(15000, flatDemandBySchedule.get(next.Id).TDS_Amount__c,
+                'The next demand includes current TDS plus the prior unpaid TDS.');
+            System.assertEquals(15000, flatDemandBySchedule.get(later.Id).TDS_Amount__c,
+                'The later demand includes only its current 1% TDS.');
+            Payment_Schedule__c priorAfterDemand = [
+                SELECT Payment_Schedule_Amount_Paid__c, TDS_Amount_Paid__c,
+                       TDS_Amount_Pending__c, Bank_Flat_Demand_Raised__c
+                FROM Payment_Schedule__c
+                WHERE Id = :prior.Id
+            ];
+            System.assertEquals(true, priorAfterDemand.Bank_Flat_Demand_Raised__c);
+            System.assertEquals(0, DemandComponentService.undemandedTdsFromPaidFlat(priorAfterDemand));
+        } finally {
+            ProrataInvariantService.bypass = false;
+        }
     }
 
     @isTest

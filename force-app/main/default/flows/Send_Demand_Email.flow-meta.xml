@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
     <actionCalls>
-        <name>Send_Demand_Email</name>
-        <label>Send Demand Email</label>
+        <name>Copy_1_of_Send_Demand_Email</name>
+        <label>Flat Send Demand Email</label>
         <locationX>0</locationX>
         <locationY>0</locationY>
         <actionName>EmailSenderInvocable</actionName>
@@ -17,7 +17,55 @@
         <inputParameters>
             <name>templateName</name>
             <value>
-                <stringValue>Demand Raise Mail</stringValue>
+                <stringValue>Demand Raise Mail Flat</stringValue>
+            </value>
+        </inputParameters>
+        <nameSegment>EmailSenderInvocable</nameSegment>
+        <offset>0</offset>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </actionCalls>
+    <actionCalls>
+        <name>Copy_2_of_Send_Demand_Email</name>
+        <label>GST Send Demand Email</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <actionName>EmailSenderInvocable</actionName>
+        <actionType>apex</actionType>
+        <flowTransactionModel>Automatic</flowTransactionModel>
+        <inputParameters>
+            <name>recordIds</name>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>templateName</name>
+            <value>
+                <stringValue>Demand Raise Mail GST</stringValue>
+            </value>
+        </inputParameters>
+        <nameSegment>EmailSenderInvocable</nameSegment>
+        <offset>0</offset>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </actionCalls>
+    <actionCalls>
+        <name>Copy_3_of_Send_Demand_Email</name>
+        <label>Flat + GST Send Demand Email</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <actionName>EmailSenderInvocable</actionName>
+        <actionType>apex</actionType>
+        <flowTransactionModel>Automatic</flowTransactionModel>
+        <inputParameters>
+            <name>recordIds</name>
+            <value>
+                <elementReference>$Record.Id</elementReference>
+            </value>
+        </inputParameters>
+        <inputParameters>
+            <name>templateName</name>
+            <value>
+                <stringValue>Demand Raise Mail Flat &amp; GST</stringValue>
             </value>
         </inputParameters>
         <nameSegment>EmailSenderInvocable</nameSegment>
@@ -25,6 +73,58 @@
         <storeOutputAutomatically>true</storeOutputAutomatically>
     </actionCalls>
     <apiVersion>67.0</apiVersion>
+    <decisions>
+        <name>Check_the_demand_type</name>
+        <label>Check the demand type</label>
+        <locationX>0</locationX>
+        <locationY>0</locationY>
+        <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
+        <rules>
+            <name>Flat_Demand</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Demand_Component__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Flat</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Copy_1_of_Send_Demand_Email</targetReference>
+            </connector>
+            <label>Flat Demand</label>
+        </rules>
+        <rules>
+            <name>GST_Demand</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Demand_Component__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>GST</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Copy_2_of_Send_Demand_Email</targetReference>
+            </connector>
+            <label>GST Demand</label>
+        </rules>
+        <rules>
+            <name>Flat_GST_Demand</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>$Record.Demand_Component__c</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <stringValue>Flat + GST</stringValue>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Copy_3_of_Send_Demand_Email</targetReference>
+            </connector>
+            <label>Flat+GST Demand</label>
+        </rules>
+    </decisions>
     <environments>Default</environments>
     <interviewLabel>Send Demand Email {!$Flow.CurrentDateTime}</interviewLabel>
     <label>Send Demand Email</label>
@@ -53,16 +153,14 @@
         <object>Demands__c</object>
         <recordTriggerType>Create</recordTriggerType>
         <scheduledPaths>
-            <name>Demand</name>
+            <name>Send_Demand</name>
             <connector>
-                <targetReference>Send_Demand_Email</targetReference>
+                <targetReference>Check_the_demand_type</targetReference>
             </connector>
-            <label>Demand</label>
-            <maxBatchSize>1</maxBatchSize>
+            <label>Send Demand</label>
             <offsetNumber>1</offsetNumber>
             <offsetUnit>Minutes</offsetUnit>
-            <recordField>CreatedDate</recordField>
-            <timeSource>RecordField</timeSource>
+            <timeSource>RecordTriggerEvent</timeSource>
         </scheduledPaths>
         <triggerType>RecordAfterSave</triggerType>
     </start>

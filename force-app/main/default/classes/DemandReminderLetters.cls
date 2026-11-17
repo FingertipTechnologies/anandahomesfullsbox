@@ -36,12 +36,12 @@ public with sharing class DemandReminderLetters {
         String project = b != null && b.Project__r != null && String.isNotBlank(b.Project__r.Name)
             ? esc(b.Project__r.Name) : '__________';
         String pending = inr(d.Pending_Amount__c);
-        String head = P + 'Date: ' + fmt(Date.today()) + '</p>' + toBlock(b, flat, project);
+        String head = '';
 
         if (!isMargin && level == 1) {
             l.subject = 'Reminder for Payment of Demand Raised';
-            l.htmlBody = head
-                + P + '<b>Subject: Reminder for Payment of Demand Raised</b></p>'
+            l.htmlBody = 
+                //+ P + '<b>Subject: Reminder for Payment of Demand Raised</b></p>'
                 + P + 'Dear Sir/Madam,</p>'
                 + P + 'This is to kindly remind you regarding the demand raised towards your allotted unit bearing No. <b>'
                     + flat + '</b> in the project <b>' + project.toUpperCase() + '</b>, pursuant to the Agreement executed between us.</p>'
@@ -57,7 +57,7 @@ public with sharing class DemandReminderLetters {
         } else if (!isMargin && level == 2) {
             l.subject = '2nd Reminder for Payment of Outstanding Demand';
             l.htmlBody = head
-                + P + '<b>Subject: 2nd Reminder for Payment of Outstanding Demand</b></p>'
+                //+ P + '<b>Subject: 2nd Reminder for Payment of Outstanding Demand</b></p>'
                 + P + 'Dear Sir/Madam,</p>'
                 + P + 'This is in continuation of our earlier demand notice dated <b>' + fmt(d.Demand_Date__c)
                     + '</b> and reminder letter dated <b>' + fmt(firstReminderDate(d)) + '</b> regarding the outstanding payment '
@@ -78,7 +78,7 @@ public with sharing class DemandReminderLetters {
             String contact = owner == null ? '' : join(new List<String>{ esc(owner.Email), esc(owner.Phone) }, ' / ');
             l.subject = 'Demand for Payment of Margin Amount for Flat Booking';
             l.htmlBody = head
-                + P + '<b>Subject: Demand for Payment of Margin Amount for Flat Booking</b></p>'
+                //+ P + '<b>Subject: Demand for Payment of Margin Amount for Flat Booking</b></p>'
                 + P + 'Dear Sir/Madam,</p>'
                 + P + 'With reference to the booking of Flat No. <b>' + flat + '</b> in the project <b>' + project + '</b> dated <b>'
                     + fmt(b == null ? null : b.Booking_Date__c) + '</b>, we wish to inform you that the required margin amount '
@@ -101,7 +101,7 @@ public with sharing class DemandReminderLetters {
         } else {
             l.subject = '2nd Reminder for Payment of Margin Amount';
             l.htmlBody = head
-                + P + '<b>Subject: 2nd Reminder for Payment of Margin Amount</b></p>'
+                //+ P + '<b>Subject: 2nd Reminder for Payment of Margin Amount</b></p>'
                 + P + 'Dear Sir/Madam,</p>'
                 + P + 'This is with reference to our earlier reminder dated <b>' + fmt(firstReminderDate(d))
                     + '</b> regarding the pending margin amount for your allotted flat bearing No. <b>' + flat

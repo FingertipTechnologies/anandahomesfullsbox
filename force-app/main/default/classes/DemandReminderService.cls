@@ -262,7 +262,7 @@ public without sharing class DemandReminderService {
             WHERE Reminder_1_Date__c <= :today
             AND Reminder_1_Sent__c = false
             AND Reminders_Disabled__c = false
-            AND Booking__r.Disable_Demand_Reminders__c = false
+            AND Booking__r.Disable_Demand_Reminders__c = false AND Booking__r.Status__c Not in ('Cancellation','Swapping')
             AND Status__c NOT IN ('Paid', 'Cancelled')
             AND Pending_Amount__c > 0
             LIMIT 200
@@ -311,7 +311,7 @@ public without sharing class DemandReminderService {
             WHERE Reminder_2_Date__c <= :today
             AND Reminder_2_Sent__c = false
             AND Reminders_Disabled__c = false
-            AND Booking__r.Disable_Demand_Reminders__c = false
+            AND Booking__r.Disable_Demand_Reminders__c = false AND Booking__r.Status__c Not in ('Cancellation','Swapping')
             AND Status__c NOT IN ('Paid', 'Cancelled')
             AND Pending_Amount__c > 0
             LIMIT 200
@@ -353,7 +353,7 @@ public without sharing class DemandReminderService {
             WHERE Reminder_3_Date__c <= :today
             AND Reminder_3_Sent__c = false
             AND Reminders_Disabled__c = false
-            AND Booking__r.Disable_Demand_Reminders__c = false
+            AND Booking__r.Disable_Demand_Reminders__c = false AND Booking__r.Status__c Not in ('Cancellation','Swapping')
             AND Status__c NOT IN ('Paid', 'Cancelled')
             AND Pending_Amount__c > 0
             LIMIT 200
@@ -395,7 +395,7 @@ public without sharing class DemandReminderService {
             WHERE Reminder_4_Date__c <= :today
             AND Reminder_4_Sent__c = false
             AND Reminders_Disabled__c = false
-            AND Booking__r.Disable_Demand_Reminders__c = false
+            AND Booking__r.Disable_Demand_Reminders__c = false AND Booking__r.Status__c Not in ('Cancellation','Swapping')
             AND Status__c NOT IN ('Paid', 'Cancelled')
             AND Pending_Amount__c > 0
             LIMIT 200
@@ -440,7 +440,7 @@ public without sharing class DemandReminderService {
             WHERE Termination_Mail_Date__c <= :today
             AND Termination_Mail_Sent__c = false
             AND Reminders_Disabled__c = false
-            AND Booking__r.Disable_Demand_Reminders__c = false
+            AND Booking__r.Disable_Demand_Reminders__c = false AND Booking__r.Status__c Not in ('Cancellation','Swapping')
             AND Status__c NOT IN ('Paid', 'Cancelled')
             AND Pending_Amount__c > 0
             LIMIT 200
@@ -483,7 +483,7 @@ public without sharing class DemandReminderService {
             WHERE Unit_Unblocking_Date__c <= :today
             AND Unit_Unblocked__c = false
             AND Reminders_Disabled__c = false
-            AND Booking__r.Disable_Demand_Reminders__c = false
+            AND Booking__r.Disable_Demand_Reminders__c = false AND Booking__r.Status__c Not in ('Cancellation','Swapping')
             AND Status__c NOT IN ('Paid', 'Cancelled')
             AND Pending_Amount__c > 0
             AND Booking__r.Status__c != :PostSalesConstants.BOOKING_STATUS_CANCELLED
@@ -559,7 +559,7 @@ public without sharing class DemandReminderService {
             WHERE Booking__c IN :bookingIds
             AND Reminders_Disabled__c = false
             AND Booking__r.Disable_Demand_Reminders__c = false
-            AND (Pending_Amount__c = 0 OR Pending_Amount__c = null)
+            AND (Pending_Amount__c = 0 OR Pending_Amount__c = null) AND Booking__r.Status__c Not in ('Cancellation','Swapping')
             AND Status__c = 'Paid'
         ];
 

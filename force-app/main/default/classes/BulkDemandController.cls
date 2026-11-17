@@ -1062,6 +1062,7 @@ public with sharing class BulkDemandController {
                 }
 
                 Demands__c demand = new Demands__c();
+                List<Demand_Line__c> demandLinesForItem = new List<Demand_Line__c>();
                 demand.Booking__c = item.bookingId;
                 Boolean includeFlatExtras = DemandComponentService.includesFlat(request.demandComponent);
                 Decimal grossInterest = 0;
@@ -1115,6 +1116,9 @@ public with sharing class BulkDemandController {
                     for (Id sid : item.scheduleIds) {
                         Payment_Schedule__c ps = scheduleMap.get(sid);
                         if (ps == null) continue;
+                        Decimal scheduleBaseAmount = 0;
+                        Decimal scheduleGstAmount = 0;
+                        Decimal scheduleTdsAmount = 0;
                         Decimal bankFlat = DemandComponentService.amount(
                             ps, DemandComponentService.FLAT, true
                         );
@@ -1133,22 +1137,36 @@ public with sharing class BulkDemandController {
                                 Decimal carryForward =
                                     carryForwardAllocation.amountByDemandSchedule.containsKey(sid)
                                         ? carryForwardAllocation.amountByDemandSchedule.get(sid) : 0;
-                                baseAmt += Math.max(0, bankFlat - currentTds);
-                                tdsAmt += currentTds + carryForward;
+                                scheduleBaseAmount = Math.max(0, bankFlat - currentTds);
+                                scheduleTdsAmount = currentTds + carryForward;
                             }
-                            else gstAmt += bankGst;
+                            else                             scheduleGstAmount = bankGst;
                         } else {
                             if (request.demandComponent == DemandComponentService.FLAT) {
-                                baseAmt += nz(ps.Payment_Schedule_Amount_Pending__c);
+                                scheduleBaseAmount = nz(ps.Payment_Schedule_Amount_Pending__c);
                             } else if (request.demandComponent == DemandComponentService.GST) {
-                                gstAmt += nz(ps.GST_Amount_Pending__c);
+                                scheduleGstAmount = nz(ps.GST_Amount_Pending__c);
                             } else {
-                                baseAmt += nz(ps.Payment_Schedule_Amount_Pending__c);
-                                gstAmt += nz(ps.GST_Amount_Pending__c);
+                                scheduleBaseAmount = nz(ps.Payment_Schedule_Amount_Pending__c);
+                                scheduleGstAmount = nz(ps.GST_Amount_Pending__c);
                             }
                             if (DemandComponentService.includesFlat(request.demandComponent)) {
-                                tdsAmt += nz(ps.TDS_Amount_Pending__c);
+                                scheduleTdsAmount = nz(ps.TDS_Amount_Pending__c);
                             }
+                        }
+
+                        baseAmt += scheduleBaseAmount;
+                        gstAmt += scheduleGstAmount;
+                        tdsAmt += scheduleTdsAmount;
+                        if (scheduleBaseAmount + scheduleGstAmount + scheduleTdsAmount > 0) {
+                            demandLinesForItem.add(DemandLineService.createFromSchedule(
+                                ps,
+                                request.demandComponent,
+                                scheduleBaseAmount,
+                                scheduleGstAmount,
+                                scheduleTdsAmount,
+                                0
+                            ));
                         }
 
                         // Track the latest milestone by sequence (the bigger Sequence__c number)
@@ -1206,6 +1224,7 @@ public with sharing class BulkDemandController {
                     demand.Demand_Type__c = demandType;
                 }
 
+                DemandLineService.stageForInsert(demand, demandLinesForItem);
                 demandsToInsert.add(demand);
                 indexToItem.put(idx, item);
                 scheduleSourceByIndex.put(idx, scheduleIsBank);
@@ -1214,6 +1233,7 @@ public with sharing class BulkDemandController {
             }
 
             Database.SaveResult[] insertResults = Database.insert(demandsToInsert, false);
+            DemandLineService.clearStagedLines();
 
             // Process results and update payment schedules
             Map<Id, Payment_Schedule__c> schedulesToUpdate = new Map<Id, Payment_Schedule__c>();

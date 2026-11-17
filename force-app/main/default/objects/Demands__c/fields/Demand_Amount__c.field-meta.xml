@@ -3,7 +3,7 @@
     <fullName>Demand_Amount__c</fullName>
     <label>Demand Amount</label>
     <precision>18</precision>
-    <required>true</required>
+    <required>false</required>
     <scale>2</scale>
     <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>

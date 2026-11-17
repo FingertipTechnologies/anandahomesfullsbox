@@ -258,6 +258,10 @@
         <fields>NAME</fields>
         <relatedList>Receipt_Line_Item__c.Payment_Schedule__c</relatedList>
     </relatedLists>
+    <relatedLists>
+        <fields>NAME</fields>
+        <relatedList>Demand_Line__c.Payment_Schedule__c</relatedList>
+    </relatedLists>
     <showEmailCheckbox>false</showEmailCheckbox>
     <showHighlightsPanel>false</showHighlightsPanel>
     <showInteractionLogPanel>false</showInteractionLogPanel>

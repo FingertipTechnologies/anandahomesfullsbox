@@ -373,9 +373,13 @@ export default class SubmitForApproval extends LightningElement {
                 isPicklist: f.fieldType === 'picklist',
                 isCheckbox: f.fieldType === 'checkbox',
                 isLookup: f.fieldType === 'reference',
+                // Read-only file requirement (e.g. the Signed Booking Form): uploaded from the
+                // Documents section, not editable here.
+                isDocument: f.fieldType === 'document',
                 isStandardInput: f.fieldType !== 'picklist'
                     && f.fieldType !== 'checkbox'
-                    && f.fieldType !== 'reference',
+                    && f.fieldType !== 'reference'
+                    && f.fieldType !== 'document',
                 isLookupFilled: f.fieldType === 'reference' && !!f.currentValue,
                 lookupDisplayName: f.currentDisplayName || '',
                 lookupResults: [],

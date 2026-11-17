@@ -563,8 +563,20 @@ public with sharing class DynamicApprovalController {
             // Validate required fields before submitting
             List<RequiredFieldStatus> fieldStatuses = validateRequiredFieldsInternal(recordId, configId);
             for (RequiredFieldStatus fs : fieldStatuses) {
+                if (!fs.isFilled && fs.fieldType == 'document') {
+                    throw new AuraHandledException('Please upload the Signed Booking Form in the Documents section before submitting this booking for approval.');
+                }
                 if (!fs.isFilled) {
                     throw new AuraHandledException('Required field "' + fs.fieldLabel + '" must be filled before submitting for approval.');
+                }
+                // The file is there: make sure the booking's checkbox agrees (the stage gate to
+                // Booked checks the checkbox).
+                if (fs.fieldType == 'document') {
+                    Booking__c b = [SELECT Id, Signed_Booking_Form_Uploaded__c FROM Booking__c WHERE Id = :recordId];
+                    if (b.Signed_Booking_Form_Uploaded__c != true) {
+                        b.Signed_Booking_Form_Uploaded__c = true;
+                        update b;
+                    }
                 }
             }
             return DynamicApprovalService.submitForApproval(recordId, configId, comments);
@@ -575,6 +587,26 @@ public with sharing class DynamicApprovalController {
             System.debug('Stack trace: ' + e.getStackTraceString());
             throw new AuraHandledException('Error submitting for approval: ' + e.getMessage());
         }
+    }
+
+    @TestVisible private static final String SIGNED_BOOKING_FORM_FLAG = 'Signed_Booking_Form_Uploaded__c';
+    @TestVisible private static final String SIGNED_BOOKING_FORM_TYPE = 'Signed Booking Form';
+
+    /** True when a file of Document Type "Signed Booking Form" is attached to the booking. */
+    @TestVisible
+    private static Boolean hasSignedBookingForm(Id bookingId) {
+        Set<Id> docIds = new Set<Id>();
+        for (ContentDocumentLink l : [
+            SELECT ContentDocumentId FROM ContentDocumentLink WHERE LinkedEntityId = :bookingId
+        ]) {
+            docIds.add(l.ContentDocumentId);
+        }
+        if (docIds.isEmpty()) return false;
+        return [
+            SELECT COUNT() FROM ContentVersion
+            WHERE ContentDocumentId IN :docIds AND IsLatest = true
+            AND Document_Type__c = :SIGNED_BOOKING_FORM_TYPE
+        ] > 0;
     }
 
     @AuraEnabled
@@ -668,6 +700,16 @@ public with sharing class DynamicApprovalController {
             // must not satisfy the requirement.
             if (fs.fieldType == 'checkbox') {
                 fs.isFilled = (val == true);
+            }
+
+            // "Signed Booking Form Uploaded" on a Booking is satisfied only by an actual Signed
+            // Booking Form file on the booking (the checkbox can be ticked by hand and is not
+            // cleared when the file is deleted). Shown read-only, so it cannot be ticked here.
+            if (apiName == SIGNED_BOOKING_FORM_FLAG && config.Object_API_Name__c == 'Booking__c') {
+                fs.isFilled = hasSignedBookingForm(recordId);
+                fs.fieldType = 'document';
+                fs.fieldLabel = 'Signed Booking Form (upload it in the Documents section)';
+                fs.currentValue = fs.isFilled ? 'Uploaded' : 'Not uploaded';
             }
 
             result.add(fs);

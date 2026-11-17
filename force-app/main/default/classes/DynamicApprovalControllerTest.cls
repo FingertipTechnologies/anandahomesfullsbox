@@ -573,4 +573,37 @@ private class DynamicApprovalControllerTest {
             System.assert(true);
         }
     }
+
+    @isTest
+    static void signedBookingForm_requiresTheUploadedFile() {
+        Project__c project = new Project__c(Name = 'P', Project_Type__c = 'Residential');
+        insert project;
+        Booking__c b = new Booking__c(Project__c = project.Id, Booking_Date__c = Date.today(), Status__c = 'New',
+            Signed_Booking_Form_Uploaded__c = true); // ticked by hand, no file
+        insert b;
+        Approval_Configuration__c cfg = new Approval_Configuration__c(
+            Object_API_Name__c = 'Booking__c', Process_Type__c = 'Push_to_CRM_Test', Process_Label__c = 'Push To CRM',
+            Is_Active__c = true, Sequence_Order__c = 1,
+            Required_Fields_JSON__c = '[{"apiName":"Signed_Booking_Form_Uploaded__c","label":"Signed Booking Form Uploaded"}]'
+        );
+        insert cfg;
+
+        List<DynamicApprovalController.RequiredFieldStatus> st = DynamicApprovalController.getRequiredFieldsStatus(b.Id, cfg.Id);
+        System.assertEquals(1, st.size());
+        System.assertEquals(false, st[0].isFilled, 'the checkbox alone must not satisfy it');
+        System.assertEquals('document', st[0].fieldType);
+        try {
+            DynamicApprovalController.submitForApproval(b.Id, cfg.Id, 'test');
+            System.assert(false, 'submission must be blocked');
+        } catch (AuraHandledException e) {
+            System.assert(true);
+        }
+
+        insert new ContentVersion(Title = 'Signed form', PathOnClient = 'signed.pdf', VersionData = Blob.valueOf('x'),
+            FirstPublishLocationId = b.Id, Document_Type__c = 'Signed Booking Form');
+        System.assert(DynamicApprovalController.hasSignedBookingForm(b.Id));
+        st = DynamicApprovalController.getRequiredFieldsStatus(b.Id, cfg.Id);
+        System.assertEquals(true, st[0].isFilled);
+        System.assertEquals('Uploaded', st[0].currentValue);
+    }
 }

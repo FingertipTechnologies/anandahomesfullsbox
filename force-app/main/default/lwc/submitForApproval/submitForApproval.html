@@ -220,6 +220,12 @@
                                                         onchange={handleRequiredFieldChange}>
                                                     </lightning-input>
                                                 </template>
+                                                <template if:true={field.isDocument}>
+                                                    <div class="slds-form-element">
+                                                        <span class="slds-form-element__label">{field.fieldLabel}</span>
+                                                        <div class="slds-form-element__static">{field.currentValue}</div>
+                                                    </div>
+                                                </template>
                                                 <template if:true={field.isStandardInput}>
                                                     <lightning-input
                                                         type={field.fieldType}

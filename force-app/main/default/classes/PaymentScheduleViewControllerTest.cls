@@ -102,6 +102,45 @@ private class PaymentScheduleViewControllerTest {
     }
 
     @isTest
+    static void legacyLoanWithoutBankSplitRaisesFullComponentsSeparately() {
+        Booking__c booking = [SELECT Id FROM Booking__c LIMIT 1];
+        booking.Funding_Type__c = 'Loan';
+        update booking;
+
+        PaymentScheduleViewController.PaymentScheduleViewResult preview =
+            PaymentScheduleViewController.getPaymentSchedules(booking.Id);
+        PaymentScheduleViewController.PaymentScheduleWrapper schedule = preview.schedules[0];
+        System.assertEquals(true, preview.nextDemand.legacySplitDemandReceipt,
+            'Legacy project mode should continue to require separate Flat and GST demands.');
+        System.assertEquals(false, schedule.isBankDemand,
+            'Loan funding without actual Bank split values must not be treated as prorata.');
+        System.assertEquals(100, schedule.flatDemandableAmount,
+            'Without a Bank split, Flat demand should use the full pending Flat component.');
+        System.assertEquals(25, schedule.gstDemandableAmount,
+            'Without a Bank split, GST demand should use the full pending GST component.');
+
+        Test.startTest();
+        Id flatDemandId = PaymentScheduleViewController.raiseDemandForBooking(
+            booking.Id, DemandComponentService.FLAT, false
+        );
+        Id gstDemandId = PaymentScheduleViewController.raiseDemandForBooking(
+            booking.Id, DemandComponentService.GST, false
+        );
+        Test.stopTest();
+
+        Set<Id> demandIds = new Set<Id>{ flatDemandId, gstDemandId };
+        Map<Id, Demands__c> demandsById = new Map<Id, Demands__c>([
+            SELECT Id, Demand_Component__c, Demand_Amount__c, Flat_Amount__c, GST_Amount__c
+            FROM Demands__c
+            WHERE Id IN :demandIds
+        ]);
+        System.assertEquals(100, demandsById.get(flatDemandId).Demand_Amount__c,
+            'Legacy Loan Flat demand should raise the full pending Flat component.');
+        System.assertEquals(25, demandsById.get(gstDemandId).Demand_Amount__c,
+            'Legacy Loan GST demand should raise the full pending GST component separately.');
+    }
+
+    @isTest
     static void getPaymentSchedules_exposesFlatTdsBreakdownForIndividualDemand() {
         Booking__c booking = [SELECT Id FROM Booking__c LIMIT 1];
         Payment_Schedule__c completed = [
@@ -112,6 +151,7 @@ private class PaymentScheduleViewControllerTest {
         ];
         completed.TDS_Amount__c = 5;
         completed.TDS_Amount_Pending__c = 5;
+        completed.TDS_Amount_Paid__c = 2;
         completed.Pending_Amount__c = 130;
         update completed;
 
@@ -123,10 +163,12 @@ private class PaymentScheduleViewControllerTest {
         System.assertEquals(true, result.success);
         System.assertEquals(5, schedule.tdsAmount);
         System.assertEquals(5, schedule.tdsPending);
+        System.assertEquals(2, schedule.tdsPaid,
+            'The demand preview must show TDS received to date.');
         System.assertEquals(105, schedule.flatDemandableAmount,
             'Flat demandable includes the customer TDS collected with Flat.');
-        System.assertEquals(1.05, schedule.tdsDemandableAmount,
-            'TDS should be 1% of the remaining Flat Cost for the single-demand UI.');
+        System.assertEquals(5, schedule.tdsDemandableAmount,
+            'An unsplit schedule demand should use the full pending TDS amount.');
         System.assertEquals(130, schedule.combinedDemandableAmount,
             'Combined demandable includes Flat, GST, and TDS.');
 
@@ -145,13 +187,13 @@ private class PaymentScheduleViewControllerTest {
         ];
         System.assertEquals(105, demand.Demand_Amount__c,
             'Individual Flat demand total must preserve the remaining Flat Cost.');
-        System.assertEquals(103.95, demand.Flat_Amount__c,
-            'Flat amount should be remaining Flat Cost less recalculated TDS.');
-        System.assertEquals(1.05, demand.TDS_Amount__c);
+        System.assertEquals(100, demand.Flat_Amount__c,
+            'Flat amount should equal the remaining base Flat amount.');
+        System.assertEquals(5, demand.TDS_Amount__c);
     }
 
     @isTest
-    static void raiseDemandForBooking_calculatesTdsOnRemainingFlatCost() {
+    static void raiseDemandForBooking_usesFullPendingTdsForUnsplitSchedule() {
         Booking__c booking = [SELECT Id FROM Booking__c LIMIT 1];
         Payment_Schedule__c completed = [
             SELECT Id
@@ -174,8 +216,8 @@ private class PaymentScheduleViewControllerTest {
             PaymentScheduleViewController.getPaymentSchedules(booking.Id);
         System.assertEquals(350026, preview.schedules[0].flatDemandableAmount,
             'Demand preview should preserve remaining Flat Cost after subtracting paid amounts.');
-        System.assertEquals(3500.26, preview.schedules[0].tdsDemandableAmount,
-            'TDS should be 1% of the remaining Flat Cost after subtracting the paid amount.');
+        System.assertEquals(8500, preview.schedules[0].tdsDemandableAmount,
+            'The full remaining TDS amount should be demanded for an unsplit schedule.');
 
         Test.startTest();
         Id demandId = PaymentScheduleViewController.raiseDemandForBooking(
@@ -192,8 +234,85 @@ private class PaymentScheduleViewControllerTest {
         ];
         System.assertEquals(350026, demand.Demand_Amount__c,
             'Raised demand total should equal the remaining Flat Cost.');
-        System.assertEquals(346525.74, demand.Flat_Amount__c);
-        System.assertEquals(3500.26, demand.TDS_Amount__c);
+        System.assertEquals(341526, demand.Flat_Amount__c);
+        System.assertEquals(8500, demand.TDS_Amount__c);
+    }
+
+    @isTest
+    static void prorataFlatDemandUsesBankFlatAndCarriesOnlyUnDemandedPaidTds() {
+        Booking__c booking = [
+            SELECT Id
+            FROM Booking__c
+            LIMIT 1
+        ];
+        booking.Funding_Type__c = 'Prorata';
+        update booking;
+
+        Payment_Schedule__c completed = [
+            SELECT Id
+            FROM Payment_Schedule__c
+            WHERE Booking__c = :booking.Id AND Status__c = 'Completed'
+            LIMIT 1
+        ];
+        ProrataInvariantService.bypass = true;
+        try {
+            update new Payment_Schedule__c(
+                Id = completed.Id,
+                Amount__c = 1010000,
+                Pending_Amount__c = 510000,
+                Payment_Schedule_Amount__c = 1000000,
+                Payment_Schedule_Amount_Paid__c = 500000,
+                Payment_Schedule_Amount_Pending__c = 500000,
+                GST_Amount__c = 0,
+                GST_Amount_Pending__c = 0,
+                TDS_Amount__c = 10000,
+                TDS_Amount_Paid__c = 0,
+                TDS_Amount_Pending__c = 10000,
+                Bank_Flat_Amount__c = 800000,
+                Customer_Flat_Prorata__c = 200000,
+                Bank_GST_Amount__c = 0,
+                Customer_GST_Prorata__c = 0,
+                Bank_Demand_Raised__c = false,
+                Customer_Demand_Raised__c = false,
+                Bank_Flat_Demand_Raised__c = false,
+                Customer_Flat_Demand_Raised__c = false
+            );
+        } finally {
+            ProrataInvariantService.bypass = false;
+        }
+
+        PaymentScheduleViewController.PaymentScheduleViewResult preview =
+            PaymentScheduleViewController.getPaymentSchedules(booking.Id);
+        PaymentScheduleViewController.PaymentScheduleWrapper schedule = preview.schedules[0];
+        System.assertEquals(305000, schedule.flatDemandableAmount,
+            'The Bank Flat demand includes the Bank balance plus only the unpaid, undemanded TDS carry-forward.');
+        System.assertEquals(8000, schedule.tdsDemandableAmount,
+            'TDS is 1% of the Bank Flat balance plus TDS on previously paid Flat.');
+
+        Test.startTest();
+        Id demandId = PaymentScheduleViewController.raiseDemandForBooking(
+            booking.Id,
+            DemandComponentService.FLAT,
+            false
+        );
+        Test.stopTest();
+
+        Demands__c demand = [
+            SELECT Demand_Amount__c, Flat_Amount__c, TDS_Amount__c
+            FROM Demands__c
+            WHERE Id = :demandId
+        ];
+        System.assertEquals(305000, demand.Demand_Amount__c,
+            'Demand amount includes Bank Flat and carried TDS.');
+        System.assertEquals(297000, demand.Flat_Amount__c,
+            'Net payable is Bank Flat less 1% TDS on the current Bank amount.');
+        System.assertEquals(8000, demand.TDS_Amount__c);
+        Payment_Schedule__c scheduleAfterDemand = [
+            SELECT Bank_Flat_Demand_Raised__c
+            FROM Payment_Schedule__c
+            WHERE Id = :completed.Id
+        ];
+        System.assertEquals(true, scheduleAfterDemand.Bank_Flat_Demand_Raised__c);
     }
 
     @isTest
@@ -271,10 +390,10 @@ private class PaymentScheduleViewControllerTest {
         ];
         System.assertEquals(1327556, demand.Demand_Amount__c,
             'Demand total should equal the sum of remaining Flat Cost across the schedules.');
-        System.assertEquals(1314280.44, demand.Flat_Amount__c,
-            'Flat amount should be remaining Flat Cost less 1% TDS.');
-        System.assertEquals(13275.56, demand.TDS_Amount__c,
-            'TDS should equal 1% of the aggregate remaining Flat Cost.');
+        System.assertEquals(1309281, demand.Flat_Amount__c,
+            'Flat amount should equal the aggregate remaining base Flat balance.');
+        System.assertEquals(18275, demand.TDS_Amount__c,
+            'TDS should equal the aggregate full pending TDS balance.');
     }
 
     @isTest
@@ -435,6 +554,8 @@ private class PaymentScheduleViewControllerTest {
             Id = booking.Project__c,
             Legacy_Split_Demand_Receipt__c = false
         );
+        booking.Funding_Type__c = 'Prorata';
+        update booking;
         Payment_Schedule__c completed = [
             SELECT Id
             FROM Payment_Schedule__c
@@ -444,10 +565,19 @@ private class PaymentScheduleViewControllerTest {
         completed.TDS_Amount_Pending__c = 5;
         completed.TDS_Amount__c = 5;
         completed.Pending_Amount__c = 130;
-        update completed;
+        completed.Bank_Flat_Amount__c = 80;
+        completed.Bank_GST_Amount__c = 10;
+        ProrataInvariantService.bypass = true;
+        try {
+            update completed;
+        } finally {
+            ProrataInvariantService.bypass = false;
+        }
 
         PaymentScheduleViewController.PaymentScheduleViewResult scheduleResult =
             PaymentScheduleViewController.getPaymentSchedules(booking.Id);
+        System.assertEquals(false, scheduleResult.schedules[0].isBankDemand,
+            'Non-Legacy projects must not use prorata bank amounts even when the booking has split funding.');
         System.assertEquals(130, scheduleResult.schedules[0].combinedDemandableAmount,
             'Combined preview must match the demand principal including TDS.');
 
@@ -470,7 +600,7 @@ private class PaymentScheduleViewControllerTest {
         System.assertEquals(103.95, demand.Flat_Amount__c);
         System.assertEquals(103.95, demand.Base_Amount__c);
         System.assertEquals(25, demand.GST_Amount__c);
-        System.assertEquals(1.05, demand.TDS_Amount__c);
+        System.assertEquals(5, demand.TDS_Amount__c);
         System.assertEquals(10, demand.Interest_Amount__c);
     }
 

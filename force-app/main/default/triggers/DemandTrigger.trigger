@@ -7,9 +7,12 @@
  *              auto), so the daily DemandReminderSchedulable can send them.
  * @author System
  */
-trigger DemandTrigger on Demands__c (before insert) {
+trigger DemandTrigger on Demands__c (before insert, after insert) {
     if (Trigger.isBefore && Trigger.isInsert) {
         DemandReminderService.populateReminderDates(Trigger.new);
         DemandReminderService.markCalculateFlag(Trigger.new);   // <-- added
+    }
+    if (Trigger.isAfter && Trigger.isInsert) {
+        DemandLineService.createForInsertedDemands(Trigger.new);
     }
 }

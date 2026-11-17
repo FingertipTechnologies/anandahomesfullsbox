@@ -109,7 +109,7 @@ public with sharing class ProrataDemandService {
         List<Payment_Schedule__c> rows = [
             SELECT Id, Booking__c, Sequence__c, Milestone_Name__c, Due_Date__c, Status__c,
                    Bank_Flat_Amount__c, Bank_GST_Amount__c, Customer_Flat_Prorata__c,
-                   Customer_GST_Prorata__c, Payment_Schedule_Amount_Paid__c,
+                   Customer_GST_Prorata__c, Payment_Schedule_Amount_Paid__c, GST_Amount_Paid__c,
                    TDS_Amount__c, TDS_Amount_Paid__c, TDS_Amount_Pending__c,
                    Bank_Demand_Raised__c, Customer_Demand_Raised__c,
                    Bank_Flat_Demand_Raised__c, Bank_GST_Demand_Raised__c,
@@ -155,10 +155,18 @@ public with sharing class ProrataDemandService {
 
             Decimal flat = bankSide
                 ? DemandComponentService.amount(ps, DemandComponentService.FLAT, true)
-                : nz(ps.Customer_Flat_Prorata__c);
+                : Math.max(
+                    0,
+                    nz(ps.Customer_Flat_Prorata__c)
+                        - nz(ps.Payment_Schedule_Amount_Paid__c)
+                );
             Decimal gst  = bankSide
                 ? DemandComponentService.amount(ps, DemandComponentService.GST, true)
-                : nz(ps.Customer_GST_Prorata__c);
+                : Math.max(
+                    0,
+                    nz(ps.Customer_GST_Prorata__c)
+                        - nz(ps.GST_Amount_Paid__c)
+                );
             for (String component : new List<String>{ DemandComponentService.FLAT, DemandComponentService.GST }) {
                 if (DemandComponentService.isComponentRaised(ps, component, bankSide)) continue;
                 Decimal amount = component == DemandComponentService.FLAT ? flat : gst;
@@ -174,6 +182,9 @@ public with sharing class ProrataDemandService {
                         + carryForward;
                     demandAmount += carryForward;
                     if (carryForward > 0) carryForwardDemandScheduleIds.add(ps.Id);
+                } else if (component == DemandComponentService.FLAT) {
+                    tdsAmount = (amount * 0.01).setScale(2, System.RoundingMode.HALF_UP);
+                    demandAmount += tdsAmount;
                 }
                 Decimal flatAmount = component == DemandComponentService.FLAT
                     ? Math.max(0, demandAmount - tdsAmount) : 0;
@@ -207,7 +218,21 @@ public with sharing class ProrataDemandService {
         }
 
         if (demands.isEmpty()) return 0;
+        Map<Id, Payment_Schedule__c> scheduleById = new Map<Id, Payment_Schedule__c>(rows);
+        for (Demands__c demand : demands) {
+            Payment_Schedule__c schedule = scheduleById.get(demand.Payment_Schedule__c);
+            Demand_Line__c demandLine = DemandLineService.createFromSchedule(
+                schedule,
+                demand.Demand_Component__c,
+                demand.Flat_Amount__c,
+                demand.GST_Amount__c,
+                demand.TDS_Amount__c,
+                demand.Interest_Amount__c
+            );
+            DemandLineService.stageForInsert(demand, new List<Demand_Line__c>{ demandLine });
+        }
         insert demands;
+        DemandLineService.clearStagedLines();
         Map<Id, Payment_Schedule__c> updatesById =
             new Map<Id, Payment_Schedule__c>();
         updatesById.putAll(flags);

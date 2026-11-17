@@ -25,9 +25,10 @@ public without sharing class DemandReminderService {
      */
     @TestVisible private static final String DEMAND_TYPE_AGREEMENT_AMOUNT = 'Agreement Amount';
 
-    // BRD pointer 5: Agreement amount demand reminders at Welcome Mail + 30 / 40 / 45 days.
+    // BRD pointer 5: Agreement amount (AOS margin) reminders at Welcome Mail + 30 / 45 days
+    // (reminder letters "WL+30days" / "WL+ 45days", 2026-11-16).
     @TestVisible private static final Integer AGREEMENT_REMINDER_1_DAYS = 30;
-    @TestVisible private static final Integer AGREEMENT_REMINDER_2_DAYS = 40;
+    @TestVisible private static final Integer AGREEMENT_REMINDER_2_DAYS = 45;
     @TestVisible private static final Integer AGREEMENT_TERMINATION_DAYS = 45;
 
     // ==================== PUBLIC METHODS ====================
@@ -251,13 +252,17 @@ public without sharing class DemandReminderService {
         List<Demands__c> demands = [
             SELECT Id, Name, Booking__c, Booking__r.Email__c, Booking__r.OwnerId,
                    Booking__r.Name, Booking__r.First_Applicant_Name__c,
+                   Demand_Type__c, Demand_Date__c, Reminder_1_Sent_Date__c,
+                   Payment_Schedule__r.Is_Agreement__c,
+                   Booking__r.Plot__r.Name, Booking__r.Project__r.Name, Booking__r.Salutation__c,
+                   Booking__r.Permanent_Address__c, Booking__r.Booking_Date__c, Booking__r.Total_Flat_Cost__c,
                    Demand_Amount__c, Pending_Amount__c, Due_Date__c,
                    Reminder_1_Date__c, Project__c,Number_of_Reminders__c
             FROM Demands__c
             WHERE Reminder_1_Date__c <= :today
             AND Reminder_1_Sent__c = false
             AND Reminders_Disabled__c = false
-            AND Booking__r.Disable_Demand_Reminders__c = false
+            AND Booking__r.Disable_Demand_Reminders__c = false AND Booking__r.Status__c Not in ('Cancellation','Swapping')
             AND Status__c NOT IN ('Paid', 'Cancelled')
             AND Pending_Amount__c > 0
             LIMIT 200
@@ -296,13 +301,17 @@ public without sharing class DemandReminderService {
         List<Demands__c> demands = [
             SELECT Id, Name, Booking__c, Booking__r.Email__c, Booking__r.OwnerId,
                    Booking__r.Name, Booking__r.First_Applicant_Name__c,
+                   Demand_Type__c, Demand_Date__c, Reminder_1_Date__c, Reminder_1_Sent_Date__c,
+                   Payment_Schedule__r.Is_Agreement__c,
+                   Booking__r.Plot__r.Name, Booking__r.Project__r.Name, Booking__r.Salutation__c,
+                   Booking__r.Permanent_Address__c, Booking__r.Booking_Date__c, Booking__r.Total_Flat_Cost__c,
                    Demand_Amount__c, Pending_Amount__c, Due_Date__c,
                    Reminder_2_Date__c, Project__c, Number_of_Reminders__c
             FROM Demands__c
             WHERE Reminder_2_Date__c <= :today
             AND Reminder_2_Sent__c = false
             AND Reminders_Disabled__c = false
-            AND Booking__r.Disable_Demand_Reminders__c = false
+            AND Booking__r.Disable_Demand_Reminders__c = false AND Booking__r.Status__c Not in ('Cancellation','Swapping')
             AND Status__c NOT IN ('Paid', 'Cancelled')
             AND Pending_Amount__c > 0
             LIMIT 200
@@ -344,7 +353,7 @@ public without sharing class DemandReminderService {
             WHERE Reminder_3_Date__c <= :today
             AND Reminder_3_Sent__c = false
             AND Reminders_Disabled__c = false
-            AND Booking__r.Disable_Demand_Reminders__c = false
+            AND Booking__r.Disable_Demand_Reminders__c = false AND Booking__r.Status__c Not in ('Cancellation','Swapping')
             AND Status__c NOT IN ('Paid', 'Cancelled')
             AND Pending_Amount__c > 0
             LIMIT 200
@@ -386,7 +395,7 @@ public without sharing class DemandReminderService {
             WHERE Reminder_4_Date__c <= :today
             AND Reminder_4_Sent__c = false
             AND Reminders_Disabled__c = false
-            AND Booking__r.Disable_Demand_Reminders__c = false
+            AND Booking__r.Disable_Demand_Reminders__c = false AND Booking__r.Status__c Not in ('Cancellation','Swapping')
             AND Status__c NOT IN ('Paid', 'Cancelled')
             AND Pending_Amount__c > 0
             LIMIT 200
@@ -431,7 +440,7 @@ public without sharing class DemandReminderService {
             WHERE Termination_Mail_Date__c <= :today
             AND Termination_Mail_Sent__c = false
             AND Reminders_Disabled__c = false
-            AND Booking__r.Disable_Demand_Reminders__c = false
+            AND Booking__r.Disable_Demand_Reminders__c = false AND Booking__r.Status__c Not in ('Cancellation','Swapping')
             AND Status__c NOT IN ('Paid', 'Cancelled')
             AND Pending_Amount__c > 0
             LIMIT 200
@@ -474,7 +483,7 @@ public without sharing class DemandReminderService {
             WHERE Unit_Unblocking_Date__c <= :today
             AND Unit_Unblocked__c = false
             AND Reminders_Disabled__c = false
-            AND Booking__r.Disable_Demand_Reminders__c = false
+            AND Booking__r.Disable_Demand_Reminders__c = false AND Booking__r.Status__c Not in ('Cancellation','Swapping')
             AND Status__c NOT IN ('Paid', 'Cancelled')
             AND Pending_Amount__c > 0
             AND Booking__r.Status__c != :PostSalesConstants.BOOKING_STATUS_CANCELLED
@@ -550,7 +559,7 @@ public without sharing class DemandReminderService {
             WHERE Booking__c IN :bookingIds
             AND Reminders_Disabled__c = false
             AND Booking__r.Disable_Demand_Reminders__c = false
-            AND (Pending_Amount__c = 0 OR Pending_Amount__c = null)
+            AND (Pending_Amount__c = 0 OR Pending_Amount__c = null) AND Booking__r.Status__c Not in ('Cancellation','Swapping')
             AND Status__c = 'Paid'
         ];
 
@@ -625,6 +634,30 @@ public without sharing class DemandReminderService {
 
                 if (!fileAttachments.isEmpty()) {
                     email.setFileAttachments(fileAttachments);
+                }
+            } else if (reminderType == '1st Reminder' || reminderType == '2nd Reminder') {
+                // No admin template: the reminder letters (demand / AOS margin), 2026-11-16
+                Boolean isMargin = DEMAND_TYPE_AGREEMENT_AMOUNT.equalsIgnoreCase(demand.Demand_Type__c)
+                    || (demand.Payment_Schedule__r != null && demand.Payment_Schedule__r.Is_Agreement__c == true);
+                User owner = null;
+                if (demand.Booking__r.OwnerId != null) {
+                    List<User> owners = [SELECT Name, Email, Phone FROM User WHERE Id = :demand.Booking__r.OwnerId LIMIT 1];
+                    owner = owners.isEmpty() ? null : owners[0];
+                }
+                DemandReminderLetters.Letter letter = DemandReminderLetters.build(
+                    demand, reminderType == '1st Reminder' ? 1 : 2, isMargin, owner);
+                email.setSubject(letter.subject);
+                email.setHtmlBody(letter.htmlBody);
+                Id letterDocId = (config != null && config.Document_Template__c != null) ? config.Document_Template__c : masterDocTemplateId;
+                if (letterDocId != null) {
+                    Messaging.EmailFileAttachment pdfAtt = EmailPdfGenerator.generatePdfAttachment(
+                        'DynamicDocumentPDF', demand.Id,
+                        reminderType.replaceAll(' ', '_') + '_' + demand.Name + '.pdf',
+                        'id', new Map<String, String>{ 'templateId' => letterDocId }
+                    );
+                    if (pdfAtt != null) {
+                        email.setFileAttachments(new List<Messaging.EmailFileAttachment>{ pdfAtt });
+                    }
                 }
             } else {
                 // Fallback: build a simple email with document template attachment if configured

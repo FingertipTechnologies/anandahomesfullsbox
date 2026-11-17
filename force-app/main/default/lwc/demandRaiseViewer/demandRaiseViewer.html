@@ -307,6 +307,24 @@
                             </div>
                         </div>
 
+                        <template if:true={isFirstDemand}>
+                            <lightning-radio-group
+                                name="demandMode"
+                                label="Demand mode"
+                                options={demandModeOptions}
+                                value={demandMode}
+                                type="button"
+                                onchange={handleDemandModeChange}
+                                class="slds-m-bottom_medium">
+                            </lightning-radio-group>
+                            <template if:false={nextDemand.hasAgreementMilestone}>
+                                <div class="info-banner slds-m-bottom_medium">
+                                    <lightning-icon icon-name="utility:info" size="small" class="slds-m-right_small"></lightning-icon>
+                                    <span>Agreement Amount mode is unavailable because no Agreement milestone with a sequence is configured.</span>
+                                </div>
+                            </template>
+                        </template>
+
                         <lightning-radio-group
                             name="demandComponent"
                             label="Demand component"
@@ -447,70 +465,6 @@
                                     </table>
                                 </div>
                             </div>
-                        </template>
-
-                        <!-- Detailed Calculation Breakdown -->
-                        <template if:true={isGstOnlyDemand}>
-                        <div class="slds-m-bottom_medium">
-                            <h3 class="slds-text-heading_small slds-m-bottom_small custom-section-title">
-                                <lightning-icon icon-name="utility:calculator" size="x-small"></lightning-icon>
-                                CALCULATION BREAKDOWN
-                            </h3>
-                            <div class="demand-card calc-card">
-                                <div class="calc-group">
-                                    <div class="calc-group-title">Demand Components</div>
-                                    <template if:true={isFlatDemand}>
-                                        <div class="demand-row">
-                                            <span class="demand-label">Flat Amount:</span>
-                                            <span class="demand-value">{selectedDemand.formattedFlatAmount}</span>
-                                        </div>
-                                    </template>
-                                    <template if:true={isGstDemand}>
-                                        <div class="demand-row">
-                                            <span class="demand-label">GST Amount:</span>
-                                            <span class="demand-value">{selectedDemand.formattedGstAmount}</span>
-                                        </div>
-                                    </template>
-                                    <template if:true={isFlatDemand}>
-                                        <div class="demand-row">
-                                            <span class="demand-label">TDS Amount:</span>
-                                            <span class="demand-value">{selectedDemand.formattedTdsAmount}</span>
-                                        </div>
-                                    </template>
-                                </div>
-                                <!-- Interest -->
-                                <template if:true={hasAnyInterest}>
-                                    <div class="calc-group">
-                                        <div class="calc-group-title">Interest</div>
-                                        <div class="demand-row">
-                                            <span class="demand-label">Gross Interest Accrued:</span>
-                                            <span class="demand-value amount-interest">{selectedDemand.formattedGrossInterest}</span>
-                                        </div>
-                                        <div class="demand-row">
-                                            <span class="demand-label">Approved Waiver Applied:</span>
-                                            <span class="demand-value amount-interest">{selectedDemand.formattedInterestWaivedOff}</span>
-                                        </div>
-                                        <div class="demand-row">
-                                            <span class="demand-label">Interest Charged:</span>
-                                            <span class="demand-value amount-interest">{selectedDemand.formattedInterest}</span>
-                                        </div>
-                                        <lightning-input
-                                            type="checkbox"
-                                            label="Include interest in this demand"
-                                            checked={includeInterest}
-                                            onchange={handleInterestChange}
-                                            class="slds-m-top_small">
-                                        </lightning-input>
-                                    </div>
-                                </template>
-
-                                <!-- Grand Total -->
-                                <div class="demand-row demand-total">
-                                    <span class="demand-label">TOTAL AMOUNT DUE:</span>
-                                    <span class="demand-value amount-total">{selectedDemand.formattedTotal}</span>
-                                </div>
-                            </div>
-                        </div>
                         </template>
 
                         <template if:true={isCombinedDemand}>

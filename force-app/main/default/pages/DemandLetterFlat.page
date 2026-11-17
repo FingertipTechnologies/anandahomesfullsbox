@@ -52,32 +52,37 @@
         </p>
         <table class="installment-table">
             <colgroup>
-                <col style="width:28%" /><col style="width:14%" /><col style="width:20%" />
-                <col style="width:20%" /><col style="width:18%" />
+                <col style="width:23%" /><col style="width:12%" /><col style="width:17%" />
+                <col style="width:15%" /><col style="width:16%" /><col style="width:17%" />
             </colgroup>
             <thead>
                 <tr>
                     <th>Instalment Description</th>
                     <th>% AS PER STAGE</th>
                     <th>Instalment Amount Payable<br/>(A)</th>
-                    <th>TDS to be Remitted<br/>(1% of A) (B)</th>
-                    <th>Net Amount Payable<br/>(A - B)</th>
+                    <th>TDS to be Remitted<br/>(B)</th>
+                    <th>Received Amount</th>
+                    <th>Net Amount Payable</th>
                 </tr>
             </thead>
             <tbody>
+                <apex:repeat value="{!demandLetterLineRows}" var="row">
                 <tr>
-                    <td><apex:outputField value="{!Demands__c.Payment_Schedule__r.Milestone_Name__c}" /></td>
-                    <td><apex:outputField value="{!Demands__c.Payment_Schedule__r.Percentage__c}" /></td>
+                    <td><apex:outputText value="{!row.demandLine.Milestone_Name__c}" /></td>
+                    <td><apex:outputText value="{!row.demandLine.Percentage__c}" /></td>
                     <td>
                         <apex:outputText value="{0, number, #,##0.00}">
-                            <apex:param value="{!(Demands__c.Flat_Amount__c + Demands__c.TDS_Amount__c)}" />
+                            <apex:param value="{!row.flatInstallmentAmount}" />
                         </apex:outputText>
                     </td>
-                    <td><apex:outputField value="{!Demands__c.TDS_Amount__c}" /></td>
-                    <td>₹ <apex:outputText value="{!Demands__c.Demanded_Amount__c}" /></td>
+                    <td><apex:outputText value="{!row.demandLine.TDS_Amount__c}" /></td>
+                    <td>₹ <apex:outputText value="{!row.demandLine.Received_Amount__c}" /></td>
+                    <td>₹ <apex:outputText value="{!row.demandLine.Flat_Amount__c}" /></td>
                 </tr>
+                </apex:repeat>
                 <tr>
                     <td colspan="4" class="total-label">TOTAL PAYABLE (Rs.)</td>
+                    <td></td>
                     <td><strong>₹ <apex:outputText value="{!Demands__c.Demanded_Amount__c}" />/-</strong></td>
                 </tr>
             </tbody>

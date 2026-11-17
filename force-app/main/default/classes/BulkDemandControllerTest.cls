@@ -434,7 +434,8 @@ private class BulkDemandControllerTest {
             BulkDemandController.createBulkDemands(JSON.serialize(req));
         System.assertEquals(1, gstRes.successCount, 'Bank GST should still be raisable after Bank Flat');
         List<Demands__c> demands = [
-            SELECT Demand_Component__c, Demand_Amount__c, Demand_Audience__c, Flat_Amount__c, GST_Amount__c
+            SELECT Demand_Component__c, Demand_Amount__c, Demand_Audience__c,
+                   Flat_Amount__c, GST_Amount__c, TDS_Amount__c
             FROM Demands__c WHERE Booking__c = :booking.Id
         ];
         System.assertEquals(2, demands.size());
@@ -442,6 +443,9 @@ private class BulkDemandControllerTest {
             System.assertEquals('Bank', demand.Demand_Audience__c);
             if (demand.Demand_Component__c == 'Flat') {
                 System.assertEquals(200000, demand.Demand_Amount__c);
+                System.assertEquals(198000, demand.Flat_Amount__c);
+                System.assertEquals(2000, demand.TDS_Amount__c,
+                    'Bank Flat demand includes 1% TDS on the Bank portion.');
                 System.assertEquals(0, demand.GST_Amount__c);
             } else {
                 System.assertEquals('GST', demand.Demand_Component__c);
@@ -450,6 +454,56 @@ private class BulkDemandControllerTest {
             }
         }
         Test.stopTest();
+    }
+
+    @isTest
+    static void createBulkDemands_prorataBankDemandCarriesUndemandedTds() {
+        Booking__c booking = bookingByEmail(EMAIL_PRORATA);
+        if (booking == null) return;
+        Payment_Schedule__c ps = scheduleFor(booking.Id);
+        if (ps == null) return;
+
+        ProrataInvariantService.bypass = true;
+        try {
+            update new Payment_Schedule__c(
+                Id = ps.Id,
+                Payment_Schedule_Amount_Paid__c = 100000,
+                TDS_Amount_Pending__c = 1000,
+                TDS_Amount_Paid__c = 0
+            );
+        } finally {
+            ProrataInvariantService.bypass = false;
+        }
+
+        BulkDemandController.BookingDemandItem item = new BulkDemandController.BookingDemandItem();
+        item.bookingId = booking.Id;
+        item.scheduleIds = new List<Id>{ ps.Id };
+
+        BulkDemandController.BulkDemandRequest request = new BulkDemandController.BulkDemandRequest();
+        request.demandComponent = 'Flat';
+        request.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
+        request.includeInterest = false;
+
+        Test.startTest();
+        BulkDemandController.BulkDemandResult result =
+            BulkDemandController.createBulkDemands(JSON.serialize(request));
+        Test.stopTest();
+
+        System.assertEquals(1, result.successCount);
+        Demands__c demand = [
+            SELECT Demand_Amount__c, Flat_Amount__c, TDS_Amount__c
+            FROM Demands__c WHERE Booking__c = :booking.Id
+        ];
+        System.assertEquals(101000, demand.Demand_Amount__c);
+        System.assertEquals(99000, demand.Flat_Amount__c);
+        System.assertEquals(2000, demand.TDS_Amount__c,
+            'Includes 1% on remaining Bank Flat plus unpaid TDS from paid Flat.');
+        Payment_Schedule__c scheduleAfterDemand = [
+            SELECT Bank_Flat_Demand_Raised__c
+            FROM Payment_Schedule__c
+            WHERE Id = :ps.Id
+        ];
+        System.assertEquals(true, scheduleAfterDemand.Bank_Flat_Demand_Raised__c);
     }
 
     /** Mixed batch: one good item + one item whose insert fails (fabricated booking id). */

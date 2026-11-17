@@ -3,7 +3,7 @@ import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { CloseActionScreenEvent } from 'lightning/actions';
 import { getRecord } from 'lightning/uiRecordApi';
 import getPaymentSchedules from '@salesforce/apex/PaymentScheduleViewController.getPaymentSchedules';
-import raiseDemandForBooking from '@salesforce/apex/PaymentScheduleViewController.raiseDemandForBooking';
+import raiseDemandForBookingInMode from '@salesforce/apex/PaymentScheduleViewController.raiseDemandForBookingInMode';
 
 export default class PaymentScheduleViewer extends LightningElement {
     @api recordId; // Booking ID from Quick Action
@@ -29,7 +29,16 @@ export default class PaymentScheduleViewer extends LightningElement {
 
     @track isRaisingDemand = false;
     @track demandComponent = 'Flat';
+    @track demandMode = 'Normal';
     @track includeInterest = true;
+
+    get demandModeOptions() {
+        const options = [{ label: 'Normal', value: 'Normal' }];
+        if (this.nextDemand.hasAgreementMilestone === true) {
+            options.push({ label: 'Agreement Amount only', value: 'Agreement Amount' });
+        }
+        return options;
+    }
 
     get demandComponentOptions() {
         return this.nextDemand.legacySplitDemandReceipt
@@ -136,6 +145,7 @@ export default class PaymentScheduleViewer extends LightningElement {
         }));
         this.nextDemand = result.nextDemand || {};
         this.demandComponent = this.nextDemand.legacySplitDemandReceipt ? 'Flat' : 'Flat + GST';
+        this.demandMode = 'Normal';
         this.bookingName = result.bookingName || '';
         this.projectName = result.projectName || 'N/A';
         this.unitName = result.unitName || 'N/A';
@@ -207,10 +217,11 @@ export default class PaymentScheduleViewer extends LightningElement {
         }
 
         this.isRaisingDemand = true;
-        raiseDemandForBooking({
+        raiseDemandForBookingInMode({
             bookingId: this.recordId,
             demandComponent: this.demandComponent,
-            includeInterest: this.demandComponent !== 'GST' && this.includeInterest
+            includeInterest: this.demandComponent !== 'GST' && this.includeInterest,
+            demandMode: this.demandMode
         })
             .then(() => {
                 this.showToast('Success',
@@ -234,6 +245,13 @@ export default class PaymentScheduleViewer extends LightningElement {
 
     handleDemandComponentChange(event) {
         this.demandComponent = event.detail.value;
+        if (!this.isFirstDemand) {
+            this.demandMode = 'Normal';
+        }
+    }
+
+    handleDemandModeChange(event) {
+        this.demandMode = event.detail.value;
     }
 
     handleInterestChange(event) {
@@ -282,6 +300,21 @@ export default class PaymentScheduleViewer extends LightningElement {
 
     get hasNextDemand() {
         return this.selectedDemand.totalAmount > 0;
+    }
+
+    get isFirstDemand() {
+        if (!this.nextDemand) return false;
+        if (this.nextDemand.legacySplitDemandReceipt === true) {
+            return this.demandComponent === 'Flat'
+                ? this.nextDemand.isFirstFlatDemand === true
+                : this.demandComponent === 'GST'
+                    && this.nextDemand.isFirstGstDemand === true;
+        }
+        return this.nextDemand.isFirstCombinedDemand === true;
+    }
+
+    get isAgreementAmountOnly() {
+        return this.demandMode === 'Agreement Amount';
     }
 
     get showSourceBreakdown() {
@@ -335,23 +368,19 @@ export default class PaymentScheduleViewer extends LightningElement {
         const availableWaiver = Number(this.nextDemand.availableInterestWaiver) || 0;
         const waivedInterest = Math.min(includedInterest, availableWaiver);
         const netInterest = includedInterest - waivedInterest;
-        const netAmount = totalAmount + netInterest;
         return {
             totalAmount,
             flatAmount,
             gstAmount,
             tdsAmount,
-            hasTdsAmount: tdsAmount > 0,
             interestAmount: netInterest,
             interestWaivedOff: waivedInterest,
-            netAmount,
             fullScheduleWithTdsAmount,
             fullScheduleFlatAmount,
             fullScheduleGstAmount,
             receivedFlatAmount,
             receivedGstAmount,
             receivedTdsAmount,
-            formattedTotal: this.formatCurrency(netAmount),
             formattedComponentAmount: this.formatCurrency(totalAmount),
             formattedFlatAmount: this.formatCurrency(flatAmount),
             formattedDemandFlatWithTdsAmount: this.formatCurrency(flatAmount + tdsAmount),
@@ -409,15 +438,6 @@ export default class PaymentScheduleViewer extends LightningElement {
 
     get step1DotClass() { return this.stepIndicatorClasses.step1; }
     get step2DotClass() { return this.stepIndicatorClasses.step2; }
-
-    // Expanded detail calculation values
-    get isFlatDemand() {
-        return this.demandComponent === 'Flat' || this.demandComponent === 'Flat + GST';
-    }
-
-    get isGstDemand() {
-        return this.demandComponent === 'GST' || this.demandComponent === 'Flat + GST';
-    }
 
     get totalBaseAmount() {
         let total = 0;
@@ -488,7 +508,15 @@ export default class PaymentScheduleViewer extends LightningElement {
     // The milestones actually contributing to the next demand, each tagged with its source
     // (Bank or Customer) so the raising UI can show the user where the money is coming from.
     get demandLines() {
-        return this.completedSchedules
+        const schedules = this.completedSchedules.filter(schedule => {
+            if (!this.isAgreementAmountOnly) return true;
+            const agreementSequence = Number(this.nextDemand.agreementSequence);
+            return Number.isFinite(agreementSequence)
+                && schedule.sequenceNumber !== null
+                && schedule.sequenceNumber !== undefined
+                && Number(schedule.sequenceNumber) <= agreementSequence;
+        });
+        return schedules
             .map(schedule => {
                 const fullScheduleWithTdsAmount =
                     (Number(schedule.baseAmount) || 0) + (Number(schedule.tdsAmount) || 0);

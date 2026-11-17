@@ -51,8 +51,8 @@
         </p>
         <table class="installment-table">
             <colgroup>
-                <col style="width:30%" /><col style="width:17%" />
-                <col style="width:27%" /><col style="width:26%" />
+                <col style="width:25%" /><col style="width:13%" />
+                <col style="width:22%" /><col style="width:21%" /><col style="width:19%" />
             </colgroup>
             <thead>
                 <tr>
@@ -60,22 +60,27 @@
                     <th>% AS PER STAGE</th>
                     <th>Flat Installment Amount<br/>(A)</th>
                     <th>5% GST Payable on Installment<br/>(B)</th>
+                    <th>Received Amount</th>
                 </tr>
             </thead>
             <tbody>
+                <apex:repeat value="{!demandLetterLineRows}" var="row">
                 <tr>
-                    <td><apex:outputField value="{!Demands__c.Payment_Schedule__r.Milestone_Name__c}" /></td>
-                    <td><apex:outputField value="{!Demands__c.Payment_Schedule__r.Percentage__c}" /></td>
+                    <td><apex:outputText value="{!row.demandLine.Milestone_Name__c}" /></td>
+                    <td><apex:outputText value="{!row.demandLine.Percentage__c}" /></td>
                     <td>
                         <apex:outputText value="{0, number, #,##0.00}">
-                            <apex:param value="{!(Demands__c.Flat_Amount__c + Demands__c.TDS_Amount__c)}" />
+                            <apex:param value="{!row.flatInstallmentAmount}" />
                         </apex:outputText>
                     </td>
-                    <td><apex:outputField value="{!Demands__c.GST_Amount__c}" /></td>
+                    <td><apex:outputText value="{!row.gstInstallmentAmount}" /></td>
+                    <td>₹ <apex:outputText value="{!row.demandLine.Received_Amount__c}" /></td>
                 </tr>
+                </apex:repeat>
                 <tr>
                     <td colspan="3" class="total-label">TOTAL GST PAYABLE (Rs.)</td>
                     <td><strong><apex:outputField value="{!Demands__c.GST_Amount__c}" />/-</strong></td>
+                    <td></td>
                 </tr>
             </tbody>
         </table>

@@ -450,14 +450,6 @@
     border-bottom: none !important;
 }
 
-.demand-total {
-    background: #f7f7f7 !important;
-    padding: 16px 12px !important;
-    margin-top: 12px !important;
-    border-radius: 4px !important;
-    border: 2px solid #1589EE !important;
-}
-
 .demand-label {
     font-size: 14px !important;
     font-weight: 600 !important;
@@ -479,17 +471,11 @@
 .amount-pending { color: #ea001e !important; }
 .amount-interest { color: #ff9a3c !important; }
 
-.amount-total {
-    color: #1589EE !important;
-    font-size: 18px !important;
-}
-
 .demand-date {
     color: #ff9a3c !important;
     font-size: 18px !important;
 }
 
-/* ==================== CALCULATION BREAKDOWN ==================== */
 .calc-card {
     padding: 0 !important;
     overflow: hidden;
@@ -511,30 +497,6 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 4px;
-}
-
-.calc-sub {
-    padding: 6px 0 6px 20px !important;
-}
-
-.calc-sub .demand-label {
-    font-size: 13px !important;
-    color: #666 !important;
-    font-weight: 500 !important;
-}
-
-.calc-sub .demand-value {
-    font-size: 14px !important;
-    color: #555 !important;
-    font-weight: 600 !important;
-}
-
-.calc-card .demand-total {
-    margin-top: 0 !important;
-    border-radius: 0 !important;
-    border-left: none !important;
-    border-right: none !important;
-    border-bottom: none !important;
 }
 
 .flat-demand-table-wrap {

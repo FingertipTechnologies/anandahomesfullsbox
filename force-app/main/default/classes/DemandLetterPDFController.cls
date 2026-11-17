@@ -1,4 +1,20 @@
 public with sharing class DemandLetterPDFController {
+    public class DemandLetterLineRow {
+        public Demand_Line__c demandLine { get; private set; }
+        public Decimal flatInstallmentAmount { get; private set; }
+        public Decimal gstInstallmentAmount { get; private set; }
+
+        public DemandLetterLineRow(
+            Demand_Line__c demandLine,
+            Decimal flatInstallmentAmount,
+            Decimal gstInstallmentAmount
+        ) {
+            this.demandLine = demandLine;
+            this.flatInstallmentAmount = flatInstallmentAmount;
+            this.gstInstallmentAmount = gstInstallmentAmount;
+        }
+    }
+
     public String errorMessage { get; private set; }
     public String accountHolder { get; private set; }
     public String accountNumber { get; private set; }
@@ -8,6 +24,8 @@ public with sharing class DemandLetterPDFController {
     public String accountBranch { get; private set; }
     public String branchCity { get; private set; }
     public String accountType { get; private set; }
+    public List<Demand_Line__c> demandLines { get; private set; }
+    public List<DemandLetterLineRow> demandLetterLineRows { get; private set; }
 
     public DemandLetterPDFController(ApexPages.StandardController standardController) {
         accountType = resolveAccountType(ApexPages.currentPage().getUrl());
@@ -33,11 +51,194 @@ public with sharing class DemandLetterPDFController {
                 return;
             }
             loadAccount(demand.Project__c);
+            loadDemandLines(pageDemand.Id);
         } catch (QueryException e) {
             errorMessage = e.getMessage();
         } catch (Exception e) {
             errorMessage = 'Unable to load project account details: ' + e.getMessage();
         }
+    }
+
+    private void loadDemandLines(Id demandId) {
+        demandLines = [
+            SELECT Id, Milestone_Name__c, Sequence__c, Percentage__c,
+                   Demand_Component__c, Flat_Amount__c, GST_Amount__c,
+                   TDS_Amount__c, Demand_Amount__c,
+                   Received_Amount__c, Payment_Schedule__r.Payment_Schedule_Amount__c,
+                   Payment_Schedule__r.TDS_Amount__c, Payment_Schedule__r.GST_Amount__c,
+                   Payment_Schedule__r.Bank_Flat_Amount__c,
+                   Payment_Schedule__r.Bank_GST_Amount__c,
+                   Payment_Schedule__r.Customer_Flat_Prorata__c,
+                   Payment_Schedule__r.Customer_GST_Prorata__c,
+                   Demand__r.Demand_Audience__c,
+                   Demand__r.Booking__r.Funding_Type__c,
+                   Demand__r.Booking__r.Project__r.Legacy_Split_Demand_Receipt__c
+            FROM Demand_Line__c
+            WHERE Demand__c = :demandId
+            ORDER BY Sequence__c ASC NULLS LAST, CreatedDate ASC
+        ];
+        demandLetterLineRows = new List<DemandLetterLineRow>();
+        if (demandLines.isEmpty()) {
+            Demands__c demand = [
+                SELECT Demand_Component__c, Flat_Amount__c, GST_Amount__c,
+                       TDS_Amount__c, Payment_Schedule__c,
+                       Demand_Audience__c,
+                       Booking__r.Funding_Type__c,
+                       Booking__r.Project__r.Legacy_Split_Demand_Receipt__c,
+                       Payment_Schedule__r.Name, Payment_Schedule__r.Milestone_Name__c,
+                       Payment_Schedule__r.Sequence__c, Payment_Schedule__r.Percentage__c,
+                       Payment_Schedule__r.Payment_Schedule_Amount__c,
+                       Payment_Schedule__r.TDS_Amount__c,
+                       Payment_Schedule__r.GST_Amount__c,
+                       Payment_Schedule__r.Bank_Flat_Amount__c,
+                       Payment_Schedule__r.Bank_GST_Amount__c,
+                       Payment_Schedule__r.Customer_Flat_Prorata__c,
+                       Payment_Schedule__r.Customer_GST_Prorata__c,
+                       Payment_Schedule__r.Payment_Schedule_Amount_Paid__c,
+                       Payment_Schedule__r.GST_Amount_Paid__c,
+                       Payment_Schedule__r.TDS_Amount_Paid__c
+                FROM Demands__c
+                WHERE Id = :demandId
+                LIMIT 1
+            ];
+            Payment_Schedule__c schedule = demand.Payment_Schedule__r;
+            Decimal flatReceived = schedule == null
+                || schedule.Payment_Schedule_Amount_Paid__c == null
+                ? 0
+                : schedule.Payment_Schedule_Amount_Paid__c;
+            Decimal gstReceived = schedule == null || schedule.GST_Amount_Paid__c == null
+                ? 0
+                : schedule.GST_Amount_Paid__c;
+            Decimal tdsReceived = schedule == null || schedule.TDS_Amount_Paid__c == null
+                ? 0
+                : schedule.TDS_Amount_Paid__c;
+            Decimal receivedAmount = demand.Demand_Component__c == DemandComponentService.FLAT
+                ? flatReceived + tdsReceived
+                : demand.Demand_Component__c == DemandComponentService.GST
+                    ? gstReceived
+                    : flatReceived + gstReceived + tdsReceived;
+            Decimal flatAmount = demand.Flat_Amount__c == null ? 0 : demand.Flat_Amount__c;
+            Decimal gstAmount = demand.GST_Amount__c == null ? 0 : demand.GST_Amount__c;
+            Decimal tdsAmount = demand.TDS_Amount__c == null ? 0 : demand.TDS_Amount__c;
+            Demand_Line__c fallbackLine = new Demand_Line__c(
+                Milestone_Name__c = schedule == null
+                    ? ''
+                    : (String.isNotBlank(schedule.Milestone_Name__c)
+                        ? schedule.Milestone_Name__c
+                        : schedule.Name),
+                Sequence__c = schedule == null ? null : schedule.Sequence__c,
+                Percentage__c = schedule == null ? null : schedule.Percentage__c,
+                Demand_Component__c = demand.Demand_Component__c,
+                Flat_Amount__c = flatAmount,
+                GST_Amount__c = gstAmount,
+                TDS_Amount__c = tdsAmount,
+                Demand_Amount__c = flatAmount + gstAmount + tdsAmount,
+                Received_Amount__c = receivedAmount
+            );
+            demandLines.add(fallbackLine);
+            demandLetterLineRows.add(new DemandLetterLineRow(
+                fallbackLine,
+                flatInstallmentAmount(
+                    fallbackLine,
+                    schedule,
+                    demand.Booking__r == null ? null : demand.Booking__r.Funding_Type__c,
+                    demand.Booking__r != null
+                        && demand.Booking__r.Project__r != null
+                        && demand.Booking__r.Project__r.Legacy_Split_Demand_Receipt__c == true,
+                    demand.Demand_Audience__c
+                ),
+                gstInstallmentAmount(
+                    fallbackLine,
+                    schedule,
+                    demand.Booking__r == null ? null : demand.Booking__r.Funding_Type__c,
+                    demand.Booking__r != null
+                        && demand.Booking__r.Project__r != null
+                        && demand.Booking__r.Project__r.Legacy_Split_Demand_Receipt__c == true,
+                    demand.Demand_Audience__c
+                )
+            ));
+        } else {
+            for (Demand_Line__c demandLine : demandLines) {
+                Demands__c demand = demandLine.Demand__r;
+                Booking__c booking = demand == null ? null : demand.Booking__r;
+                String fundingType = booking == null ? null : booking.Funding_Type__c;
+                Boolean legacySplit = booking != null
+                    && booking.Project__r != null
+                    && booking.Project__r.Legacy_Split_Demand_Receipt__c == true;
+                String audience = demand == null ? null : demand.Demand_Audience__c;
+                demandLetterLineRows.add(new DemandLetterLineRow(
+                    demandLine,
+                    flatInstallmentAmount(
+                        demandLine,
+                        demandLine.Payment_Schedule__r,
+                        fundingType,
+                        legacySplit,
+                        audience
+                    ),
+                    gstInstallmentAmount(
+                        demandLine,
+                        demandLine.Payment_Schedule__r,
+                        fundingType,
+                        legacySplit,
+                        audience
+                    )
+                ));
+            }
+        }
+
+    }
+
+    @TestVisible
+    private static Decimal flatInstallmentAmount(
+        Demand_Line__c demandLine,
+        Payment_Schedule__c schedule,
+        String fundingType,
+        Boolean legacySplitDemandReceipt,
+        String demandAudience
+    ) {
+        if (isProrataOrPartial(legacySplitDemandReceipt, fundingType)) {
+            if (demandLine.Demand_Component__c == DemandComponentService.GST
+                && schedule != null) {
+                Decimal componentFlat = demandAudience == 'Bank'
+                    ? schedule.Bank_Flat_Amount__c
+                    : schedule.Customer_Flat_Prorata__c;
+                if (componentFlat != null) return componentFlat;
+            }
+            return nz(demandLine.Flat_Amount__c) + nz(demandLine.TDS_Amount__c);
+        }
+        if (schedule == null || schedule.Payment_Schedule_Amount__c == null) {
+            return nz(demandLine.Flat_Amount__c) + nz(demandLine.TDS_Amount__c);
+        }
+        return schedule.Payment_Schedule_Amount__c + nz(schedule.TDS_Amount__c);
+    }
+
+    @TestVisible
+    private static Decimal gstInstallmentAmount(
+        Demand_Line__c demandLine,
+        Payment_Schedule__c schedule,
+        String fundingType,
+        Boolean legacySplitDemandReceipt,
+        String demandAudience
+    ) {
+        if (isProrataOrPartial(legacySplitDemandReceipt, fundingType) && schedule != null) {
+            Decimal componentGst = demandAudience == 'Bank'
+                ? schedule.Bank_GST_Amount__c
+                : schedule.Customer_GST_Prorata__c;
+            if (componentGst != null) return componentGst;
+        }
+        if (schedule != null && schedule.GST_Amount__c != null) {
+            return schedule.GST_Amount__c;
+        }
+        return nz(demandLine.GST_Amount__c);
+    }
+
+    private static Boolean isProrataOrPartial(Boolean legacySplitDemandReceipt, String fundingType) {
+        return legacySplitDemandReceipt == true
+            && (fundingType == 'Prorata' || fundingType == 'Partial');
+    }
+
+    private static Decimal nz(Decimal value) {
+        return value == null ? 0 : value;
     }
 
     private void loadAccount(Id projectId) {

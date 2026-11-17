@@ -50,20 +50,24 @@
             Receivable within 7 days from the date of this demand letter.
         </p>
         <table class="installment-table">
-            <colgroup><col style="width:44%" /><col style="width:19%" /><col style="width:37%" /></colgroup>
+            <colgroup><col style="width:34%" /><col style="width:16%" /><col style="width:29%" /><col style="width:21%" /></colgroup>
             <thead>
                 <tr>
                     <th>Instalment Description</th>
                     <th>Payable %age<br/>As per stage</th>
                     <th>Instalment Amount Payable<br/>(INCLUDING GST)</th>
+                    <th>Received Amount</th>
                 </tr>
             </thead>
             <tbody>
+                <apex:repeat value="{!demandLines}" var="line">
                 <tr>
-                    <td><apex:outputField value="{!Demands__c.Payment_Schedule__r.Milestone_Name__c}" /></td>
-                    <td><apex:outputField value="{!Demands__c.Payment_Schedule__r.Percentage__c}" /></td>
-                    <td>₹ <apex:outputText value="{!Demands__c.Demanded_Amount__c}" /></td>
+                    <td><apex:outputText value="{!line.Milestone_Name__c}" /></td>
+                    <td><apex:outputText value="{!line.Percentage__c}" /></td>
+                    <td>₹ <apex:outputText value="{!(line.Flat_Amount__c + line.GST_Amount__c)}" /></td>
+                    <td>₹ <apex:outputText value="{!line.Received_Amount__c}" /></td>
                 </tr>
+                </apex:repeat>
             </tbody>
         </table>
         <p>Payments shall be made through A/c Payee Cheques of CTS 2010 standard, Demand Draft (DD), RTGS, or NEFT to the account details stated hereunder:</p>

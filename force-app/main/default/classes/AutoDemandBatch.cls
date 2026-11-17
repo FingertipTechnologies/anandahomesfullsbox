@@ -183,7 +183,46 @@ public with sharing class AutoDemandBatch implements Database.Batchable<SObject>
 
             if (demandsToInsert.isEmpty()) return;
             // Insert demands
+            for (Integer i = 0; i < demandsToInsert.size(); i++) {
+                String demandComponent = indexToComponent.get(i);
+                List<Demand_Line__c> demandLines = new List<Demand_Line__c>();
+                List<Id> scheduleIds = indexToScheduleIds.get(i);
+                if (scheduleIds != null) {
+                for (Id schedId : scheduleIds) {
+                    Payment_Schedule__c schedule = scopeScheduleById.get(schedId);
+                    if (schedule == null) continue;
+
+                    Decimal lineFlatAmount =
+                        schedule.Payment_Schedule_Amount_Pending__c == null
+                            ? 0 : schedule.Payment_Schedule_Amount_Pending__c;
+                    Decimal lineGstAmount =
+                        schedule.GST_Amount_Pending__c == null
+                            ? 0 : schedule.GST_Amount_Pending__c;
+                    Decimal lineTdsAmount =
+                        schedule.TDS_Amount_Pending__c == null
+                            ? 0 : schedule.TDS_Amount_Pending__c;
+                    if (demandComponent == DemandComponentService.FLAT) {
+                        lineGstAmount = 0;
+                    } else if (demandComponent == DemandComponentService.GST) {
+                        lineFlatAmount = 0;
+                        lineTdsAmount = 0;
+                    }
+                    if (lineFlatAmount + lineGstAmount + lineTdsAmount > 0) {
+                        demandLines.add(DemandLineService.createFromSchedule(
+                            schedule,
+                            demandComponent,
+                            lineFlatAmount,
+                            lineGstAmount,
+                            lineTdsAmount,
+                            0
+                        ));
+                    }
+                }
+                }
+                DemandLineService.stageForInsert(demandsToInsert[i], demandLines);
+            }
             Database.SaveResult[] insertResults = Database.insert(demandsToInsert, false);
+            DemandLineService.clearStagedLines();
 
             // Process results and update payment schedules
             Map<Id, Payment_Schedule__c> schedulesToUpdate = new Map<Id, Payment_Schedule__c>();

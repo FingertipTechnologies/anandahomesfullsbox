@@ -135,6 +135,8 @@ public with sharing class FirstApplicantChangeService {
             }
             // Force a fresh signed Booking Form for the new applicant.
             b.Signed_Booking_Form_Uploaded__c = false;
+            // Lets the change through the Lock_First_Applicant_After_Approval validation rule.
+            b.Last_First_Applicant_Change_Id__c = fac.Id;
             bookingsToUpdate.put(b.Id, b);
 
             First_Applicant_Change__c upd = new First_Applicant_Change__c(Id = fac.Id);

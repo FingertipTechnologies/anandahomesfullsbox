@@ -99,6 +99,7 @@ private class FirstApplicantChangeServiceTest {
         System.assertEquals('New Job', after.Occupation__c);
         System.assertEquals('New Correspondence Address', after.Correspondence_Address__c);
         System.assertEquals('Old Office', after.Office_Address__c, 'Blank requested values leave the booking as it is');
+        System.assertEquals(String.valueOf(fac.Id), [SELECT Last_First_Applicant_Change_Id__c FROM Booking__c WHERE Id = :b.Id].Last_First_Applicant_Change_Id__c);
 
         // Bad input is reported, not silently stored.
         Boolean badDate = false;
@@ -109,6 +110,40 @@ private class FirstApplicantChangeServiceTest {
         try { FirstApplicantChangeController.applyDetails(new First_Applicant_Change__c(), 'not json'); }
         catch (AuraHandledException e) { badJson = true; }
         System.assert(badJson);
+    }
+
+    /** After approval a non-admin cannot edit the applicant directly; the approved change still applies. */
+    @isTest
+    static void approvedBooking_applicantLockedExceptViaChange() {
+        Booking__c b = makeBooking();
+        update new Booking__c(Id = b.Id, Booking_Verification_Approval_Status__c = 'Approved');
+
+        Profile p = [SELECT Id FROM Profile WHERE Name = 'CRM User' LIMIT 1];
+        User u = new User(
+            ProfileId = p.Id, LastName = 'Lock', Alias = 'lockt', Email = 'lock.test@example.com',
+            Username = 'lock.test.' + System.currentTimeMillis() + '@example.com',
+            TimeZoneSidKey = 'Asia/Kolkata', LocaleSidKey = 'en_IN', LanguageLocaleKey = 'en_US',
+            EmailEncodingKey = 'UTF-8'
+        );
+        insert u;
+        update new Booking__c(Id = b.Id, OwnerId = u.Id);
+
+        Test.startTest();
+        Database.SaveResult direct;
+        System.runAs(u) {
+            direct = Database.update(new Booking__c(Id = b.Id, PAN_Number__c = 'ZZZZZ9999Z'), false);
+        }
+        First_Applicant_Change__c fac = new First_Applicant_Change__c(
+            Booking__c = b.Id, Old_First_Applicant__c = 'Old Name',
+            New_First_Applicant_Name__c = 'Via Change', Approval_Status__c = 'Approved'
+        );
+        insert fac;
+        FirstApplicantChangeService.applyApproved(new Set<Id>{ fac.Id });
+        Test.stopTest();
+
+        System.assert(!direct.isSuccess(), 'Direct edit of an approved booking must be refused');
+        System.assert(direct.getErrors()[0].getMessage().contains('First Applicant Change'), direct.getErrors()[0].getMessage());
+        System.assertEquals('Via Change', [SELECT First_Applicant_Name__c FROM Booking__c WHERE Id = :b.Id].First_Applicant_Name__c);
     }
 
     @isTest

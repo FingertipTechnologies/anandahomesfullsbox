@@ -5,6 +5,12 @@
  */
 public with sharing class EmailSenderInvocable {
 
+    /**
+     * Problems building a mail. Not AuraHandledException: this class runs from flows, where an
+     * AuraHandledException cannot be caught and silently drops the whole send.
+     */
+    public class EmailSenderException extends Exception {}
+
     public class EmailRequest {
         @InvocableVariable(label='Record IDs' description='Comma-separated record IDs or a single ID' required=true)
         public String recordIds;
@@ -138,10 +144,10 @@ public with sharing class EmailSenderInvocable {
 
         try {
             if (String.isBlank(request.recordIds)) {
-                throw new AuraHandledException('Record IDs are required');
+                throw new EmailSenderException('Record IDs are required');
             }
             if (String.isBlank(request.templateName)) {
-                throw new AuraHandledException('Template Name is required');
+                throw new EmailSenderException('Template Name is required');
             }
 
             List<Email_Template_Config__c> templates = [
@@ -157,7 +163,7 @@ public with sharing class EmailSenderInvocable {
             ];
 
             if (templates.isEmpty()) {
-                throw new AuraHandledException('No active email template found with name: ' + request.templateName);
+                throw new EmailSenderException('No active email template found with name: ' + request.templateName);
             }
 
             Email_Template_Config__c template = templates[0];
@@ -166,7 +172,7 @@ public with sharing class EmailSenderInvocable {
 
             List<Id> recordIds = parseRecordIds(request.recordIds);
             if (recordIds.isEmpty()) {
-                throw new AuraHandledException('No valid record IDs provided');
+                throw new EmailSenderException('No valid record IDs provided');
             }
 
             List<String> additionalTo = parseEmails(request.additionalToAddresses);
@@ -194,7 +200,7 @@ public with sharing class EmailSenderInvocable {
                     rb.errors.add('Record ' + recordId + ': ' + e.getMessage());
                 }
             }
-        } catch (AuraHandledException e) {
+        } catch (EmailSenderException e) {
             rb.buildFailed = true;
             rb.response.success = false;
             rb.response.message = e.getMessage();
@@ -337,7 +343,7 @@ public with sharing class EmailSenderInvocable {
 
         // Must have at least one TO address
         if (toAddresses.isEmpty()) {
-            throw new AuraHandledException('No TO recipients resolved for record ' + recordId);
+            throw new EmailSenderException('No TO recipients resolved for record ' + recordId);
         }
 
         email.setToAddresses(toAddresses);
@@ -591,19 +597,29 @@ public with sharing class EmailSenderInvocable {
         if (receiptId == null) return;
         try {
             List<Receipt__c> receipts = [
-                SELECT Booking__r.Owner.Email
+                SELECT Booking__r.OwnerId, Booking__r.Email__c
                 FROM Receipt__c
                 WHERE Id = :receiptId
                 LIMIT 1
             ];
-            if (receipts.isEmpty()) return;
+            if (receipts.isEmpty() || receipts[0].Booking__r == null) return;
 
-            String ownerEmail = receipts[0].Booking__r != null && receipts[0].Booking__r.Owner != null
-                ? receipts[0].Booking__r.Owner.Email
-                : null;
+            // Owner is polymorphic (User or Queue): read the user's email directly.
+            Id ownerId = receipts[0].Booking__r.OwnerId;
+            String ownerEmail;
+            if (ownerId != null && ownerId.getSObjectType() == User.SObjectType) {
+                for (User u : [SELECT Email FROM User WHERE Id = :ownerId LIMIT 1]) {
+                    ownerEmail = u.Email;
+                }
+            }
             if (String.isBlank(ownerEmail)) return;
 
-            removeEmail(toAddresses, ownerEmail);
+            // When the owner's address is also the customer's own email, the customer must still
+            // get the receipt: keep it as a TO recipient (it is only dropped from CC / BCC).
+            String customerEmail = receipts[0].Booking__r == null ? null : receipts[0].Booking__r.Email__c;
+            if (!ownerEmail.equalsIgnoreCase(customerEmail)) {
+                removeEmail(toAddresses, ownerEmail);
+            }
             removeEmail(ccAddresses, ownerEmail);
             removeEmail(bccAddresses, ownerEmail);
         } catch (Exception e) {

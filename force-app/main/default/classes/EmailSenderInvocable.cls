@@ -334,14 +334,6 @@ public with sharing class EmailSenderInvocable {
         toAddresses.addAll(additionalTo);
         ccAddresses.addAll(additionalCc);
 
-        // BRD (booking flow 132-136, receipt approval 184): the receipt PDF is emailed to the
-        // applicants with the Booking Owner in CC. A Receipt has no owner of its own (it is a child
-        // of the Booking), so a template's "Record Owner" CC resolves to nothing - add the booking
-        // owner here, whatever the template says.
-        if ('Receipt__c'.equalsIgnoreCase(objectApiName)) {
-            addBookingOwnerToReceiptCc(recordId, toAddresses, ccAddresses, bccAddresses);
-        }
-
         // Must have at least one TO address
         if (toAddresses.isEmpty()) {
             throw new EmailSenderException('No TO recipients resolved for record ' + recordId);
@@ -581,50 +573,6 @@ public with sharing class EmailSenderInvocable {
         return value.equalsIgnoreCase(selector)
             || value.equalsIgnoreCase(selNorm)
             || value.replace('_', ' ').trim().equalsIgnoreCase(selNorm);
-    }
-
-    /**
-     * @description Adds the email of the user who owns the Receipt's Booking to CC (BRD: receipt
-     *              mails go to the applicants, CC Booking Owner). Skipped when that address already
-     *              receives the mail (e.g. the owner's email is also the customer's own) or when the
-     *              owner is a queue / has no email.
-     */
-    @TestVisible
-    private static void addBookingOwnerToReceiptCc(
-        Id receiptId,
-        List<String> toAddresses,
-        List<String> ccAddresses,
-        List<String> bccAddresses
-    ) {
-        if (receiptId == null) return;
-        try {
-            List<Receipt__c> receipts = [
-                SELECT Booking__r.OwnerId, Booking__r.Email__c
-                FROM Receipt__c
-                WHERE Id = :receiptId
-                LIMIT 1
-            ];
-            if (receipts.isEmpty() || receipts[0].Booking__r == null) return;
-
-            // Owner is polymorphic (User or Queue): read the user's email directly.
-            Id ownerId = receipts[0].Booking__r.OwnerId;
-            String ownerEmail;
-            if (ownerId != null && ownerId.getSObjectType() == User.SObjectType) {
-                for (User u : [SELECT Email FROM User WHERE Id = :ownerId LIMIT 1]) {
-                    ownerEmail = u.Email;
-                }
-            }
-            if (String.isBlank(ownerEmail)) return;
-
-            if (!isValidEmail(ownerEmail)) return;
-            if (containsAddress(toAddresses, ownerEmail) || containsAddress(ccAddresses, ownerEmail)
-                || containsAddress(bccAddresses, ownerEmail)) {
-                return;
-            }
-            ccAddresses.add(ownerEmail);
-        } catch (Exception e) {
-            System.debug('addBookingOwnerToReceiptCc failed: ' + e.getMessage());
-        }
     }
 
 

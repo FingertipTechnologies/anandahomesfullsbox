@@ -1,7 +1,7 @@
 /**
- * @description Receipt mails CC the Booking Owner (BRD: "Receipt PDF is emailed to applicants
- *              (CC: Booking Owner)"). A Receipt has no owner of its own, so EmailSenderInvocable
- *              adds the booking owner's email itself.
+ * @description Receipt (and other master-detail child) mails get their recipients only from the
+ *              Email Template Configurator. "Record Owner" on a child record that has no owner of
+ *              its own (Receipt / Demand / NOC under Booking) means the master record's owner.
  */
 @isTest
 private class EmailSenderReceiptOwnerTest {
@@ -31,94 +31,73 @@ private class EmailSenderReceiptOwnerTest {
         return [SELECT Email FROM User WHERE Id = :UserInfo.getUserId()].Email;
     }
 
-    @isTest
-    static void bookingOwner_isAddedToCc() {
-        Receipt__c receipt = makeReceipt('applicant@example.com');
-        List<String> toAddresses = new List<String>{ 'applicant@example.com' };
-        List<String> ccAddresses = new List<String>();
+    private static void makeTemplate(Boolean ccRecordOwner) {
+        Map<String, Object> recipients = new Map<String, Object>{
+            'to' => new List<Object>{ new Map<String, Object>{ 'sourceType' => 'Field', 'fieldApiName' => 'Email__c' } }
+        };
+        if (ccRecordOwner) {
+            recipients.put('cc', new List<Object>{ new Map<String, Object>{ 'sourceType' => 'RecordOwner' } });
+        }
+        insert new Email_Template_Config__c(
+            Template_Name__c = 'Receipt Owner Test', Object_API_Name__c = 'Receipt__c',
+            Subject__c = 'Receipt', Email_Body__c = '<p>Receipt</p>', Is_Active__c = true,
+            Recipients_Config__c = JSON.serialize(recipients)
+        );
+    }
 
-        Test.startTest();
-        EmailSenderInvocable.addBookingOwnerToReceiptCc(receipt.Id, toAddresses, ccAddresses, new List<String>());
-        Test.stopTest();
-
-        System.assertEquals(new List<String>{ 'applicant@example.com' }, toAddresses);
-        System.assertEquals(1, ccAddresses.size(), 'The booking owner is copied');
-        System.assert(ccAddresses[0].equalsIgnoreCase(ownerEmail()));
+    private static EmailSenderInvocable.EmailResponse send(Id receiptId) {
+        EmailSenderInvocable.EmailRequest req = new EmailSenderInvocable.EmailRequest();
+        req.recordIds = String.valueOf(receiptId);
+        req.templateName = 'Receipt Owner Test';
+        req.skipAttachments = true;
+        return EmailSenderInvocable.sendEmails(new List<EmailSenderInvocable.EmailRequest>{ req })[0];
     }
 
     @isTest
-    static void ownerAlreadyRecipient_isNotDuplicated() {
+    static void ownerPath_walksUpToTheMasterRecord() {
+        System.assertEquals('Owner', EmailMergeFieldResolver.ownerPathFor('Booking__c'));
+        System.assertEquals('Booking__r.Owner', EmailMergeFieldResolver.ownerPathFor('Receipt__c'));
+        System.assertEquals(null, EmailMergeFieldResolver.ownerPathFor('No_Such_Object__c'));
+    }
+
+    @isTest
+    static void recordOwner_onReceipt_isTheBookingOwner() {
         Receipt__c receipt = makeReceipt('applicant@example.com');
-        List<String> ccAddresses = new List<String>{ ownerEmail().toUpperCase() }; // case-insensitive match
-
         Test.startTest();
-        EmailSenderInvocable.addBookingOwnerToReceiptCc(
-            receipt.Id, new List<String>{ 'applicant@example.com' }, ccAddresses, new List<String>());
+        String resolved = EmailMergeFieldResolver.resolveRecipientEmail('RecordOwner', null, null, receipt.Id, 'Receipt__c');
         Test.stopTest();
+        System.assert(ownerEmail().equalsIgnoreCase(resolved), 'Record Owner of a Receipt = booking owner, got ' + resolved);
+    }
 
-        System.assertEquals(1, ccAddresses.size());
+    @isTest
+    static void receiptMail_ccFollowsTheConfig() {
+        Receipt__c receipt = makeReceipt('applicant@example.com');
+        makeTemplate(true);
+        Test.startTest();
+        EmailSenderInvocable.EmailResponse result = send(receipt.Id);
+        Test.stopTest();
+        System.assertEquals(1, result.sentCount, 'Receipt mail not sent: ' + result.errorDetails);
     }
 
     /** Owner's address = the customer's own email (seen on prod test bookings B-1372/B-1373). */
     @isTest
-    static void ownerWhoIsAlsoTheCustomer_onlyInTo() {
-        Receipt__c receipt = makeReceipt(ownerEmail());
-        List<String> toAddresses = new List<String>{ ownerEmail() };
-        List<String> ccAddresses = new List<String>();
-
-        Test.startTest();
-        EmailSenderInvocable.addBookingOwnerToReceiptCc(receipt.Id, toAddresses, ccAddresses, new List<String>());
-        Test.stopTest();
-
-        System.assertEquals(new List<String>{ ownerEmail() }, toAddresses, 'The customer still receives the receipt');
-        System.assertEquals(0, ccAddresses.size(), 'No second copy to the same address');
-    }
-
-    @isTest
-    static void receiptMail_sentWithOwnerInCc() {
-        Receipt__c receipt = makeReceipt('applicant@example.com');
-        insert new Email_Template_Config__c(
-            Template_Name__c = 'Receipt Owner Test', Object_API_Name__c = 'Receipt__c',
-            Subject__c = 'Receipt', Email_Body__c = '<p>Receipt</p>', Is_Active__c = true,
-            Recipients_Config__c = JSON.serialize(new Map<String, Object>{
-                'to' => new List<Object>{ new Map<String, Object>{ 'sourceType' => 'Field', 'fieldApiName' => 'Email__c' } }
-            })
-        );
-        EmailSenderInvocable.EmailRequest req = new EmailSenderInvocable.EmailRequest();
-        req.recordIds = String.valueOf(receipt.Id);
-        req.templateName = 'Receipt Owner Test';
-        req.skipAttachments = true;
-
-        Test.startTest();
-        List<EmailSenderInvocable.EmailResponse> results =
-            EmailSenderInvocable.sendEmails(new List<EmailSenderInvocable.EmailRequest>{ req });
-        Test.stopTest();
-
-        System.assertEquals(1, results[0].sentCount, 'Receipt mail not sent: ' + results[0].errorDetails);
-    }
-
-    @isTest
     static void receiptMail_sentWhenOwnerIsAlsoTheCustomer() {
         Receipt__c receipt = makeReceipt(ownerEmail());
-        insert new Email_Template_Config__c(
-            Template_Name__c = 'Receipt Owner Test', Object_API_Name__c = 'Receipt__c',
-            Subject__c = 'Receipt', Email_Body__c = '<p>Receipt</p>', Is_Active__c = true,
-            Recipients_Config__c = JSON.serialize(new Map<String, Object>{
-                'to' => new List<Object>{ new Map<String, Object>{ 'sourceType' => 'Field', 'fieldApiName' => 'Email__c' } }
-            })
-        );
-        EmailSenderInvocable.EmailRequest req = new EmailSenderInvocable.EmailRequest();
-        req.recordIds = String.valueOf(receipt.Id);
-        req.templateName = 'Receipt Owner Test';
-        req.skipAttachments = true;
-
+        makeTemplate(true);
         Test.startTest();
-        List<EmailSenderInvocable.EmailResponse> results =
-            EmailSenderInvocable.sendEmails(new List<EmailSenderInvocable.EmailRequest>{ req });
+        EmailSenderInvocable.EmailResponse result = send(receipt.Id);
         Test.stopTest();
+        System.assertEquals(1, result.sentCount, 'Receipt mail not sent: ' + result.errorDetails);
+    }
 
-        System.assertEquals(1, results[0].sentCount, 'Previously the send crashed with no recipients: '
-            + results[0].errorDetails);
+    @isTest
+    static void receiptMail_withoutOwnerInConfig_stillSends() {
+        Receipt__c receipt = makeReceipt('applicant@example.com');
+        makeTemplate(false);
+        Test.startTest();
+        EmailSenderInvocable.EmailResponse result = send(receipt.Id);
+        Test.stopTest();
+        System.assertEquals(1, result.sentCount, 'Receipt mail not sent: ' + result.errorDetails);
     }
 
     @isTest
@@ -130,14 +109,5 @@ private class EmailSenderReceiptOwnerTest {
             EmailSenderInvocable.sendEmails(new List<EmailSenderInvocable.EmailRequest>{ req });
         System.assertEquals(false, results[0].success);
         System.assert(results[0].errorDetails.contains('No active email template'), results[0].errorDetails);
-    }
-
-    @isTest
-    static void nullReceiptId_isNoOp() {
-        List<String> cc = new List<String>();
-        Test.startTest();
-        EmailSenderInvocable.addBookingOwnerToReceiptCc(null, new List<String>{ 'a@b.com' }, cc, new List<String>());
-        Test.stopTest();
-        System.assertEquals(0, cc.size());
     }
 }

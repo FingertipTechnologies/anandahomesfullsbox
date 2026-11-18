@@ -191,6 +191,54 @@ public with sharing class EmailMergeFieldResolver {
      * @param objectApiName Object API name
      * @return Email address
      */
+    /**
+     * Email of the record's owner (or of the owner's manager). The owner is read as an Id through
+     * ownerPathFor (so detail records use their master's owner) and the email from the User record:
+     * reading Owner.Email across a relationship is unreliable because Owner is polymorphic.
+     */
+    @TestVisible
+    private static String ownerEmail(Id recordId, String objectApiName, Boolean manager) {
+        String ownerPath = ownerPathFor(objectApiName);
+        if (ownerPath == null || recordId == null) return null;
+        String ownerId = resolveEmailField(ownerPath + 'Id', recordId, objectApiName);
+        if (String.isBlank(ownerId) || !ownerId.startsWith('005')) return null; // a queue has no email here
+        List<User> users = [SELECT Email, Manager.Email FROM User WHERE Id = :ownerId LIMIT 1];
+        if (users.isEmpty()) return null;
+        return manager ? (users[0].Manager == null ? null : users[0].Manager.Email) : users[0].Email;
+    }
+
+    /**
+     * Path to the record's owner for the "Record Owner" / "Owner's Manager" recipients.
+     * A record with its own OwnerId -> 'Owner'. A detail record (master-detail child, e.g. Receipt,
+     * Demand, NOC under Booking) has no owner of its own - Salesforce gives it its master's owner -
+     * so the path walks up the master-detail relationship(s): 'Booking__r.Owner'.
+     * Returns null when no owner can be reached.
+     */
+    @TestVisible
+    private static String ownerPathFor(String objectApiName) {
+        String prefix = '';
+        String current = objectApiName;
+        for (Integer depth = 0; depth < 3 && String.isNotBlank(current); depth++) {
+            Schema.SObjectType sot = Schema.getGlobalDescribe().get(current);
+            if (sot == null) return null;
+            Map<String, Schema.SObjectField> fieldMap = sot.getDescribe().fields.getMap();
+            if (fieldMap.containsKey('ownerid')) return prefix + 'Owner';
+            Schema.DescribeFieldResult master = null;
+            for (Schema.SObjectField f : fieldMap.values()) {
+                Schema.DescribeFieldResult d = f.getDescribe();
+                if (d.getType() == Schema.DisplayType.REFERENCE && d.getRelationshipOrder() != null
+                    && String.isNotBlank(d.getRelationshipName()) && !d.getReferenceTo().isEmpty()) {
+                    // the primary master (order 0) wins over a second master (order 1)
+                    if (master == null || d.getRelationshipOrder() < master.getRelationshipOrder()) master = d;
+                }
+            }
+            if (master == null) return null;
+            prefix += master.getRelationshipName() + '.';
+            current = master.getReferenceTo()[0].getDescribe().getName();
+        }
+        return null;
+    }
+
     @AuraEnabled
     public static String resolveEmailField(String fieldPath, Id recordId, String objectApiName) {
         if (String.isBlank(fieldPath) || recordId == null) {
@@ -227,10 +275,8 @@ public with sharing class EmailMergeFieldResolver {
                 return staticEmail;
             } else if (sourceType == 'CurrentUser') {
                 return UserInfo.getUserEmail();
-            } else if (sourceType == 'RecordOwner') {
-                return resolveEmailField('Owner.Email', recordId, objectApiName);
-            } else if (sourceType == 'OwnerManager') {
-                return resolveEmailField('Owner.Manager.Email', recordId, objectApiName);
+            } else if (sourceType == 'RecordOwner' || sourceType == 'OwnerManager') {
+                return ownerEmail(recordId, objectApiName, sourceType == 'OwnerManager');
             } else if (sourceType == 'Field' && String.isNotBlank(fieldApiName)) {
                 return resolveEmailField(fieldApiName, recordId, objectApiName);
             }

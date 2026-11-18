@@ -334,11 +334,12 @@ public with sharing class EmailSenderInvocable {
         toAddresses.addAll(additionalTo);
         ccAddresses.addAll(additionalCc);
 
-        // BRD pointer 7: receipt emails must NOT be sent to the booking owner. Strip the
-        // booking owner's address from every recipient list regardless of template config so
-        // the rule holds even if a template is mis-configured to CC the owner.
+        // BRD (booking flow 132-136, receipt approval 184): the receipt PDF is emailed to the
+        // applicants with the Booking Owner in CC. A Receipt has no owner of its own (it is a child
+        // of the Booking), so a template's "Record Owner" CC resolves to nothing - add the booking
+        // owner here, whatever the template says.
         if ('Receipt__c'.equalsIgnoreCase(objectApiName)) {
-            removeBookingOwnerFromReceiptEmail(recordId, toAddresses, ccAddresses, bccAddresses);
+            addBookingOwnerToReceiptCc(recordId, toAddresses, ccAddresses, bccAddresses);
         }
 
         // Must have at least one TO address
@@ -583,12 +584,13 @@ public with sharing class EmailSenderInvocable {
     }
 
     /**
-     * @description Removes the owning user's email of a Receipt's parent Booking from the
-     *              supplied recipient lists (BRD pointer 7). No-op if the owner can't be
-     *              resolved.
+     * @description Adds the email of the user who owns the Receipt's Booking to CC (BRD: receipt
+     *              mails go to the applicants, CC Booking Owner). Skipped when that address already
+     *              receives the mail (e.g. the owner's email is also the customer's own) or when the
+     *              owner is a queue / has no email.
      */
     @TestVisible
-    private static void removeBookingOwnerFromReceiptEmail(
+    private static void addBookingOwnerToReceiptCc(
         Id receiptId,
         List<String> toAddresses,
         List<String> ccAddresses,
@@ -614,27 +616,17 @@ public with sharing class EmailSenderInvocable {
             }
             if (String.isBlank(ownerEmail)) return;
 
-            // When the owner's address is also the customer's own email, the customer must still
-            // get the receipt: keep it as a TO recipient (it is only dropped from CC / BCC).
-            String customerEmail = receipts[0].Booking__r == null ? null : receipts[0].Booking__r.Email__c;
-            if (!ownerEmail.equalsIgnoreCase(customerEmail)) {
-                removeEmail(toAddresses, ownerEmail);
+            if (!isValidEmail(ownerEmail)) return;
+            if (containsAddress(toAddresses, ownerEmail) || containsAddress(ccAddresses, ownerEmail)
+                || containsAddress(bccAddresses, ownerEmail)) {
+                return;
             }
-            removeEmail(ccAddresses, ownerEmail);
-            removeEmail(bccAddresses, ownerEmail);
+            ccAddresses.add(ownerEmail);
         } catch (Exception e) {
-            System.debug('removeBookingOwnerFromReceiptEmail failed: ' + e.getMessage());
+            System.debug('addBookingOwnerToReceiptCc failed: ' + e.getMessage());
         }
     }
 
-    private static void removeEmail(List<String> addresses, String emailToRemove) {
-        if (addresses == null || addresses.isEmpty() || String.isBlank(emailToRemove)) return;
-        for (Integer i = addresses.size() - 1; i >= 0; i--) {
-            if (emailToRemove.equalsIgnoreCase(addresses[i])) {
-                addresses.remove(i);
-            }
-        }
-    }
 
     // ============ CO-APPLICANTS ============
 

@@ -188,6 +188,8 @@ public with sharing class DebitNoteApplicationService {
             for (Demands__c demand : demands) {
                 Messaging.SingleEmailMessage email = new Messaging.SingleEmailMessage();
                 email.setToAddresses(new List<String>{ demand.Booking__r.Email__c });
+                // Logged on the Demand so it shows in the Demand's Activity tab.
+                email.setWhatId(demand.Id);
                 email.setSaveAsActivity(true);
 
                 List<Messaging.EmailFileAttachment> fileAttachments = new List<Messaging.EmailFileAttachment>();

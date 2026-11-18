@@ -770,6 +770,8 @@ public without sharing class DemandReminderService {
                 }
             }
 
+            // Logged on the Demand so it shows in the Demand's Activity tab.
+            email.setWhatId(demand.Id);
             email.setSaveAsActivity(true);
             return email;
 

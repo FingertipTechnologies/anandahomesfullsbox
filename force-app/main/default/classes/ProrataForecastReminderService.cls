@@ -193,6 +193,8 @@ public with sharing class ProrataForecastReminderService {
             + '<p style="margin:0; line-height:1.5;">Warm Regards,<br/><b>TEAM - CRM</b><br/><b>' + esc(project)
                 + ' Project</b><br/><b>Email: ' + esc(crmEmail) + '</b><br/><b>Website: www.anandahomes.co.in</b></p>';
         email.setHtmlBody(body);
+        // Not tied to one demand, so logged on the Booking's Activity tab.
+        email.setWhatId(lines[0].Booking__c);
         email.setSaveAsActivity(true);
         return email;
     }

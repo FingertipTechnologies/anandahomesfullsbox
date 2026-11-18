@@ -159,6 +159,8 @@ public with sharing class AdditionalChargeReminderService {
             + '<p>Kindly arrange the payment at the earliest.</p>'
             + '<p>Regards,<br/>Ananda Homes</p>';
         email.setHtmlBody(body);
+        // Logged on the Additional Charge so it shows in its Activity tab.
+        email.setWhatId(c.Id);
         email.setSaveAsActivity(true);
         return email;
     }

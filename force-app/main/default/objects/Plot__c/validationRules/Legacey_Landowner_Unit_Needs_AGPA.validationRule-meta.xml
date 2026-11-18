@@ -10,6 +10,9 @@
   OR(ISBLANK(AGPA_Date__c), ISBLANK(AGPA_Number__c)),
   OR(
     ISNEW(),
+    ISCHANGED(LL_Share_Name__c),
+    ISCHANGED(AGPA_Date__c),
+    ISCHANGED(AGPA_Number__c),
     NOT(OR(ISCHANGED(Status__c), ISCHANGED(Current_Booking__c)))
   )
 )</errorConditionFormula>

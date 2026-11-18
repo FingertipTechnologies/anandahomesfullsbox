@@ -182,6 +182,7 @@ public with sharing class DebitNoteApplicationService {
             if (demands.isEmpty()) return;
 
             List<Messaging.SingleEmailMessage> emails = new List<Messaging.SingleEmailMessage>();
+            List<Id> emailBookingIds = new List<Id>();
             List<Demands__c> demandsToUpdate = new List<Demands__c>();
 
             for (Demands__c demand : demands) {
@@ -246,6 +247,7 @@ public with sharing class DebitNoteApplicationService {
                 }
 
                 emails.add(email);
+                emailBookingIds.add(demand.Booking__c);
 
                 // Track email sent
                 Demands__c dUpdate = new Demands__c();
@@ -258,6 +260,9 @@ public with sharing class DebitNoteApplicationService {
             }
 
             if (!emails.isEmpty()) {
+                // Demand mails to the applicant also go to the co-applicants.
+                try { EmailSenderInvocable.addCoApplicantCc(emails, emailBookingIds); }
+                catch (Exception e) { System.debug('Co-applicant CC skipped: ' + e.getMessage()); }
                 Messaging.sendEmail(emails, false);
             }
             if (!demandsToUpdate.isEmpty()) {

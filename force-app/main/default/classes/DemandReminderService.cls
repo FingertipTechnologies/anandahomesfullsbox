@@ -286,7 +286,7 @@ public without sharing class DemandReminderService {
             // Send email
             if (String.isNotBlank(d.Booking__r.Email__c)) {
                 Messaging.SingleEmailMessage email = buildReminderEmail(d, config, '1st Reminder', masterDocTemplateId);
-                if (email != null) emails.add(email);
+                if (email != null) { emails.add(email); emailBookingIds.add(d.Booking__c); }
             }
 
             d.Reminder_1_Sent__c = true;
@@ -335,7 +335,7 @@ public without sharing class DemandReminderService {
         for (Demands__c d : demands) {
             if (String.isNotBlank(d.Booking__r.Email__c)) {
                 Messaging.SingleEmailMessage email = buildReminderEmail(d, config, '2nd Reminder', masterDocTemplateId);
-                if (email != null) emails.add(email);
+                if (email != null) { emails.add(email); emailBookingIds.add(d.Booking__c); }
             }
 
             d.Reminder_2_Sent__c = true;
@@ -383,7 +383,7 @@ public without sharing class DemandReminderService {
         for (Demands__c d : demands) {
             if (String.isNotBlank(d.Booking__r.Email__c)) {
                 Messaging.SingleEmailMessage email = buildReminderEmail(d, config, '3rd Reminder', masterDocTemplateId);
-                if (email != null) emails.add(email);
+                if (email != null) { emails.add(email); emailBookingIds.add(d.Booking__c); }
             }
 
             d.Reminder_3_Sent__c = true;
@@ -432,7 +432,7 @@ public without sharing class DemandReminderService {
         for (Demands__c d : demands) {
             if (String.isNotBlank(d.Booking__r.Email__c)) {
                 Messaging.SingleEmailMessage email = buildReminderEmail(d, config, '4th Reminder', masterDocTemplateId);
-                if (email != null) emails.add(email);
+                if (email != null) { emails.add(email); emailBookingIds.add(d.Booking__c); }
             }
 
             d.Reminder_4_Sent__c = true;
@@ -477,7 +477,7 @@ public without sharing class DemandReminderService {
         for (Demands__c d : demands) {
             if (String.isNotBlank(d.Booking__r.Email__c)) {
                 Messaging.SingleEmailMessage email = buildReminderEmail(d, config, 'Termination Notice', masterDocTemplateId);
-                if (email != null) emails.add(email);
+                if (email != null) { emails.add(email); emailBookingIds.add(d.Booking__c); }
             }
 
             d.Termination_Mail_Sent__c = true;
@@ -550,7 +550,7 @@ public without sharing class DemandReminderService {
                 // Send unblocking notification email
                 if (String.isNotBlank(d.Booking__r.Email__c)) {
                     Messaging.SingleEmailMessage email = buildReminderEmail(d, config, 'Unit Unblocking', masterDocTemplateId);
-                    if (email != null) emails.add(email);
+                    if (email != null) { emails.add(email); emailBookingIds.add(d.Booking__c); }
                 }
             }
         }
@@ -870,8 +870,19 @@ public without sharing class DemandReminderService {
 
     // ==================== UTILITY ====================
 
+    /** Booking of each reminder mail, in the order the mails were added (for co-applicant CC). */
+    private static List<Id> emailBookingIds = new List<Id>();
+
     private static void sendEmails(List<Messaging.SingleEmailMessage> emails) {
+        List<Id> bookingIds = emailBookingIds;
+        emailBookingIds = new List<Id>();
         if (emails.isEmpty()) return;
+        try {
+            // Reminders to the applicant also go to the co-applicants.
+            EmailSenderInvocable.addCoApplicantCc(emails, bookingIds);
+        } catch (Exception e) {
+            System.debug('Co-applicant CC skipped: ' + e.getMessage());
+        }
         try {
             Messaging.sendEmail(emails, false);
         } catch (Exception e) {

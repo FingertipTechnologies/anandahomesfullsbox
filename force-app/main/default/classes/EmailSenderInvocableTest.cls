@@ -27,6 +27,104 @@ private class EmailSenderInvocableTest {
         insert tmpl;
     }
 
+    // ============ CO-APPLICANT CC ============
+
+    private static Booking__c bookingWithCoApplicants() {
+        Project__c project = new Project__c(Name = 'Co-applicant Mail Project', Project_Type__c = 'Residential', Interest_Rate__c = 18);
+        insert project;
+        Plot__c unit = new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Booked');
+        insert unit;
+        Booking__c b = new Booking__c(
+            Project__c = project.Id, Plot__c = unit.Id, Booking_Date__c = Date.today(), Status__c = 'Booked',
+            Email__c = 'primary.applicant@example.com'
+        );
+        insert b;
+        insert new List<Co_Applicant__c>{
+            new Co_Applicant__c(Booking__c = b.Id, Email__c = 'co.one@example.com'),
+            new Co_Applicant__c(Booking__c = b.Id, Email__c = 'PRIMARY.applicant@example.com'), // same as primary
+            new Co_Applicant__c(Booking__c = b.Id),                                          // no email
+            new Co_Applicant__c(Booking__c = b.Id, Email__c = 'co.two@example.com')
+        };
+        return b;
+    }
+
+    @isTest
+    static void coApplicants_copiedOnlyOnMailsToTheApplicant() {
+        Booking__c b = bookingWithCoApplicants();
+
+        Messaging.SingleEmailMessage toApplicant = new Messaging.SingleEmailMessage();
+        toApplicant.setToAddresses(new List<String>{ 'primary.applicant@example.com' });
+        toApplicant.setCcAddresses(new List<String>{ 'owner@example.com', 'co.two@example.com' });
+
+        Messaging.SingleEmailMessage internalMail = new Messaging.SingleEmailMessage();
+        internalMail.setToAddresses(new List<String>{ 'finance@example.com' });
+
+        Messaging.SingleEmailMessage otherBooking = new Messaging.SingleEmailMessage();
+        otherBooking.setToAddresses(new List<String>{ 'primary.applicant@example.com' });
+
+        Test.startTest();
+        EmailSenderInvocable.addCoApplicantCc(
+            new List<Messaging.SingleEmailMessage>{ toApplicant, internalMail, otherBooking },
+            new List<Id>{ b.Id, b.Id, null }
+        );
+        Test.stopTest();
+
+        System.assertEquals(
+            new List<String>{ 'owner@example.com', 'co.two@example.com', 'co.one@example.com' },
+            toApplicant.getCcAddresses(),
+            'Co-applicants are added once, the primary/invalid/blank ones are skipped, existing CC kept'
+        );
+        System.assertEquals(null, internalMail.getCcAddresses(), 'Mails not to the applicant are untouched');
+        System.assertEquals(null, otherBooking.getCcAddresses(), 'No booking, nothing added');
+
+        // Nothing to do / bad input must not fail.
+        EmailSenderInvocable.addCoApplicantCc(null, null);
+        EmailSenderInvocable.addCoApplicantCc(new List<Messaging.SingleEmailMessage>{ internalMail }, new List<Id>{ null });
+    }
+
+    @isTest
+    static void coApplicants_bookingResolvedFromRelatedRecords() {
+        Booking__c b = bookingWithCoApplicants();
+        Co_Applicant__c co = [SELECT Id FROM Co_Applicant__c WHERE Booking__c = :b.Id LIMIT 1];
+        Account a = [SELECT Id FROM Account LIMIT 1];
+
+        List<Id> bookings = EmailSenderInvocable.bookingIdsFor(new List<Id>{ b.Id, co.Id, a.Id, null });
+
+        System.assertEquals(b.Id, bookings[0], 'A booking is its own booking');
+        System.assertEquals(b.Id, bookings[1], 'A record with a Booking__c lookup resolves to it');
+        System.assertEquals(null, bookings[2], 'Objects without a booking lookup are skipped');
+        System.assertEquals(null, bookings[3]);
+    }
+
+    @isTest
+    static void coApplicants_templateMailToApplicantSends() {
+        Booking__c b = bookingWithCoApplicants();
+        insert new Email_Template_Config__c(
+            Template_Name__c = 'CoApplicantTemplate',
+            Object_API_Name__c = 'Booking__c',
+            Subject__c = 'Booking update',
+            Email_Body__c = '<p>Hello</p>',
+            Recipients_Config__c = JSON.serialize(new Map<String, Object>{
+                'to' => new List<Object>{
+                    new Map<String, Object>{ 'sourceType' => 'Field', 'fieldApiName' => 'Email__c' }
+                }
+            }),
+            Is_Active__c = true
+        );
+        EmailSenderInvocable.EmailRequest req = new EmailSenderInvocable.EmailRequest();
+        req.recordIds = String.valueOf(b.Id);
+        req.templateName = 'CoApplicantTemplate';
+        req.skipAttachments = true;
+
+        Test.startTest();
+        List<EmailSenderInvocable.EmailResponse> results =
+            EmailSenderInvocable.sendEmails(new List<EmailSenderInvocable.EmailRequest>{ req });
+        Test.stopTest();
+
+        System.assertEquals(1, results[0].sentCount, 'Mail to the applicant (with co-applicants copied) is sent: '
+            + results[0].errorDetails);
+    }
+
     @isTest
     static void sendEmails_validRequest_succeeds() {
         Account a = [SELECT Id FROM Account LIMIT 1];

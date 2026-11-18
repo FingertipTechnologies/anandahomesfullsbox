@@ -93,6 +93,7 @@ public with sharing class AdditionalChargeReminderService {
         Map<Id, String> ownerEmails = getUserEmails(ownerIds);
 
         List<Messaging.SingleEmailMessage> emails = new List<Messaging.SingleEmailMessage>();
+        List<Id> emailBookingIds = new List<Id>();
         List<Additional_Charge__c> toUpdate = new List<Additional_Charge__c>();
 
         for (Additional_Charge__c c : charges) {
@@ -115,11 +116,15 @@ public with sharing class AdditionalChargeReminderService {
 
             String ownerEmail = c.Booking__r.OwnerId != null ? ownerEmails.get(c.Booking__r.OwnerId) : null;
             emails.add(buildEmail(c, pending, which, ownerEmail));
+            emailBookingIds.add(c.Booking__c);
             toUpdate.add(c);
             sent++;
         }
 
         if (!emails.isEmpty()) {
+            // Reminders to the applicant also go to the co-applicants.
+            try { EmailSenderInvocable.addCoApplicantCc(emails, emailBookingIds); }
+            catch (Exception e) { System.debug('Co-applicant CC skipped: ' + e.getMessage()); }
             try { Messaging.sendEmail(emails, false); }
             catch (Exception e) { System.debug('AdditionalChargeReminderService email error: ' + e.getMessage()); }
         }

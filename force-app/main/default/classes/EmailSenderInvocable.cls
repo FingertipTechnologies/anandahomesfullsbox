@@ -56,11 +56,22 @@ public with sharing class EmailSenderInvocable {
         List<RequestBuild> builds = new List<RequestBuild>();
 
         // 1) Build the emails for every request (no sending yet).
+        List<Id> recordIdPerMessage = new List<Id>();
         for (EmailRequest request : requests) {
             RequestBuild rb = buildRequest(request);
             rb.startIndex = allMessages.size();
             allMessages.addAll(rb.messages);
+            for (Integer j = 0; j < rb.messages.size(); j++) {
+                recordIdPerMessage.add(j < rb.recordIds.size() ? rb.recordIds[j] : null);
+            }
             builds.add(rb);
+        }
+
+        // 1b) Customer mails (receipt, demand, welcome, ...) also go to the booking's co-applicants.
+        try {
+            addCoApplicantCc(allMessages, bookingIdsFor(recordIdPerMessage));
+        } catch (Exception ce) {
+            System.debug(LoggingLevel.WARN, 'Co-applicant CC skipped: ' + ce.getMessage());
         }
 
         // 2) Send them ALL in a SINGLE Messaging.sendEmail call. Messaging.sendEmail counts once
@@ -607,6 +618,109 @@ public with sharing class EmailSenderInvocable {
                 addresses.remove(i);
             }
         }
+    }
+
+    // ============ CO-APPLICANTS ============
+
+    /**
+     * @description Copies the booking's co-applicants (Co_Applicant__c records with an email) on
+     *              every mail that goes to that booking's primary applicant (Booking Email). Mails
+     *              not addressed to the applicant - internal, bank, Capri - are left alone.
+     * @param emails             the mails about to be sent
+     * @param bookingIdPerEmail  the booking each mail is about, same order as emails (null = none)
+     */
+    public static void addCoApplicantCc(List<Messaging.SingleEmailMessage> emails, List<Id> bookingIdPerEmail) {
+        if (emails == null || emails.isEmpty() || bookingIdPerEmail == null) return;
+        Set<Id> bookingIds = new Set<Id>();
+        for (Id bookingId : bookingIdPerEmail) {
+            if (bookingId != null) bookingIds.add(bookingId);
+        }
+        if (bookingIds.isEmpty()) return;
+
+        Map<Id, String> primaryEmail = new Map<Id, String>();
+        for (Booking__c b : [SELECT Id, Email__c FROM Booking__c WHERE Id IN :bookingIds WITH SYSTEM_MODE]) {
+            primaryEmail.put(b.Id, b.Email__c);
+        }
+        Map<Id, List<String>> coEmails = new Map<Id, List<String>>();
+        for (Co_Applicant__c c : [
+            SELECT Booking__c, Email__c FROM Co_Applicant__c
+            WHERE Booking__c IN :bookingIds AND Email__c != null
+            WITH SYSTEM_MODE
+            ORDER BY CreatedDate ASC
+        ]) {
+            String address = c.Email__c.trim();
+            if (!isValidEmail(address)) continue;
+            if (!coEmails.containsKey(c.Booking__c)) coEmails.put(c.Booking__c, new List<String>());
+            coEmails.get(c.Booking__c).add(address);
+        }
+        if (coEmails.isEmpty()) return;
+
+        for (Integer i = 0; i < emails.size() && i < bookingIdPerEmail.size(); i++) {
+            Id bookingId = bookingIdPerEmail[i];
+            if (bookingId == null || !coEmails.containsKey(bookingId)) continue;
+            Messaging.SingleEmailMessage email = emails[i];
+            List<String> toList = email.getToAddresses() == null ? new List<String>() : email.getToAddresses();
+            List<String> ccList = email.getCcAddresses() == null ? new List<String>() : email.getCcAddresses().clone();
+            List<String> bccList = email.getBccAddresses() == null ? new List<String>() : email.getBccAddresses();
+            String primary = primaryEmail.get(bookingId);
+            if (String.isBlank(primary) || !(containsAddress(toList, primary) || containsAddress(ccList, primary))) {
+                continue;
+            }
+            Boolean added = false;
+            for (String address : coEmails.get(bookingId)) {
+                if (containsAddress(toList, address) || containsAddress(ccList, address)
+                    || containsAddress(bccList, address)) {
+                    continue;
+                }
+                ccList.add(address);
+                added = true;
+            }
+            if (added) email.setCcAddresses(ccList);
+        }
+    }
+
+    /** The booking each record belongs to: a Booking itself, or the record's Booking__c lookup. */
+    @TestVisible
+    private static List<Id> bookingIdsFor(List<Id> recordIds) {
+        Map<String, Set<Id>> idsByObject = new Map<String, Set<Id>>();
+        Map<Id, Id> bookingByRecord = new Map<Id, Id>();
+        for (Id recordId : recordIds) {
+            if (recordId == null) continue;
+            Schema.SObjectType sot = recordId.getSObjectType();
+            if (sot == Booking__c.SObjectType) {
+                bookingByRecord.put(recordId, recordId);
+                continue;
+            }
+            Schema.SObjectField bookingField = sot.getDescribe().fields.getMap().get('booking__c');
+            if (bookingField == null
+                || !bookingField.getDescribe().getReferenceTo().contains(Booking__c.SObjectType)) {
+                continue;
+            }
+            String objectName = sot.getDescribe().getName();
+            if (!idsByObject.containsKey(objectName)) idsByObject.put(objectName, new Set<Id>());
+            idsByObject.get(objectName).add(recordId);
+        }
+        for (String objectName : idsByObject.keySet()) {
+            Set<Id> ids = idsByObject.get(objectName);
+            for (SObject r : Database.query(
+                'SELECT Id, Booking__c FROM ' + objectName + ' WHERE Id IN :ids WITH SYSTEM_MODE'
+            )) {
+                if (r.get('Booking__c') != null) bookingByRecord.put(r.Id, (Id) r.get('Booking__c'));
+            }
+        }
+        List<Id> result = new List<Id>();
+        for (Id recordId : recordIds) {
+            result.add(recordId == null ? null : bookingByRecord.get(recordId));
+        }
+        return result;
+    }
+
+    private static Boolean containsAddress(List<String> addresses, String address) {
+        if (addresses == null || String.isBlank(address)) return false;
+        for (String a : addresses) {
+            if (a != null && a.trim().equalsIgnoreCase(address.trim())) return true;
+        }
+        return false;
     }
 
     // ============ UTILITY METHODS ============

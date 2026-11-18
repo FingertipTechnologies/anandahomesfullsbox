@@ -64,11 +64,13 @@ public with sharing class ProrataForecastReminderService {
         Map<Id, String> ownerEmails = getUserEmails(ownerIds);
 
         List<Messaging.SingleEmailMessage> emails = new List<Messaging.SingleEmailMessage>();
+        List<Id> emailBookingIds = new List<Id>();
         List<Payment_Schedule__c> toUpdate = new List<Payment_Schedule__c>();
         for (List<Payment_Schedule__c> lines : groups.values()) {
             Booking__c booking = lines[0].Booking__r;
             String ownerEmail = booking.OwnerId != null ? ownerEmails.get(booking.OwnerId) : null;
             emails.add(buildEmail(lines, ownerEmail));
+            emailBookingIds.add(lines[0].Booking__c);
             for (Payment_Schedule__c ps : lines) {
                 toUpdate.add(new Payment_Schedule__c(
                     Id = ps.Id, Forecast_Reminder_Sent__c = true, Forecast_Reminder_Sent_Date__c = System.now()
@@ -77,6 +79,9 @@ public with sharing class ProrataForecastReminderService {
         }
 
         if (!emails.isEmpty()) {
+            // Reminders to the applicant also go to the co-applicants.
+            try { EmailSenderInvocable.addCoApplicantCc(emails, emailBookingIds); }
+            catch (Exception e) { System.debug('Co-applicant CC skipped: ' + e.getMessage()); }
             try {
                 Messaging.sendEmail(emails, false);
             } catch (Exception e) {

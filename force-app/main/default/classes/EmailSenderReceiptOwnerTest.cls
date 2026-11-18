@@ -42,12 +42,13 @@ private class EmailSenderReceiptOwnerTest {
         Plot__c unit = new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Booked');
         insert unit;
         Booking__c booking = new Booking__c(
-            Project__c = project.Id, Plot__c = unit.Id, Booking_Date__c = Date.today(), Status__c = 'Booked'
+            Project__c = project.Id, Plot__c = unit.Id, Booking_Date__c = Date.today(), Status__c = 'Booked',
+            Email__c = ownerEmail // the customer email is the owner's own address
         );
         insert booking;
-        // Booking automation may reassign the owner on insert: make the running user the owner and
-        // give the booking the same email as its customer email.
-        update new Booking__c(Id = booking.Id, OwnerId = UserInfo.getUserId(), Email__c = ownerEmail);
+        // Booking automation may reassign the owner on insert: make the running user the owner.
+        // (The customer email is set on insert: once Booked it is locked to First Applicant Change.)
+        update new Booking__c(Id = booking.Id, OwnerId = UserInfo.getUserId());
         Receipt__c receipt = new Receipt__c(
             Booking__c = booking.Id, Amount_received__c = 1000, Receipt_Date__c = Date.today(),
             Receipt_Type__c = 'Installment Payment', Status__c = 'Cleared', Payment_Method__c = 'Cash'

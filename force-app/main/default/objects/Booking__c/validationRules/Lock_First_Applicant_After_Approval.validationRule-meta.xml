@@ -2,14 +2,13 @@
 <ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Lock_First_Applicant_After_Approval</fullName>
     <active>true</active>
-    <description>After the booking is approved (or has moved past New), the first applicant details change only through an approved First Applicant Change. System Administrators are exempt for data fixes.</description>
+    <description>Once the booking was already approved (or past New) before the save, the first applicant details change only through an approved First Applicant Change.</description>
     <errorConditionFormula>AND(
   NOT(ISNEW()),
-  $Profile.Name &lt;&gt; &quot;System Administrator&quot;,
   NOT(ISCHANGED(Last_First_Applicant_Change_Id__c)),
   OR(
-    ISPICKVAL(Booking_Verification_Approval_Status__c, &quot;Approved&quot;),
-    NOT(OR(ISBLANK(TEXT(Status__c)), ISPICKVAL(Status__c, &quot;New&quot;), ISPICKVAL(Status__c, &quot;Pending Verification&quot;)))
+    ISPICKVAL(PRIORVALUE(Booking_Verification_Approval_Status__c), &quot;Approved&quot;),
+    NOT(OR(ISBLANK(TEXT(PRIORVALUE(Status__c))), ISPICKVAL(PRIORVALUE(Status__c), &quot;New&quot;), ISPICKVAL(PRIORVALUE(Status__c), &quot;Pending Verification&quot;)))
   ),
   OR(
     ISCHANGED(First_Applicant_Name__c), ISCHANGED(Email__c), ISCHANGED(Mobile__c),

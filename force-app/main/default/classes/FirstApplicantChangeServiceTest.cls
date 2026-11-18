@@ -39,7 +39,9 @@ private class FirstApplicantChangeServiceTest {
     @isTest
     static void approval_copiesRequestedApplicantDetails() {
         Booking__c b = makeBooking();
-        update new Booking__c(Id = b.Id, Occupation__c = 'Old Job', Office_Address__c = 'Old Office');
+        // Seed current values as an earlier applied change would (the booking is Booked, so the applicant is locked).
+        update new Booking__c(Id = b.Id, Occupation__c = 'Old Job', Office_Address__c = 'Old Office',
+            Last_First_Applicant_Change_Id__c = 'seed');
 
         // Screen context: every detail listed, prefilled with the booking's current values.
         FirstApplicantChangeController.FACContext ctx = FirstApplicantChangeController.getContext(b.Id);

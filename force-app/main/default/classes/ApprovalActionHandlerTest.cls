@@ -73,9 +73,9 @@ private class ApprovalActionHandlerTest {
             fieldUpd.actionType = 'FIELD_UPDATE';
             fieldUpd.fieldUpdates = new List<ApprovalActionHandler.FieldUpdate>();
             ApprovalActionHandler.FieldUpdate fu = new ApprovalActionHandler.FieldUpdate();
-            // A harmless text field: avoids the Booking stage-transition validation that
+            // A harmless text field: avoids the Booking stage-transition and applicant-lock validations that
             // guards Status__c, so the update applies cleanly and is safe to assert on.
-            fu.fieldName = 'First_Applicant_Name__c';
+            fu.fieldName = 'Verification_Comments__c';
             fu.value = 'Verified Name';
             fieldUpd.fieldUpdates.add(fu);
             cfg.actions.add(fieldUpd);
@@ -124,8 +124,8 @@ private class ApprovalActionHandlerTest {
         System.assert(results[0].message.contains('APPROVAL'), 'Message should record the APPROVAL action');
 
         // The clean FIELD_UPDATE in the config should have applied to the record.
-        Booking__c after = [SELECT First_Applicant_Name__c FROM Booking__c WHERE Id = :b.Id];
-        System.assertEquals('Verified Name', after.First_Applicant_Name__c, 'Field update action applied');
+        Booking__c after = [SELECT Verification_Comments__c FROM Booking__c WHERE Id = :b.Id];
+        System.assertEquals('Verified Name', after.Verification_Comments__c, 'Field update action applied');
     }
 
     @isTest

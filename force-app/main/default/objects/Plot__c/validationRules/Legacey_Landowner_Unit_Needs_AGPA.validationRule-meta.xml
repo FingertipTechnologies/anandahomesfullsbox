@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Legacey_Landowner_Unit_Needs_AGPA</fullName>
+    <active>true</active>
+    <description>The Legacey: a unit whose LL Share Name is a landowner (filled and not BUILDER) needs AGPA Date and AGPA Number when it is created or edited. Automatic updates that only move the unit Status / Current Booking (quote blocks it, booking books it, cancellation or swap releases it) are let through so bookings keep working on units whose AGPA is not filled yet (2026-11-18).</description>
+    <errorConditionFormula>AND(
+  Project__r.Name = &quot;The Legacey&quot;,
+  NOT(ISBLANK(TEXT(LL_Share_Name__c))),
+  TEXT(LL_Share_Name__c) &lt;&gt; &quot;BUILDER&quot;,
+  OR(ISBLANK(AGPA_Date__c), ISBLANK(AGPA_Number__c)),
+  OR(
+    ISNEW(),
+    NOT(OR(ISCHANGED(Status__c), ISCHANGED(Current_Booking__c)))
+  )
+)</errorConditionFormula>
+    <errorMessage>AGPA Date and AGPA Number are required for a landowner unit (LL Share Name other than BUILDER) in The Legacey.</errorMessage>
+</ValidationRule>

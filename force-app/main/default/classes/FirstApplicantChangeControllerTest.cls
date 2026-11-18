@@ -15,6 +15,8 @@ private class FirstApplicantChangeControllerTest {
             Admin_MD__c = UserInfo.getUserId()
         );
         insert b;
+        // Booking automation can clear the CRM Manager on insert; set it again so the change can be raised.
+        update new Booking__c(Id = b.Id, CRM_Manager__c = UserInfo.getUserId(), Admin_MD__c = UserInfo.getUserId());
         return b;
     }
 

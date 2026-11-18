@@ -100,6 +100,41 @@ private class EmailSenderReceiptOwnerTest {
         System.assertEquals(1, result.sentCount, 'Receipt mail not sent: ' + result.errorDetails);
     }
 
+    /** The configurator's email field list on Receipt reaches the booking and the booking's owner. */
+    @isTest
+    static void fieldPicker_offersBookingAndOwnerEmails() {
+        Set<String> values = new Set<String>();
+        Test.startTest();
+        for (EmailFieldPickerController.FieldWrapper f : EmailFieldPickerController.getEmailFieldsForObject('Receipt__c')) {
+            values.add(f.value.toLowerCase());
+        }
+        Test.stopTest();
+        System.assert(values.contains('booking__r.email__c'), 'Booking -> Email');
+        System.assert(values.contains('booking__r.owner.email'), 'Booking -> Owner -> Email');
+        System.assert(values.contains('email__c'), 'Receipt Email (text formula) counts as an email field');
+        System.assert(EmailFieldPickerController.isEmailLike(Receipt__c.Email__c.getDescribe()));
+    }
+
+    @isTest
+    static void fieldPath_bookingOwnerEmail_resolvesAndSends() {
+        Receipt__c receipt = makeReceipt('applicant@example.com');
+        insert new Email_Template_Config__c(
+            Template_Name__c = 'Receipt Owner Test', Object_API_Name__c = 'Receipt__c',
+            Subject__c = 'Receipt', Email_Body__c = '<p>Receipt</p>', Is_Active__c = true,
+            Recipients_Config__c = JSON.serialize(new Map<String, Object>{
+                'to' => new List<Object>{ new Map<String, Object>{ 'sourceType' => 'Field', 'fieldApiName' => 'Email__c' } },
+                'cc' => new List<Object>{ new Map<String, Object>{ 'sourceType' => 'Field', 'fieldApiName' => 'Booking__r.Owner.Email' } }
+            })
+        );
+        String resolved = EmailMergeFieldResolver.resolveRecipientEmail(
+            'Field', 'Booking__r.Owner.Email', null, receipt.Id, 'Receipt__c');
+        Test.startTest();
+        EmailSenderInvocable.EmailResponse result = send(receipt.Id);
+        Test.stopTest();
+        System.assert(ownerEmail().equalsIgnoreCase(resolved), 'Booking -> Owner -> Email, got ' + resolved);
+        System.assertEquals(1, result.sentCount, 'Receipt mail not sent: ' + result.errorDetails);
+    }
+
     @isTest
     static void templateProblems_areReportedNotThrown() {
         EmailSenderInvocable.EmailRequest req = new EmailSenderInvocable.EmailRequest();

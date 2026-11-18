@@ -170,7 +170,7 @@ public with sharing class EmailFieldPickerController {
                     fw.value = fieldDescribe.getName();
                     fw.type = String.valueOf(fieldDescribe.getType());
                     fw.objectName = objectApiName;
-                    fw.isEmail = (fieldDescribe.getType() == Schema.DisplayType.EMAIL);
+                    fw.isEmail = isEmailLike(fieldDescribe);
                     fw.isReference = (fieldDescribe.getType() == Schema.DisplayType.REFERENCE);
                     
                     if (fw.isReference) {
@@ -223,36 +223,88 @@ public with sharing class EmailFieldPickerController {
         return emailFields;
     }
     
+    /**
+     * Email fields reachable through lookups, up to 2 levels up - e.g. on Receipt:
+     * "Booking -> Email" (Booking__r.Email__c), "Booking -> Owner -> Email" (Booking__r.Owner.Email),
+     * "Booking -> CRM Manager -> Email" (Booking__r.CRM_Manager__r.Email). Owner / user lookups
+     * that can point at a queue are treated as User. Text formula fields named like "Email" count as
+     * email fields (e.g. Receipt Email__c = Booking__r.Email__c).
+     */
     private static List<FieldWrapper> getRelatedEmailFields(String objectApiName, Integer maxLevels) {
         List<FieldWrapper> relatedFields = new List<FieldWrapper>();
-        
         try {
-            List<FieldWrapper> level1Fields = getFieldsForObject(objectApiName);
-            
-            for (FieldWrapper field : level1Fields) {
-                if (field.isReference && String.isNotBlank(field.referenceTo) && String.isNotBlank(field.relationshipName)) {
-                    List<FieldWrapper> relatedObjFields = getFieldsForObject(field.referenceTo);
-                    
-                    for (FieldWrapper relField : relatedObjFields) {
-                        if (relField.isEmail) {
-                            FieldWrapper fw = new FieldWrapper();
-                            fw.label = field.label + ' → ' + relField.label;
-                            fw.value = field.relationshipName + '.' + relField.value;
-                            fw.type = 'EMAIL';
-                            fw.objectName = objectApiName;
-                            fw.isEmail = true;
-                            relatedFields.add(fw);
-                        }
-                    }
-                }
-            }
+            collectRelatedEmailFields(objectApiName, objectApiName, '', '', 1, Math.min(maxLevels == null ? 2 : maxLevels, 2),
+                relatedFields, new Set<String>());
         } catch (Exception e) {
             System.debug('Error getting related email fields: ' + e.getMessage());
         }
-        
         return relatedFields;
     }
-    
+
+    private static Map<String, Map<String, Schema.SObjectField>> fieldMapCache = new Map<String, Map<String, Schema.SObjectField>>();
+
+    private static Map<String, Schema.SObjectField> fieldMapOf(String objectApiName) {
+        if (!fieldMapCache.containsKey(objectApiName)) {
+            Schema.SObjectType sot = Schema.getGlobalDescribe().get(objectApiName);
+            fieldMapCache.put(objectApiName, sot == null ? new Map<String, Schema.SObjectField>() : sot.getDescribe().fields.getMap());
+        }
+        return fieldMapCache.get(objectApiName);
+    }
+
+    @TestVisible
+    private static Boolean isEmailLike(Schema.DescribeFieldResult d) {
+        if (d.getType() == Schema.DisplayType.EMAIL) return true;
+        return d.getType() == Schema.DisplayType.STRING && d.isCalculated()
+            && (d.getName().containsIgnoreCase('email') || d.getLabel().containsIgnoreCase('email'));
+    }
+
+    /** The object a lookup points at; a polymorphic owner / user lookup (User or Queue) is read as User. */
+    private static String targetOf(Schema.DescribeFieldResult d) {
+        List<Schema.SObjectType> targets = d.getReferenceTo();
+        if (targets.isEmpty()) return null;
+        for (Schema.SObjectType t : targets) {
+            if (t == User.SObjectType) return 'User';
+        }
+        return targets[0].getDescribe().getName();
+    }
+
+    private static void collectRelatedEmailFields(
+        String rootObject, String objectApiName, String pathPrefix, String labelPrefix,
+        Integer level, Integer maxLevel, List<FieldWrapper> out, Set<String> seen
+    ) {
+        for (Schema.SObjectField f : fieldMapOf(objectApiName).values()) {
+            Schema.DescribeFieldResult lookup = f.getDescribe();
+            if (lookup.getType() != Schema.DisplayType.REFERENCE || !lookup.isAccessible()
+                || String.isBlank(lookup.getRelationshipName())) {
+                continue;
+            }
+            String target = targetOf(lookup);
+            if (String.isBlank(target)) continue;
+            String path = pathPrefix + lookup.getRelationshipName() + '.';
+            String lookupLabel = lookup.getLabel().removeEndIgnoreCase(' ID').trim();
+            String label = labelPrefix + lookupLabel + ' → ';
+            for (Schema.SObjectField tf : fieldMapOf(target).values()) {
+                Schema.DescribeFieldResult d = tf.getDescribe();
+                if (!d.isAccessible() || !isEmailLike(d)) continue;
+                if (target == 'User' && d.getName() != 'Email') continue; // a user is reached by their Email only
+                String value = path + d.getName();
+                if (seen.contains(value.toLowerCase())) continue;
+                seen.add(value.toLowerCase());
+                FieldWrapper fw = new FieldWrapper();
+                fw.label = label + d.getLabel();
+                fw.value = value;
+                fw.type = 'EMAIL';
+                fw.objectName = rootObject;
+                fw.isEmail = true;
+                out.add(fw);
+            }
+            // one more level up (e.g. Receipt -> Booking -> Owner / CRM Manager), not through User
+            if (level < maxLevel && target != 'User') {
+                collectRelatedEmailFields(rootObject, target, path, label, level + 1, maxLevel, out, seen);
+            }
+        }
+    }
+
     // ============ GET MERGE FIELDS ============
     
     @AuraEnabled(cacheable=true)

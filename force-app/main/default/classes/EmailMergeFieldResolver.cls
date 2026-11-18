@@ -200,9 +200,18 @@ public with sharing class EmailMergeFieldResolver {
     private static String ownerEmail(Id recordId, String objectApiName, Boolean manager) {
         String ownerPath = ownerPathFor(objectApiName);
         if (ownerPath == null || recordId == null) return null;
-        String ownerId = resolveEmailField(ownerPath + 'Id', recordId, objectApiName);
-        if (String.isBlank(ownerId) || !ownerId.startsWith('005')) return null; // a queue has no email here
-        List<User> users = [SELECT Email, Manager.Email FROM User WHERE Id = :ownerId LIMIT 1];
+        return userEmailByIdPath(ownerPath + 'Id', recordId, objectApiName, manager);
+    }
+
+    private static String userEmailByIdPath(String idPath, Id recordId, String objectApiName) {
+        return userEmailByIdPath(idPath, recordId, objectApiName, false);
+    }
+
+    /** Email (or manager's email) of the User whose Id sits at idPath on the record; null for a queue. */
+    private static String userEmailByIdPath(String idPath, Id recordId, String objectApiName, Boolean manager) {
+        String userId = resolveEmailField(idPath, recordId, objectApiName);
+        if (String.isBlank(userId) || !userId.startsWith('005')) return null; // a queue has no email here
+        List<User> users = [SELECT Email, Manager.Email FROM User WHERE Id = :userId LIMIT 1];
         if (users.isEmpty()) return null;
         return manager ? (users[0].Manager == null ? null : users[0].Manager.Email) : users[0].Email;
     }
@@ -278,6 +287,12 @@ public with sharing class EmailMergeFieldResolver {
             } else if (sourceType == 'RecordOwner' || sourceType == 'OwnerManager') {
                 return ownerEmail(recordId, objectApiName, sourceType == 'OwnerManager');
             } else if (sourceType == 'Field' && String.isNotBlank(fieldApiName)) {
+                // A path through a (polymorphic) owner, e.g. Booking__r.Owner.Email: read the owner Id
+                // and the User's email - Owner.Email across a relationship can come back blank.
+                if (fieldApiName.endsWithIgnoreCase('Owner.Email')) {
+                    String viaId = userEmailByIdPath(fieldApiName.left(fieldApiName.length() - 'Owner.Email'.length()) + 'OwnerId', recordId, objectApiName);
+                    if (String.isNotBlank(viaId)) return viaId;
+                }
                 return resolveEmailField(fieldApiName, recordId, objectApiName);
             }
             

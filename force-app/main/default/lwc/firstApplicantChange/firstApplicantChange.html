@@ -30,6 +30,39 @@
                     </div>
                 </div>
 
+                <template if:true={hasDetails}>
+                    <h3 class="slds-text-title_caps slds-m-top_medium slds-m-bottom_x-small">First Applicant Details</h3>
+                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
+                        Filled with the booking's current values - change what is different for the new first applicant.
+                    </p>
+                    <div class="slds-grid slds-wrap slds-gutters_x-small">
+                        <template for:each={details} for:item="d">
+                            <div key={d.fieldName} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                <template if:true={d.isPicklist}>
+                                    <lightning-combobox label={d.label} value={d.value} options={d.options}
+                                        data-field={d.fieldName} onchange={handleDetailChange}>
+                                    </lightning-combobox>
+                                </template>
+                                <template if:true={d.isDate}>
+                                    <lightning-input type="date" label={d.label} value={d.value}
+                                        data-field={d.fieldName} onchange={handleDetailChange}>
+                                    </lightning-input>
+                                </template>
+                                <template if:true={d.isTextarea}>
+                                    <lightning-textarea label={d.label} value={d.value}
+                                        data-field={d.fieldName} onchange={handleDetailChange}>
+                                    </lightning-textarea>
+                                </template>
+                                <template if:true={d.isText}>
+                                    <lightning-input label={d.label} value={d.value}
+                                        data-field={d.fieldName} onchange={handleDetailChange}>
+                                    </lightning-input>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
                 <lightning-textarea label="Reason" value={reason} onchange={handleReason}
                     class="slds-m-top_x-small">
                 </lightning-textarea>

@@ -35,6 +35,82 @@ private class FirstApplicantChangeServiceTest {
 
     }
 
+    /** The other first-applicant details are requested on the screen and copied on approval. */
+    @isTest
+    static void approval_copiesRequestedApplicantDetails() {
+        Booking__c b = makeBooking();
+        update new Booking__c(Id = b.Id, Occupation__c = 'Old Job', Office_Address__c = 'Old Office');
+
+        // Screen context: every detail listed, prefilled with the booking's current values.
+        FirstApplicantChangeController.FACContext ctx = FirstApplicantChangeController.getContext(b.Id);
+        Map<String, FirstApplicantChangeController.DetailField> byName = new Map<String, FirstApplicantChangeController.DetailField>();
+        for (FirstApplicantChangeController.DetailField d : ctx.details) byName.put(d.fieldName, d);
+        System.assertEquals(FirstApplicantChangeService.DETAIL_BOOKING_FIELDS.size(), ctx.details.size());
+        System.assertEquals('Old Job', byName.get('Occupation__c').value);
+        System.assertEquals('picklist', byName.get('Salutation__c').type);
+        System.assert(!byName.get('Salutation__c').options.isEmpty());
+        System.assertEquals('date', byName.get('Date_of_Birth__c').type);
+
+        String details = JSON.serialize(new Map<String, Object>{
+            'Salutation__c' => 'Mrs.',
+            'S_o_D_o_W_o__c' => 'W/o',
+            'Son_Daughter_Wife_of__c' => 'New Spouse',
+            'Date_of_Birth__c' => '1990-05-17',
+            'PAN_Number__c' => 'ABCDE1234F',
+            'Aadhaar__c' => '123412341234',
+            'Nationality__c' => 'Indian',
+            'Residential_Status__c' => 'Resident',
+            'Marital_Status__c' => 'Married',
+            'Passport_PI_no__c' => 'P1234567',
+            'Occupation__c' => 'New Job',
+            'Permanent_Address__c' => 'New Permanent Address',
+            'Correspondence_Address__c' => 'New Correspondence Address',
+            'Office_Address__c' => '',                // blank: booking keeps its value
+            'Not_A_Field__c' => 'ignored'
+        });
+        First_Applicant_Change__c fac = new First_Applicant_Change__c(
+            Booking__c = b.Id, Old_First_Applicant__c = 'Old Name',
+            New_First_Applicant_Name__c = 'New Name', Approval_Status__c = 'Pending'
+        );
+        FirstApplicantChangeController.applyDetails(fac, details);
+        insert fac;
+
+        Test.startTest();
+        fac.Approval_Status__c = 'Approved';
+        update fac;
+        Test.stopTest();
+
+        Booking__c after = [
+            SELECT First_Applicant_Name__c, Salutation__c, S_o_D_o_W_o__c, Son_Daughter_Wife_of__c,
+                   Date_of_Birth__c, PAN_Number__c, Aadhaar__c, Nationality__c, Residential_Status__c,
+                   Marital_Status__c, Passport_PI_no__c, Occupation__c, Permanent_Address__c,
+                   Correspondence_Address__c, Office_Address__c
+            FROM Booking__c WHERE Id = :b.Id
+        ];
+        System.assertEquals('New Name', after.First_Applicant_Name__c);
+        System.assertEquals('Mrs.', after.Salutation__c);
+        System.assertEquals('W/o', after.S_o_D_o_W_o__c);
+        System.assertEquals('New Spouse', after.Son_Daughter_Wife_of__c);
+        System.assertEquals(Date.newInstance(1990, 5, 17), after.Date_of_Birth__c);
+        System.assertEquals('ABCDE1234F', after.PAN_Number__c);
+        System.assertEquals('123412341234', after.Aadhaar__c);
+        System.assertEquals('Married', after.Marital_Status__c);
+        System.assertEquals('P1234567', after.Passport_PI_no__c);
+        System.assertEquals('New Job', after.Occupation__c);
+        System.assertEquals('New Correspondence Address', after.Correspondence_Address__c);
+        System.assertEquals('Old Office', after.Office_Address__c, 'Blank requested values leave the booking as it is');
+
+        // Bad input is reported, not silently stored.
+        Boolean badDate = false;
+        try { FirstApplicantChangeController.applyDetails(new First_Applicant_Change__c(), '{"Date_of_Birth__c":"17/05/1990"}'); }
+        catch (AuraHandledException e) { badDate = true; }
+        System.assert(badDate, 'An unreadable date must be refused');
+        Boolean badJson = false;
+        try { FirstApplicantChangeController.applyDetails(new First_Applicant_Change__c(), 'not json'); }
+        catch (AuraHandledException e) { badJson = true; }
+        System.assert(badJson);
+    }
+
     @isTest
     static void stageProgressBlocked_untilNewFormUploaded() {
         Booking__c b = makeBooking();

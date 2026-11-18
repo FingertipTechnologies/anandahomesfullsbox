@@ -23,6 +23,54 @@ public without sharing class FirstApplicantChangeController {
         @AuraEnabled public String currentApplicant;
         @AuraEnabled public Boolean signedFormUploaded;
         @AuraEnabled public List<FACSummary> changes;
+        /** Other first-applicant details, prefilled with the booking's current values. */
+        @AuraEnabled public List<DetailField> details;
+    }
+
+    /** One first-applicant detail shown on the change screen. */
+    public class DetailField {
+        @AuraEnabled public String fieldName;   // Booking field API name
+        @AuraEnabled public String label;
+        @AuraEnabled public String type;        // text | textarea | date | picklist
+        @AuraEnabled public String value;       // current booking value (date as yyyy-MM-dd)
+        @AuraEnabled public List<Map<String, String>> options;
+    }
+
+    @TestVisible
+    private static List<DetailField> buildDetails(Booking__c booking) {
+        Map<String, Schema.SObjectField> fieldMap = Booking__c.SObjectType.getDescribe().fields.getMap();
+        List<DetailField> details = new List<DetailField>();
+        for (String fieldName : FirstApplicantChangeService.DETAIL_BOOKING_FIELDS) {
+            Schema.SObjectField sf = fieldMap.get(fieldName.toLowerCase());
+            if (sf == null) continue;
+            Schema.DescribeFieldResult d = sf.getDescribe();
+            DetailField f = new DetailField();
+            f.fieldName = fieldName;
+            f.label = d.getLabel();
+            Schema.DisplayType t = d.getType();
+            f.type = t == Schema.DisplayType.PICKLIST ? 'picklist'
+                : t == Schema.DisplayType.DATE ? 'date'
+                : t == Schema.DisplayType.TEXTAREA ? 'textarea' : 'text';
+            Object current = booking == null ? null : booking.get(fieldName);
+            f.value = current == null ? ''
+                : (current instanceof Date ? String.valueOf((Date) current) : String.valueOf(current));
+            if (f.type == 'picklist') {
+                f.options = new List<Map<String, String>>();
+                for (Schema.PicklistEntry e : d.getPicklistValues()) {
+                    if (e.isActive()) f.options.add(new Map<String, String>{ 'label' => e.getLabel(), 'value' => e.getValue() });
+                }
+            }
+            details.add(f);
+        }
+        return details;
+    }
+
+    private static Booking__c bookingWithDetails(Id bookingId) {
+        List<Booking__c> rows = Database.query(
+            'SELECT Id, ' + String.join(FirstApplicantChangeService.DETAIL_BOOKING_FIELDS, ', ')
+            + ' FROM Booking__c WHERE Id = :bookingId LIMIT 1'
+        );
+        return rows.isEmpty() ? null : rows[0];
     }
 
     public class FACSummary {
@@ -48,6 +96,7 @@ public without sharing class FirstApplicantChangeController {
         ctx.bookingId = bookingId;
         ctx.currentApplicant = bookings[0].First_Applicant_Name__c;
         ctx.signedFormUploaded = bookings[0].Signed_Booking_Form_Uploaded__c == true;
+        ctx.details = buildDetails(bookingWithDetails(bookingId));
         ctx.changes = new List<FACSummary>();
 
         for (First_Applicant_Change__c fac : [
@@ -85,6 +134,18 @@ public without sharing class FirstApplicantChangeController {
      */
     @AuraEnabled
     public static Id createChange(Id bookingId, String newApplicantName, String newEmail, String newMobile, String reason) {
+        return createChangeWithDetails(bookingId, newApplicantName, newEmail, newMobile, reason, null);
+    }
+
+    /**
+     * Same as createChange, plus the other first-applicant details as JSON
+     * {"Booking field API name": "value"} (dates as yyyy-MM-dd); stored on the change's
+     * "New ..." fields and copied to the booking on approval.
+     */
+    @AuraEnabled
+    public static Id createChangeWithDetails(
+        Id bookingId, String newApplicantName, String newEmail, String newMobile, String reason, String detailsJson
+    ) {
         if (bookingId == null) throw new AuraHandledException('Booking ID is required.');
         if (String.isBlank(newApplicantName)) throw new AuraHandledException('New first applicant name is required.');
 
@@ -116,6 +177,7 @@ public without sharing class FirstApplicantChangeController {
         fac.New_First_Applicant_Email__c = newEmail;
         fac.New_First_Applicant_Mobile__c = newMobile;
         fac.Reason__c = reason;
+        applyDetails(fac, detailsJson);
         fac.Approval_Status__c = 'Pending';
         fac.Approver_1__c = b.CRM_Manager__c;
         fac.Approver_2__c = b.Admin_MD__c;
@@ -136,6 +198,38 @@ public without sharing class FirstApplicantChangeController {
      *              gate stands (the approval you create in the org drives it from there). Failures
      *              are surfaced so a request is never left silently un-submitted.
      */
+    /** Copies {"Booking field": "value"} onto the change's "New ..." fields. */
+    @TestVisible
+    private static void applyDetails(First_Applicant_Change__c fac, String detailsJson) {
+        if (String.isBlank(detailsJson)) return;
+        Map<String, Object> values;
+        try {
+            values = (Map<String, Object>) JSON.deserializeUntyped(detailsJson);
+        } catch (Exception e) {
+            throw new AuraHandledException('The applicant details could not be read.');
+        }
+        Set<String> allowed = new Set<String>(FirstApplicantChangeService.DETAIL_BOOKING_FIELDS);
+        Map<String, Schema.SObjectField> changeFields = First_Applicant_Change__c.SObjectType.getDescribe().fields.getMap();
+        for (String bookingField : values.keySet()) {
+            if (!allowed.contains(bookingField)) continue;
+            Object raw = values.get(bookingField);
+            String text = raw == null ? null : String.valueOf(raw).trim();
+            if (String.isBlank(text)) continue;
+            String changeField = FirstApplicantChangeService.changeFieldFor(bookingField);
+            Schema.SObjectField sf = changeFields.get(changeField.toLowerCase());
+            if (sf == null) continue;
+            if (sf.getDescribe().getType() == Schema.DisplayType.DATE) {
+                try {
+                    fac.put(changeField, Date.valueOf(text));
+                } catch (Exception e) {
+                    throw new AuraHandledException('Enter a valid date for ' + sf.getDescribe().getLabel() + '.');
+                }
+            } else {
+                fac.put(changeField, text);
+            }
+        }
+    }
+
     private static void submitFacForApproval(Id facId) {
         List<Approval_Configuration__c> configs = [
             SELECT Id FROM Approval_Configuration__c

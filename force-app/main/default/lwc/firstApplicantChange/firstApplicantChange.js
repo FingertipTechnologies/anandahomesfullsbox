@@ -4,7 +4,7 @@ import { CloseActionScreenEvent } from 'lightning/actions';
 import { NavigationMixin } from 'lightning/navigation';
 import { refreshApex } from '@salesforce/apex';
 import getContext from '@salesforce/apex/FirstApplicantChangeController.getContext';
-import createChange from '@salesforce/apex/FirstApplicantChangeController.createChange';
+import createChangeWithDetails from '@salesforce/apex/FirstApplicantChangeController.createChangeWithDetails';
 
 export default class FirstApplicantChange extends NavigationMixin(LightningElement) {
     @api recordId; // Booking__c
@@ -15,6 +15,7 @@ export default class FirstApplicantChange extends NavigationMixin(LightningEleme
     @track newEmail = '';
     @track newMobile = '';
     @track reason = '';
+    @track details = [];
     isLoading = false;
     wiredCtx;
 
@@ -23,6 +24,7 @@ export default class FirstApplicantChange extends NavigationMixin(LightningEleme
         this.wiredCtx = result;
         if (result.data) {
             this.ctx = result.data;
+            this.buildDetails();
             this.buildChangeLinks();
         } else if (result.error) {
             this.showError(result.error);
@@ -35,6 +37,38 @@ export default class FirstApplicantChange extends NavigationMixin(LightningEleme
 
     get hasChanges() {
         return this.changes.length > 0;
+    }
+
+    get hasDetails() {
+        return this.details.length > 0;
+    }
+
+    // Other first-applicant details, prefilled with the booking's current values.
+    buildDetails() {
+        const list = (this.ctx && this.ctx.details) ? this.ctx.details : [];
+        this.details = list.map((d) => ({
+            ...d,
+            value: d.value || '',
+            options: d.options || [],
+            isPicklist: d.type === 'picklist',
+            isDate: d.type === 'date',
+            isTextarea: d.type === 'textarea',
+            isText: d.type === 'text'
+        }));
+    }
+
+    handleDetailChange(event) {
+        const field = event.target.dataset.field;
+        const value = event.detail.value;
+        this.details = this.details.map((d) => (d.fieldName === field ? { ...d, value } : d));
+    }
+
+    detailsJson() {
+        const values = {};
+        this.details.forEach((d) => {
+            if (d.value) values[d.fieldName] = d.value;
+        });
+        return JSON.stringify(values);
     }
 
     get submitDisabled() {
@@ -98,12 +132,13 @@ export default class FirstApplicantChange extends NavigationMixin(LightningEleme
 
         this.isLoading = true;
         try {
-            await createChange({
+            await createChangeWithDetails({
                 bookingId: this.recordId,
                 newApplicantName: this.newApplicant,
                 newEmail: this.newEmail,
                 newMobile: this.newMobile,
-                reason: this.reason
+                reason: this.reason,
+                detailsJson: this.detailsJson()
             });
             this.showToast(
                 'Request created',

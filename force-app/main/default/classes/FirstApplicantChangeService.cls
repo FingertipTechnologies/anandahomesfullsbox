@@ -12,6 +12,23 @@ public with sharing class FirstApplicantChangeService {
 
     private static final String STATUS_APPROVED = 'Approved';
 
+    /**
+     * Other first-applicant details a change can carry (2026-11-18): Booking field -> the
+     * "New ..." field on First_Applicant_Change__c. Filled values are copied to the booking on
+     * approval; blank ones leave the booking value as it is. Order = order on the screen.
+     */
+    public static final List<String> DETAIL_BOOKING_FIELDS = new List<String>{
+        'Salutation__c', 'S_o_D_o_W_o__c', 'Son_Daughter_Wife_of__c', 'Date_of_Birth__c',
+        'PAN_Number__c', 'Aadhaar__c', 'Nationality__c', 'Residential_Status__c',
+        'Marital_Status__c', 'Passport_PI_no__c', 'Occupation__c', 'Permanent_Address__c',
+        'Correspondence_Address__c', 'Office_Address__c'
+    };
+
+    /** The First_Applicant_Change__c field holding the requested value for a booking field. */
+    public static String changeFieldFor(String bookingField) {
+        return 'New_' + bookingField;
+    }
+
     /** Re-entrancy guard (the apply updates the change records themselves). */
     private static Boolean applying = false;
 
@@ -72,12 +89,16 @@ public with sharing class FirstApplicantChangeService {
     public static void applyApproved(Set<Id> changeIds) {
         if (applying || changeIds == null || changeIds.isEmpty()) return;
 
-        List<First_Applicant_Change__c> changes = [
-            SELECT Id, Booking__c, Approval_Status__c, Applied__c,
-                   New_First_Applicant_Name__c, New_First_Applicant_Email__c, New_First_Applicant_Mobile__c
-            FROM First_Applicant_Change__c
-            WHERE Id IN :changeIds AND Applied__c = false AND Approval_Status__c = :STATUS_APPROVED
-        ];
+        List<String> detailFields = new List<String>();
+        for (String bookingField : DETAIL_BOOKING_FIELDS) detailFields.add(changeFieldFor(bookingField));
+        String approved = STATUS_APPROVED;
+        List<First_Applicant_Change__c> changes = Database.query(
+            'SELECT Id, Booking__c, Approval_Status__c, Applied__c, '
+            + 'New_First_Applicant_Name__c, New_First_Applicant_Email__c, New_First_Applicant_Mobile__c, '
+            + String.join(detailFields, ', ')
+            + ' FROM First_Applicant_Change__c'
+            + ' WHERE Id IN :changeIds AND Applied__c = false AND Approval_Status__c = :approved'
+        );
         if (changes.isEmpty()) return;
 
         Set<Id> bookingIds = new Set<Id>();
@@ -108,6 +129,10 @@ public with sharing class FirstApplicantChangeService {
             b.First_Applicant_Name__c = fac.New_First_Applicant_Name__c;
             if (String.isNotBlank(fac.New_First_Applicant_Email__c)) b.Email__c = fac.New_First_Applicant_Email__c;
             if (String.isNotBlank(fac.New_First_Applicant_Mobile__c)) b.Mobile__c = fac.New_First_Applicant_Mobile__c;
+            for (String bookingField : DETAIL_BOOKING_FIELDS) {
+                Object value = fac.get(changeFieldFor(bookingField));
+                if (value != null && String.isNotBlank(String.valueOf(value))) b.put(bookingField, value);
+            }
             // Force a fresh signed Booking Form for the new applicant.
             b.Signed_Booking_Form_Uploaded__c = false;
             bookingsToUpdate.put(b.Id, b);

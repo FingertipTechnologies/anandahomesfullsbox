@@ -97,6 +97,73 @@ private class CapriNocPdfControllerTest {
     }
 
     @isTest
+    static void swapAndCancellationLettersCountEachPaymentOnce() {
+        Project__c project = new Project__c(Name = 'CAPRI Swap Receipts', Project_Type__c = 'Apartment', Interest_Rate__c = 18);
+        insert as system project;
+        List<Plot__c> plots = new List<Plot__c>{
+            new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Booked'),
+            new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Booked'),
+            new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Booked')
+        };
+        insert as system plots;
+        Booking__c oldBooking = new Booking__c(Project__c = project.Id, Plot__c = plots[0].Id, Status__c = 'Swapping',
+            Booking_Date__c = Date.today().addMonths(-4), First_Applicant_Name__c = 'Swap Customer');
+        Booking__c cancelled = new Booking__c(Project__c = project.Id, Plot__c = plots[2].Id, Status__c = 'Cancellation',
+            Booking_Date__c = Date.today().addMonths(-6), Cancellation_Date__c = Date.today().addMonths(-1),
+            First_Applicant_Name__c = 'Cancelled Customer');
+        insert as system new List<Booking__c>{ oldBooking, cancelled };
+        Booking__c newBooking = new Booking__c(Project__c = project.Id, Plot__c = plots[1].Id, Status__c = 'Booked',
+            Booking_Date__c = Date.today(), First_Applicant_Name__c = 'Swap Customer', Total_Flat_Cost__c = 3000000);
+        insert as system newBooking;
+
+        List<Receipt__c> receipts = new List<Receipt__c>();
+        for (Booking__c b : new List<Booking__c>{ oldBooking, newBooking }) {
+            // The swap copies the old booking's two receipts onto the new booking.
+            receipts.add(new Receipt__c(Booking__c = b.Id, Amount_received__c = 500000, Receipt_Date__c = Date.newInstance(2026, 8, 1),
+                Receipt_Type__c = 'Installment Payment', Payment_Method__c = 'NEFT', Check_Transaction_Nmber__c = 'UTR-A',
+                Approval_Status__c = 'Approved'));
+            receipts.add(new Receipt__c(Booking__c = b.Id, Amount_received__c = 250000, Receipt_Date__c = Date.newInstance(2026, 9, 1),
+                Receipt_Type__c = 'Installment Payment', Payment_Method__c = 'Cheque', Check_Transaction_Nmber__c = '111222',
+                Approval_Status__c = 'Approved', Receipt_Status__c = 'Received'));
+        }
+        // Paid on the new booking after the swap.
+        receipts.add(new Receipt__c(Booking__c = newBooking.Id, Amount_received__c = 100000, Receipt_Date__c = Date.newInstance(2026, 11, 1),
+            Receipt_Type__c = 'Installment Payment', Payment_Method__c = 'IMPS', Check_Transaction_Nmber__c = 'UTR-B',
+            Approval_Status__c = 'Approved'));
+        // Cancelled booking: approved receipt entered in Salesforce (blank Receipt Status).
+        receipts.add(new Receipt__c(Booking__c = cancelled.Id, Amount_received__c = 300000, Receipt_Date__c = Date.newInstance(2026, 5, 5),
+            Receipt_Type__c = 'Installment Payment', Payment_Method__c = 'RTGS', Check_Transaction_Nmber__c = 'UTR-C',
+            Approval_Status__c = 'Approved'));
+        insert as system receipts;
+
+        Swap_History__c swap = new Swap_History__c(Old_Plot__c = plots[0].Id, New_Plot__c = plots[1].Id,
+            Old_Booking__c = oldBooking.Id, New_Booking__c = newBooking.Id, Swap_Date__c = Date.today().addMonths(-1));
+        insert as system swap;
+        NOC__c noc = new NOC__c(Booking__c = newBooking.Id, NOC_Type__c = 'Capri NOC',
+            Related_Swap_History__c = swap.Id, Related_Cancellation_Booking__c = cancelled.Id);
+        insert as system noc;
+
+        Test.startTest();
+        CapriNocPdfController controller = new CapriNocPdfController(new ApexPages.StandardController(noc));
+        Test.stopTest();
+
+        System.assertEquals(true, controller.swapReceipts.hasReceipts);
+        System.assertEquals('8,50,000', controller.swapReceipts.totalText,
+            '5,00,000 + 2,50,000 counted once (not again from the copies) + 1,00,000 paid after the swap');
+        System.assertEquals('NEFT / Cheque / IMPS', controller.swapReceipts.modes);
+        System.assertEquals('UTR-A, 111222, UTR-B', controller.swapReceipts.references);
+
+        System.assertEquals(true, controller.cancellationReceipts.hasReceipts, 'Blank-status receipts count');
+        System.assertEquals('3,00,000', controller.cancellationReceipts.totalText);
+        System.assertEquals('RTGS', controller.cancellationReceipts.modes);
+        System.assertEquals('UTR-C', controller.cancellationReceipts.references);
+
+        // The loan letter of the new booking lists its own receipts (copies included) - 3 rows.
+        System.assertEquals(3, controller.receiptLineItems.size());
+        System.assertEquals(850000, controller.totalReceived);
+    }
+
+    @isTest
     static void reportsMissingNocId() {
         CapriNocPdfController controller = new CapriNocPdfController(
             new ApexPages.StandardController(new NOC__c())

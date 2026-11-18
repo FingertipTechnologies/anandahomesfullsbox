@@ -257,7 +257,9 @@ public with sharing class CapriNocPdfController {
         if (swapHistory.Old_Booking__c != null) customerBookingIds.add(swapHistory.Old_Booking__c);
         if (swapHistory.New_Booking__c != null) customerBookingIds.add(swapHistory.New_Booking__c);
         if (!customerBookingIds.isEmpty()) {
-            swapReceipts = new ReceiptSummary(receiptsFor(customerBookingIds));
+            // A swap copies the old booking's receipts onto the new booking, and older swaps left
+            // the originals approved too - count each payment once.
+            swapReceipts = new ReceiptSummary(withoutSwapCopies(receiptsFor(customerBookingIds)));
         }
 
         // "<old flat> was released from <customer> and is allotted as new booking to <buyer>":
@@ -280,9 +282,11 @@ public with sharing class CapriNocPdfController {
         public String reference { get; private set; }
         public Decimal amount { get; private set; }
         public String account { get; private set; }
+        public Id bookingId { get; private set; }
 
         public ReceiptRow(Receipt__c r) {
             name = r.Name;
+            bookingId = r.Booking__c;
             chequeDate = r.Cheque_Date__c;
             depositedDate = r.Receipt_Date__c;
             mode = firstNonBlank(new List<String>{ r.Payment_Method__c, r.Mode_of_payment__c, r.Payment_From__c });
@@ -294,6 +298,27 @@ public with sharing class CapriNocPdfController {
                 r.Account_Name__r == null ? null : r.Account_Name__r.Name, r.Payment_Received_Bank__c
             });
         }
+    }
+
+    /**
+     * Drops receipts that are the swap copy of one already listed: same amount, receipt date,
+     * cheque date, payment mode and reference (the swap clones all of these). Rows of the same
+     * booking are never merged, so two genuine identical payments on one booking both count.
+     */
+    @TestVisible
+    private static List<ReceiptRow> withoutSwapCopies(List<ReceiptRow> rows) {
+        Map<String, Id> bookingByKey = new Map<String, Id>();
+        List<ReceiptRow> kept = new List<ReceiptRow>();
+        for (ReceiptRow row : rows) {
+            String key = row.amount + '|' + row.depositedDate + '|' + row.chequeDate + '|'
+                + row.mode + '|' + row.reference;
+            if (bookingByKey.containsKey(key) && bookingByKey.get(key) != row.bookingId) {
+                continue;
+            }
+            if (!bookingByKey.containsKey(key)) bookingByKey.put(key, row.bookingId);
+            kept.add(row);
+        }
+        return kept;
     }
 
     private static String firstNonBlank(List<String> values) {
@@ -312,7 +337,7 @@ public with sharing class CapriNocPdfController {
     private static List<ReceiptRow> receiptsFor(Set<Id> bookingIds) {
         List<ReceiptRow> rows = new List<ReceiptRow>();
         for (Receipt__c r : [
-            SELECT Id, Name, Cheque_Date__c, Receipt_Date__c, Payment_Method__c, Mode_of_payment__c,
+            SELECT Id, Name, Booking__c, Cheque_Date__c, Receipt_Date__c, Payment_Method__c, Mode_of_payment__c,
                    Payment_From__c, Check_Transaction_Nmber__c, Payment_Reference_Number__c,
                    Cheque_Number__c, Amount_received__c, Account_Name__r.Name, Payment_Received_Bank__c
             FROM Receipt__c

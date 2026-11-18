@@ -116,7 +116,7 @@ private class BookingStageValidationServiceTest {
         Booking__c b = makeBooking('New');
         Test.startTest();
         Boolean blocked = false;
-        b.Status__c = 'Cancelled';
+        b.Status__c = 'Cancellation';
         try { update b; } catch (DmlException e) {
             blocked = true;
             System.assert(e.getMessage().contains('Cancellation approval'), e.getMessage());
@@ -129,11 +129,11 @@ private class BookingStageValidationServiceTest {
     static void toCancelled_withApproval_isAllowed() {
         Booking__c b = makeBooking('New');
         Test.startTest();
-        b.Status__c = 'Cancelled';
+        b.Status__c = 'Cancellation';
         b.Cancellation_Approval_Before_Agreement__c = 'Approved';
         update b;
         Test.stopTest();
-        System.assertEquals('Cancelled', [SELECT Status__c FROM Booking__c WHERE Id = :b.Id].Status__c);
+        System.assertEquals('Cancellation', [SELECT Status__c FROM Booking__c WHERE Id = :b.Id].Status__c);
     }
 
     @isTest
@@ -166,16 +166,16 @@ private class BookingStageValidationServiceTest {
 
     @isTest
     static void terminalStatus_cannotChange() {
-        Booking__c b = makeBooking('Cancelled');
+        Booking__c b = makeBooking('Cancellation');
         Test.startTest();
         Boolean blocked = false;
-        b.Status__c = 'Active';
+        b.Status__c = 'Booked';
         try { update b; } catch (DmlException e) {
             blocked = true;
             System.assert(e.getMessage().contains('can no longer be changed'), e.getMessage());
         }
         Test.stopTest();
-        System.assert(blocked, 'A Cancelled booking status must be frozen');
+        System.assert(blocked, 'A Cancellation booking status must be frozen');
     }
 
     @isTest

@@ -39,6 +39,14 @@ public with sharing class BookingStageValidationService {
     /** Funding types where the bank disburses against milestones (BRD §8.1). */
     private static final Set<String> LOAN_FUNDING = new Set<String>{ 'Loan', 'Bank Loan', 'NBFC Loan' };
 
+    /**
+     * Largest outstanding balance still treated as fully paid. Per-milestone GST/TDS are rounded
+     * to whole rupees, so a receipt for the exact total (e.g. TDS 91,465.66 vs 91,466 across the
+     * milestones) can leave a few paise pending; only more than Rs 1 blocks the stage move.
+     */
+    @TestVisible
+    private static final Decimal PAYMENT_TOLERANCE = 1;
+
     /** Linear lifecycle order. Stages not listed (Cancellation/Swapping) are not gated. */
     private static final Map<String, Integer> STAGE_ORDER = new Map<String, Integer>{
         'New' => 0,
@@ -238,7 +246,7 @@ public with sharing class BookingStageValidationService {
         for (Id bookingId : bookingIds) {
             Booking__c b = bookingsById.get(bookingId);
             Decimal pending = pendingByBooking.containsKey(bookingId) ? pendingByBooking.get(bookingId) : 0;
-            Boolean fullyCollected = pending <= 0;
+            Boolean fullyCollected = pending <= PAYMENT_TOLERANCE;
             Boolean hasPendingReceipt = bookingsWithPendingReceipt.contains(bookingId);
             Boolean hasOpenCharges = bookingsWithOpenCharges.contains(bookingId);
             String funding = b.Funding_Type__c;

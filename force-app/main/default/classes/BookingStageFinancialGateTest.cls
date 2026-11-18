@@ -137,4 +137,34 @@ private class BookingStageFinancialGateTest {
         Test.stopTest();
         System.assert(blocked, 'Handover with a pending balance must be blocked');
     }
+
+    @isTest
+    static void handover_allowsRoundingBalanceUpToOneRupee() {
+        Booking__c b = makeBooking('Registration', 'Self-Funded');
+        b.Sale_Deed_Status__c = 'Completed';
+        b.Sale_Deed_Date__c = Date.today();
+        b.Registration_Date__c = Date.today();
+        b.Registration_Number__c = 'REG-3';
+        update b;
+
+        // e.g. TDS receipt 91,465.66 against milestone TDS rounded to 91,466 -> 0.34 left.
+        Payment_Schedule__c ps = schedule(b.Id, 1.01);
+        insert ps;
+
+        Test.startTest();
+        Boolean blocked = false;
+        b.Status__c = 'Handover';
+        try { update b; } catch (DmlException e) {
+            blocked = true;
+            System.assert(e.getMessage().contains('all payments must be received'), e.getMessage());
+        }
+        System.assert(blocked, 'More than Rs 1 pending must still block Handover');
+
+        ps.Pending_Amount__c = 0.34;
+        update ps;
+        update b; // only paise left -> allowed
+        Test.stopTest();
+
+        System.assertEquals('Handover', [SELECT Status__c FROM Booking__c WHERE Id = :b.Id].Status__c);
+    }
 }

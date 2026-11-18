@@ -766,20 +766,44 @@ public with sharing class DynamicDocumentRenderer {
         return String.join(renderedApplicants, '');
     }
 
+    /**
+     * The booking whose co-applicant names a template prints: the record itself on a Booking
+     * template, or the record's Booking__c lookup on a related template such as a Receipt
+     * (2026-11-18, receipt PDF prints "A &amp; B" like the client's format). Null when the record
+     * has no booking.
+     */
+    @TestVisible
+    private static Id coApplicantBookingId(SObject record, String objectApiName) {
+        if (record == null || record.Id == null) return null;
+        if ('Booking__c'.equalsIgnoreCase(objectApiName)) return record.Id;
+        Schema.DescribeSObjectResult describe = record.Id.getSObjectType().getDescribe();
+        Schema.SObjectField bookingField = describe.fields.getMap().get('booking__c');
+        if (bookingField == null
+            || !bookingField.getDescribe().getReferenceTo().contains(Booking__c.SObjectType)) {
+            return null;
+        }
+        Id recordId = record.Id;
+        List<SObject> rows = Database.query(
+            'SELECT Booking__c FROM ' + describe.getName() + ' WHERE Id = :recordId LIMIT 1'
+        );
+        return rows.isEmpty() ? null : (Id) rows[0].get('Booking__c');
+    }
+
     private static String resolveCoApplicantNames(
         String content, SObject record, String objectApiName
     ) {
         if (String.isBlank(content) || record == null
-            || !'Booking__c'.equalsIgnoreCase(objectApiName)
             || !content.contains('{!CO_APPLICANT_NAMES}')) {
             return content;
         }
+        Id bookingId = coApplicantBookingId(record, objectApiName);
+        if (bookingId == null) return content;
 
         List<String> names = new List<String>();
         for (Co_Applicant__c applicant : [
             SELECT Salutation__c, Full_Name__c
             FROM Co_Applicant__c
-            WHERE Booking__c = :record.Id
+            WHERE Booking__c = :bookingId
             ORDER BY CreatedDate ASC
         ]) {
             String name = coApplicantDisplayName(applicant);
@@ -801,18 +825,19 @@ public with sharing class DynamicDocumentRenderer {
         String content, SObject record, String objectApiName
     ) {
         if (String.isBlank(content) || record == null
-            || !'Booking__c'.equalsIgnoreCase(objectApiName)
             || !(content.contains('{!AND_CO_APPLICANT_NAMES}')
                  || content.contains('{!AND_CO_APPLICANT_NAMES_RELATION}'))) {
             return content;
         }
+        Id bookingId = coApplicantBookingId(record, objectApiName);
+        if (bookingId == null) return content;
 
         List<String> names = new List<String>();
         List<String> namesWithRelation = new List<String>();
         for (Co_Applicant__c applicant : [
             SELECT Salutation__c, Full_Name__c, S_o_D_o_W_o__c, Relalation_Details__c, W_o_S_o_C_o_c__c
             FROM Co_Applicant__c
-            WHERE Booking__c = :record.Id
+            WHERE Booking__c = :bookingId
             ORDER BY CreatedDate ASC
         ]) {
             String name = coApplicantDisplayName(applicant);

@@ -241,6 +241,47 @@ private class DynamicDocumentRendererTest {
       System.assert(zero.contains('Joint: First Applicant|'), zero);
     }
 
+    /** Receipt templates print the booking's joint names too (receipt PDF, 2026-11-18). */
+    @isTest
+    static void renderDocument_coApplicantNamesOnReceipt() {
+        Project__c project = new Project__c(
+            Name = 'Receipt Joint Names Project', Project_Type__c = 'Residential', Interest_Rate__c = 18
+        );
+        insert project;
+        Booking__c booking = new Booking__c(Project__c = project.Id, Booking_Date__c = Date.today(), Status__c = 'Booked');
+        insert booking;
+        insert new Co_Applicant__c(Booking__c = booking.Id, Salutation__c = 'Mrs', Full_Name__c = 'Receipt Co Applicant');
+        Receipt__c receipt = new Receipt__c(
+            Booking__c = booking.Id, Amount_received__c = 1000, Receipt_Date__c = Date.today(),
+            Receipt_Type__c = 'Installment Payment', Payment_Method__c = 'NEFT'
+        );
+        insert receipt;
+
+        String templateJson = JSON.serialize(new Map<String, Object>{
+            'sections' => new List<Object>{
+                new Map<String, Object>{
+                    'type' => 'content',
+                    'content' => 'From: Buyer{!AND_CO_APPLICANT_NAMES}| Names: {!CO_APPLICANT_NAMES}|'
+                        + ' Title: {!Receipt_Document_Title__c}| Note:{!Receipt_GST_Note__c}|'
+                }
+            }
+        });
+
+        Test.startTest();
+        String html = DynamicDocumentRenderer.renderDocument(templateJson, receipt.Id, 'Receipt__c');
+        Test.stopTest();
+
+        System.assert(html.contains('From: Buyer &amp; Mrs. Receipt Co Applicant|'), html);
+        System.assert(html.contains('Names: Mrs. Receipt Co Applicant|'), html);
+        // a project that receives Flat and GST together: plain RECEIPT + "(INCLUDING GST),"
+        System.assert(html.contains('Title: RECEIPT|'), html);
+        System.assert(html.contains('(INCLUDING GST),|'), html);
+
+        // A record with no booking lookup is left alone.
+        System.assertEquals(null, DynamicDocumentRenderer.coApplicantBookingId(project, 'Project__c'));
+        System.assertEquals(booking.Id, DynamicDocumentRenderer.coApplicantBookingId(booking, 'Booking__c'));
+    }
+
     @isTest
     static void renderDocument_coApplicantsNumberedAndWithoutAge() {
         Project__c project = new Project__c(

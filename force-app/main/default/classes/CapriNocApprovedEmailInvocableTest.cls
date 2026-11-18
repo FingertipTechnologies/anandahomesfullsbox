@@ -221,11 +221,18 @@ private class CapriNocApprovedEmailInvocableTest {
     static void sendButtonQueuesTheMailAndStampsSentDate() {
         NOC__c noc = makeNocWithHistory(0, 'Approved');
         Test.startTest();
-        CapriNocApprovedEmailInvocable.sendNow(noc.Id);
+        Id jobId = CapriNocApprovedEmailInvocable.sendNow(noc.Id);
         Integer queued = Limits.getQueueableJobs();
         Test.stopTest();
         System.assertEquals(1, queued, 'The button queues the Capri mail');
+        System.assertNotEquals(null, jobId, 'The job id is returned so the NOC tab can poll it');
         System.assertNotEquals(null, [SELECT Sent_Date__c FROM NOC__c WHERE Id = :noc.Id WITH SYSTEM_MODE].Sent_Date__c);
+
+        NOCController.NOCEmailJobStatus status = NOCController.getNOCEmailJobStatus(jobId);
+        System.assertEquals('Completed', status.status);
+        System.assertEquals(null, status.errorMessage);
+        System.assertEquals('Completed', NOCController.getNOCEmailJobStatus(null).status,
+            'Non-Capri NOCs are mailed immediately, so there is nothing to wait for');
     }
 
     @isTest

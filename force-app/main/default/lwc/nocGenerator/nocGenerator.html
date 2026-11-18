@@ -90,7 +90,7 @@
                                         <td>
                                             <template if:true={n._canSend}>
                                                 <lightning-button
-                                                    label="Send"
+                                                    label="Send to Capri"
                                                     variant="brand"
                                                     data-id={n.id}
                                                     onclick={handleSend}
@@ -101,7 +101,7 @@
                                                 <span class="slds-text-color_weak">Awaiting approval</span>
                                             </template>
                                             <template if:true={n.sent}>
-                                                <span class="slds-text-color_success">Sent</span>
+                                                <span class="slds-text-color_success">Sent to Capri</span>
                                             </template>
                                         </td>
                                     </tr>

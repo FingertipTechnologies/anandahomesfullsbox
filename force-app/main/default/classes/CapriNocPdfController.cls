@@ -16,8 +16,8 @@ public with sharing class CapriNocPdfController {
     public Booking__c booking { get; private set; }
     public Booking__c cancellationBooking { get; private set; }
     public Swap_History__c swapHistory { get; private set; }
-    public List<Receipt_Line_Item__c> receiptLineItems { get; private set; }
-    public List<Receipt_Line_Item__c> cancellationReceiptLineItems { get; private set; }
+    public List<ReceiptRow> receiptLineItems { get; private set; }
+    public List<ReceiptRow> cancellationReceiptLineItems { get; private set; }
     public List<Refund__c> refunds { get; private set; }
     public Decimal totalReceived { get; private set; }
     public Decimal balanceReceivable { get; private set; }
@@ -64,19 +64,18 @@ public with sharing class CapriNocPdfController {
         public String dates { get; private set; }
         public Boolean hasReceipts { get; private set; }
 
-        public ReceiptSummary(List<Receipt_Line_Item__c> lineItems) {
+        public ReceiptSummary(List<ReceiptRow> rows) {
             total = 0;
             List<String> modeList = new List<String>();
             List<String> refList = new List<String>();
             List<String> dateList = new List<String>();
-            for (Receipt_Line_Item__c lineItem : lineItems) {
-                total += lineItem.Received_Amount__c == null ? 0 : lineItem.Received_Amount__c;
-                addUnique(modeList, lineItem.Mode_of_Payment__c);
-                addUnique(refList, lineItem.Cheque_no_Transaction_Number__c);
-                Date receiptDate = lineItem.Receipt__r == null ? null : lineItem.Receipt__r.Receipt_Date__c;
-                addUnique(dateList, formatDate(receiptDate == null ? lineItem.Cheque_Date__c : receiptDate));
+            for (ReceiptRow row : rows) {
+                total += row.amount;
+                addUnique(modeList, row.mode);
+                addUnique(refList, row.reference);
+                addUnique(dateList, formatDate(row.depositedDate == null ? row.chequeDate : row.depositedDate));
             }
-            hasReceipts = !lineItems.isEmpty();
+            hasReceipts = !rows.isEmpty();
             totalText = formatIndian(total);
             modes = String.join(modeList, ' / ');
             references = String.join(refList, ', ');
@@ -121,8 +120,8 @@ public with sharing class CapriNocPdfController {
 
         noc = records[0];
         booking = noc.Booking__r;
-        receiptLineItems = new List<Receipt_Line_Item__c>();
-        cancellationReceiptLineItems = new List<Receipt_Line_Item__c>();
+        receiptLineItems = new List<ReceiptRow>();
+        cancellationReceiptLineItems = new List<ReceiptRow>();
         refunds = new List<Refund__c>();
         totalReceived = 0;
         balanceReceivable = 0;
@@ -130,8 +129,8 @@ public with sharing class CapriNocPdfController {
         cancellationTotalRefunded = 0;
         hasRefunds = false;
         showSwapNote = false;
-        cancellationReceipts = new ReceiptSummary(new List<Receipt_Line_Item__c>());
-        swapReceipts = new ReceiptSummary(new List<Receipt_Line_Item__c>());
+        cancellationReceipts = new ReceiptSummary(new List<ReceiptRow>());
+        swapReceipts = new ReceiptSummary(new List<ReceiptRow>());
 
         // Which swap / cancellation to print: the page parameter when it is one of this NOC's
         // selections, otherwise the first selection.
@@ -159,8 +158,8 @@ public with sharing class CapriNocPdfController {
         bankName = String.isNotBlank(booking.Loan_Bank_Name__c) ? booking.Loan_Bank_Name__c : booking.Bank_Name__c;
 
         receiptLineItems = receiptsFor(new Set<Id>{ booking.Id });
-        for (Receipt_Line_Item__c lineItem : receiptLineItems) {
-            totalReceived += lineItem.Received_Amount__c == null ? 0 : lineItem.Received_Amount__c;
+        for (ReceiptRow row : receiptLineItems) {
+            totalReceived += row.amount;
         }
 
         Decimal consideration = booking.Total_Flat_Cost__c == null ? 0 : booking.Total_Flat_Cost__c;
@@ -271,19 +270,62 @@ public with sharing class CapriNocPdfController {
             && booking.Id != swapHistory.New_Booking__c;
     }
 
-    private static List<Receipt_Line_Item__c> receiptsFor(Set<Id> bookingIds) {
-        return [
-            SELECT Id, Name, Cheque_Date__c, Receipt__r.Receipt_Date__c, Payment_From__c,
-                   Mode_of_Payment__c, Cheque_no_Transaction_Number__c, Received_Amount__c,
-                   Receipt__r.Account_Name__r.Name
-            FROM Receipt_Line_Item__c
+    /** One payment received, as printed in the "Amount received till date" table. */
+    public class ReceiptRow {
+        public String name { get; private set; }
+        public Date chequeDate { get; private set; }
+        public Date depositedDate { get; private set; }
+        /** Payment method (NEFT, Cheque, ...), else who paid (Customer / Bank). */
+        public String mode { get; private set; }
+        public String reference { get; private set; }
+        public Decimal amount { get; private set; }
+        public String account { get; private set; }
+
+        public ReceiptRow(Receipt__c r) {
+            name = r.Name;
+            chequeDate = r.Cheque_Date__c;
+            depositedDate = r.Receipt_Date__c;
+            mode = firstNonBlank(new List<String>{ r.Payment_Method__c, r.Mode_of_payment__c, r.Payment_From__c });
+            reference = firstNonBlank(new List<String>{
+                r.Check_Transaction_Nmber__c, r.Payment_Reference_Number__c, r.Cheque_Number__c
+            });
+            amount = r.Amount_received__c == null ? 0 : r.Amount_received__c;
+            account = firstNonBlank(new List<String>{
+                r.Account_Name__r == null ? null : r.Account_Name__r.Name, r.Payment_Received_Bank__c
+            });
+        }
+    }
+
+    private static String firstNonBlank(List<String> values) {
+        for (String v : values) {
+            if (String.isNotBlank(v)) return v;
+        }
+        return null;
+    }
+
+    /**
+     * Approved receipts of the bookings, one row per receipt. The amounts and payment details
+     * live on the receipt (its line items carry no received amount). Receipts entered in
+     * Salesforce leave Receipt Status blank (only migrated receipts are 'Received'), so every
+     * approved receipt counts except cancelled / reversed ones.
+     */
+    private static List<ReceiptRow> receiptsFor(Set<Id> bookingIds) {
+        List<ReceiptRow> rows = new List<ReceiptRow>();
+        for (Receipt__c r : [
+            SELECT Id, Name, Cheque_Date__c, Receipt_Date__c, Payment_Method__c, Mode_of_payment__c,
+                   Payment_From__c, Check_Transaction_Nmber__c, Payment_Reference_Number__c,
+                   Cheque_Number__c, Amount_received__c, Account_Name__r.Name, Payment_Received_Bank__c
+            FROM Receipt__c
             WHERE Booking__c IN :bookingIds
-            AND Receipt__r.Approval_Status__c = 'Approved'
-            AND Receipt__r.Receipt_Status__c = 'Received'
+            AND Approval_Status__c = 'Approved'
+            AND (Receipt_Status__c = null OR Receipt_Status__c NOT IN ('Cancelled', 'Reversed'))
             WITH SYSTEM_MODE
-            ORDER BY Receipt__r.Receipt_Date__c ASC
+            ORDER BY Receipt_Date__c ASC NULLS LAST, Name ASC
             LIMIT 200
-        ];
+        ]) {
+            rows.add(new ReceiptRow(r));
+        }
+        return rows;
     }
 
     // ------------------------------------------------------------------ selections

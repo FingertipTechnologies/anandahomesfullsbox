@@ -47,6 +47,56 @@ private class CapriNocPdfControllerTest {
     }
 
     @isTest
+    static void listsApprovedReceiptsWithBlankStatus() {
+        Project__c project = new Project__c(Name = 'CAPRI Receipt Project', Project_Type__c = 'Apartment', Interest_Rate__c = 18);
+        insert as system project;
+        Plot__c plot = new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Booked');
+        insert as system plot;
+        Booking__c booking = new Booking__c(
+            Project__c = project.Id, Plot__c = plot.Id, Booking_Date__c = Date.today(), Status__c = 'Booked',
+            First_Applicant_Name__c = 'Receipt Buyer', Total_Flat_Cost__c = 2000000
+        );
+        insert as system booking;
+        insert as system new List<Receipt__c>{
+            // Entered in Salesforce: approved, Receipt Status left blank -> must be listed.
+            new Receipt__c(Booking__c = booking.Id, Amount_received__c = 500000,
+                Receipt_Date__c = Date.newInstance(2026, 11, 17), Receipt_Type__c = 'Installment Payment',
+                Payment_Method__c = 'Cheque', Check_Transaction_Nmber__c = '45678678',
+                Cheque_Date__c = Date.newInstance(2026, 11, 16), Approval_Status__c = 'Approved'),
+            // Migrated: approved and Received -> listed; no method, so who paid is shown.
+            new Receipt__c(Booking__c = booking.Id, Amount_received__c = 100000,
+                Receipt_Date__c = Date.newInstance(2026, 11, 18), Receipt_Type__c = 'Installment Payment',
+                Payment_From__c = 'Customer', Payment_Reference_Number__c = 'UTR1',
+                Approval_Status__c = 'Approved', Receipt_Status__c = 'Received'),
+            // Not counted: cancelled, and not yet approved.
+            new Receipt__c(Booking__c = booking.Id, Amount_received__c = 7000,
+                Receipt_Date__c = Date.newInstance(2026, 11, 18), Receipt_Type__c = 'Installment Payment',
+                Approval_Status__c = 'Approved', Receipt_Status__c = 'Cancelled'),
+            new Receipt__c(Booking__c = booking.Id, Amount_received__c = 9000,
+                Receipt_Date__c = Date.newInstance(2026, 11, 18), Receipt_Type__c = 'Installment Payment',
+                Approval_Status__c = 'Pending')
+        };
+        NOC__c noc = new NOC__c(Booking__c = booking.Id, NOC_Type__c = 'Capri NOC');
+        insert as system noc;
+
+        Test.startTest();
+        CapriNocPdfController controller = new CapriNocPdfController(new ApexPages.StandardController(noc));
+        Test.stopTest();
+
+        System.assertEquals(2, controller.receiptLineItems.size(), 'Approved receipts, blank or Received status');
+        System.assertEquals(600000, controller.totalReceived);
+        System.assertEquals(1400000, controller.balanceReceivable);
+        CapriNocPdfController.ReceiptRow first = controller.receiptLineItems[0];
+        System.assertEquals(500000, first.amount);
+        System.assertEquals('Cheque', first.mode);
+        System.assertEquals('45678678', first.reference);
+        System.assertEquals(Date.newInstance(2026, 11, 16), first.chequeDate);
+        System.assertEquals(Date.newInstance(2026, 11, 17), first.depositedDate);
+        System.assertEquals('Customer', controller.receiptLineItems[1].mode);
+        System.assertEquals('UTR1', controller.receiptLineItems[1].reference);
+    }
+
+    @isTest
     static void reportsMissingNocId() {
         CapriNocPdfController controller = new CapriNocPdfController(
             new ApexPages.StandardController(new NOC__c())

@@ -283,9 +283,11 @@ public with sharing class NOCController {
      *              NOC has been approved by the CRM Manager (BRD §7.40). The booking owner is
      *              intentionally not copied, consistent with the receipt-email rule.
      * @param nocId NOC to send
+     * @return the queued email job id for a Capri NOC (the NOC tab polls getNOCEmailJobStatus with
+     *         it); null for other NOC types, which are mailed immediately
      */
     @AuraEnabled
-    public static void sendNOC(Id nocId) {
+    public static Id sendNOC(Id nocId) {
         if (nocId == null) throw new AuraHandledException('NOC ID is required.');
 
         List<NOC__c> nocs = [
@@ -306,8 +308,7 @@ public with sharing class NOCController {
             // A Capri NOC is a request to Capri, not a mail to the applicant: it goes to the Capri
             // Email on the booking with the current unit's NOC plus one letter for every swap and
             // cancellation selected when it was raised (same mail as the button on the NOC record).
-            CapriNocApprovedEmailInvocable.sendNow(noc.Id);
-            return;
+            return CapriNocApprovedEmailInvocable.sendNow(noc.Id);
         }
         if (noc.Booking__r == null || String.isBlank(noc.Booking__r.Email__c)) {
             throw new AuraHandledException('No applicant email address on the booking.');
@@ -327,5 +328,38 @@ public with sharing class NOCController {
         }
 
         update new NOC__c(Id = noc.Id, Sent_Date__c = Date.today());
+        return null;
+    }
+
+    /** Progress of the queued Capri NOC email, polled by the NOC tab after Send. */
+    public class NOCEmailJobStatus {
+        @AuraEnabled public String status;
+        @AuraEnabled public String errorMessage;
+    }
+
+    /**
+     * @description Status of the email job returned by sendNOC. A null job id (non-Capri NOC, sent
+     *              immediately) or an unknown id is reported as Completed so the screen stops polling.
+     */
+    @AuraEnabled
+    public static NOCEmailJobStatus getNOCEmailJobStatus(Id jobId) {
+        NOCEmailJobStatus result = new NOCEmailJobStatus();
+        result.status = 'Completed';
+        if (jobId == null) return result;
+        List<AsyncApexJob> jobs = [
+            SELECT Status, ExtendedStatus, NumberOfErrors
+            FROM AsyncApexJob WHERE Id = :jobId LIMIT 1
+        ];
+        if (jobs.isEmpty()) return result;
+        result.status = jobs[0].Status;
+        if (jobs[0].Status == 'Completed' && jobs[0].NumberOfErrors > 0) {
+            result.status = 'Failed';
+        }
+        if (result.status == 'Failed' || result.status == 'Aborted') {
+            result.errorMessage = String.isNotBlank(jobs[0].ExtendedStatus)
+                ? jobs[0].ExtendedStatus
+                : 'The CAPRI NOC email job did not complete.';
+        }
+        return result;
     }
 }

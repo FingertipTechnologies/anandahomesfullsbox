@@ -5,11 +5,10 @@ import { refreshApex } from '@salesforce/apex';
 import getNOCContext from '@salesforce/apex/NOCController.getNOCContext';
 import createNOC from '@salesforce/apex/NOCController.createNOC';
 import sendNOC from '@salesforce/apex/NOCController.sendNOC';
+import getNOCEmailJobStatus from '@salesforce/apex/NOCController.getNOCEmailJobStatus';
 
 const NOC_TYPE_OPTIONS = [
-    { label: 'Capri NOC', value: 'Capri NOC' },
-    { label: 'Bank NOC', value: 'Bank NOC' },
-    { label: 'Society NOC', value: 'Society NOC' }
+    { label: 'Capri NOC', value: 'Capri NOC' }
 ];
 
 export default class NocGenerator extends NavigationMixin(LightningElement) {
@@ -155,8 +154,27 @@ export default class NocGenerator extends NavigationMixin(LightningElement) {
         const nocId = event.target.dataset.id;
         this.isLoading = true;
         try {
-            await sendNOC({ nocId });
-            this.showToast('Sent', 'NOC email is being sent.', 'success');
+            const jobId = await sendNOC({ nocId });
+            let jobStatus;
+            for (let attempt = 0; attempt < 30; attempt += 1) {
+                await new Promise((resolve) => window.setTimeout(resolve, 2000));
+                jobStatus = await getNOCEmailJobStatus({ jobId });
+                if (jobStatus.status === 'Completed') {
+                    break;
+                }
+                if (jobStatus.status === 'Failed' || jobStatus.status === 'Aborted') {
+                    throw new Error(jobStatus.errorMessage || 'The CAPRI NOC email job failed.');
+                }
+            }
+            if (!jobStatus || jobStatus.status !== 'Completed') {
+                this.showToast(
+                    'Email queued',
+                    'The CAPRI email is still processing. Refresh the NOC list shortly to confirm delivery.',
+                    'info'
+                );
+            } else {
+                this.showToast('Sent', 'CAPRI email sent with the applicable PDF attachments.', 'success');
+            }
             await refreshApex(this.wiredCtx);
         } catch (error) {
             this.showError(error);

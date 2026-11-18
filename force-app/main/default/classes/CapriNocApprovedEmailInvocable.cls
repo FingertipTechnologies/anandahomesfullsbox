@@ -184,14 +184,15 @@ public with sharing class CapriNocApprovedEmailInvocable {
      * is never sent automatically on approval.
      */
     @AuraEnabled
-    public static void sendNow(Id nocId) {
+    public static Id sendNow(Id nocId) {
         SendPreview preview = getSendPreview(nocId);
         if (String.isNotBlank(preview.blockedReason)) {
             AuraHandledException blocked = new AuraHandledException(preview.blockedReason);
             blocked.setMessage(preview.blockedReason);
             throw blocked;
         }
-        System.enqueueJob(new SendApprovedNocEmailQueueable(new List<Id>{ nocId }));
+        // The job id lets the NOC tab poll NOCController.getNOCEmailJobStatus until the mail is out.
+        return System.enqueueJob(new SendApprovedNocEmailQueueable(new List<Id>{ nocId }));
     }
 
     private static String buildFileName(String prefix, String unitNumber, Integer sequence) {

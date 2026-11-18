@@ -83,10 +83,19 @@ export default class FirstApplicantChange extends NavigationMixin(LightningEleme
 
     handleNewApplicant(event) { this.newApplicant = event.detail.value; }
     handleNewEmail(event) { this.newEmail = event.detail.value; }
-    handleNewMobile(event) { this.newMobile = event.detail.value; }
+    handleNewMobile(event) {
+        const mobile = event.detail.value.replace(/\D/g, '');
+        event.target.value = mobile;
+        this.newMobile = mobile;
+    }
     handleReason(event) { this.reason = event.detail.value; }
 
     async handleSubmit() {
+        const mobileInput = this.template.querySelector('[data-id="new-mobile"]');
+        if (mobileInput && !mobileInput.reportValidity()) {
+            return;
+        }
+
         this.isLoading = true;
         try {
             await createChange({

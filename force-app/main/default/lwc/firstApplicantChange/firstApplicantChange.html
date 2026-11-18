@@ -23,6 +23,8 @@
                     </div>
                     <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
                         <lightning-input type="tel" label="New Mobile" value={newMobile}
+                            data-id="new-mobile" pattern="[0-9]*"
+                            message-when-pattern-mismatch="Enter numbers only."
                             onchange={handleNewMobile}>
                         </lightning-input>
                     </div>

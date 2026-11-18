@@ -485,6 +485,34 @@ private class FinancialTransactionControllerTest {
     }
 
     @isTest
+    static void getPendingPaymentSchedules_includesTdsBalances() {
+        Booking__c b = fx_booking();
+        Payment_Schedule__c ps = fx_schedule(
+            b.Id, 'TDS-PREVIEW', 139658, 103106, 30460, 1
+        );
+        ps.TDS_Amount__c = 6092;
+        ps.TDS_Amount_Pending__c = 4000;
+        insert ps;
+
+        Test.startTest();
+        List<FinancialTransactionController.PaymentScheduleInfo> schedules =
+            FinancialTransactionController.getPendingPaymentSchedules(b.Id);
+        Test.stopTest();
+
+        FinancialTransactionController.PaymentScheduleInfo scheduleResult;
+        for (FinancialTransactionController.PaymentScheduleInfo schedule : schedules) {
+            if (schedule.scheduleId == ps.Id) {
+                scheduleResult = schedule;
+                break;
+            }
+        }
+
+        System.assertNotEquals(null, scheduleResult, 'The schedule should be returned.');
+        System.assertEquals(6092, scheduleResult.tdsAmount);
+        System.assertEquals(4000, scheduleResult.tdsPending);
+    }
+
+    @isTest
     static void getTransactionHistory_withRecords() {
         Booking__c b = [SELECT Id FROM Booking__c LIMIT 1];
         try {
@@ -766,10 +794,34 @@ private class FinancialTransactionControllerTest {
         FinancialTransactionController.ReceiptWrapper w = new FinancialTransactionController.ReceiptWrapper();
         w.bookingId = b.Id; w.receiptDate = Date.today(); w.amountReceived = 1000;
         w.tdsAmount = 100; w.paymentMode = 'NEFT';
+        w.paymentFrom = 'Customer';
         w.transactionNumber = 'TXN-TDS-' + Math.random();
         w.receiptType = 'TDS Payment';
         w.useAdvances = false; w.useCredits = false;
         try { FinancialTransactionController.createReceipt(JSON.serialize(w)); } catch (Exception e) { /* ok */ }
+    }
+
+    @isTest
+    static void createReceipt_rejectsBankTdsPayment() {
+        Booking__c b = [SELECT Id FROM Booking__c LIMIT 1];
+        FinancialTransactionController.ReceiptWrapper w =
+            new FinancialTransactionController.ReceiptWrapper();
+        w.bookingId = b.Id;
+        w.receiptDate = Date.today();
+        w.amountReceived = 100;
+        w.tdsAmount = 100;
+        w.paymentFrom = 'Bank';
+        w.receiptType = 'TDS Payment';
+        w.transactionNumber = 'TXN-BANK-TDS-' + Math.random();
+
+        Boolean rejected = false;
+        try {
+            FinancialTransactionController.createReceipt(JSON.serialize(w));
+        } catch (AuraHandledException e) {
+            rejected = true;
+        }
+        System.assertEquals(true, rejected,
+            'TDS receipts must use Customer as the payer.');
     }
 
     @isTest
@@ -1455,6 +1507,21 @@ private class FinancialTransactionControllerTest {
         return r;
     }
 
+    private static Receipt__c fx_source_receipt(
+        Id bookingId,
+        Decimal amount,
+        String txn,
+        String receiptType,
+        String paymentFrom
+    ) {
+        Receipt__c receipt = fx_receipt(
+            bookingId, amount, txn, receiptType, false, false, null
+        );
+        receipt.Payment_From__c = paymentFrom;
+        update receipt;
+        return receipt;
+    }
+
     private static Payment_Schedule__c fx_schedule(Id bookingId, String name,
             Decimal total, Decimal base, Decimal gst, Integer seq) {
         return new Payment_Schedule__c(
@@ -1565,6 +1632,8 @@ private class FinancialTransactionControllerTest {
             b.Id, 6092, 'TXN-TDS-ONLY', 'TDS Payment',
             false, false, null
         );
+        receipt.Payment_From__c = 'Customer';
+        update receipt;
         Test.startTest();
         FinancialTransactionController.allocateReceipt(receipt.Id);
         Test.stopTest();
@@ -1604,6 +1673,8 @@ private class FinancialTransactionControllerTest {
             fx_receipt(b.Id, 300, 'TXN-LEGACY-TDS', 'TDS Payment',
                 false, false, null)
         };
+        receipts[2].Payment_From__c = 'Customer';
+        update receipts[2];
 
         Test.startTest();
         for (Receipt__c receipt : receipts) {
@@ -1635,6 +1706,106 @@ private class FinancialTransactionControllerTest {
         System.assertEquals(0, tdsLine.Base_Amount__c);
         System.assertEquals(0, tdsLine.GST_Amount__c);
         System.assertEquals(300, tdsLine.TDS_Amount__c);
+    }
+
+    @isTest
+    static void allocateReceipt_legacySplitMatchesPaymentSourceAndComponent() {
+        Booking__c booking = [SELECT Id, Project__c FROM Booking__c LIMIT 1];
+        update new Project__c(
+            Id = booking.Project__c,
+            Legacy_Split_Demand_Receipt__c = true
+        );
+
+        Payment_Schedule__c schedule = fx_schedule(
+            booking.Id, 'LEGACY-SOURCE-SPLIT', 121000, 100000, 20000, 1
+        );
+        schedule.Payment_Schedule_Amount_Pending__c = 100000;
+        schedule.GST_Amount_Pending__c = 20000;
+        schedule.TDS_Amount__c = 1000;
+        schedule.TDS_Amount_Pending__c = 1000;
+        schedule.Bank_Flat_Amount__c = 40000;
+        schedule.Customer_Flat_Prorata__c = 60000;
+        schedule.Bank_GST_Amount__c = 8000;
+        schedule.Customer_GST_Prorata__c = 12000;
+        insert schedule;
+
+        Demands__c bankFlatDemand = new Demands__c(
+            Booking__c = booking.Id, Payment_Schedule__c = schedule.Id,
+            Demand_Component__c = 'Flat', Demand_Audience__c = 'Bank',
+            Demand_Type__c = 'Bank Demand', Demand_Amount__c = 40400,
+            Pending_Amount__c = 40400, TDS_Amount__c = 400, Status__c = 'Raised',
+            Demand_Date__c = Date.today(), Due_Date__c = Date.today()
+        );
+        Demands__c customerFlatDemand = new Demands__c(
+            Booking__c = booking.Id, Payment_Schedule__c = schedule.Id,
+            Demand_Component__c = 'Flat', Demand_Audience__c = 'Customer',
+            Demand_Type__c = 'Individual Demand', Demand_Amount__c = 60600,
+            Pending_Amount__c = 60600, TDS_Amount__c = 600, Status__c = 'Raised',
+            Demand_Date__c = Date.today(), Due_Date__c = Date.today()
+        );
+        Demands__c bankGstDemand = new Demands__c(
+            Booking__c = booking.Id, Payment_Schedule__c = schedule.Id,
+            Demand_Component__c = 'GST', Demand_Audience__c = 'Bank',
+            Demand_Type__c = 'Bank Demand', Demand_Amount__c = 8000,
+            Pending_Amount__c = 8000, Status__c = 'Raised',
+            Demand_Date__c = Date.today(), Due_Date__c = Date.today()
+        );
+        Demands__c customerGstDemand = new Demands__c(
+            Booking__c = booking.Id, Payment_Schedule__c = schedule.Id,
+            Demand_Component__c = 'GST', Demand_Audience__c = 'Customer',
+            Demand_Type__c = 'Individual Demand', Demand_Amount__c = 12000,
+            Pending_Amount__c = 12000, Status__c = 'Raised',
+            Demand_Date__c = Date.today(), Due_Date__c = Date.today()
+        );
+        insert new List<Demands__c>{
+            bankFlatDemand, customerFlatDemand, bankGstDemand, customerGstDemand
+        };
+
+        List<Receipt__c> receipts = new List<Receipt__c>{
+            fx_source_receipt(booking.Id, 10000, 'TXN-SPLIT-BANK-FLAT', 'Installment Payment', 'Bank'),
+            fx_source_receipt(booking.Id, 20000, 'TXN-SPLIT-CUSTOMER-FLAT', 'Installment Payment', 'Customer'),
+            fx_source_receipt(booking.Id, 3000, 'TXN-SPLIT-BANK-GST', 'GST Amount', 'Bank'),
+            fx_source_receipt(booking.Id, 4000, 'TXN-SPLIT-CUSTOMER-GST', 'GST Amount', 'Customer'),
+            fx_source_receipt(booking.Id, 700, 'TXN-SPLIT-CUSTOMER-TDS', 'TDS Payment', 'Customer')
+        };
+
+        Test.startTest();
+        for (Receipt__c receipt : receipts) {
+            FinancialTransactionController.allocateReceipt(receipt.Id);
+        }
+        Test.stopTest();
+
+        Set<Id> receiptIds = new Map<Id, Receipt__c>(receipts).keySet();
+        Map<Id, Receipt_Line_Item__c> lineByReceipt = new Map<Id, Receipt_Line_Item__c>();
+        for (Receipt_Line_Item__c lineItem : [
+            SELECT Receipt__c, Demand__c, Allocated_Amount__c,
+                   Base_Amount__c, GST_Amount__c, TDS_Amount__c
+            FROM Receipt_Line_Item__c
+            WHERE Receipt__c IN :receiptIds
+        ]) {
+            lineByReceipt.put(lineItem.Receipt__c, lineItem);
+        }
+
+        System.assertEquals(bankFlatDemand.Id, lineByReceipt.get(receipts[0].Id).Demand__c);
+        System.assertEquals(10000, lineByReceipt.get(receipts[0].Id).Base_Amount__c);
+        System.assertEquals(customerFlatDemand.Id, lineByReceipt.get(receipts[1].Id).Demand__c);
+        System.assertEquals(20000, lineByReceipt.get(receipts[1].Id).Base_Amount__c);
+        System.assertEquals(bankGstDemand.Id, lineByReceipt.get(receipts[2].Id).Demand__c);
+        System.assertEquals(3000, lineByReceipt.get(receipts[2].Id).GST_Amount__c);
+        System.assertEquals(customerGstDemand.Id, lineByReceipt.get(receipts[3].Id).Demand__c);
+        System.assertEquals(4000, lineByReceipt.get(receipts[3].Id).GST_Amount__c);
+        Map<Id, Decimal> tdsByDemand = new Map<Id, Decimal>();
+        for (Receipt_Line_Item__c tdsLine : [
+            SELECT Demand__c, TDS_Amount__c
+            FROM Receipt_Line_Item__c
+            WHERE Receipt__c = :receipts[4].Id
+        ]) {
+            tdsByDemand.put(tdsLine.Demand__c, tdsLine.TDS_Amount__c);
+        }
+        System.assertEquals(400, tdsByDemand.get(customerFlatDemand.Id),
+            'Customer-paid TDS must cover the Customer audience first.');
+        System.assertEquals(300, tdsByDemand.get(bankFlatDemand.Id),
+            'Any remaining Customer-paid TDS applies to the Bank audience second.');
     }
 
     @isTest

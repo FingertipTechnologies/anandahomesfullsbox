@@ -1,8 +1,12 @@
 public with sharing class BulkDemandController {
 
-    // Funding types that carry a per-milestone Bank/Customer prorata split (BRD §8.1).
+    // Keep this aligned with PaymentScheduleViewController's split funding types.
     private static final Set<String> SPLIT_FUNDING_TYPES = new Set<String>{
         'Loan', 'Bank Loan', 'NBFC Loan', 'Mixed Funding', 'Prorata', 'Partial'
+    };
+
+    private static final Set<String> CUSTOMER_AUTO_DEMAND_FUNDING_TYPES = new Set<String>{
+        'Prorata', 'Partial'
     };
 
     // Only payment schedules whose own Status__c is Completed are eligible for a bulk demand.
@@ -294,7 +298,6 @@ public with sharing class BulkDemandController {
 
         Decimal cumPct = 0;
         for (Master_Payment_Schedule__c ms : milestones) {
-            if (ms.Payment_Type__c == DemandComponentService.TIME_BASED_PAYMENT_TYPE) continue;
             MasterMilestoneWrapper w = new MasterMilestoneWrapper();
             w.id = ms.Id;
             w.name = ms.Name;
@@ -347,9 +350,6 @@ public with sharing class BulkDemandController {
             throw new AuraHandledException('The selected milestone does not belong to this project.');
         }
         Master_Payment_Schedule__c selectedMilestone = selectedMilestones[0];
-        if (selectedMilestone.Payment_Type__c == DemandComponentService.TIME_BASED_PAYMENT_TYPE) {
-            throw new AuraHandledException('Time Based schedules cannot be raised as demands.');
-        }
 
         Decimal milestoneSequence = selectedMilestone.Sequence__c;
 
@@ -413,6 +413,19 @@ public with sharing class BulkDemandController {
             ORDER BY Sequence__c ASC
         ];
 
+        Set<Id> sourceSplitScheduleIds = new Set<Id>();
+        for (Payment_Schedule__c schedule : allSchedules) {
+            Boolean scheduleIsProrata =
+                schedule.Booking__r.Project__r.Legacy_Split_Demand_Receipt__c == true
+                && schedule.Booking__r.Funding_Type__c != null
+                && SPLIT_FUNDING_TYPES.contains(schedule.Booking__r.Funding_Type__c);
+            if (scheduleIsProrata && DemandComponentService.hasAudienceSplit(schedule)) {
+                sourceSplitScheduleIds.add(schedule.Id);
+            }
+        }
+        Map<Id, Map<String, DemandComponentService.ReceiptSourceTotals>> receiptTotalsBySchedule =
+            DemandComponentService.getReceiptSourceTotals(sourceSplitScheduleIds);
+
         // Group schedules by booking
         Map<Id, List<Payment_Schedule__c>> allByBooking = new Map<Id, List<Payment_Schedule__c>>();
         for (Payment_Schedule__c ps : allSchedules) {
@@ -453,13 +466,14 @@ public with sharing class BulkDemandController {
             Boolean hasBankSplitForBooking = false;
             if (isProrata) {
                 for (Payment_Schedule__c schedule : bookingSchedules) {
-                    if (nz(schedule.Bank_Flat_Amount__c) != 0
-                        || nz(schedule.Bank_GST_Amount__c) != 0) {
+                    if (hasBankSplit(schedule)) {
                         hasBankSplitForBooking = true;
                         break;
                     }
                 }
             }
+            Boolean customerAutoDemand = isCustomerAutoDemandFunding(booking);
+            if (customerAutoDemand && !hasBankSplitForBooking) continue;
             Boolean hasUnraisedDemand = false;
             // True only if THIS booking has an actual Payment_Schedule__c row (Status__c =
             // Completed, per the allSchedules query above) matching the milestone selected in
@@ -470,16 +484,18 @@ public with sharing class BulkDemandController {
             Decimal undemandedTdsCarryForward = 0;
 
             for (Payment_Schedule__c ps : bookingSchedules) {
-                if (DemandComponentService.isTimeBasedSchedule(ps)) continue;
                 Decimal pending = ps.Pending_Amount__c != null ? ps.Pending_Amount__c : 0;
                 Decimal interest = ps.Interest_Pending__c != null ? ps.Interest_Pending__c : 0;
                 Boolean isCurrentMilestone = (ps.Master_Payment_Schedule__c == masterPaymentScheduleId);
-                Boolean isBankSplit = isProrata
-                    && (nz(ps.Bank_Flat_Amount__c) != 0 || nz(ps.Bank_GST_Amount__c) != 0);
+                Boolean isBankSplit = isProrata && hasBankSplit(ps);
                 Boolean isBankDemand = isBankSplit;
+                Boolean sourceSpecificSchedule =
+                    isProrata && DemandComponentService.hasAudienceSplit(ps);
                 if (isProrata && !DemandComponentService.isFlatDemandedOnEitherSide(ps)) {
                     undemandedTdsCarryForward +=
-                        DemandComponentService.undemandedTdsFromPaidFlat(ps);
+                        DemandComponentService.undemandedTdsFromPaidFlatByAudience(
+                            ps, true, sourceSpecificSchedule, receiptTotalsBySchedule
+                        );
                 }
                 Boolean isDemandNotRaised = !DemandComponentService.isComponentRaised(
                     ps, demandComponent, isBankDemand
@@ -498,6 +514,7 @@ public with sharing class BulkDemandController {
                     // so counting them here too would double-count them in the net.
                     w.previousMilestonesAmount += pending;
                 }
+                if (customerAutoDemand && !isBankDemand) continue;
                 if (isProrata && hasBankSplitForBooking && !isBankDemand) continue;
 
                 // Only schedules whose selected component hasn't been raised count toward the amounts
@@ -509,15 +526,25 @@ public with sharing class BulkDemandController {
                 if (isDemandNotRaised) {
                     // Raise only the selected Flat or GST component, using the Bank amount when
                     // the schedule has a split and the schedule amount otherwise.
-                    Decimal demandable = DemandComponentService.amount(ps, demandComponent, isBankDemand);
+                    Decimal demandable = DemandComponentService.amountByAudience(
+                        ps,
+                        demandComponent,
+                        isBankDemand,
+                        sourceSpecificSchedule,
+                        receiptTotalsBySchedule
+                    );
                     if (demandable <= 0) continue;
-                    Decimal tdsDemandable = DemandComponentService.includesFlat(demandComponent) && !isBankDemand
-                        ? nz(ps.TDS_Amount_Pending__c) : 0;
+                    Decimal tdsDemandable = DemandComponentService.includesFlat(demandComponent)
+                        ? DemandComponentService.tdsAmountByAudience(
+                            ps,
+                            isBankDemand,
+                            sourceSpecificSchedule,
+                            receiptTotalsBySchedule
+                        )
+                        : 0;
                     if (isProrata && isBankDemand
                         && DemandComponentService.includesFlat(demandComponent)) {
-                        tdsDemandable = (demandable * 0.01)
-                            .setScale(2, System.RoundingMode.HALF_UP)
-                            + undemandedTdsCarryForward;
+                        tdsDemandable += undemandedTdsCarryForward;
                         demandable += undemandedTdsCarryForward;
                         undemandedTdsCarryForward = 0;
                     }
@@ -640,6 +667,19 @@ public with sharing class BulkDemandController {
             ORDER BY Booking__r.Name ASC, Sequence__c ASC
         ];
 
+        Set<Id> sourceSplitScheduleIds = new Set<Id>();
+        for (Payment_Schedule__c schedule : schedules) {
+            Boolean scheduleIsProrata =
+                schedule.Booking__r.Project__r.Legacy_Split_Demand_Receipt__c == true
+                && schedule.Booking__r.Funding_Type__c != null
+                && SPLIT_FUNDING_TYPES.contains(schedule.Booking__r.Funding_Type__c);
+            if (scheduleIsProrata && DemandComponentService.hasAudienceSplit(schedule)) {
+                sourceSplitScheduleIds.add(schedule.Id);
+            }
+        }
+        Map<Id, Map<String, DemandComponentService.ReceiptSourceTotals>> receiptTotalsBySchedule =
+            DemandComponentService.getReceiptSourceTotals(sourceSplitScheduleIds);
+
         // Group by booking
         Map<Id, BookingDemandWrapper> wrapperMap = new Map<Id, BookingDemandWrapper>();
         Map<Id, Decimal> undemandedTdsCarryForwardByBooking = new Map<Id, Decimal>();
@@ -655,7 +695,7 @@ public with sharing class BulkDemandController {
         }
 
         for (Payment_Schedule__c ps : schedules) {
-            if (DemandComponentService.isTimeBasedSchedule(ps)) continue;
+            if (isCustomerAutoDemandFunding(ps.Booking__r) && !hasBankSplit(ps)) continue;
             Id bookingId = ps.Booking__c;
 
             if (!wrapperMap.containsKey(bookingId)) {
@@ -680,34 +720,46 @@ public with sharing class BulkDemandController {
             BookingDemandWrapper w = wrapperMap.get(bookingId);
             Decimal interest = ps.Interest_Pending__c != null ? ps.Interest_Pending__c : 0;
 
-            // Same rule as the Apartment flow and the individual Raise Demand view: Bank Flat +
-            // Bank GST only when a real split exists, otherwise the full pending amount as
-            // Customer. Total Pending / Net Demand derive from this single figure so they
-            // always sum to Bank Payable + Customer Payable.
+            // Loan and other split funding use Bank amounts when present and otherwise fall
+            // back to Customer. Legacy Prorata/Partial without Bank splits were skipped above.
             Boolean isProrata = ps.Booking__r.Project__r.Legacy_Split_Demand_Receipt__c == true
                 && ps.Booking__r.Funding_Type__c != null
                 && SPLIT_FUNDING_TYPES.contains(ps.Booking__r.Funding_Type__c);
             Boolean thisIsBank = isProrata
                 && (nz(ps.Bank_Flat_Amount__c) != 0 || nz(ps.Bank_GST_Amount__c) != 0);
+            Boolean sourceSpecificSchedule =
+                isProrata && DemandComponentService.hasAudienceSplit(ps);
             Decimal undemandedTdsCarryForward =
                 undemandedTdsCarryForwardByBooking.containsKey(bookingId)
                     ? undemandedTdsCarryForwardByBooking.get(bookingId) : 0;
             if (isProrata && !DemandComponentService.isFlatDemandedOnEitherSide(ps)) {
                 undemandedTdsCarryForward +=
-                    DemandComponentService.undemandedTdsFromPaidFlat(ps);
+                    DemandComponentService.undemandedTdsFromPaidFlatByAudience(
+                        ps, true, sourceSpecificSchedule, receiptTotalsBySchedule
+                    );
                 undemandedTdsCarryForwardByBooking.put(bookingId, undemandedTdsCarryForward);
             }
             if (isProrata && bookingsWithBankSplit.contains(bookingId) && !thisIsBank) continue;
             if (DemandComponentService.isComponentRaised(ps, demandComponent, thisIsBank)) continue;
-            Decimal demandable = DemandComponentService.amount(ps, demandComponent, thisIsBank);
+            Decimal demandable = DemandComponentService.amountByAudience(
+                ps,
+                demandComponent,
+                thisIsBank,
+                sourceSpecificSchedule,
+                receiptTotalsBySchedule
+            );
             if (demandable <= 0) continue;
-            Decimal tdsDemandable = DemandComponentService.includesFlat(demandComponent) && !thisIsBank
-                ? nz(ps.TDS_Amount_Pending__c) : 0;
+            Decimal tdsDemandable = DemandComponentService.includesFlat(demandComponent)
+                ? DemandComponentService.tdsAmountByAudience(
+                    ps,
+                    thisIsBank,
+                    sourceSpecificSchedule,
+                    receiptTotalsBySchedule
+                )
+                : 0;
             if (isProrata && thisIsBank
                 && DemandComponentService.includesFlat(demandComponent)) {
-                tdsDemandable = (demandable * 0.01)
-                    .setScale(2, System.RoundingMode.HALF_UP)
-                    + undemandedTdsCarryForward;
+                tdsDemandable += undemandedTdsCarryForward;
                 demandable += undemandedTdsCarryForward;
                 undemandedTdsCarryForwardByBooking.put(bookingId, 0);
             }
@@ -822,10 +874,6 @@ public with sharing class BulkDemandController {
                 if (selectedMilestones.isEmpty()) {
                     throw new AuraHandledException('The selected milestone does not belong to this project.');
                 }
-                if (selectedMilestones[0].Payment_Type__c
-                    == DemandComponentService.TIME_BASED_PAYMENT_TYPE) {
-                    throw new AuraHandledException('Time Based schedules cannot be raised as demands.');
-                }
                 selectedTowerMilestone = selectedMilestones[0];
             }
 
@@ -872,8 +920,8 @@ public with sharing class BulkDemandController {
             }
 
             // Gather the milestone payment-schedule splits so each Demand can be filled with the
-            // Base / GST / TDS amounts, and Prorata/Partial bookings demand only the Bank portion
-            // (the customer side is reminded via the Master Payment Schedule forecast, BRD §8.5).
+            // Base / GST / TDS amounts. Legacy Prorata/Partial bookings demand only the Bank
+            // split here; their Customer portion is created through Auto Demand.
             // Sequence__c is also pulled so the demand can link to the latest (highest-sequence)
             // schedule included in it, matching the individual Raise Demand flow. Status__c is
             // pulled so a schedule that is no longer Completed can be rejected server-side.
@@ -906,6 +954,15 @@ public with sharing class BulkDemandController {
                            Master_Payment_Schedule__r.Payment_Type__c
                     FROM Payment_Schedule__c WHERE Id IN :allScheduleIds
                 ]);
+            Set<Id> sourceSplitScheduleIds = new Set<Id>();
+            for (Payment_Schedule__c schedule : scheduleMap.values()) {
+                if (isSplitFunding(bookingMap.get(schedule.Booking__c))
+                    && DemandComponentService.hasAudienceSplit(schedule)) {
+                    sourceSplitScheduleIds.add(schedule.Id);
+                }
+            }
+            Map<Id, Map<String, DemandComponentService.ReceiptSourceTotals>> receiptTotalsBySchedule =
+                DemandComponentService.getReceiptSourceTotals(sourceSplitScheduleIds);
             Set<Id> demandScheduleIds = new Set<Id>();
             for (BookingDemandItem item : request.bookings) {
                 if (item.scheduleIds == null) continue;
@@ -921,8 +978,12 @@ public with sharing class BulkDemandController {
                         && !DemandComponentService.isComponentRaised(
                             schedule, request.demandComponent, scheduleIsBank
                         )
-                        && DemandComponentService.amount(
-                            schedule, request.demandComponent, scheduleIsBank
+                        && DemandComponentService.amountByAudience(
+                            schedule,
+                            request.demandComponent,
+                            scheduleIsBank,
+                            isSplitFunding(booking) && DemandComponentService.hasAudienceSplit(schedule),
+                            receiptTotalsBySchedule
                         ) > 0) {
                         demandScheduleIds.add(scheduleId);
                     }
@@ -942,9 +1003,11 @@ public with sharing class BulkDemandController {
                                 'One or more selected payment schedules do not belong to the selected booking.'
                             );
                         }
-                        if (DemandComponentService.isTimeBasedSchedule(schedule)) {
+                        if (isCustomerAutoDemandFunding(bookingMap.get(item.bookingId))
+                            && !hasBankSplit(schedule)) {
                             throw new AuraHandledException(
-                                'Time Based schedules cannot be raised as demands.'
+                                'Bulk Demand can raise only Bank-split schedules for Prorata and Partial bookings. '
+                                + 'The Customer portion is handled by Auto Demand.'
                             );
                         }
                     }
@@ -956,9 +1019,11 @@ public with sharing class BulkDemandController {
                             'The selected milestone schedule does not belong to the selected booking.'
                         );
                     }
-                    if (DemandComponentService.isTimeBasedSchedule(currentSchedule)) {
+                    if (isCustomerAutoDemandFunding(bookingMap.get(item.bookingId))
+                        && !hasBankSplit(currentSchedule)) {
                         throw new AuraHandledException(
-                            'Time Based schedules cannot be raised as demands.'
+                            'Bulk Demand can raise only Bank-split schedules for Prorata and Partial bookings. '
+                            + 'The Customer portion is handled by Auto Demand.'
                         );
                     }
                 }
@@ -1033,8 +1098,13 @@ public with sharing class BulkDemandController {
                             alreadyRaised++;
                         } else if (ps != null && ps.Status__c != SCHEDULE_STATUS_COMPLETED) {
                             notCompleted++;
-                        } else if (ps != null && DemandComponentService.amount(
-                                ps, request.demandComponent, scheduleIsBank
+                        } else if (ps != null && DemandComponentService.amountByAudience(
+                                ps,
+                                request.demandComponent,
+                                scheduleIsBank,
+                                isSplitFunding(bookingMap.get(item.bookingId))
+                                    && DemandComponentService.hasAudienceSplit(ps),
+                                receiptTotalsBySchedule
                             ) <= 0) {
                             noComponentAmount++;
                         } else {
@@ -1094,9 +1164,9 @@ public with sharing class BulkDemandController {
                 Boolean isProrata = isSplitFunding(booking);
 
                 Decimal baseAmt = 0, gstAmt = 0, tdsAmt = 0;
-                // True only when at least one schedule carries a real Bank/Customer prorata
-                // split. If a Prorata/Partial schedule was never split, its Bank amounts are 0,
-                // which previously produced a ₹0 demand — we fall back to the pending amounts.
+                // True only when at least one selected schedule has a real Bank split. Loan
+                // bookings without one use pending customer amounts; Legacy Prorata/Partial
+                // schedules without a Bank split were rejected during request validation.
                 Boolean hasBankSplit = false;
                 Map<Id, Boolean> scheduleIsBank = new Map<Id, Boolean>();
                 Id latestScheduleId;        // schedule with the highest Sequence__c in this item
@@ -1119,21 +1189,32 @@ public with sharing class BulkDemandController {
                         Decimal scheduleBaseAmount = 0;
                         Decimal scheduleGstAmount = 0;
                         Decimal scheduleTdsAmount = 0;
-                        Decimal bankFlat = DemandComponentService.amount(
-                            ps, DemandComponentService.FLAT, true
+                        Boolean sourceSpecificSchedule =
+                            isProrata && DemandComponentService.hasAudienceSplit(ps);
+                        Decimal bankFlat = DemandComponentService.amountByAudience(
+                            ps,
+                            DemandComponentService.FLAT,
+                            true,
+                            sourceSpecificSchedule,
+                            receiptTotalsBySchedule
                         );
-                        Decimal bankGst = DemandComponentService.amount(
-                            ps, DemandComponentService.GST, true
+                        Decimal bankGst = DemandComponentService.amountByAudience(
+                            ps,
+                            DemandComponentService.GST,
+                            true,
+                            sourceSpecificSchedule,
+                            receiptTotalsBySchedule
                         );
-                        Boolean thisIsBank = isProrata && (bankFlat != 0 || bankGst != 0);
+                        Boolean thisIsBank = isProrata && hasBankSplit(ps);
                         scheduleIsBank.put(sid, thisIsBank);
 
                         if (isProrata && hasBankSplit && !thisIsBank) continue;
 
                         if (thisIsBank) {
                             if (DemandComponentService.includesFlat(request.demandComponent)) {
-                                Decimal currentTds = (bankFlat * 0.01)
-                                    .setScale(2, System.RoundingMode.HALF_UP);
+                                Decimal currentTds = DemandComponentService.tdsAmountByAudience(
+                                    ps, true, sourceSpecificSchedule, receiptTotalsBySchedule
+                                );
                                 Decimal carryForward =
                                     carryForwardAllocation.amountByDemandSchedule.containsKey(sid)
                                         ? carryForwardAllocation.amountByDemandSchedule.get(sid) : 0;
@@ -1143,14 +1224,33 @@ public with sharing class BulkDemandController {
                             else                             scheduleGstAmount = bankGst;
                         } else {
                             if (request.demandComponent == DemandComponentService.FLAT) {
-                                scheduleBaseAmount = nz(ps.Payment_Schedule_Amount_Pending__c);
+                                scheduleTdsAmount = DemandComponentService.tdsAmountByAudience(
+                                    ps, false, sourceSpecificSchedule, receiptTotalsBySchedule
+                                );
+                                scheduleBaseAmount = Math.max(
+                                    0,
+                                    DemandComponentService.amountByAudience(
+                                        ps,
+                                        DemandComponentService.FLAT,
+                                        false,
+                                        sourceSpecificSchedule,
+                                        receiptTotalsBySchedule
+                                    ) - scheduleTdsAmount
+                                );
                             } else if (request.demandComponent == DemandComponentService.GST) {
-                                scheduleGstAmount = nz(ps.GST_Amount_Pending__c);
+                                scheduleGstAmount = DemandComponentService.amountByAudience(
+                                    ps,
+                                    DemandComponentService.GST,
+                                    false,
+                                    sourceSpecificSchedule,
+                                    receiptTotalsBySchedule
+                                );
                             } else {
                                 scheduleBaseAmount = nz(ps.Payment_Schedule_Amount_Pending__c);
                                 scheduleGstAmount = nz(ps.GST_Amount_Pending__c);
                             }
-                            if (DemandComponentService.includesFlat(request.demandComponent)) {
+                            if (DemandComponentService.includesFlat(request.demandComponent)
+                                && request.demandComponent != DemandComponentService.FLAT) {
                                 scheduleTdsAmount = nz(ps.TDS_Amount_Pending__c);
                             }
                         }
@@ -1581,6 +1681,17 @@ public with sharing class BulkDemandController {
             && booking.Project__r.Legacy_Split_Demand_Receipt__c == true
             && booking.Funding_Type__c != null
             && SPLIT_FUNDING_TYPES.contains(booking.Funding_Type__c);
+    }
+
+    private static Boolean isCustomerAutoDemandFunding(Booking__c booking) {
+        return booking != null && booking.Project__r != null
+            && booking.Project__r.Legacy_Split_Demand_Receipt__c == true
+            && CUSTOMER_AUTO_DEMAND_FUNDING_TYPES.contains(booking.Funding_Type__c);
+    }
+
+    private static Boolean hasBankSplit(Payment_Schedule__c schedule) {
+        return schedule != null
+            && (nz(schedule.Bank_Flat_Amount__c) != 0 || nz(schedule.Bank_GST_Amount__c) != 0);
     }
 
     private static Decimal nz(Decimal value) {

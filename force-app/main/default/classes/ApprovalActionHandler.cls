@@ -2,7 +2,7 @@
  * @description Handles final approval/rejection actions based on configuration
  * Auto-detects which approval status changed and sends notifications
  */
-public with sharing class ApprovalActionHandler {
+public without sharing class ApprovalActionHandler {
 
     // ==================== CONSTANTS ====================
     private static final String SPECIAL_VALUE_TODAY = '$TODAY';

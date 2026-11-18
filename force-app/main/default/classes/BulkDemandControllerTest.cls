@@ -15,775 +15,1238 @@
  */
 @isTest
 private class BulkDemandControllerTest {
+  private static final String SCHEDULE_STATUS_COMPLETED = 'Completed';
 
-    private static final String SCHEDULE_STATUS_COMPLETED = 'Completed';
+  private static final String EMAIL_CUSTOMER = 'customer@example.com';
+  private static final String EMAIL_PRORATA = 'prorata@example.com';
+  private static final String EMAIL_PENDING = 'pending@example.com';
 
-    private static final String EMAIL_CUSTOMER = 'customer@example.com';
-    private static final String EMAIL_PRORATA  = 'prorata@example.com';
-    private static final String EMAIL_PENDING  = 'pending@example.com';
+  @testSetup
+  static void setup() {
+    try {
+      Booking__c booking = postSalesTestDataFactory.createFullBooking(
+        'Bulk Demand Project'
+      );
+      update new Project__c(
+        Id = booking.Project__c,
+        Legacy_Split_Demand_Receipt__c = true
+      );
+      // Marker so the non-prorata booking can be fetched deterministically.
+      booking.Email__c = EMAIL_CUSTOMER;
+      update booking;
 
-    @testSetup
-    static void setup() {
-        try {
-            Booking__c booking = postSalesTestDataFactory.createFullBooking('Bulk Demand Project');
-            update new Project__c(
-                Id = booking.Project__c,
-                Legacy_Split_Demand_Receipt__c = true
-            );
-            // Marker so the non-prorata booking can be fetched deterministically.
-            booking.Email__c = EMAIL_CUSTOMER;
-            update booking;
+      Master_Payment_Schedule__c milestone = new Master_Payment_Schedule__c(
+        Project__c = booking.Project__c,
+        Name = 'Milestone 1',
+        Sequence__c = 1,
+        Percentage__c = 50,
+        Status__c = 'Completed',
+        Is_Active__c = true
+      );
+      insert milestone;
 
-            Master_Payment_Schedule__c milestone = new Master_Payment_Schedule__c(
-                Project__c = booking.Project__c,
-                Name = 'Milestone 1',
-                Sequence__c = 1,
-                Percentage__c = 50,
-                Status__c = 'Completed',
-                Is_Active__c = true
-            );
-            insert milestone;
+      // Customer-side schedule (no bank split), COMPLETED -> eligible for demand.
+      insert new Payment_Schedule__c(
+        Booking__c = booking.Id,
+        Master_Payment_Schedule__c = milestone.Id,
+        Sequence__c = 1,
+        S_No__c = 1,
+        Milestone_Name__c = 'Milestone 1',
+        Amount__c = 525000,
+        Pending_Amount__c = 525000,
+        Payment_Schedule_Amount_Pending__c = 500000,
+        GST_Amount_Pending__c = 25000,
+        Interest_Pending__c = 1000,
+        Demand_Raised__c = false,
+        Status__c = SCHEDULE_STATUS_COMPLETED,
+        Due_Date__c = Date.today()
+      );
 
-            // Customer-side schedule (no bank split), COMPLETED -> eligible for demand.
-            insert new Payment_Schedule__c(
-                Booking__c = booking.Id,
-                Master_Payment_Schedule__c = milestone.Id,
-                Sequence__c = 1, S_No__c = 1,
-                Milestone_Name__c = 'Milestone 1',
-                Amount__c = 525000, Pending_Amount__c = 525000,
-                Payment_Schedule_Amount_Pending__c = 500000,
-                GST_Amount_Pending__c = 25000,
-                Interest_Pending__c = 1000,
-                Demand_Raised__c = false,
-                Status__c = SCHEDULE_STATUS_COMPLETED, Due_Date__c = Date.today()
-            );
+      // A second, Prorata-funded booking on the SAME project with a real Bank split,
+      // to drive every isBankPayable / Bank Demand branch.
+      Plot__c plot2 = new Plot__c(
+        Project__c = booking.Project__c,
+        Unit_Type__c = 'Apartment',
+        Status__c = 'Booked'
+      );
+      insert plot2;
+      Booking__c prorataBooking = new Booking__c(
+        Project__c = booking.Project__c,
+        Plot__c = plot2.Id,
+        Booking_Date__c = Date.today(),
+        Status__c = 'Booked',
+        Funding_Type__c = 'Prorata',
+        Email__c = EMAIL_PRORATA
+      );
+      insert prorataBooking;
+      // The booking flow generates schedules from the project's master rows; these tests
+      // use only the single schedule built by hand below.
+      delete [
+        SELECT Id
+        FROM Payment_Schedule__c
+        WHERE Booking__c = :prorataBooking.Id
+      ];
 
-            // A second, Prorata-funded booking on the SAME project with a real Bank split,
-            // to drive every isBankPayable / Bank Demand branch.
-            Plot__c plot2 = new Plot__c(
-                Project__c = booking.Project__c, Unit_Type__c = 'Apartment', Status__c = 'Booked'
-            );
-            insert plot2;
-            Booking__c prorataBooking = new Booking__c(
-                Project__c = booking.Project__c, Plot__c = plot2.Id,
-                Booking_Date__c = Date.today(), Status__c = 'Booked',
-                Funding_Type__c = 'Prorata', Email__c = EMAIL_PRORATA
-            );
-            insert prorataBooking;
-            // The booking flow generates schedules from the project's master rows; these tests
-            // use only the single schedule built by hand below.
-            delete [SELECT Id FROM Payment_Schedule__c WHERE Booking__c = :prorataBooking.Id];
+      insert new Payment_Schedule__c(
+        Booking__c = prorataBooking.Id,
+        Master_Payment_Schedule__c = milestone.Id,
+        Sequence__c = 1,
+        S_No__c = 1,
+        Milestone_Name__c = 'Milestone 1',
+        Amount__c = 300000,
+        Pending_Amount__c = 300000,
+        Payment_Schedule_Amount_Pending__c = 280000,
+        GST_Amount_Pending__c = 20000,
+        Bank_Flat_Amount__c = 200000,
+        Bank_GST_Amount__c = 10000, // real bank split
+        Interest_Pending__c = 0,
+        Demand_Raised__c = false,
+        Status__c = SCHEDULE_STATUS_COMPLETED,
+        Due_Date__c = Date.today()
+      );
 
-            insert new Payment_Schedule__c(
-                Booking__c = prorataBooking.Id,
-                Master_Payment_Schedule__c = milestone.Id,
-                Sequence__c = 1, S_No__c = 1,
-                Milestone_Name__c = 'Milestone 1',
-                Amount__c = 300000, Pending_Amount__c = 300000,
-                Payment_Schedule_Amount_Pending__c = 280000,
-                GST_Amount_Pending__c = 20000,
-                Bank_Flat_Amount__c = 200000, Bank_GST_Amount__c = 10000, // real bank split
-                Interest_Pending__c = 0,
-                Demand_Raised__c = false,
-                Status__c = SCHEDULE_STATUS_COMPLETED, Due_Date__c = Date.today()
-            );
+      // A third booking whose schedule is NOT completed. Everything else about it looks
+      // demandable (pending > 0, demand not raised) so the only reason it can be excluded
+      // is the Status__c filter.
+      Plot__c plot3 = new Plot__c(
+        Project__c = booking.Project__c,
+        Unit_Type__c = 'Apartment',
+        Status__c = 'Booked'
+      );
+      insert plot3;
+      Booking__c pendingBooking = new Booking__c(
+        Project__c = booking.Project__c,
+        Plot__c = plot3.Id,
+        Booking_Date__c = Date.today(),
+        Status__c = 'Booked',
+        Email__c = EMAIL_PENDING
+      );
+      insert pendingBooking;
+      // The booking flow generates schedules from the project's master rows; these tests
+      // use only the single schedule built by hand below.
+      delete [
+        SELECT Id
+        FROM Payment_Schedule__c
+        WHERE Booking__c = :pendingBooking.Id
+      ];
 
-            // A third booking whose schedule is NOT completed. Everything else about it looks
-            // demandable (pending > 0, demand not raised) so the only reason it can be excluded
-            // is the Status__c filter.
-            Plot__c plot3 = new Plot__c(
-                Project__c = booking.Project__c, Unit_Type__c = 'Apartment', Status__c = 'Booked'
-            );
-            insert plot3;
-            Booking__c pendingBooking = new Booking__c(
-                Project__c = booking.Project__c, Plot__c = plot3.Id,
-                Booking_Date__c = Date.today(), Status__c = 'Booked',
-                Email__c = EMAIL_PENDING
-            );
-            insert pendingBooking;
-            // The booking flow generates schedules from the project's master rows; these tests
-            // use only the single schedule built by hand below.
-            delete [SELECT Id FROM Payment_Schedule__c WHERE Booking__c = :pendingBooking.Id];
+      insert new Payment_Schedule__c(
+        Booking__c = pendingBooking.Id,
+        Master_Payment_Schedule__c = milestone.Id,
+        Sequence__c = 1,
+        S_No__c = 1,
+        Milestone_Name__c = 'Milestone 1',
+        Amount__c = 400000,
+        Pending_Amount__c = 400000,
+        Payment_Schedule_Amount_Pending__c = 380000,
+        GST_Amount_Pending__c = 20000,
+        Interest_Pending__c = 0,
+        Demand_Raised__c = false,
+        Status__c = 'Pending',
+        Due_Date__c = Date.today() // NOT completed
+      );
+    } catch (Exception e) {
+      System.debug('setup tolerated: ' + e.getMessage());
+    }
+  }
 
-            insert new Payment_Schedule__c(
-                Booking__c = pendingBooking.Id,
-                Master_Payment_Schedule__c = milestone.Id,
-                Sequence__c = 1, S_No__c = 1,
-                Milestone_Name__c = 'Milestone 1',
-                Amount__c = 400000, Pending_Amount__c = 400000,
-                Payment_Schedule_Amount_Pending__c = 380000,
-                GST_Amount_Pending__c = 20000,
-                Interest_Pending__c = 0,
-                Demand_Raised__c = false,
-                Status__c = 'Pending', Due_Date__c = Date.today()   // NOT completed
-            );
-        } catch (Exception e) {
-            System.debug('setup tolerated: ' + e.getMessage());
-        }
+  // ============================ helpers ============================
+
+  private static Project__c oneProject() {
+    List<Project__c> ps = [SELECT Id FROM Project__c LIMIT 1];
+    return ps.isEmpty() ? null : ps[0];
+  }
+
+  private static Booking__c bookingByEmail(String email) {
+    List<Booking__c> bs = [
+      SELECT Id, Email__c, Project__c, Plot__c
+      FROM Booking__c
+      WHERE Email__c = :email
+      LIMIT 1
+    ];
+    return bs.isEmpty() ? null : bs[0];
+  }
+
+  private static Payment_Schedule__c scheduleFor(Id bookingId) {
+    List<Payment_Schedule__c> ps = [
+      SELECT Id, Status__c
+      FROM Payment_Schedule__c
+      WHERE Booking__c = :bookingId
+      ORDER BY Sequence__c ASC
+      LIMIT 1
+    ];
+    return ps.isEmpty() ? null : ps[0];
+  }
+
+  private static void insertSourceReceipt(
+    Id bookingId,
+    Id scheduleId,
+    String paymentFrom,
+    Decimal flatAmount,
+    Decimal gstAmount,
+    Decimal tdsAmount
+  ) {
+    Decimal totalAmount = flatAmount + gstAmount + tdsAmount;
+    Boolean previousReceiptBypass = ReceiptApprovalGateService.bypass;
+    ReceiptApprovalGateService.bypass = true;
+    Receipt__c receipt = new Receipt__c(
+      Booking__c = bookingId,
+      Amount_received__c = totalAmount,
+      Receipt_Date__c = Date.today(),
+      Receipt_Type__c = flatAmount > 0
+        ? 'Installment Payment'
+        : (gstAmount > 0 ? 'GST Amount' : 'TDS Payment'),
+      Payment_From__c = paymentFrom,
+      Status__c = 'Cleared',
+      Approval_Status__c = 'Approved'
+    );
+    try {
+      insert receipt;
+    } finally {
+      ReceiptApprovalGateService.bypass = previousReceiptBypass;
     }
 
-    // ============================ helpers ============================
+    insert new Receipt_Line_Item__c(
+      Receipt__c = receipt.Id,
+      Booking__c = bookingId,
+      Payment_Schedule__c = scheduleId,
+      Allocated_Amount__c = totalAmount,
+      Amount__c = totalAmount,
+      Allocation_Date__c = Date.today(),
+      Allocation_Type__c = 'Payment Schedule',
+      Line_Item_Type__c = 'Principal',
+      Base_Amount__c = flatAmount,
+      GST_Amount__c = gstAmount,
+      TDS_Amount__c = tdsAmount
+    );
+  }
 
-    private static Project__c oneProject() {
-        List<Project__c> ps = [SELECT Id FROM Project__c LIMIT 1];
-        return ps.isEmpty() ? null : ps[0];
-    }
+  private static Master_Payment_Schedule__c oneMilestone() {
+    List<Master_Payment_Schedule__c> ms = [
+      SELECT Id
+      FROM Master_Payment_Schedule__c
+      LIMIT 1
+    ];
+    return ms.isEmpty() ? null : ms[0];
+  }
 
-    private static Booking__c bookingByEmail(String email) {
-        List<Booking__c> bs = [
-            SELECT Id, Email__c, Project__c, Plot__c
-            FROM Booking__c WHERE Email__c = :email LIMIT 1
-        ];
-        return bs.isEmpty() ? null : bs[0];
-    }
+  // ============================ READ methods ============================
 
-    private static Payment_Schedule__c scheduleFor(Id bookingId) {
-        List<Payment_Schedule__c> ps = [
-            SELECT Id, Status__c FROM Payment_Schedule__c
-            WHERE Booking__c = :bookingId ORDER BY Sequence__c ASC LIMIT 1
-        ];
-        return ps.isEmpty() ? null : ps[0];
-    }
+  @isTest
+  static void getProjects_returnsList() {
+    Test.startTest();
+    List<Project__c> projects = BulkDemandController.getProjects();
+    Test.stopTest();
+    System.debug('Projects: ' + projects.size());
+  }
 
-    private static Master_Payment_Schedule__c oneMilestone() {
-        List<Master_Payment_Schedule__c> ms = [SELECT Id FROM Master_Payment_Schedule__c LIMIT 1];
-        return ms.isEmpty() ? null : ms[0];
-    }
-
-    // ============================ READ methods ============================
-
-    @isTest
-    static void getProjects_returnsList() {
-        Test.startTest();
-        List<Project__c> projects = BulkDemandController.getProjects();
-        Test.stopTest();
-        System.debug('Projects: ' + projects.size());
-    }
-
-    @isTest
-    static void getProjectContext_returnsProject() {
-        Project__c p = oneProject();
-        try {
-            if (p != null) {
-                BulkDemandController.ProjectContextWrapper w =
-                    BulkDemandController.getProjectContext(p.Id);
-                System.debug('Context: ' + w.projectName);
-            }
-        } catch (Exception e) { System.debug(e.getMessage()); }
-    }
-
-    @isTest
-    static void getProjectContext_invalid_throws() {
-        try {
-            BulkDemandController.getProjectContext(null);
-        } catch (Exception e) { System.debug('Expected: ' + e.getMessage()); }
-    }
-
-    @isTest
-    static void getCompletedMilestones_returnsListWithDemandFlags() {
-        Project__c p = oneProject();
-        try {
-            if (p != null) {
-                List<BulkDemandController.MasterMilestoneWrapper> ms =
-                    BulkDemandController.getCompletedMilestones(p.Id, null);
-                System.debug('Milestones: ' + ms.size());
-            }
-        } catch (Exception e) { System.debug(e.getMessage()); }
-    }
-
-    @isTest
-    static void towerSelectionFiltersMilestonesAndBookings() {
-        Booking__c bookingA = bookingByEmail(EMAIL_CUSTOMER);
-        System.assertNotEquals(null, bookingA, 'Tower A fixture booking must exist');
-
-        Project__c project = [SELECT Id FROM Project__c WHERE Id = :bookingA.Project__c];
-        Block__c towerA = new Block__c(Name = 'Tower A', Project__c = project.Id);
-        Block__c towerB = new Block__c(Name = 'Tower B', Project__c = project.Id);
-        insert new List<Block__c>{ towerA, towerB };
-
-        Plot__c plotA = [SELECT Id, Block1__c FROM Plot__c WHERE Id = :bookingA.Plot__c];
-        plotA.Block1__c = towerA.Id;
-        update plotA;
-
-        Master_Payment_Schedule__c milestoneA = new Master_Payment_Schedule__c(
-            Project__c = project.Id, Name = 'Tower A Milestone',
-            Sequence__c = 1, Percentage__c = 50,
-            Status__c = 'Completed', Is_Active__c = true
+  @isTest
+  static void getProjectContext_returnsProject() {
+    Project__c p = oneProject();
+    try {
+      if (p != null) {
+        BulkDemandController.ProjectContextWrapper w = BulkDemandController.getProjectContext(
+          p.Id
         );
-        insert milestoneA;
-
-        Payment_Schedule__c scheduleA = scheduleFor(bookingA.Id);
-        scheduleA.Master_Payment_Schedule__c = milestoneA.Id;
-        scheduleA.Status__c = SCHEDULE_STATUS_COMPLETED;
-        scheduleA.Demand_Raised__c = false;
-        update scheduleA;
-
-        Test.startTest();
-        List<BulkDemandController.TowerWrapper> towers =
-            BulkDemandController.getProjectTowers(project.Id);
-        List<BulkDemandController.MasterMilestoneWrapper> milestones =
-            BulkDemandController.getCompletedMilestones(project.Id, towerA.Id);
-        List<BulkDemandController.BookingDemandWrapper> bookings =
-            BulkDemandController.getBookingsForMilestone(
-                project.Id, towerA.Id, milestoneA.Id, 'Flat'
-            );
-        Test.stopTest();
-
-        System.assertEquals(2, towers.size(), 'Project tower selector should list both towers');
-        System.assertEquals(1, milestones.size(), 'Only milestones with schedules in Tower A should show');
-        System.assertEquals(milestoneA.Id, milestones[0].id);
-        System.assertEquals(1, bookings.size(), 'Only Tower A bookings should be returned');
-        System.assertEquals(bookingA.Id, bookings[0].bookingId);
+        System.debug('Context: ' + w.projectName);
+      }
+    } catch (Exception e) {
+      System.debug(e.getMessage());
     }
+  }
 
-    @isTest
-    static void getBookingsForMilestone_customerAndProrataBranches() {
-        Project__c p = oneProject();
-        Master_Payment_Schedule__c ms = oneMilestone();
-        try {
-            if (p != null && ms != null) {
-                List<BulkDemandController.BookingDemandWrapper> rows =
-                    BulkDemandController.getBookingsForMilestone(p.Id, null, ms.Id, 'Flat');
-                System.debug('Milestone bookings: ' + rows.size());
-                // Prorata booking exercises isBankPayable=true; customer booking the false side.
-            }
-        } catch (Exception e) { System.debug(e.getMessage()); }
+  @isTest
+  static void getProjectContext_invalid_throws() {
+    try {
+      BulkDemandController.getProjectContext(null);
+    } catch (Exception e) {
+      System.debug('Expected: ' + e.getMessage());
     }
+  }
 
-    /** Only bookings whose payment schedules are Completed may appear in the bulk demand list. */
-    @isTest
-    static void getBookingsForMilestone_excludesNonCompletedSchedules() {
-        Project__c p = oneProject();
-        Master_Payment_Schedule__c ms = oneMilestone();
-        Booking__c pendingBooking = bookingByEmail(EMAIL_PENDING);
-        Booking__c completedBooking = bookingByEmail(EMAIL_CUSTOMER);
-        if (p == null || ms == null || pendingBooking == null) return;
-
-        Test.startTest();
-        List<BulkDemandController.BookingDemandWrapper> rows;
-        try {
-            rows = BulkDemandController.getBookingsForMilestone(p.Id, null, ms.Id, 'Flat');
-        } catch (Exception e) { System.debug('Tolerated: ' + e.getMessage()); }
-        Test.stopTest();
-
-        if (rows == null) return;
-
-        Set<Id> returnedBookingIds = new Set<Id>();
-        for (BulkDemandController.BookingDemandWrapper w : rows) {
-            returnedBookingIds.add(w.bookingId);
-        }
-
-        System.assert(!returnedBookingIds.contains(pendingBooking.Id),
-            'A booking whose payment schedule is not Completed must not be listed for bulk demand');
-
-        if (completedBooking != null && !rows.isEmpty()) {
-            System.assert(returnedBookingIds.contains(completedBooking.Id),
-                'A booking with a Completed, undemanded schedule should still be listed');
-            for (BulkDemandController.BookingDemandWrapper row : rows) {
-                if (row.bookingId == completedBooking.Id) {
-                    System.assertEquals(500000, row.totalFlatAmount,
-                        'Bulk preview should show the Flat demand component separately.');
-                    System.assertEquals(0, row.totalGstAmount,
-                        'Flat-only demand should not be reported as GST.');
-                    System.assertEquals(0, row.totalTdsAmount,
-                        'Bulk preview should show TDS separately, including zero.');
-                }
-            }
-        }
-    }
-
-    @isTest
-    static void getIndividualCompletedSchedules_customerAndProrataBranches() {
-        Project__c p = oneProject();
-        try {
-            if (p != null) {
-                List<BulkDemandController.BookingDemandWrapper> rows =
-                    BulkDemandController.getIndividualCompletedSchedules(p.Id, 'Flat');
-                System.debug('Individual schedules: ' + rows.size());
-            }
-        } catch (Exception e) { System.debug(e.getMessage()); }
-    }
-
-    @isTest
-    static void getIndividualCompletedSchedules_excludesNonCompletedSchedules() {
-        Project__c p = oneProject();
-        Booking__c pendingBooking = bookingByEmail(EMAIL_PENDING);
-        if (p == null || pendingBooking == null) return;
-
-        Test.startTest();
-        List<BulkDemandController.BookingDemandWrapper> rows;
-        try {
-            rows = BulkDemandController.getIndividualCompletedSchedules(p.Id, 'Flat');
-        } catch (Exception e) { System.debug('Tolerated: ' + e.getMessage()); }
-        Test.stopTest();
-
-        if (rows == null) return;
-        for (BulkDemandController.BookingDemandWrapper w : rows) {
-            System.assertNotEquals(pendingBooking.Id, w.bookingId,
-                'Non-completed schedules must not surface in the individual completed list');
-        }
-    }
-
-    // ============================ createBulkDemands: success paths ============================
-
-    /** Customer demand: non-prorata booking, defaults for demandType and grace period. */
-    @isTest
-    static void createBulkDemands_customerDemand_success() {
-        Booking__c booking = bookingByEmail(EMAIL_CUSTOMER);
-        if (booking == null) return;
-        Payment_Schedule__c ps = scheduleFor(booking.Id);
-        if (ps == null) return;
-
-        BulkDemandController.BookingDemandItem item = new BulkDemandController.BookingDemandItem();
-        item.bookingId = booking.Id;
-        item.demandAmount = 0;                 // <=0 -> computed total branch
-        item.interestAmount = 1000;
-        item.previousDues = 0;
-        item.scheduleIds = new List<Id>{ ps.Id };
-        item.currentMilestoneScheduleId = ps.Id; // priority-link branch
-
-        BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
-        req.demandComponent = 'Flat';
-        req.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
-        req.includeInterest = true;
-        req.includePreviousDues = true;
-        req.notes = 'bulk test';
-        // demandType blank -> default DEMAND_TYPE_BULK branch; gracePeriodDays null -> default grace branch
-
-        Test.startTest();
-        try {
-            BulkDemandController.BulkDemandResult res =
-                BulkDemandController.createBulkDemands(JSON.serialize(req));
-            System.debug('Customer demand result: success=' + res.success
-                + ', ok=' + res.successCount + ', fail=' + res.failureCount);
-        } catch (Exception e) { System.debug('Tolerated: ' + e.getMessage()); }
-        Test.stopTest();
-    }
-
-    @isTest
-    static void createBulkDemands_nonLegacyProjectCreatesCombinedDemand() {
-        Booking__c booking = postSalesTestDataFactory.createFullBooking('Combined Demand Project');
-        Payment_Schedule__c schedule = new Payment_Schedule__c(
-            Booking__c = booking.Id, Sequence__c = 1, S_No__c = 1,
-            Milestone_Name__c = 'Combined milestone', Status__c = SCHEDULE_STATUS_COMPLETED,
-            Amount__c = 1110, Pending_Amount__c = 1110,
-            Payment_Schedule_Amount_Pending__c = 800, GST_Amount_Pending__c = 300,
-            TDS_Amount__c = 10, TDS_Amount_Pending__c = 10,
-            Due_Date__c = Date.today()
+  @isTest
+  static void getCompletedMilestones_returnsListWithDemandFlags() {
+    Project__c p = oneProject();
+    try {
+      if (p != null) {
+        List<BulkDemandController.MasterMilestoneWrapper> ms = BulkDemandController.getCompletedMilestones(
+          p.Id,
+          null
         );
-        insert schedule;
+        System.debug('Milestones: ' + ms.size());
+      }
+    } catch (Exception e) {
+      System.debug(e.getMessage());
+    }
+  }
 
-        BulkDemandController.BookingDemandItem item = new BulkDemandController.BookingDemandItem();
-        item.bookingId = booking.Id;
-        item.scheduleIds = new List<Id>{ schedule.Id };
-        item.currentMilestoneScheduleId = schedule.Id;
+  @isTest
+  static void timeBasedMilestoneCanBeDemandedInBulk() {
+    Booking__c booking = bookingByEmail(EMAIL_CUSTOMER);
+    Master_Payment_Schedule__c milestone = oneMilestone();
+    System.assertNotEquals(null, booking);
+    System.assertNotEquals(null, milestone);
 
-        BulkDemandController.BulkDemandRequest request = new BulkDemandController.BulkDemandRequest();
-        request.projectId = booking.Project__c;
-        request.demandComponent = 'Flat + GST';
-        request.demandType = 'Bulk Demand';
-        request.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
+    update new Master_Payment_Schedule__c(
+      Id = milestone.Id,
+      Payment_Type__c = 'Time Based'
+    );
 
-        Test.startTest();
-        BulkDemandController.BulkDemandResult result =
-            BulkDemandController.createBulkDemands(JSON.serialize(request));
-        Test.stopTest();
+    List<BulkDemandController.MasterMilestoneWrapper> milestones = BulkDemandController.getCompletedMilestones(
+      booking.Project__c,
+      null
+    );
+    Boolean timeBasedVisible = false;
+    for (BulkDemandController.MasterMilestoneWrapper row : milestones) {
+      if (row.id == milestone.Id)
+        timeBasedVisible = true;
+    }
+    System.assertEquals(
+      true,
+      timeBasedVisible,
+      'Time Based milestones should remain available for bulk demand.'
+    );
 
-        System.assertEquals(1, result.successCount);
-        Demands__c demand = [
-            SELECT Demand_Component__c, Demand_Amount__c, Pending_Amount__c,
-                   Base_Amount__c, GST_Amount__c, TDS_Amount__c
-            FROM Demands__c WHERE Booking__c = :booking.Id
-        ];
-        System.assertEquals('Flat + GST', demand.Demand_Component__c);
-        System.assertEquals(1110, demand.Demand_Amount__c);
-        System.assertEquals(1110, demand.Pending_Amount__c);
-        System.assertEquals(800, demand.Base_Amount__c);
-        System.assertEquals(300, demand.GST_Amount__c);
-        System.assertEquals(10, demand.TDS_Amount__c);
+    Payment_Schedule__c schedule = scheduleFor(booking.Id);
+    BulkDemandController.BookingDemandItem item = new BulkDemandController.BookingDemandItem();
+    item.bookingId = booking.Id;
+    item.scheduleIds = new List<Id>{ schedule.Id };
+    item.currentMilestoneScheduleId = schedule.Id;
+
+    BulkDemandController.BulkDemandRequest request = new BulkDemandController.BulkDemandRequest();
+    request.demandComponent = DemandComponentService.FLAT;
+    request.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
+
+    Test.startTest();
+    BulkDemandController.BulkDemandResult result = BulkDemandController.createBulkDemands(
+      JSON.serialize(request)
+    );
+    Test.stopTest();
+
+    System.assertEquals(
+      1,
+      result.successCount,
+      'Bulk raising should not reject a schedule because it is Time Based.'
+    );
+  }
+
+  @isTest
+  static void towerSelectionFiltersMilestonesAndBookings() {
+    Booking__c bookingA = bookingByEmail(EMAIL_CUSTOMER);
+    System.assertNotEquals(
+      null,
+      bookingA,
+      'Tower A fixture booking must exist'
+    );
+
+    Project__c project = [
+      SELECT Id
+      FROM Project__c
+      WHERE Id = :bookingA.Project__c
+    ];
+    Block__c towerA = new Block__c(Name = 'Tower A', Project__c = project.Id);
+    Block__c towerB = new Block__c(Name = 'Tower B', Project__c = project.Id);
+    insert new List<Block__c>{ towerA, towerB };
+
+    Plot__c plotA = [
+      SELECT Id, Block1__c
+      FROM Plot__c
+      WHERE Id = :bookingA.Plot__c
+    ];
+    plotA.Block1__c = towerA.Id;
+    update plotA;
+
+    Master_Payment_Schedule__c milestoneA = new Master_Payment_Schedule__c(
+      Project__c = project.Id,
+      Name = 'Tower A Milestone',
+      Sequence__c = 1,
+      Percentage__c = 50,
+      Status__c = 'Completed',
+      Is_Active__c = true
+    );
+    insert milestoneA;
+
+    Payment_Schedule__c scheduleA = scheduleFor(bookingA.Id);
+    scheduleA.Master_Payment_Schedule__c = milestoneA.Id;
+    scheduleA.Status__c = SCHEDULE_STATUS_COMPLETED;
+    scheduleA.Demand_Raised__c = false;
+    update scheduleA;
+
+    Test.startTest();
+    List<BulkDemandController.TowerWrapper> towers = BulkDemandController.getProjectTowers(
+      project.Id
+    );
+    List<BulkDemandController.MasterMilestoneWrapper> milestones = BulkDemandController.getCompletedMilestones(
+      project.Id,
+      towerA.Id
+    );
+    List<BulkDemandController.BookingDemandWrapper> bookings = BulkDemandController.getBookingsForMilestone(
+      project.Id,
+      towerA.Id,
+      milestoneA.Id,
+      'Flat'
+    );
+    Test.stopTest();
+
+    System.assertEquals(
+      2,
+      towers.size(),
+      'Project tower selector should list both towers'
+    );
+    System.assertEquals(
+      1,
+      milestones.size(),
+      'Only milestones with schedules in Tower A should show'
+    );
+    System.assertEquals(milestoneA.Id, milestones[0].id);
+    System.assertEquals(
+      1,
+      bookings.size(),
+      'Only Tower A bookings should be returned'
+    );
+    System.assertEquals(bookingA.Id, bookings[0].bookingId);
+  }
+
+  @isTest
+  static void getBookingsForMilestone_customerAndProrataBranches() {
+    Project__c p = oneProject();
+    Master_Payment_Schedule__c ms = oneMilestone();
+    try {
+      if (p != null && ms != null) {
+        List<BulkDemandController.BookingDemandWrapper> rows = BulkDemandController.getBookingsForMilestone(
+          p.Id,
+          null,
+          ms.Id,
+          'Flat'
+        );
+        System.debug('Milestone bookings: ' + rows.size());
+        // Prorata booking exercises isBankPayable=true; customer booking the false side.
+      }
+    } catch (Exception e) {
+      System.debug(e.getMessage());
+    }
+  }
+
+  /** Only bookings whose payment schedules are Completed may appear in the bulk demand list. */
+  @isTest
+  static void getBookingsForMilestone_excludesNonCompletedSchedules() {
+    Project__c p = oneProject();
+    Master_Payment_Schedule__c ms = oneMilestone();
+    Booking__c pendingBooking = bookingByEmail(EMAIL_PENDING);
+    Booking__c completedBooking = bookingByEmail(EMAIL_CUSTOMER);
+    if (p == null || ms == null || pendingBooking == null)
+      return;
+
+    Test.startTest();
+    List<BulkDemandController.BookingDemandWrapper> rows;
+    try {
+      rows = BulkDemandController.getBookingsForMilestone(
+        p.Id,
+        null,
+        ms.Id,
+        'Flat'
+      );
+    } catch (Exception e) {
+      System.debug('Tolerated: ' + e.getMessage());
+    }
+    Test.stopTest();
+
+    if (rows == null)
+      return;
+
+    Set<Id> returnedBookingIds = new Set<Id>();
+    for (BulkDemandController.BookingDemandWrapper w : rows) {
+      returnedBookingIds.add(w.bookingId);
     }
 
-    /** Bank demand: prorata booking with a real split; explicit grace period + demand type. */
-    @isTest
-    static void createBulkDemands_prorataBankDemand_success() {
-        Booking__c booking = bookingByEmail(EMAIL_PRORATA);
-        if (booking == null) return;
-        Payment_Schedule__c ps = scheduleFor(booking.Id);
-        if (ps == null) return;
+    System.assert(
+      !returnedBookingIds.contains(pendingBooking.Id),
+      'A booking whose payment schedule is not Completed must not be listed for bulk demand'
+    );
 
-        BulkDemandController.BookingDemandItem item = new BulkDemandController.BookingDemandItem();
-        item.bookingId = booking.Id;
-        item.demandAmount = 999999;            // ignored on the Bank branch
-        item.interestAmount = 0;
-        item.scheduleIds = new List<Id>{ ps.Id };
-        // no currentMilestoneScheduleId -> latest-sequence fallback branch
-
-        BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
-        req.demandComponent = 'Flat';
-        req.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
-        req.includeInterest = false;           // interest zeroed branch
-        req.gracePeriodDays = 10;              // explicit grace branch
-        req.demandType = 'Bulk Demand';
-
-        Test.startTest();
-        BulkDemandController.BulkDemandResult res =
-            BulkDemandController.createBulkDemands(JSON.serialize(req));
-        System.assertEquals(1, res.successCount);
-        req.demandComponent = 'GST';
-        BulkDemandController.BulkDemandResult gstRes =
-            BulkDemandController.createBulkDemands(JSON.serialize(req));
-        System.assertEquals(1, gstRes.successCount, 'Bank GST should still be raisable after Bank Flat');
-        List<Demands__c> demands = [
-            SELECT Demand_Component__c, Demand_Amount__c, Demand_Audience__c,
-                   Flat_Amount__c, GST_Amount__c, TDS_Amount__c
-            FROM Demands__c WHERE Booking__c = :booking.Id
-        ];
-        System.assertEquals(2, demands.size());
-        for (Demands__c demand : demands) {
-            System.assertEquals('Bank', demand.Demand_Audience__c);
-            if (demand.Demand_Component__c == 'Flat') {
-                System.assertEquals(200000, demand.Demand_Amount__c);
-                System.assertEquals(198000, demand.Flat_Amount__c);
-                System.assertEquals(2000, demand.TDS_Amount__c,
-                    'Bank Flat demand includes 1% TDS on the Bank portion.');
-                System.assertEquals(0, demand.GST_Amount__c);
-            } else {
-                System.assertEquals('GST', demand.Demand_Component__c);
-                System.assertEquals(10000, demand.Demand_Amount__c);
-                System.assertEquals(0, demand.Flat_Amount__c);
-            }
+    if (completedBooking != null && !rows.isEmpty()) {
+      System.assert(
+        returnedBookingIds.contains(completedBooking.Id),
+        'A booking with a Completed, undemanded schedule should still be listed'
+      );
+      for (BulkDemandController.BookingDemandWrapper row : rows) {
+        if (row.bookingId == completedBooking.Id) {
+          System.assertEquals(
+            500000,
+            row.totalFlatAmount,
+            'Bulk preview should show the Flat demand component separately.'
+          );
+          System.assertEquals(
+            0,
+            row.totalGstAmount,
+            'Flat-only demand should not be reported as GST.'
+          );
+          System.assertEquals(
+            0,
+            row.totalTdsAmount,
+            'Bulk preview should show TDS separately, including zero.'
+          );
         }
-        Test.stopTest();
+      }
+    }
+  }
+
+  @isTest
+  static void getIndividualCompletedSchedules_customerAndProrataBranches() {
+    Project__c p = oneProject();
+    try {
+      if (p != null) {
+        List<BulkDemandController.BookingDemandWrapper> rows = BulkDemandController.getIndividualCompletedSchedules(
+          p.Id,
+          'Flat'
+        );
+        System.debug('Individual schedules: ' + rows.size());
+      }
+    } catch (Exception e) {
+      System.debug(e.getMessage());
+    }
+  }
+
+  @isTest
+  static void getIndividualCompletedSchedules_excludesNonCompletedSchedules() {
+    Project__c p = oneProject();
+    Booking__c pendingBooking = bookingByEmail(EMAIL_PENDING);
+    if (p == null || pendingBooking == null)
+      return;
+
+    Test.startTest();
+    List<BulkDemandController.BookingDemandWrapper> rows;
+    try {
+      rows = BulkDemandController.getIndividualCompletedSchedules(p.Id, 'Flat');
+    } catch (Exception e) {
+      System.debug('Tolerated: ' + e.getMessage());
+    }
+    Test.stopTest();
+
+    if (rows == null)
+      return;
+    for (BulkDemandController.BookingDemandWrapper w : rows) {
+      System.assertNotEquals(
+        pendingBooking.Id,
+        w.bookingId,
+        'Non-completed schedules must not surface in the individual completed list'
+      );
+    }
+  }
+
+  // ============================ createBulkDemands: success paths ============================
+
+  /** Customer demand: non-prorata booking, defaults for demandType and grace period. */
+  @isTest
+  static void createBulkDemands_customerDemand_success() {
+    Booking__c booking = bookingByEmail(EMAIL_CUSTOMER);
+    if (booking == null)
+      return;
+    Payment_Schedule__c ps = scheduleFor(booking.Id);
+    if (ps == null)
+      return;
+
+    BulkDemandController.BookingDemandItem item = new BulkDemandController.BookingDemandItem();
+    item.bookingId = booking.Id;
+    item.demandAmount = 0; // <=0 -> computed total branch
+    item.interestAmount = 1000;
+    item.previousDues = 0;
+    item.scheduleIds = new List<Id>{ ps.Id };
+    item.currentMilestoneScheduleId = ps.Id; // priority-link branch
+
+    BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
+    req.demandComponent = 'Flat';
+    req.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
+    req.includeInterest = true;
+    req.includePreviousDues = true;
+    req.notes = 'bulk test';
+    // demandType blank -> default DEMAND_TYPE_BULK branch; gracePeriodDays null -> default grace branch
+
+    Test.startTest();
+    try {
+      BulkDemandController.BulkDemandResult res = BulkDemandController.createBulkDemands(
+        JSON.serialize(req)
+      );
+      System.debug(
+        'Customer demand result: success=' +
+          res.success +
+          ', ok=' +
+          res.successCount +
+          ', fail=' +
+          res.failureCount
+      );
+    } catch (Exception e) {
+      System.debug('Tolerated: ' + e.getMessage());
+    }
+    Test.stopTest();
+  }
+
+  @isTest
+  static void createBulkDemands_nonLegacyProjectCreatesCombinedDemand() {
+    Booking__c booking = postSalesTestDataFactory.createFullBooking(
+      'Combined Demand Project'
+    );
+    Payment_Schedule__c schedule = new Payment_Schedule__c(
+      Booking__c = booking.Id,
+      Sequence__c = 1,
+      S_No__c = 1,
+      Milestone_Name__c = 'Combined milestone',
+      Status__c = SCHEDULE_STATUS_COMPLETED,
+      Amount__c = 1110,
+      Pending_Amount__c = 1110,
+      Payment_Schedule_Amount_Pending__c = 800,
+      GST_Amount_Pending__c = 300,
+      TDS_Amount__c = 10,
+      TDS_Amount_Pending__c = 10,
+      Due_Date__c = Date.today()
+    );
+    insert schedule;
+
+    BulkDemandController.BookingDemandItem item = new BulkDemandController.BookingDemandItem();
+    item.bookingId = booking.Id;
+    item.scheduleIds = new List<Id>{ schedule.Id };
+    item.currentMilestoneScheduleId = schedule.Id;
+
+    BulkDemandController.BulkDemandRequest request = new BulkDemandController.BulkDemandRequest();
+    request.projectId = booking.Project__c;
+    request.demandComponent = 'Flat + GST';
+    request.demandType = 'Bulk Demand';
+    request.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
+
+    Test.startTest();
+    BulkDemandController.BulkDemandResult result = BulkDemandController.createBulkDemands(
+      JSON.serialize(request)
+    );
+    Test.stopTest();
+
+    System.assertEquals(1, result.successCount);
+    Demands__c demand = [
+      SELECT
+        Demand_Component__c,
+        Demand_Amount__c,
+        Pending_Amount__c,
+        Base_Amount__c,
+        GST_Amount__c,
+        TDS_Amount__c
+      FROM Demands__c
+      WHERE Booking__c = :booking.Id
+    ];
+    System.assertEquals('Flat + GST', demand.Demand_Component__c);
+    System.assertEquals(1110, demand.Demand_Amount__c);
+    System.assertEquals(1110, demand.Pending_Amount__c);
+    System.assertEquals(800, demand.Base_Amount__c);
+    System.assertEquals(300, demand.GST_Amount__c);
+    System.assertEquals(10, demand.TDS_Amount__c);
+  }
+
+  /** Bank demand: prorata booking with a real split; explicit grace period + demand type. */
+  @isTest
+  static void createBulkDemands_prorataBankDemand_success() {
+    Booking__c booking = bookingByEmail(EMAIL_PRORATA);
+    if (booking == null)
+      return;
+    Payment_Schedule__c ps = scheduleFor(booking.Id);
+    if (ps == null)
+      return;
+
+    BulkDemandController.BookingDemandItem item = new BulkDemandController.BookingDemandItem();
+    item.bookingId = booking.Id;
+    item.demandAmount = 999999; // ignored on the Bank branch
+    item.interestAmount = 0;
+    item.scheduleIds = new List<Id>{ ps.Id };
+    // no currentMilestoneScheduleId -> latest-sequence fallback branch
+
+    BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
+    req.demandComponent = 'Flat';
+    req.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
+    req.includeInterest = false; // interest zeroed branch
+    req.gracePeriodDays = 10; // explicit grace branch
+    req.demandType = 'Bulk Demand';
+
+    Test.startTest();
+    BulkDemandController.BulkDemandResult res = BulkDemandController.createBulkDemands(
+      JSON.serialize(req)
+    );
+    System.assertEquals(1, res.successCount);
+    req.demandComponent = 'GST';
+    BulkDemandController.BulkDemandResult gstRes = BulkDemandController.createBulkDemands(
+      JSON.serialize(req)
+    );
+    System.assertEquals(
+      1,
+      gstRes.successCount,
+      'Bank GST should still be raisable after Bank Flat'
+    );
+    List<Demands__c> demands = [
+      SELECT
+        Demand_Component__c,
+        Demand_Amount__c,
+        Demand_Audience__c,
+        Flat_Amount__c,
+        GST_Amount__c,
+        TDS_Amount__c
+      FROM Demands__c
+      WHERE Booking__c = :booking.Id
+    ];
+    System.assertEquals(2, demands.size());
+    for (Demands__c demand : demands) {
+      System.assertEquals('Bank', demand.Demand_Audience__c);
+      if (demand.Demand_Component__c == 'Flat') {
+        System.assertEquals(200000, demand.Demand_Amount__c);
+        System.assertEquals(198000, demand.Flat_Amount__c);
+        System.assertEquals(
+          2000,
+          demand.TDS_Amount__c,
+          'Bank Flat demand includes 1% TDS on the Bank portion.'
+        );
+        System.assertEquals(0, demand.GST_Amount__c);
+      } else {
+        System.assertEquals('GST', demand.Demand_Component__c);
+        System.assertEquals(10000, demand.Demand_Amount__c);
+        System.assertEquals(0, demand.Flat_Amount__c);
+      }
+    }
+    Test.stopTest();
+  }
+
+  @isTest
+  static void prorataGstDemandSubtractsOnlyBankReceipts() {
+    Booking__c booking = bookingByEmail(EMAIL_PRORATA);
+    System.assertNotEquals(null, booking);
+    Payment_Schedule__c schedule = scheduleFor(booking.Id);
+    System.assertNotEquals(null, schedule);
+
+    ProrataInvariantService.bypass = true;
+    try {
+      update new Payment_Schedule__c(
+        Id = schedule.Id,
+        Amount__c = 300000,
+        Pending_Amount__c = 295000,
+        Payment_Schedule_Amount_Pending__c = 280000,
+        Payment_Schedule_Amount_Paid__c = 0,
+        GST_Amount_Pending__c = 15000,
+        GST_Amount_Paid__c = 5000,
+        TDS_Amount_Pending__c = 0,
+        TDS_Amount_Paid__c = 0,
+        Bank_Flat_Amount__c = 200000,
+        Customer_Flat_Prorata__c = 80000,
+        Bank_GST_Amount__c = 10000,
+        Customer_GST_Prorata__c = 10000
+      );
+    } finally {
+      ProrataInvariantService.bypass = false;
     }
 
-    @isTest
-    static void createBulkDemands_prorataBankDemandCarriesUndemandedTds() {
-        Booking__c booking = bookingByEmail(EMAIL_PRORATA);
-        if (booking == null) return;
-        Payment_Schedule__c ps = scheduleFor(booking.Id);
-        if (ps == null) return;
+    insertSourceReceipt(booking.Id, schedule.Id, 'Customer', 0, 3000, 0);
+    insertSourceReceipt(booking.Id, schedule.Id, 'Bank', 0, 2000, 0);
 
-        ProrataInvariantService.bypass = true;
-        try {
-            update new Payment_Schedule__c(
-                Id = ps.Id,
-                Payment_Schedule_Amount_Paid__c = 100000,
-                TDS_Amount_Pending__c = 1000,
-                TDS_Amount_Paid__c = 0
-            );
-        } finally {
-            ProrataInvariantService.bypass = false;
-        }
+    Test.startTest();
+    List<BulkDemandController.BookingDemandWrapper> preview = BulkDemandController.getIndividualCompletedSchedules(
+      booking.Project__c,
+      DemandComponentService.GST
+    );
+    BulkDemandController.BookingDemandItem item = new BulkDemandController.BookingDemandItem();
+    item.bookingId = booking.Id;
+    item.scheduleIds = new List<Id>{ schedule.Id };
 
-        BulkDemandController.BookingDemandItem item = new BulkDemandController.BookingDemandItem();
-        item.bookingId = booking.Id;
-        item.scheduleIds = new List<Id>{ ps.Id };
+    BulkDemandController.BulkDemandRequest request = new BulkDemandController.BulkDemandRequest();
+    request.demandComponent = DemandComponentService.GST;
+    request.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
+    request.includeInterest = false;
+    BulkDemandController.BulkDemandResult result = BulkDemandController.createBulkDemands(
+      JSON.serialize(request)
+    );
+    Test.stopTest();
 
-        BulkDemandController.BulkDemandRequest request = new BulkDemandController.BulkDemandRequest();
-        request.demandComponent = 'Flat';
-        request.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
-        request.includeInterest = false;
+    BulkDemandController.BookingDemandWrapper bookingPreview;
+    for (BulkDemandController.BookingDemandWrapper row : preview) {
+      if (row.bookingId == booking.Id)
+        bookingPreview = row;
+    }
+    System.assertNotEquals(
+      null,
+      bookingPreview,
+      'The prorata booking should appear in the GST demand preview.'
+    );
+    System.assertEquals(
+      8000,
+      bookingPreview.totalGstAmount,
+      'Only Bank-paid GST should reduce the Bank GST demand.'
+    );
+    System.assertEquals(8000, bookingPreview.bankPayableAmount);
+    System.assertEquals(1, result.successCount);
 
-        Test.startTest();
-        BulkDemandController.BulkDemandResult result =
-            BulkDemandController.createBulkDemands(JSON.serialize(request));
-        Test.stopTest();
+    Demands__c demand = [
+      SELECT Demand_Amount__c, GST_Amount__c, Demand_Audience__c
+      FROM Demands__c
+      WHERE Booking__c = :booking.Id
+    ];
+    System.assertEquals(8000, demand.Demand_Amount__c);
+    System.assertEquals(8000, demand.GST_Amount__c);
+    System.assertEquals('Bank', demand.Demand_Audience__c);
+  }
 
-        System.assertEquals(1, result.successCount);
-        Demands__c demand = [
-            SELECT Demand_Amount__c, Flat_Amount__c, TDS_Amount__c
-            FROM Demands__c WHERE Booking__c = :booking.Id
-        ];
-        System.assertEquals(101000, demand.Demand_Amount__c);
-        System.assertEquals(99000, demand.Flat_Amount__c);
-        System.assertEquals(2000, demand.TDS_Amount__c,
-            'Includes 1% on remaining Bank Flat plus unpaid TDS from paid Flat.');
-        Payment_Schedule__c scheduleAfterDemand = [
-            SELECT Bank_Flat_Demand_Raised__c
-            FROM Payment_Schedule__c
-            WHERE Id = :ps.Id
-        ];
-        System.assertEquals(true, scheduleAfterDemand.Bank_Flat_Demand_Raised__c);
+  @isTest
+  static void createBulkDemands_prorataBankDemandUsesRemainingFlatTds() {
+    Booking__c booking = bookingByEmail(EMAIL_PRORATA);
+    if (booking == null)
+      return;
+    Payment_Schedule__c ps = scheduleFor(booking.Id);
+    if (ps == null)
+      return;
+
+    ProrataInvariantService.bypass = true;
+    try {
+      update new Payment_Schedule__c(
+        Id = ps.Id,
+        Payment_Schedule_Amount_Paid__c = 100000,
+        TDS_Amount_Pending__c = 1000,
+        TDS_Amount_Paid__c = 0
+      );
+    } finally {
+      ProrataInvariantService.bypass = false;
+    }
+    insertSourceReceipt(booking.Id, ps.Id, 'Bank', 100000, 0, 0);
+
+    BulkDemandController.BookingDemandItem item = new BulkDemandController.BookingDemandItem();
+    item.bookingId = booking.Id;
+    item.scheduleIds = new List<Id>{ ps.Id };
+
+    BulkDemandController.BulkDemandRequest request = new BulkDemandController.BulkDemandRequest();
+    request.demandComponent = 'Flat';
+    request.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
+    request.includeInterest = false;
+
+    Test.startTest();
+    BulkDemandController.BulkDemandResult result = BulkDemandController.createBulkDemands(
+      JSON.serialize(request)
+    );
+    Test.stopTest();
+
+    System.assertEquals(1, result.successCount);
+    Demands__c demand = [
+      SELECT Demand_Amount__c, Flat_Amount__c, TDS_Amount__c
+      FROM Demands__c
+      WHERE Booking__c = :booking.Id
+    ];
+    System.assertEquals(100000, demand.Demand_Amount__c);
+    System.assertEquals(99000, demand.Flat_Amount__c);
+    System.assertEquals(
+      1000,
+      demand.TDS_Amount__c,
+      'TDS is based on the remaining Bank Flat balance.'
+    );
+    Payment_Schedule__c scheduleAfterDemand = [
+      SELECT Bank_Flat_Demand_Raised__c
+      FROM Payment_Schedule__c
+      WHERE Id = :ps.Id
+    ];
+    System.assertEquals(true, scheduleAfterDemand.Bank_Flat_Demand_Raised__c);
+  }
+
+  /** Mixed batch: one good item + one item whose insert fails (fabricated booking id). */
+  @isTest
+  static void createBulkDemands_mixedSuccessAndFailure() {
+    Booking__c booking = bookingByEmail(EMAIL_CUSTOMER);
+    if (booking == null)
+      return;
+    Payment_Schedule__c ps = scheduleFor(booking.Id);
+
+    BulkDemandController.BookingDemandItem good = new BulkDemandController.BookingDemandItem();
+    good.bookingId = booking.Id;
+    good.demandAmount = 5000; // >0 -> UI-supplied amount branch
+    good.scheduleIds = ps == null ? null : new List<Id>{ ps.Id };
+
+    BulkDemandController.BookingDemandItem bad = new BulkDemandController.BookingDemandItem();
+    bad.bookingId = Id.valueOf(
+      Booking__c.SObjectType.getDescribe().getKeyPrefix() + '000000000009'
+    );
+    bad.demandAmount = 100;
+    bad.scheduleIds = null; // null-scheduleIds branch
+
+    BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
+    req.demandComponent = 'Flat';
+    req.bookings = new List<BulkDemandController.BookingDemandItem>{
+      good,
+      bad
+    };
+    req.gracePeriodDays = 0; // <=0 -> default grace branch
+
+    Test.startTest();
+    try {
+      BulkDemandController.BulkDemandResult res = BulkDemandController.createBulkDemands(
+        JSON.serialize(req)
+      );
+      System.debug(
+        'Mixed result: ok=' + res.successCount + ', fail=' + res.failureCount
+      );
+      // Failure item exercises getErrors()[0] + failureCount branch.
+    } catch (Exception e) {
+      System.debug('Tolerated: ' + e.getMessage());
+    }
+    Test.stopTest();
+  }
+
+  /** Status guard: a stale client payload naming a non-completed schedule must be rejected
+   *  server-side rather than raising a premature demand. */
+  @isTest
+  static void createBulkDemands_nonCompletedSchedule_skipped() {
+    Booking__c booking = bookingByEmail(EMAIL_PENDING);
+    if (booking == null)
+      return;
+    Payment_Schedule__c ps = scheduleFor(booking.Id);
+    if (ps == null)
+      return;
+
+    BulkDemandController.BookingDemandItem item = new BulkDemandController.BookingDemandItem();
+    item.bookingId = booking.Id;
+    item.demandAmount = 400000;
+    item.scheduleIds = new List<Id>{ ps.Id };
+
+    BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
+    req.demandComponent = 'Flat';
+    req.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
+
+    Test.startTest();
+    try {
+      BulkDemandController.BulkDemandResult res = BulkDemandController.createBulkDemands(
+        JSON.serialize(req)
+      );
+
+      Integer demandCount = [
+        SELECT COUNT()
+        FROM Demands__c
+        WHERE Booking__c = :booking.Id
+      ];
+      System.assertEquals(
+        0,
+        demandCount,
+        'No demand should be created against a schedule that is not Completed'
+      );
+      System.assertEquals(
+        0,
+        res.successCount,
+        'Non-completed item must not succeed'
+      );
+      System.assertEquals(
+        1,
+        res.failureCount,
+        'Non-completed item must be reported as skipped'
+      );
+      System.assert(
+        res.results[0].errorMessage != null &&
+        res.results[0].errorMessage.contains('not marked Completed'),
+        'Skip message should explain the schedule is not completed: ' +
+        res.results[0].errorMessage
+      );
+    } catch (Exception e) {
+      System.debug('Tolerated: ' + e.getMessage());
+    }
+    Test.stopTest();
+  }
+
+  /** Duplicate guard: raising a second demand on the same schedule is skipped, so
+   *  Total Demand Raised on the Booking does not double. */
+  @isTest
+  static void createBulkDemands_duplicateSchedule_skipped() {
+    Booking__c booking = bookingByEmail(EMAIL_CUSTOMER);
+    if (booking == null)
+      return;
+    Payment_Schedule__c ps = scheduleFor(booking.Id);
+    if (ps == null)
+      return;
+
+    BulkDemandController.BookingDemandItem item = new BulkDemandController.BookingDemandItem();
+    item.bookingId = booking.Id;
+    item.demandAmount = 0;
+    item.scheduleIds = new List<Id>{ ps.Id };
+
+    BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
+    req.demandComponent = 'Flat';
+    req.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
+
+    Test.startTest();
+    try {
+      // First call raises the demand and flips Demand_Raised__c on the schedule.
+      BulkDemandController.createBulkDemands(JSON.serialize(req));
+      req.demandComponent = 'GST';
+      BulkDemandController.BulkDemandResult gstResult = BulkDemandController.createBulkDemands(
+        JSON.serialize(req)
+      );
+      System.assertEquals(
+        1,
+        gstResult.successCount,
+        'The same schedule should allow its unraised GST component'
+      );
+      Integer countAfterFirst = [
+        SELECT COUNT()
+        FROM Demands__c
+        WHERE Booking__c = :booking.Id
+      ];
+
+      // Repeating the first component must be skipped, without blocking the separate GST demand.
+      req.demandComponent = 'Flat';
+      BulkDemandController.BulkDemandResult res2 = BulkDemandController.createBulkDemands(
+        JSON.serialize(req)
+      );
+      Integer countAfterSecond = [
+        SELECT COUNT()
+        FROM Demands__c
+        WHERE Booking__c = :booking.Id
+      ];
+
+      if (countAfterFirst > 0) {
+        System.assertEquals(
+          2,
+          countAfterFirst,
+          'One Flat and one GST demand should exist'
+        );
+        System.assertEquals(
+          countAfterFirst,
+          countAfterSecond,
+          'Second demand on an already-demanded schedule must not create a new Demands__c'
+        );
+        System.assertEquals(
+          0,
+          res2.successCount,
+          'Duplicate item must not succeed'
+        );
+        System.assertEquals(
+          1,
+          res2.failureCount,
+          'Duplicate item must be reported as skipped'
+        );
+        System.assert(
+          res2.results[0].errorMessage != null &&
+          res2.results[0].errorMessage.contains('already been raised'),
+          'Skip message should explain the schedule was already demanded: ' +
+          res2.results[0].errorMessage
+        );
+      }
+    } catch (Exception e) {
+      System.debug('Tolerated: ' + e.getMessage());
+    }
+    Test.stopTest();
+  }
+
+  @isTest
+  static void createBulkDemands_emptyBookings_throws() {
+    BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
+    req.demandComponent = 'Flat';
+    req.bookings = new List<BulkDemandController.BookingDemandItem>();
+    try {
+      BulkDemandController.createBulkDemands(JSON.serialize(req));
+    } catch (Exception e) {
+      System.debug('Expected: ' + e.getMessage());
+    }
+  }
+
+  @isTest
+  static void createBulkDemands_invalidJson_throws() {
+    try {
+      BulkDemandController.createBulkDemands('not-json');
+    } catch (Exception e) {
+      System.debug('Expected: ' + e.getMessage());
+    }
+  }
+
+  // ============================ email methods ============================
+
+  /** Blank template: skips the email build entirely but runs the demand-update loop. */
+  @isTest
+  static void sendBulkDemandEmails_noTemplate_updatesDemands() {
+    List<Booking__c> bookings = [SELECT Id FROM Booking__c LIMIT 1];
+    if (bookings.isEmpty())
+      return;
+    Demands__c d;
+    try {
+      d = new Demands__c(
+        Booking__c = bookings[0].Id,
+        Status__c = 'Raised',
+        Demand_Date__c = Date.today(),
+        Due_Date__c = Date.today().addDays(7),
+        Reminder_Date__c = Date.today().addDays(5),
+        Demand_Amount__c = 1000,
+        Pending_Amount__c = 1000
+      );
+      insert d;
+    } catch (Exception e) {
+      System.debug('demand seed tolerated: ' + e.getMessage());
+      return;
     }
 
-    /** Mixed batch: one good item + one item whose insert fails (fabricated booking id). */
-    @isTest
-    static void createBulkDemands_mixedSuccessAndFailure() {
-        Booking__c booking = bookingByEmail(EMAIL_CUSTOMER);
-        if (booking == null) return;
-        Payment_Schedule__c ps = scheduleFor(booking.Id);
+    Test.startTest();
+    try {
+      BulkDemandController.sendBulkDemandEmails(new List<Id>{ d.Id }, null);
+      System.debug('Demands marked emailed without template');
+    } catch (Exception e) {
+      System.debug('Tolerated: ' + e.getMessage());
+    }
+    Test.stopTest();
+  }
 
-        BulkDemandController.BookingDemandItem good = new BulkDemandController.BookingDemandItem();
-        good.bookingId = booking.Id;
-        good.demandAmount = 5000;              // >0 -> UI-supplied amount branch
-        good.scheduleIds = ps == null ? null : new List<Id>{ ps.Id };
-
-        BulkDemandController.BookingDemandItem bad = new BulkDemandController.BookingDemandItem();
-        bad.bookingId = Id.valueOf(Booking__c.SObjectType.getDescribe().getKeyPrefix() + '000000000009');
-        bad.demandAmount = 100;
-        bad.scheduleIds = null;                // null-scheduleIds branch
-
-        BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
-        req.demandComponent = 'Flat';
-        req.bookings = new List<BulkDemandController.BookingDemandItem>{ good, bad };
-        req.gracePeriodDays = 0;               // <=0 -> default grace branch
-
-        Test.startTest();
-        try {
-            BulkDemandController.BulkDemandResult res =
-                BulkDemandController.createBulkDemands(JSON.serialize(req));
-            System.debug('Mixed result: ok=' + res.successCount + ', fail=' + res.failureCount);
-            // Failure item exercises getErrors()[0] + failureCount branch.
-        } catch (Exception e) { System.debug('Tolerated: ' + e.getMessage()); }
-        Test.stopTest();
+  /** Bogus template id: the per-demand prepare fails into the inner catch; update still runs. */
+  @isTest
+  static void sendBulkDemandEmails_badTemplate_hitsInnerCatch() {
+    List<Booking__c> bookings = [
+      SELECT Id
+      FROM Booking__c
+      WHERE Email__c != NULL
+      LIMIT 1
+    ];
+    if (bookings.isEmpty())
+      return;
+    Demands__c d;
+    try {
+      d = new Demands__c(
+        Booking__c = bookings[0].Id,
+        Status__c = 'Raised',
+        Demand_Date__c = Date.today(),
+        Due_Date__c = Date.today().addDays(7),
+        Reminder_Date__c = Date.today().addDays(5),
+        Demand_Amount__c = 500,
+        Pending_Amount__c = 500
+      );
+      insert d;
+    } catch (Exception e) {
+      System.debug('demand seed tolerated: ' + e.getMessage());
+      return;
     }
 
-    /** Status guard: a stale client payload naming a non-completed schedule must be rejected
-     *  server-side rather than raising a premature demand. */
-    @isTest
-    static void createBulkDemands_nonCompletedSchedule_skipped() {
-        Booking__c booking = bookingByEmail(EMAIL_PENDING);
-        if (booking == null) return;
-        Payment_Schedule__c ps = scheduleFor(booking.Id);
-        if (ps == null) return;
+    Test.startTest();
+    try {
+      BulkDemandController.sendBulkDemandEmails(
+        new List<Id>{ d.Id },
+        'bad-template-id'
+      );
+    } catch (Exception e) {
+      System.debug('Tolerated: ' + e.getMessage());
+    }
+    Test.stopTest();
+  }
 
-        BulkDemandController.BookingDemandItem item = new BulkDemandController.BookingDemandItem();
-        item.bookingId = booking.Id;
-        item.demandAmount = 400000;
-        item.scheduleIds = new List<Id>{ ps.Id };
+  @isTest
+  static void sendBulkDemandEmails_emptyList_throws() {
+    try {
+      BulkDemandController.sendBulkDemandEmails(new List<Id>(), null);
+    } catch (Exception e) {
+      System.debug('Expected: ' + e.getMessage());
+    }
+  }
 
-        BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
-        req.demandComponent = 'Flat';
-        req.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
-
-        Test.startTest();
-        try {
-            BulkDemandController.BulkDemandResult res =
-                BulkDemandController.createBulkDemands(JSON.serialize(req));
-
-            Integer demandCount = [SELECT COUNT() FROM Demands__c WHERE Booking__c = :booking.Id];
-            System.assertEquals(0, demandCount,
-                'No demand should be created against a schedule that is not Completed');
-            System.assertEquals(0, res.successCount, 'Non-completed item must not succeed');
-            System.assertEquals(1, res.failureCount, 'Non-completed item must be reported as skipped');
-            System.assert(res.results[0].errorMessage != null
-                && res.results[0].errorMessage.contains('not marked Completed'),
-                'Skip message should explain the schedule is not completed: ' + res.results[0].errorMessage);
-        } catch (Exception e) { System.debug('Tolerated: ' + e.getMessage()); }
-        Test.stopTest();
+  @isTest
+  static void sendDemandEmail_guardBranches() {
+    Test.startTest();
+    // null id guard
+    try {
+      BulkDemandController.sendDemandEmail(null, null, null);
+    } catch (Exception e) {
+      System.debug('Null id: ' + e.getMessage());
     }
 
-    /** Duplicate guard: raising a second demand on the same schedule is skipped, so
-     *  Total Demand Raised on the Booking does not double. */
-    @isTest
-    static void createBulkDemands_duplicateSchedule_skipped() {
-        Booking__c booking = bookingByEmail(EMAIL_CUSTOMER);
-        if (booking == null) return;
-        Payment_Schedule__c ps = scheduleFor(booking.Id);
-        if (ps == null) return;
-
-        BulkDemandController.BookingDemandItem item = new BulkDemandController.BookingDemandItem();
-        item.bookingId = booking.Id;
-        item.demandAmount = 0;
-        item.scheduleIds = new List<Id>{ ps.Id };
-
-        BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
-        req.demandComponent = 'Flat';
-        req.bookings = new List<BulkDemandController.BookingDemandItem>{ item };
-
-        Test.startTest();
-        try {
-            // First call raises the demand and flips Demand_Raised__c on the schedule.
-            BulkDemandController.createBulkDemands(JSON.serialize(req));
-            req.demandComponent = 'GST';
-            BulkDemandController.BulkDemandResult gstResult =
-                BulkDemandController.createBulkDemands(JSON.serialize(req));
-            System.assertEquals(1, gstResult.successCount, 'The same schedule should allow its unraised GST component');
-            Integer countAfterFirst = [
-                SELECT COUNT() FROM Demands__c WHERE Booking__c = :booking.Id
-            ];
-
-            // Repeating the first component must be skipped, without blocking the separate GST demand.
-            req.demandComponent = 'Flat';
-            BulkDemandController.BulkDemandResult res2 =
-                BulkDemandController.createBulkDemands(JSON.serialize(req));
-            Integer countAfterSecond = [
-                SELECT COUNT() FROM Demands__c WHERE Booking__c = :booking.Id
-            ];
-
-            if (countAfterFirst > 0) {
-                System.assertEquals(2, countAfterFirst, 'One Flat and one GST demand should exist');
-                System.assertEquals(countAfterFirst, countAfterSecond,
-                    'Second demand on an already-demanded schedule must not create a new Demands__c');
-                System.assertEquals(0, res2.successCount, 'Duplicate item must not succeed');
-                System.assertEquals(1, res2.failureCount, 'Duplicate item must be reported as skipped');
-                System.assert(res2.results[0].errorMessage != null
-                    && res2.results[0].errorMessage.contains('already been raised'),
-                    'Skip message should explain the schedule was already demanded: ' + res2.results[0].errorMessage);
-            }
-        } catch (Exception e) { System.debug('Tolerated: ' + e.getMessage()); }
-        Test.stopTest();
+    // demand not found guard
+    Id ghostDemand = Id.valueOf(
+      Demands__c.SObjectType.getDescribe().getKeyPrefix() + '000000000008'
+    );
+    try {
+      BulkDemandController.sendDemandEmail(ghostDemand, null, null);
+    } catch (Exception e) {
+      System.debug('Not found: ' + e.getMessage());
     }
+    Test.stopTest();
+  }
 
-    @isTest
-    static void createBulkDemands_emptyBookings_throws() {
-        BulkDemandController.BulkDemandRequest req = new BulkDemandController.BulkDemandRequest();
-        req.demandComponent = 'Flat';
-        req.bookings = new List<BulkDemandController.BookingDemandItem>();
-        try {
-            BulkDemandController.createBulkDemands(JSON.serialize(req));
-        } catch (Exception e) { System.debug('Expected: ' + e.getMessage()); }
+  /** Demand whose booking has no email -> 'No email address' guard.
+   *  Then a demand WITH email but no template anywhere -> template-resolution branches. */
+  @isTest
+  static void sendDemandEmail_noEmailAndNoTemplateBranches() {
+    List<Booking__c> bookings = [SELECT Id, Email__c FROM Booking__c LIMIT 2];
+    for (Booking__c b : bookings) {
+      Demands__c d;
+      try {
+        d = new Demands__c(
+          Booking__c = b.Id,
+          Status__c = 'Raised',
+          Demand_Date__c = Date.today(),
+          Due_Date__c = Date.today().addDays(7),
+          Reminder_Date__c = Date.today().addDays(5),
+          Demand_Amount__c = 100,
+          Pending_Amount__c = 100
+        );
+        insert d;
+      } catch (Exception e) {
+        System.debug('seed tolerated: ' + e.getMessage());
+        continue;
+      }
+
+      try {
+        // No template supplied -> falls to Post Sales config default, then either
+        // 'no template configured' or a prepare failure; either way branches execute.
+        BulkDemandController.sendDemandEmail(d.Id, null, null);
+      } catch (Exception e) {
+        System.debug('Branch for booking ' + b.Id + ': ' + e.getMessage());
+      }
     }
+  }
 
-    @isTest
-    static void createBulkDemands_invalidJson_throws() {
-        try {
-            BulkDemandController.createBulkDemands('not-json');
-        } catch (Exception e) { System.debug('Expected: ' + e.getMessage()); }
+  // ============================ demand letter config ============================
+
+  @isTest
+  static void getDemandLetterConfigs_returnsList() {
+    try {
+      List<BulkDemandController.DemandLetterConfigWrapper> configs = BulkDemandController.getDemandLetterConfigs();
+      System.debug('Configs: ' + configs.size());
+    } catch (Exception e) {
+      System.debug(e.getMessage());
     }
+  }
 
-    // ============================ email methods ============================
+  @isTest
+  static void saveUpdateAndDeleteDemandLetterConfig_roundTrip() {
+    Project__c p = oneProject();
+    if (p == null)
+      return;
 
-    /** Blank template: skips the email build entirely but runs the demand-update loop. */
-    @isTest
-    static void sendBulkDemandEmails_noTemplate_updatesDemands() {
-        List<Booking__c> bookings = [SELECT Id FROM Booking__c LIMIT 1];
-        if (bookings.isEmpty()) return;
-        Demands__c d;
-        try {
-            d = new Demands__c(
-                Booking__c = bookings[0].Id, Status__c = 'Raised',
-                Demand_Date__c = Date.today(), Due_Date__c = Date.today().addDays(7),
-                Reminder_Date__c = Date.today().addDays(5),
-                Demand_Amount__c = 1000, Pending_Amount__c = 1000
-            );
-            insert d;
-        } catch (Exception e) { System.debug('demand seed tolerated: ' + e.getMessage()); return; }
+    BulkDemandController.DemandLetterConfigWrapper w = new BulkDemandController.DemandLetterConfigWrapper();
+    w.projectId = p.Id;
+    w.isActive = true;
+    w.description = 'desc';
+    w.gracePeriodDays = 5;
+    w.includeInterest = true;
+    w.autoSendEmail = false;
 
-        Test.startTest();
-        try {
-            BulkDemandController.sendBulkDemandEmails(new List<Id>{ d.Id }, null);
-            System.debug('Demands marked emailed without template');
-        } catch (Exception e) { System.debug('Tolerated: ' + e.getMessage()); }
-        Test.stopTest();
+    Test.startTest();
+    try {
+      // create branch
+      Id newId = BulkDemandController.saveDemandLetterConfig(JSON.serialize(w));
+      // update branch (existing id)
+      w.id = newId;
+      w.description = 'updated';
+      BulkDemandController.saveDemandLetterConfig(JSON.serialize(w));
+      // read them back so the wrapper-building loop runs over a real row
+      BulkDemandController.getDemandLetterConfigs();
+      // delete branch
+      if (newId != null)
+        BulkDemandController.deleteDemandLetterConfig(newId);
+    } catch (Exception e) {
+      System.debug('Tolerated: ' + e.getMessage());
     }
+    Test.stopTest();
+  }
 
-    /** Bogus template id: the per-demand prepare fails into the inner catch; update still runs. */
-    @isTest
-    static void sendBulkDemandEmails_badTemplate_hitsInnerCatch() {
-        List<Booking__c> bookings = [SELECT Id FROM Booking__c WHERE Email__c != null LIMIT 1];
-        if (bookings.isEmpty()) return;
-        Demands__c d;
-        try {
-            d = new Demands__c(
-                Booking__c = bookings[0].Id, Status__c = 'Raised',
-                Demand_Date__c = Date.today(), Due_Date__c = Date.today().addDays(7),
-                Reminder_Date__c = Date.today().addDays(5),
-                Demand_Amount__c = 500, Pending_Amount__c = 500
-            );
-            insert d;
-        } catch (Exception e) { System.debug('demand seed tolerated: ' + e.getMessage()); return; }
-
-        Test.startTest();
-        try {
-            BulkDemandController.sendBulkDemandEmails(new List<Id>{ d.Id }, 'bad-template-id');
-        } catch (Exception e) { System.debug('Tolerated: ' + e.getMessage()); }
-        Test.stopTest();
+  @isTest
+  static void configMethods_errorCatches() {
+    Test.startTest();
+    try {
+      BulkDemandController.saveDemandLetterConfig('not-json');
+    } catch (Exception e) {
+      System.debug('Save catch: ' + e.getMessage());
     }
-
-    @isTest
-    static void sendBulkDemandEmails_emptyList_throws() {
-        try {
-            BulkDemandController.sendBulkDemandEmails(new List<Id>(), null);
-        } catch (Exception e) { System.debug('Expected: ' + e.getMessage()); }
+    try {
+      BulkDemandController.deleteDemandLetterConfig(null);
+    } catch (Exception e) {
+      System.debug('Delete catch: ' + e.getMessage());
     }
-
-    @isTest
-    static void sendDemandEmail_guardBranches() {
-        Test.startTest();
-        // null id guard
-        try { BulkDemandController.sendDemandEmail(null, null, null); }
-        catch (Exception e) { System.debug('Null id: ' + e.getMessage()); }
-
-        // demand not found guard
-        Id ghostDemand = Id.valueOf(Demands__c.SObjectType.getDescribe().getKeyPrefix() + '000000000008');
-        try { BulkDemandController.sendDemandEmail(ghostDemand, null, null); }
-        catch (Exception e) { System.debug('Not found: ' + e.getMessage()); }
-        Test.stopTest();
-    }
-
-    /** Demand whose booking has no email -> 'No email address' guard.
-     *  Then a demand WITH email but no template anywhere -> template-resolution branches. */
-    @isTest
-    static void sendDemandEmail_noEmailAndNoTemplateBranches() {
-        List<Booking__c> bookings = [SELECT Id, Email__c FROM Booking__c LIMIT 2];
-        for (Booking__c b : bookings) {
-            Demands__c d;
-            try {
-                d = new Demands__c(
-                    Booking__c = b.Id, Status__c = 'Raised',
-                    Demand_Date__c = Date.today(), Due_Date__c = Date.today().addDays(7),
-                    Reminder_Date__c = Date.today().addDays(5),
-                    Demand_Amount__c = 100, Pending_Amount__c = 100
-                );
-                insert d;
-            } catch (Exception e) { System.debug('seed tolerated: ' + e.getMessage()); continue; }
-
-            try {
-                // No template supplied -> falls to Post Sales config default, then either
-                // 'no template configured' or a prepare failure; either way branches execute.
-                BulkDemandController.sendDemandEmail(d.Id, null, null);
-            } catch (Exception e) { System.debug('Branch for booking ' + b.Id + ': ' + e.getMessage()); }
-        }
-    }
-
-    // ============================ demand letter config ============================
-
-    @isTest
-    static void getDemandLetterConfigs_returnsList() {
-        try {
-            List<BulkDemandController.DemandLetterConfigWrapper> configs =
-                BulkDemandController.getDemandLetterConfigs();
-            System.debug('Configs: ' + configs.size());
-        } catch (Exception e) { System.debug(e.getMessage()); }
-    }
-
-    @isTest
-    static void saveUpdateAndDeleteDemandLetterConfig_roundTrip() {
-        Project__c p = oneProject();
-        if (p == null) return;
-
-        BulkDemandController.DemandLetterConfigWrapper w = new BulkDemandController.DemandLetterConfigWrapper();
-        w.projectId = p.Id;
-        w.isActive = true;
-        w.description = 'desc';
-        w.gracePeriodDays = 5;
-        w.includeInterest = true;
-        w.autoSendEmail = false;
-
-        Test.startTest();
-        try {
-            // create branch
-            Id newId = BulkDemandController.saveDemandLetterConfig(JSON.serialize(w));
-            // update branch (existing id)
-            w.id = newId;
-            w.description = 'updated';
-            BulkDemandController.saveDemandLetterConfig(JSON.serialize(w));
-            // read them back so the wrapper-building loop runs over a real row
-            BulkDemandController.getDemandLetterConfigs();
-            // delete branch
-            if (newId != null) BulkDemandController.deleteDemandLetterConfig(newId);
-        } catch (Exception e) { System.debug('Tolerated: ' + e.getMessage()); }
-        Test.stopTest();
-    }
-
-    @isTest
-    static void configMethods_errorCatches() {
-        Test.startTest();
-        try { BulkDemandController.saveDemandLetterConfig('not-json'); }
-        catch (Exception e) { System.debug('Save catch: ' + e.getMessage()); }
-        try { BulkDemandController.deleteDemandLetterConfig(null); }
-        catch (Exception e) { System.debug('Delete catch: ' + e.getMessage()); }
-        Test.stopTest();
-    }
+    Test.stopTest();
+  }
 }

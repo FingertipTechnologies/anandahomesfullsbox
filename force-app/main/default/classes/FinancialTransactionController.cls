@@ -365,7 +365,8 @@ public without sharing class FinancialTransactionController {
                 Status__c, Due_Date__c, Sequence__c,
                 Payment_Schedule_Amount__c, GST_Amount__c,
                 Payment_Schedule_Amount_Pending__c, GST_Amount_Pending__c,
-                Payment_Schedule_Amount_Paid__c, GST_Amount_Paid__c
+                Payment_Schedule_Amount_Paid__c, GST_Amount_Paid__c,
+                TDS_Amount__c, TDS_Amount_Pending__c
                 FROM Payment_Schedule__c
                 WHERE Booking__c = :bookingId
                 AND Pending_Amount__c > 0
@@ -387,6 +388,8 @@ public without sharing class FinancialTransactionController {
                 info.gstPending = ps.GST_Amount_Pending__c;
                 info.basePaid = ps.Payment_Schedule_Amount_Paid__c;
                 info.gstPaid = ps.GST_Amount_Paid__c;
+                info.tdsAmount = ps.TDS_Amount__c;
+                info.tdsPending = ps.TDS_Amount_Pending__c;
                 info.status = ps.Status__c;
                 info.dueDate = ps.Due_Date__c;
                 info.sequence = ps.Sequence__c != null ? Integer.valueOf(ps.Sequence__c) : 0;
@@ -454,6 +457,13 @@ public without sharing class FinancialTransactionController {
         public Decimal tdsAmount = 0;
     }
 
+    private static Boolean hasAudienceSplit(Payment_Schedule__c schedule) {
+        return schedule.Bank_Flat_Amount__c != null
+            || schedule.Bank_GST_Amount__c != null
+            || schedule.Customer_Flat_Prorata__c != null
+            || schedule.Customer_GST_Prorata__c != null;
+    }
+
     private static ReceiptComponentAllocation splitReceiptAllocation(
         Decimal amount,
         Decimal basePending,
@@ -503,6 +513,9 @@ public without sharing class FinancialTransactionController {
         try {
             ReceiptWrapper wrapper = (ReceiptWrapper) JSON.deserialize(receiptData, ReceiptWrapper.class);
 
+            if (wrapper.receiptType == 'TDS Payment' && wrapper.paymentFrom != 'Customer') {
+                throw new AuraHandledException('TDS receipts must be paid by the Customer.');
+            }
             if (wrapper.bookingId != null && wrapper.receiptType == 'GST Amount') {
                 Booking__c receiptBooking = [
                     SELECT Project__r.Legacy_Split_Demand_Receipt__c
@@ -591,7 +604,8 @@ public without sharing class FinancialTransactionController {
      */
     public static ReceiptResult allocateReceipt(Id receiptId) {
             Receipt__c receipt = [
-                SELECT Id, Name, Booking__c, Total_Amount__c, Receipt_Date__c, Receipt_Type__c
+                SELECT Id, Name, Booking__c, Total_Amount__c, Receipt_Date__c,
+                       Receipt_Type__c, Payment_From__c
                        , Additional_Charge__c, Use_Advances__c, Use_Credits__c,
                        New_Advance_Created__c, Created_Advance__c,
                        Booking__r.Project__r.Legacy_Split_Demand_Receipt__c
@@ -616,6 +630,7 @@ public without sharing class FinancialTransactionController {
             wrapper.amountReceived = receipt.Total_Amount__c;
             wrapper.receiptDate = receipt.Receipt_Date__c;
             wrapper.receiptType = receipt.Receipt_Type__c;
+            wrapper.paymentFrom = receipt.Payment_From__c;
             wrapper.additionalChargeId = receipt.Additional_Charge__c;
             wrapper.useAdvances = receipt.Use_Advances__c == true;
             wrapper.useCredits = receipt.Use_Credits__c == true;
@@ -627,10 +642,16 @@ public without sharing class FinancialTransactionController {
             Boolean isLegacyGstReceipt =
                 legacySplitMode && receipt.Receipt_Type__c == 'GST Amount';
             Boolean isTdsPayment = receipt.Receipt_Type__c == 'TDS Payment';
+            if (isTdsPayment && receipt.Payment_From__c != 'Customer') {
+                throw new AuraHandledException('TDS receipts must be paid by the Customer.');
+            }
             Boolean isCombinedModeReceipt =
                 !legacySplitMode
                 && (receipt.Receipt_Type__c == 'Installment Payment'
                     || receipt.Receipt_Type__c == 'GST Amount');
+            Boolean sourceSpecificSplitReceipt =
+                legacySplitMode
+                && (receipt.Payment_From__c == 'Bank' || receipt.Payment_From__c == 'Customer');
 
             Decimal remainingAmount = receipt.Total_Amount__c;
             List<Receipt_Line_Item__c> lineItems = new List<Receipt_Line_Item__c>();
@@ -772,7 +793,9 @@ public without sharing class FinancialTransactionController {
                     SELECT Id, Name, Pending_Amount__c, Sequence__c,
                            Payment_Schedule_Amount__c, GST_Amount__c,
                            Payment_Schedule_Amount_Pending__c, GST_Amount_Pending__c,
-                           TDS_Amount__c, TDS_Amount_Pending__c
+                           TDS_Amount__c, TDS_Amount_Pending__c,
+                           Bank_Flat_Amount__c, Bank_GST_Amount__c,
+                           Customer_Flat_Prorata__c, Customer_GST_Prorata__c
                     FROM Payment_Schedule__c
                     WHERE Booking__c = :wrapper.bookingId
                     AND Pending_Amount__c > 0
@@ -782,13 +805,26 @@ public without sharing class FinancialTransactionController {
                 // Get all open demands grouped by Payment Schedule
                 allOpenDemands = [
                     SELECT Id, Name, Pending_Amount__c, Payment_Schedule__c,
-                    Demand_Type__c, Demand_Component__c, Status__c, Due_Date__c
+                    Demand_Type__c, Demand_Component__c, Demand_Audience__c,
+                    TDS_Amount__c, Status__c, Due_Date__c
                     FROM Demands__c
                     WHERE Booking__c = :wrapper.bookingId
                     AND Status__c IN :PostSalesConstants.DEMAND_ALL_OPEN_STATUSES
                     AND Pending_Amount__c > 0
                     ORDER BY Due_Date__c ASC
                 ];
+            }
+
+            Map<Id, Map<String, DemandComponentService.ReceiptSourceTotals>>
+                sourceTotalsBySchedule =
+                    new Map<Id, Map<String, DemandComponentService.ReceiptSourceTotals>>();
+            if (sourceSpecificSplitReceipt && !pendingSchedules.isEmpty()) {
+                Set<Id> splitScheduleIds = new Set<Id>();
+                for (Payment_Schedule__c schedule : pendingSchedules) {
+                    if (hasAudienceSplit(schedule)) splitScheduleIds.add(schedule.Id);
+                }
+                sourceTotalsBySchedule =
+                    DemandComponentService.getReceiptSourceTotals(splitScheduleIds);
             }
 
             Map<Id, List<Demands__c>> demandsBySchedule = new Map<Id, List<Demands__c>>();
@@ -804,6 +840,26 @@ public without sharing class FinancialTransactionController {
                     unlinkedDemands.add(d);
                 }
             }
+            Map<Id, Decimal> tdsPaidByDemand = new Map<Id, Decimal>();
+            if (sourceSpecificSplitReceipt && !allOpenDemands.isEmpty()) {
+                Set<Id> openDemandIds = new Set<Id>();
+                for (Demands__c demand : allOpenDemands) {
+                    openDemandIds.add(demand.Id);
+                }
+                for (AggregateResult result : [
+                    SELECT Demand__c demandId, SUM(TDS_Amount__c) tdsPaid
+                    FROM Receipt_Line_Item__c
+                    WHERE Demand__c IN :openDemandIds
+                    AND Receipt__r.Payment_From__c = 'Customer'
+                    AND Receipt__r.Approval_Status__c != 'Rejected'
+                    GROUP BY Demand__c
+                ]) {
+                    tdsPaidByDemand.put(
+                        (Id) result.get('demandId'),
+                        (Decimal) result.get('tdsPaid')
+                    );
+                }
+            }
 
             // Allocate in Payment Schedule sequence order. For each schedule, pay its
             // linked demands first, then allocate any remaining schedule balance directly
@@ -815,6 +871,37 @@ public without sharing class FinancialTransactionController {
                     ?? (ps.Payment_Schedule_Amount__c ?? 0);
                 Decimal gstPending = ps.GST_Amount_Pending__c ?? (ps.GST_Amount__c ?? 0);
                 Decimal tdsPending = ps.TDS_Amount_Pending__c ?? (ps.TDS_Amount__c ?? 0);
+                Boolean audienceSplit = sourceSpecificSplitReceipt && hasAudienceSplit(ps);
+                Decimal customerTdsPending = 0;
+                Decimal bankTdsPending = 0;
+                if (audienceSplit) {
+                    // Flat/GST follow their receipt payer; Customer TDS covers Customer first, then Bank.
+                    DemandComponentService.ReceiptSourceTotals sourceTotals =
+                        DemandComponentService.getReceiptSourceTotals(
+                            sourceTotalsBySchedule,
+                            ps.Id,
+                            receipt.Payment_From__c == 'Bank'
+                        );
+                    Decimal sourceFlatAmount = receipt.Payment_From__c == 'Bank'
+                        ? (ps.Bank_Flat_Amount__c ?? 0)
+                        : (ps.Customer_Flat_Prorata__c ?? 0);
+                    Decimal sourceGstAmount = receipt.Payment_From__c == 'Bank'
+                        ? (ps.Bank_GST_Amount__c ?? 0)
+                        : (ps.Customer_GST_Prorata__c ?? 0);
+                    basePending = Math.max(0, sourceFlatAmount - sourceTotals.flatAmount);
+                    gstPending = Math.max(0, sourceGstAmount - sourceTotals.gstAmount);
+                    customerTdsPending = DemandComponentService.tdsAmountByAudience(
+                        ps, false, true, sourceTotalsBySchedule
+                    );
+                    bankTdsPending = DemandComponentService.tdsAmountByAudience(
+                        ps, true, true, sourceTotalsBySchedule
+                    );
+                    tdsPending = isTdsPayment
+                        ? customerTdsPending + bankTdsPending
+                        : (receipt.Payment_From__c == 'Bank'
+                            ? bankTdsPending
+                            : customerTdsPending);
+                }
                 Decimal eligibleScheduleAmount = basePending + gstPending + tdsPending;
                 if (isLegacyInstallment) {
                     eligibleScheduleAmount = basePending;
@@ -840,9 +927,29 @@ public without sharing class FinancialTransactionController {
                 );
 
                 if (demandsBySchedule.containsKey(ps.Id)) {
-                    for (Demands__c demand : demandsBySchedule.get(ps.Id)) {
+                    List<Demands__c> demandsForSchedule =
+                        demandsBySchedule.get(ps.Id);
+                    if (isTdsPayment && audienceSplit) {
+                        List<Demands__c> customerFirst = new List<Demands__c>();
+                        for (Demands__c demand : demandsForSchedule) {
+                            if (demand.Demand_Audience__c == 'Customer') {
+                                customerFirst.add(demand);
+                            }
+                        }
+                        for (Demands__c demand : demandsForSchedule) {
+                            if (demand.Demand_Audience__c == 'Bank') {
+                                customerFirst.add(demand);
+                            }
+                        }
+                        demandsForSchedule = customerFirst;
+                    }
+                    for (Demands__c demand : demandsForSchedule) {
                         if (remainingAmount <= 0 || psRemaining <= 0) break;
                         if (demand.Pending_Amount__c <= 0) continue;
+                        if (audienceSplit && !isTdsPayment
+                            && demand.Demand_Audience__c != receipt.Payment_From__c) {
+                            continue;
+                        }
                         if ((isLegacyInstallment && demand.Demand_Component__c != 'Flat')
                             || (isLegacyGstReceipt && demand.Demand_Component__c != 'GST')
                             || (isTdsPayment
@@ -859,6 +966,22 @@ public without sharing class FinancialTransactionController {
                             demandCapacity = gstPending;
                         } else if (isTdsPayment) {
                             demandCapacity = tdsPending;
+                            if (audienceSplit) {
+                                Decimal audienceTdsPending =
+                                    demand.Demand_Audience__c == 'Customer'
+                                        ? customerTdsPending
+                                        : bankTdsPending;
+                                Decimal tdsAlreadyPaid =
+                                    tdsPaidByDemand.get(demand.Id) ?? 0;
+                                Decimal demandTdsPending = Math.max(
+                                    0,
+                                    (demand.TDS_Amount__c ?? 0) - tdsAlreadyPaid
+                                );
+                                demandCapacity = Math.min(
+                                    audienceTdsPending,
+                                    demandTdsPending
+                                );
+                            }
                         } else if (isCombinedModeReceipt && demand.Demand_Component__c == 'Flat') {
                             demandCapacity = basePending;
                         } else if (isCombinedModeReceipt && demand.Demand_Component__c == 'GST') {
@@ -888,6 +1011,13 @@ public without sharing class FinancialTransactionController {
                         basePending -= components.baseAmount;
                         gstPending -= components.gstAmount;
                         tdsPending -= components.tdsAmount;
+                        if (audienceSplit && isTdsPayment) {
+                            if (demand.Demand_Audience__c == 'Customer') {
+                                customerTdsPending -= components.tdsAmount;
+                            } else if (demand.Demand_Audience__c == 'Bank') {
+                                bankTdsPending -= components.tdsAmount;
+                            }
+                        }
                         remainingAmount -= allocated;
                         psRemaining -= allocated;
                         allocatedToDemands += allocated;
@@ -926,6 +1056,10 @@ public without sharing class FinancialTransactionController {
                 if (remainingAmount <= 0) break;
                 if (demand.Pending_Amount__c <= 0) continue;
                 if (isTdsPayment) continue;
+                if (sourceSpecificSplitReceipt
+                    && demand.Demand_Audience__c != receipt.Payment_From__c) {
+                    continue;
+                }
                 if ((isLegacyInstallment && demand.Demand_Component__c != 'Flat')
                     || (isLegacyGstReceipt && demand.Demand_Component__c != 'GST')) {
                     continue;
@@ -1721,6 +1855,8 @@ public without sharing class FinancialTransactionController {
         @AuraEnabled public Decimal gstPending;
         @AuraEnabled public Decimal basePaid;
         @AuraEnabled public Decimal gstPaid;
+        @AuraEnabled public Decimal tdsAmount;
+        @AuraEnabled public Decimal tdsPending;
         @AuraEnabled public String status;
         @AuraEnabled public Date dueDate;
         @AuraEnabled public Integer sequence;

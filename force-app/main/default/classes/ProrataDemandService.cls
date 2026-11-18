@@ -123,17 +123,34 @@ public with sharing class ProrataDemandService {
         ];
         if (rows.isEmpty()) return 0;
 
+        Set<Id> sourceSplitScheduleIds = new Set<Id>();
+        for (Payment_Schedule__c schedule : rows) {
+            if (schedule.Booking__r.Project__r.Legacy_Split_Demand_Receipt__c == true
+                && FUNDING_SPLIT.contains(schedule.Booking__r.Funding_Type__c)
+                && DemandComponentService.hasAudienceSplit(schedule)) {
+                sourceSplitScheduleIds.add(schedule.Id);
+            }
+        }
+        Map<Id, Map<String, DemandComponentService.ReceiptSourceTotals>> receiptTotalsBySchedule =
+            DemandComponentService.getReceiptSourceTotals(sourceSplitScheduleIds);
+
         List<Demands__c> demands = new List<Demands__c>();
         Map<Id, Payment_Schedule__c> flags = new Map<Id, Payment_Schedule__c>();
         Set<Id> demandScheduleIds = new Set<Id>();
         if (bankSide) {
             for (Payment_Schedule__c schedule : rows) {
+                Boolean sourceSpecificSchedule =
+                    sourceSplitScheduleIds.contains(schedule.Id);
                 if (!CLOSED_STATUSES.contains(schedule.Status__c)
                     && !DemandComponentService.isComponentRaised(
                         schedule, DemandComponentService.FLAT, true
                     )
-                    && DemandComponentService.amount(
-                        schedule, DemandComponentService.FLAT, true
+                    && DemandComponentService.amountByAudience(
+                        schedule,
+                        DemandComponentService.FLAT,
+                        true,
+                        sourceSpecificSchedule,
+                        receiptTotalsBySchedule
                     ) > 0) {
                     demandScheduleIds.add(schedule.Id);
                 }
@@ -153,19 +170,24 @@ public with sharing class ProrataDemandService {
         for (Payment_Schedule__c ps : rows) {
             if (CLOSED_STATUSES.contains(ps.Status__c)) continue;
 
+            Boolean sourceSpecificSchedule = sourceSplitScheduleIds.contains(ps.Id);
             Decimal flat = bankSide
-                ? DemandComponentService.amount(ps, DemandComponentService.FLAT, true)
-                : Math.max(
-                    0,
-                    nz(ps.Customer_Flat_Prorata__c)
-                        - nz(ps.Payment_Schedule_Amount_Paid__c)
+                ? DemandComponentService.amountByAudience(
+                    ps, DemandComponentService.FLAT, true,
+                    sourceSpecificSchedule, receiptTotalsBySchedule
+                )
+                : DemandComponentService.amountByAudience(
+                    ps, DemandComponentService.FLAT, false,
+                    sourceSpecificSchedule, receiptTotalsBySchedule
                 );
             Decimal gst  = bankSide
-                ? DemandComponentService.amount(ps, DemandComponentService.GST, true)
-                : Math.max(
-                    0,
-                    nz(ps.Customer_GST_Prorata__c)
-                        - nz(ps.GST_Amount_Paid__c)
+                ? DemandComponentService.amountByAudience(
+                    ps, DemandComponentService.GST, true,
+                    sourceSpecificSchedule, receiptTotalsBySchedule
+                )
+                : DemandComponentService.amountByAudience(
+                    ps, DemandComponentService.GST, false,
+                    sourceSpecificSchedule, receiptTotalsBySchedule
                 );
             for (String component : new List<String>{ DemandComponentService.FLAT, DemandComponentService.GST }) {
                 if (DemandComponentService.isComponentRaised(ps, component, bankSide)) continue;
@@ -178,13 +200,20 @@ public with sharing class ProrataDemandService {
                     Decimal carryForward =
                         carryForwardAllocation.amountByDemandSchedule.containsKey(ps.Id)
                             ? carryForwardAllocation.amountByDemandSchedule.get(ps.Id) : 0;
-                    tdsAmount = (amount * 0.01).setScale(2, System.RoundingMode.HALF_UP)
-                        + carryForward;
+                    tdsAmount = DemandComponentService.tdsAmountByAudience(
+                        ps, true, sourceSpecificSchedule, receiptTotalsBySchedule
+                    ) + carryForward;
                     demandAmount += carryForward;
                     if (carryForward > 0) carryForwardDemandScheduleIds.add(ps.Id);
                 } else if (component == DemandComponentService.FLAT) {
-                    tdsAmount = (amount * 0.01).setScale(2, System.RoundingMode.HALF_UP);
-                    demandAmount += tdsAmount;
+                    if (sourceSpecificSchedule) {
+                        tdsAmount = DemandComponentService.tdsAmountByAudience(
+                            ps, false, true, receiptTotalsBySchedule
+                        );
+                    } else {
+                        tdsAmount = (amount * 0.01).setScale(2, System.RoundingMode.HALF_UP);
+                        demandAmount += tdsAmount;
+                    }
                 }
                 Decimal flatAmount = component == DemandComponentService.FLAT
                     ? Math.max(0, demandAmount - tdsAmount) : 0;

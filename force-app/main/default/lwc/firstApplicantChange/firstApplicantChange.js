@@ -39,16 +39,21 @@ export default class FirstApplicantChange extends NavigationMixin(LightningEleme
         return this.changes.length > 0;
     }
 
-    get hasDetails() {
-        return this.details.length > 0;
+    // Single-line details sit two per row; addresses (textareas) run full width.
+    get shortDetails() {
+        return this.details.filter((d) => !d.isTextarea);
     }
 
-    // Other first-applicant details, prefilled with the booking's current values.
+    get addressDetails() {
+        return this.details.filter((d) => d.isTextarea);
+    }
+
+    // Other first-applicant details. They start empty: everything is entered for the new applicant.
     buildDetails() {
         const list = (this.ctx && this.ctx.details) ? this.ctx.details : [];
         this.details = list.map((d) => ({
             ...d,
-            value: d.value || '',
+            value: '',
             options: d.options || [],
             isPicklist: d.type === 'picklist',
             isDate: d.type === 'date',
@@ -69,10 +74,6 @@ export default class FirstApplicantChange extends NavigationMixin(LightningEleme
             if (d.value) values[d.fieldName] = d.value;
         });
         return JSON.stringify(values);
-    }
-
-    get submitDisabled() {
-        return this.isLoading || !this.newApplicant;
     }
 
     // Builds the row list with a generated record URL for each change,
@@ -125,8 +126,11 @@ export default class FirstApplicantChange extends NavigationMixin(LightningEleme
     handleReason(event) { this.reason = event.detail.value; }
 
     async handleSubmit() {
-        const mobileInput = this.template.querySelector('[data-id="new-mobile"]');
-        if (mobileInput && !mobileInput.reportValidity()) {
+        // Every field is required; show all the missing ones at once.
+        const inputs = [...this.template.querySelectorAll('.fac-field')];
+        const allValid = inputs.reduce((ok, input) => input.reportValidity() && ok, true);
+        if (!allValid) {
+            this.showToast('Missing details', 'Fill in all the fields before submitting for approval.', 'error');
             return;
         }
 
@@ -149,6 +153,7 @@ export default class FirstApplicantChange extends NavigationMixin(LightningEleme
             this.newEmail = '';
             this.newMobile = '';
             this.reason = '';
+            this.buildDetails();
             if (this.wiredCtx) await refreshApex(this.wiredCtx);
             this.dispatchEvent(new CloseActionScreenEvent());
         } catch (error) {

@@ -178,6 +178,8 @@ public without sharing class FirstApplicantChangeController {
         fac.New_First_Applicant_Mobile__c = newMobile;
         fac.Reason__c = reason;
         applyDetails(fac, detailsJson);
+        // The change screen sends the details: then every field is required.
+        if (detailsJson != null) requireAll(fac);
         fac.Approval_Status__c = 'Pending';
         fac.Approver_1__c = b.CRM_Manager__c;
         fac.Approver_2__c = b.Admin_MD__c;
@@ -227,6 +229,26 @@ public without sharing class FirstApplicantChangeController {
             } else {
                 fac.put(changeField, text);
             }
+        }
+    }
+
+    /** Refuses the request when any new-applicant field is blank, naming the missing ones. */
+    @TestVisible
+    private static void requireAll(First_Applicant_Change__c fac) {
+        List<String> missing = new List<String>();
+        if (String.isBlank(fac.New_First_Applicant_Email__c)) missing.add('New Email');
+        if (String.isBlank(fac.New_First_Applicant_Mobile__c)) missing.add('New Mobile');
+        Map<String, Schema.SObjectField> changeFields = First_Applicant_Change__c.SObjectType.getDescribe().fields.getMap();
+        for (String bookingField : FirstApplicantChangeService.DETAIL_BOOKING_FIELDS) {
+            String changeField = FirstApplicantChangeService.changeFieldFor(bookingField);
+            Schema.SObjectField sf = changeFields.get(changeField.toLowerCase());
+            if (sf == null) continue;
+            Object value = fac.get(changeField);
+            if (value == null || String.isBlank(String.valueOf(value))) missing.add(sf.getDescribe().getLabel());
+        }
+        if (String.isBlank(fac.Reason__c)) missing.add('Reason');
+        if (!missing.isEmpty()) {
+            throw new AuraHandledException('Fill in all the fields. Missing: ' + String.join(missing, ', ') + '.');
         }
     }
 

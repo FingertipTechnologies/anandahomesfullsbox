@@ -10,61 +10,60 @@
                     class="slds-m-bottom_small">
                 </lightning-input>
 
-                <div class="slds-grid slds-wrap slds-gutters_x-small">
-                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-                        <lightning-input label="New First Applicant Name" value={newApplicant}
+                <h3 class="slds-text-title_caps slds-m-bottom_x-small">New First Applicant Details</h3>
+                <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_small">
+                    All fields are required.
+                </p>
+
+                <!-- Single-line fields: two per row -->
+                <div class="slds-grid slds-wrap slds-gutters_small">
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-bottom_small">
+                        <lightning-input class="fac-field" label="New First Applicant Name" value={newApplicant}
                             required onchange={handleNewApplicant}>
                         </lightning-input>
                     </div>
-                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-                        <lightning-input type="email" label="New Email" value={newEmail}
-                            onchange={handleNewEmail}>
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-bottom_small">
+                        <lightning-input class="fac-field" type="email" label="New Email" value={newEmail}
+                            required onchange={handleNewEmail}>
                         </lightning-input>
                     </div>
-                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-                        <lightning-input type="tel" label="New Mobile" value={newMobile}
-                            data-id="new-mobile" pattern="[0-9]*"
+                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-bottom_small">
+                        <lightning-input class="fac-field" type="tel" label="New Mobile" value={newMobile}
+                            required pattern="[0-9]*"
                             message-when-pattern-mismatch="Enter numbers only."
                             onchange={handleNewMobile}>
                         </lightning-input>
                     </div>
+                    <template for:each={shortDetails} for:item="d">
+                        <div key={d.fieldName} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-bottom_small">
+                            <template if:true={d.isPicklist}>
+                                <lightning-combobox class="fac-field" label={d.label} value={d.value}
+                                    options={d.options} placeholder="--None--" required
+                                    data-field={d.fieldName} onchange={handleDetailChange}>
+                                </lightning-combobox>
+                            </template>
+                            <template if:true={d.isDate}>
+                                <lightning-input class="fac-field" type="date" label={d.label} value={d.value}
+                                    required data-field={d.fieldName} onchange={handleDetailChange}>
+                                </lightning-input>
+                            </template>
+                            <template if:true={d.isText}>
+                                <lightning-input class="fac-field" label={d.label} value={d.value}
+                                    required data-field={d.fieldName} onchange={handleDetailChange}>
+                                </lightning-input>
+                            </template>
+                        </div>
+                    </template>
                 </div>
 
-                <template if:true={hasDetails}>
-                    <h3 class="slds-text-title_caps slds-m-top_medium slds-m-bottom_x-small">First Applicant Details</h3>
-                    <p class="slds-text-body_small slds-text-color_weak slds-m-bottom_x-small">
-                        Filled with the booking's current values - change what is different for the new first applicant.
-                    </p>
-                    <div class="slds-grid slds-wrap slds-gutters_x-small">
-                        <template for:each={details} for:item="d">
-                            <div key={d.fieldName} class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
-                                <template if:true={d.isPicklist}>
-                                    <lightning-combobox label={d.label} value={d.value} options={d.options}
-                                        data-field={d.fieldName} onchange={handleDetailChange}>
-                                    </lightning-combobox>
-                                </template>
-                                <template if:true={d.isDate}>
-                                    <lightning-input type="date" label={d.label} value={d.value}
-                                        data-field={d.fieldName} onchange={handleDetailChange}>
-                                    </lightning-input>
-                                </template>
-                                <template if:true={d.isTextarea}>
-                                    <lightning-textarea label={d.label} value={d.value}
-                                        data-field={d.fieldName} onchange={handleDetailChange}>
-                                    </lightning-textarea>
-                                </template>
-                                <template if:true={d.isText}>
-                                    <lightning-input label={d.label} value={d.value}
-                                        data-field={d.fieldName} onchange={handleDetailChange}>
-                                    </lightning-input>
-                                </template>
-                            </div>
-                        </template>
-                    </div>
+                <!-- Addresses and reason: full width -->
+                <template for:each={addressDetails} for:item="d">
+                    <lightning-textarea key={d.fieldName} class="fac-field slds-p-bottom_small" label={d.label}
+                        value={d.value} required data-field={d.fieldName} onchange={handleDetailChange}>
+                    </lightning-textarea>
                 </template>
-
-                <lightning-textarea label="Reason" value={reason} onchange={handleReason}
-                    class="slds-m-top_x-small">
+                <lightning-textarea class="fac-field" label="Reason" value={reason} required
+                    onchange={handleReason}>
                 </lightning-textarea>
 
                 <div class="slds-m-top_medium slds-text-align_right">
@@ -72,7 +71,7 @@
                         onclick={handleClose}>
                     </lightning-button>
                     <lightning-button variant="brand" label="Submit for Approval"
-                        onclick={handleSubmit} disabled={submitDisabled}>
+                        onclick={handleSubmit} disabled={isLoading}>
                     </lightning-button>
                 </div>
 
@@ -86,7 +85,6 @@
                                     <th>Old</th>
                                     <th>New</th>
                                     <th>Approval</th>
-                                    
                                 </tr>
                             </thead>
                             <tbody>
@@ -98,7 +96,6 @@
                                         <td>{c.oldApplicant}</td>
                                         <td>{c.newApplicant}</td>
                                         <td>{c.approvalStatus}</td>
-                                        
                                     </tr>
                                 </template>
                             </tbody>

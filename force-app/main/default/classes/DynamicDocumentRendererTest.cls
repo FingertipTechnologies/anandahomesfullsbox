@@ -262,7 +262,6 @@ private class DynamicDocumentRendererTest {
                 new Map<String, Object>{
                     'type' => 'content',
                     'content' => 'From: Buyer{!AND_CO_APPLICANT_NAMES}| Names: {!CO_APPLICANT_NAMES}|'
-                        + ' Title: {!Receipt_Document_Title__c}| Note:{!Receipt_GST_Note__c}|'
                 }
             }
         });
@@ -273,9 +272,16 @@ private class DynamicDocumentRendererTest {
 
         System.assert(html.contains('From: Buyer &amp; Mrs. Receipt Co Applicant|'), html);
         System.assert(html.contains('Names: Mrs. Receipt Co Applicant|'), html);
-        // a project that receives Flat and GST together: plain RECEIPT + "(INCLUDING GST),"
-        System.assert(html.contains('Title: RECEIPT|'), html);
-        System.assert(html.contains('(INCLUDING GST),|'), html);
+        // Receipt title formulas: a project that receives Flat and GST together prints a plain
+        // RECEIPT with "(INCLUDING GST),"; a project with separate GST receipts prints
+        // RECEIPT FOR FLAT / RECEIPT FOR GST and no note.
+        Receipt__c combined = [SELECT Receipt_Document_Title__c, Receipt_GST_Note__c FROM Receipt__c WHERE Id = :receipt.Id];
+        System.assertEquals('RECEIPT', combined.Receipt_Document_Title__c);
+        System.assertEquals('(INCLUDING GST),', combined.Receipt_GST_Note__c.trim());
+        update new Project__c(Id = project.Id, Legacy_Split_Demand_Receipt__c = true);
+        Receipt__c split = [SELECT Receipt_Document_Title__c, Receipt_GST_Note__c FROM Receipt__c WHERE Id = :receipt.Id];
+        System.assertEquals('RECEIPT FOR FLAT', split.Receipt_Document_Title__c);
+        System.assertEquals(null, split.Receipt_GST_Note__c);
 
         // A record with no booking lookup is left alone.
         System.assertEquals(null, DynamicDocumentRenderer.coApplicantBookingId(project, 'Project__c'));
@@ -365,7 +371,7 @@ private class DynamicDocumentRendererTest {
         );
         insert project;
         Booking__c booking = new Booking__c(
-            Project__c = project.Id, Booking_Date__c = Date.newInstance(2026, 11, 19), Status__c = 'Booked'
+            Project__c = project.Id, Booking_Date__c = Date.newInstance(2025, 11, 19), Status__c = 'Booked'
         );
         insert booking;
         String templateJson = JSON.serialize(new Map<String, Object>{
@@ -377,7 +383,7 @@ private class DynamicDocumentRendererTest {
             }
         });
         String html = DynamicDocumentRenderer.renderDocument(templateJson, booking.Id, 'Booking__c');
-        System.assert(html.contains('on this 19th day of November, 2026 between'), html);
+        System.assert(html.contains('on this 19th day of November, 2025 between'), html);
         System.assert(html.contains('|________ day of ______________, 20____|'), html);
         System.assert(!html.contains('DATEWORDS'), html);
     }

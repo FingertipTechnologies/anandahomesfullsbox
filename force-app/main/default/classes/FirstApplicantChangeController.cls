@@ -184,7 +184,12 @@ public without sharing class FirstApplicantChangeController {
         fac.Approver_1__c = b.CRM_Manager__c;
         fac.Approver_2__c = b.Admin_MD__c;
 
-        insert fac;
+        try {
+            insert fac;
+        } catch (DmlException e) {
+            // e.g. the Aadhaar / PAN / Mobile / Date of Birth rules: show their own message.
+            throw new AuraHandledException(e.getDmlMessage(0));
+        }
 
         submitFacForApproval(fac.Id);
         return fac.Id;

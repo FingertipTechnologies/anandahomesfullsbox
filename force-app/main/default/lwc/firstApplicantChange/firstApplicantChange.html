@@ -30,7 +30,7 @@
                     <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 slds-p-bottom_small">
                         <lightning-input class="fac-field" type="tel" label="New Mobile" value={newMobile}
                             required pattern="[0-9]*"
-                            message-when-pattern-mismatch="Enter numbers only."
+                            message-when-pattern-mismatch="Mobile number can contain numeric values only."
                             onchange={handleNewMobile}>
                         </lightning-input>
                     </div>
@@ -44,12 +44,15 @@
                             </template>
                             <template if:true={d.isDate}>
                                 <lightning-input class="fac-field" type="date" label={d.label} value={d.value}
-                                    required data-field={d.fieldName} onchange={handleDetailChange}>
+                                    required max={d.maxDate} message-when-range-overflow={d.rangeMessage}
+                                    data-field={d.fieldName} onchange={handleDetailChange}>
                                 </lightning-input>
                             </template>
                             <template if:true={d.isText}>
                                 <lightning-input class="fac-field" label={d.label} value={d.value}
-                                    required data-field={d.fieldName} onchange={handleDetailChange}>
+                                    required pattern={d.pattern} message-when-pattern-mismatch={d.patternMessage}
+                                    max-length={d.maxLength}
+                                    data-field={d.fieldName} onchange={handleDetailChange}>
                                 </lightning-input>
                             </template>
                         </div>

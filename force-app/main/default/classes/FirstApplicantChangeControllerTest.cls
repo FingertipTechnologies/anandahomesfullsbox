@@ -88,6 +88,35 @@ private class FirstApplicantChangeControllerTest {
         System.assertEquals(1, [SELECT COUNT() FROM First_Applicant_Change__c WHERE Booking__c = :b.Id]);
     }
 
+    /** The booking's Aadhaar / PAN / Mobile / Date of Birth checks also apply to the requested applicant. */
+    @isTest
+    static void createChangeWithDetails_appliesBookingFieldChecks() {
+        Booking__c b = makeBooking();
+        Map<String, Map<String, Object>> badDetails = new Map<String, Map<String, Object>>{
+            'aadhaar' => new Map<String, Object>{ 'Aadhaar__c' => '12345' },
+            'pan' => new Map<String, Object>{ 'PAN_Number__c' => '12345ABCDE' },
+            'dob' => new Map<String, Object>{ 'Date_of_Birth__c' => String.valueOf(Date.today().addDays(1)) }
+        };
+        Integer refused = 0;
+        Test.startTest();
+        for (String key : badDetails.keySet()) {
+            Map<String, Object> details = allDetails();
+            details.putAll(badDetails.get(key));
+            try {
+                FirstApplicantChangeController.createChangeWithDetails(
+                    b.Id, 'New Name', 'new@example.com', '9876543210', 'Transfer', JSON.serialize(details));
+            } catch (AuraHandledException e) { refused++; }
+        }
+        try {
+            FirstApplicantChangeController.createChangeWithDetails(
+                b.Id, 'New Name', 'new@example.com', '98765-43210', 'Transfer', JSON.serialize(allDetails()));
+        } catch (AuraHandledException e) { refused++; }
+        Test.stopTest();
+
+        System.assertEquals(4, refused, 'Bad Aadhaar, PAN, future DOB and non-numeric mobile must all be refused');
+        System.assertEquals(0, [SELECT COUNT() FROM First_Applicant_Change__c WHERE Booking__c = :b.Id]);
+    }
+
     @isTest
     static void validationErrors() {
         Booking__c b = makeBooking();

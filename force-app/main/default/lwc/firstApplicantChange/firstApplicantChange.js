@@ -6,6 +6,23 @@ import { refreshApex } from '@salesforce/apex';
 import getContext from '@salesforce/apex/FirstApplicantChangeController.getContext';
 import createChangeWithDetails from '@salesforce/apex/FirstApplicantChangeController.createChangeWithDetails';
 
+// Same checks as the booking's validation rules (Aadhaar_Pattern, PAN_Number_Pattern, Date_of_Birth_Validation).
+const FIELD_RULES = {
+    Aadhaar__c: { pattern: '[0-9]{12}', patternMessage: 'Aadhaar number must be exactly 12 digits.', maxLength: 12 },
+    PAN_Number__c: {
+        pattern: '[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}',
+        patternMessage: 'PAN must be in the format AAAAA9999A (5 letters, 4 digits, 1 letter).',
+        maxLength: 10
+    },
+    Date_of_Birth__c: { maxDate: 'today', rangeMessage: 'Date of Birth cannot be in the future.' }
+};
+
+function todayIso() {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 export default class FirstApplicantChange extends NavigationMixin(LightningElement) {
     @api recordId; // Booking__c
 
@@ -51,15 +68,23 @@ export default class FirstApplicantChange extends NavigationMixin(LightningEleme
     // Other first-applicant details. They start empty: everything is entered for the new applicant.
     buildDetails() {
         const list = (this.ctx && this.ctx.details) ? this.ctx.details : [];
-        this.details = list.map((d) => ({
+        this.details = list.map((d) => {
+            const rule = FIELD_RULES[d.fieldName] || {};
+            return {
             ...d,
+            pattern: rule.pattern,
+            patternMessage: rule.patternMessage,
+            maxLength: rule.maxLength,
+            maxDate: rule.maxDate === 'today' ? todayIso() : undefined,
+            rangeMessage: rule.rangeMessage,
             value: '',
             options: d.options || [],
             isPicklist: d.type === 'picklist',
             isDate: d.type === 'date',
             isTextarea: d.type === 'textarea',
             isText: d.type === 'text'
-        }));
+            };
+        });
     }
 
     handleDetailChange(event) {

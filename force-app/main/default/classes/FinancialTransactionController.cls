@@ -840,6 +840,7 @@ public without sharing class FinancialTransactionController {
                     unlinkedDemands.add(d);
                 }
             }
+            addDemandsByDemandLines(allOpenDemands, demandsBySchedule, unlinkedDemands);
             Map<Id, Decimal> tdsPaidByDemand = new Map<Id, Decimal>();
             if (sourceSpecificSplitReceipt && !allOpenDemands.isEmpty()) {
                 Set<Id> openDemandIds = new Set<Id>();
@@ -1474,6 +1475,46 @@ public without sharing class FinancialTransactionController {
         return sortedDemands;
     }
     
+    /**
+     * A demand raised for several milestones at once (e.g. a catch-up Individual Demand) has one
+     * Payment_Schedule__c but a Demand_Line__c per milestone it covers. Without this, a receipt
+     * paid only that one schedule against the demand: the other milestones' money reached the
+     * schedules but never the demand, which stayed Partially Paid (prod B-1391, 2026-11-19).
+     * Adds the demand under every schedule its lines cover; a demand found this way is no longer
+     * treated as unlinked.
+     */
+    @TestVisible
+    private static void addDemandsByDemandLines(
+        List<Demands__c> openDemands,
+        Map<Id, List<Demands__c>> demandsBySchedule,
+        List<Demands__c> unlinkedDemands
+    ) {
+        if (openDemands == null || openDemands.isEmpty()) return;
+        Map<Id, Demands__c> byId = new Map<Id, Demands__c>(openDemands);
+        Set<Id> linkedViaLines = new Set<Id>();
+        for (Demand_Line__c line : [
+            SELECT Demand__c, Payment_Schedule__c
+            FROM Demand_Line__c
+            WHERE Demand__c IN :byId.keySet() AND Payment_Schedule__c != null
+            ORDER BY Sequence__c ASC
+        ]) {
+            Demands__c demand = byId.get(line.Demand__c);
+            if (!demandsBySchedule.containsKey(line.Payment_Schedule__c)) {
+                demandsBySchedule.put(line.Payment_Schedule__c, new List<Demands__c>());
+            }
+            List<Demands__c> forSchedule = demandsBySchedule.get(line.Payment_Schedule__c);
+            Boolean present = false;
+            for (Demands__c existing : forSchedule) {
+                if (existing.Id == demand.Id) { present = true; break; }
+            }
+            if (!present) forSchedule.add(demand);
+            linkedViaLines.add(demand.Id);
+        }
+        for (Integer i = unlinkedDemands.size() - 1; i >= 0; i--) {
+            if (linkedViaLines.contains(unlinkedDemands[i].Id)) unlinkedDemands.remove(i);
+        }
+    }
+
     private static Receipt_Line_Item__c createLineItem(
         Id receiptId, Id bookingId, Integer sequence,
         String allocationType, String lineItemType,

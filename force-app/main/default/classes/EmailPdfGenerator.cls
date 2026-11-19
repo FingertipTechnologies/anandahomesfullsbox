@@ -84,11 +84,22 @@ public with sharing class EmailPdfGenerator {
         Blob pdfBlob = generatePdfFromVfPage(vfPageName, recordId, paramName, extraParams);
 
         Messaging.EmailFileAttachment attachment = new Messaging.EmailFileAttachment();
-        attachment.setFileName(fileName);
+        attachment.setFileName(pdfFileName(fileName));
         attachment.setBody(pdfBlob);
         attachment.setContentType('application/pdf');
 
         return attachment;
+    }
+
+    /**
+     * Every generated letter is a PDF, so its name must end in .pdf: template file names such as
+     * "Demand_Letter_Flat" or "Allotment_Letter" (prod configs, 2026-11-19) arrived without an
+     * extension and could not be opened as PDFs. Blank becomes "Document.pdf".
+     */
+    @TestVisible
+    private static String pdfFileName(String fileName) {
+        String name = String.isBlank(fileName) ? 'Document' : fileName.trim();
+        return name.toLowerCase().endsWith('.pdf') ? name : name + '.pdf';
     }
     
     /**

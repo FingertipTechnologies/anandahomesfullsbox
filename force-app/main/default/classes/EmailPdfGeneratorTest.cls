@@ -129,4 +129,13 @@ private class EmailPdfGeneratorTest {
 
         System.assertEquals(2, infos.size(), 'Should parse two attachments');
     }
+
+    @isTest
+    static void generatedLettersAlwaysEndInPdf() {
+        System.assertEquals('Demand_Letter_Flat.pdf', EmailPdfGenerator.pdfFileName('Demand_Letter_Flat'));
+        System.assertEquals('B-1_REC-1.pdf', EmailPdfGenerator.pdfFileName('B-1_REC-1.pdf'));
+        System.assertEquals('Letter.PDF', EmailPdfGenerator.pdfFileName(' Letter.PDF '));
+        System.assertEquals('Document.pdf', EmailPdfGenerator.pdfFileName(''));
+        System.assertEquals('Document.pdf', EmailPdfGenerator.pdfFileName(null));
+    }
 }

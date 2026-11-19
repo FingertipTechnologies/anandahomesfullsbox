@@ -118,7 +118,8 @@ public with sharing class EmailSenderController {
             preparedData.toRecipients = resolveRecipients(template.recipientsConfig, 'to', recordId, objectApiName);
             preparedData.ccRecipients = resolveRecipients(template.recipientsConfig, 'cc', recordId, objectApiName);
             preparedData.bccRecipients = resolveRecipients(template.recipientsConfig, 'bcc', recordId, objectApiName);
-            
+            addCoApplicantRecipients(preparedData, recordId);
+
             preparedData.subject = EmailMergeFieldResolver.resolveMergeFields(
                 template.subject, recordId, objectApiName
             );
@@ -170,6 +171,41 @@ public with sharing class EmailSenderController {
         }
     }
     
+    /**
+     * Co-applicants go in TO next to the applicant on customer mails sent from this window
+     * (Booking Form, Welcome, Demand, Receipt...). They show in the window, so the user can still
+     * remove one before sending. Mails not addressed to the applicant are left alone.
+     */
+    @TestVisible
+    private static void addCoApplicantRecipients(PreparedEmailData preparedData, Id recordId) {
+        try {
+            List<String> prepared = new List<String>();
+            for (List<RecipientData> recipientGroup : new List<List<RecipientData>>{
+                    preparedData.toRecipients, preparedData.ccRecipients, preparedData.bccRecipients }) {
+                if (recipientGroup == null) continue;
+                for (RecipientData r : recipientGroup) {
+                    if (String.isNotBlank(r.email)) prepared.add(r.email);
+                }
+            }
+            Integer i = 0;
+            for (String address : EmailSenderInvocable.coApplicantEmailsFor(recordId, prepared)) {
+                RecipientData data = new RecipientData();
+                data.id = 'coapplicant_' + (i++);
+                data.type = 'TO';
+                data.sourceType = 'CoApplicant';
+                data.label = 'Co-Applicant';
+                data.email = address;
+                data.isRequired = false;
+                data.isEditable = true;
+                data.isValid = true;
+                preparedData.toRecipients.add(data);
+            }
+        } catch (Exception e) {
+            // Never block the mail because co-applicants could not be read.
+            System.debug('Co-applicant recipients skipped: ' + e.getMessage());
+        }
+    }
+
     // ============ RESOLVE RECIPIENTS ============
     
     private static List<RecipientData> resolveRecipients(

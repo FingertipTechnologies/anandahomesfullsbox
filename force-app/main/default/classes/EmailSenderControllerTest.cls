@@ -475,4 +475,38 @@ private class EmailSenderControllerTest {
             System.assert(true);
         }
     }
+
+    @isTest
+    static void sendEmailWindow_putsCoApplicantsInTo() {
+        Project__c project = new Project__c(Name = 'Co-applicant Window Project', Project_Type__c = 'Residential', Interest_Rate__c = 18);
+        insert project;
+        Plot__c unit = new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Booked');
+        insert unit;
+        Booking__c b = new Booking__c(Project__c = project.Id, Plot__c = unit.Id, Booking_Date__c = Date.today(),
+            Status__c = 'Booked', Email__c = 'window.primary@example.com');
+        insert b;
+        insert new Co_Applicant__c(Booking__c = b.Id, Email__c = 'window.co@example.com');
+
+        EmailSenderController.PreparedEmailData toApplicant = new EmailSenderController.PreparedEmailData();
+        EmailSenderController.RecipientData primary = new EmailSenderController.RecipientData();
+        primary.email = 'window.primary@example.com';
+        toApplicant.toRecipients = new List<EmailSenderController.RecipientData>{ primary };
+        toApplicant.ccRecipients = new List<EmailSenderController.RecipientData>();
+
+        EmailSenderController.PreparedEmailData internalMail = new EmailSenderController.PreparedEmailData();
+        EmailSenderController.RecipientData finance = new EmailSenderController.RecipientData();
+        finance.email = 'finance@example.com';
+        internalMail.toRecipients = new List<EmailSenderController.RecipientData>{ finance };
+
+        Test.startTest();
+        EmailSenderController.addCoApplicantRecipients(toApplicant, b.Id);
+        EmailSenderController.addCoApplicantRecipients(internalMail, b.Id);
+        EmailSenderController.addCoApplicantRecipients(new EmailSenderController.PreparedEmailData(), null);
+        Test.stopTest();
+
+        System.assertEquals(2, toApplicant.toRecipients.size());
+        System.assertEquals('window.co@example.com', toApplicant.toRecipients[1].email);
+        System.assertEquals(true, toApplicant.toRecipients[1].isEditable, 'The user can still remove it');
+        System.assertEquals(1, internalMail.toRecipients.size(), 'Mails not to the applicant are untouched');
+    }
 }

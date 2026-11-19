@@ -579,9 +579,11 @@ public with sharing class EmailSenderInvocable {
     // ============ CO-APPLICANTS ============
 
     /**
-     * @description Copies the booking's co-applicants (Co_Applicant__c records with an email) on
-     *              every mail that goes to that booking's primary applicant (Booking Email). Mails
-     *              not addressed to the applicant - internal, bank, Capri - are left alone.
+     * @description Adds the booking's co-applicants (Co_Applicant__c records with an email) to the
+     *              TO line of every mail that goes to that booking's primary applicant (Booking
+     *              Email). Mails not addressed to the applicant - internal, bank, Capri - are left
+     *              alone. (2026-11-19: user asked for TO instead of CC; the name is kept because the
+     *              reminder services call it.)
      * @param emails             the mails about to be sent
      * @param bookingIdPerEmail  the booking each mail is about, same order as emails (null = none)
      */
@@ -615,8 +617,8 @@ public with sharing class EmailSenderInvocable {
             Id bookingId = bookingIdPerEmail[i];
             if (bookingId == null || !coEmails.containsKey(bookingId)) continue;
             Messaging.SingleEmailMessage email = emails[i];
-            List<String> toList = email.getToAddresses() == null ? new List<String>() : email.getToAddresses();
-            List<String> ccList = email.getCcAddresses() == null ? new List<String>() : email.getCcAddresses().clone();
+            List<String> toList = email.getToAddresses() == null ? new List<String>() : email.getToAddresses().clone();
+            List<String> ccList = email.getCcAddresses() == null ? new List<String>() : email.getCcAddresses();
             List<String> bccList = email.getBccAddresses() == null ? new List<String>() : email.getBccAddresses();
             String primary = primaryEmail.get(bookingId);
             if (String.isBlank(primary) || !(containsAddress(toList, primary) || containsAddress(ccList, primary))) {
@@ -628,11 +630,41 @@ public with sharing class EmailSenderInvocable {
                     || containsAddress(bccList, address)) {
                     continue;
                 }
-                ccList.add(address);
+                toList.add(address);
                 added = true;
             }
-            if (added) email.setCcAddresses(ccList);
+            if (added) email.setToAddresses(toList);
         }
+    }
+
+    /**
+     * @description For the manual "Send Email" window: the co-applicant addresses to put in TO for
+     *              a mail about this record (its booking), when the prepared recipients already
+     *              include the booking's primary applicant. Addresses already listed are skipped.
+     */
+    public static List<String> coApplicantEmailsFor(Id recordId, List<String> preparedAddresses) {
+        List<String> result = new List<String>();
+        if (recordId == null) return result;
+        Id bookingId = bookingIdsFor(new List<Id>{ recordId })[0];
+        if (bookingId == null) return result;
+        List<String> existing = preparedAddresses == null ? new List<String>() : preparedAddresses;
+        List<Booking__c> bookings = [SELECT Email__c FROM Booking__c WHERE Id = :bookingId WITH SYSTEM_MODE];
+        if (bookings.isEmpty() || String.isBlank(bookings[0].Email__c)
+            || !containsAddress(existing, bookings[0].Email__c)) {
+            return result;
+        }
+        for (Co_Applicant__c c : [
+            SELECT Email__c FROM Co_Applicant__c
+            WHERE Booking__c = :bookingId AND Email__c != null
+            WITH SYSTEM_MODE
+            ORDER BY CreatedDate ASC
+        ]) {
+            String address = c.Email__c.trim();
+            if (isValidEmail(address) && !containsAddress(existing, address) && !containsAddress(result, address)) {
+                result.add(address);
+            }
+        }
+        return result;
     }
 
     /** The booking each record belongs to: a Booking itself, or the record's Booking__c lookup. */

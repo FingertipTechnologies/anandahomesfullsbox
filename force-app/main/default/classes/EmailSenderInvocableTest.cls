@@ -70,16 +70,37 @@ private class EmailSenderInvocableTest {
         Test.stopTest();
 
         System.assertEquals(
-            new List<String>{ 'owner@example.com', 'co.two@example.com', 'co.one@example.com' },
-            toApplicant.getCcAddresses(),
-            'Co-applicants are added once, the primary/invalid/blank ones are skipped, existing CC kept'
+            new List<String>{ 'primary.applicant@example.com', 'co.one@example.com' },
+            toApplicant.getToAddresses(),
+            'Co-applicants go in TO once; the primary, blank and already-copied ones are skipped'
         );
-        System.assertEquals(null, internalMail.getCcAddresses(), 'Mails not to the applicant are untouched');
-        System.assertEquals(null, otherBooking.getCcAddresses(), 'No booking, nothing added');
+        System.assertEquals(new List<String>{ 'owner@example.com', 'co.two@example.com' },
+            toApplicant.getCcAddresses(), 'CC is left as configured');
+        System.assertEquals(new List<String>{ 'finance@example.com' }, internalMail.getToAddresses(),
+            'Mails not to the applicant are untouched');
+        System.assertEquals(new List<String>{ 'primary.applicant@example.com' }, otherBooking.getToAddresses(),
+            'No booking, nothing added');
 
         // Nothing to do / bad input must not fail.
         EmailSenderInvocable.addCoApplicantCc(null, null);
         EmailSenderInvocable.addCoApplicantCc(new List<Messaging.SingleEmailMessage>{ internalMail }, new List<Id>{ null });
+    }
+
+    @isTest
+    static void coApplicants_listedForTheSendEmailWindow() {
+        Booking__c b = bookingWithCoApplicants();
+
+        Test.startTest();
+        List<String> forApplicant = EmailSenderInvocable.coApplicantEmailsFor(
+            b.Id, new List<String>{ 'Primary.Applicant@example.com', 'co.two@example.com' });
+        List<String> notToApplicant = EmailSenderInvocable.coApplicantEmailsFor(b.Id, new List<String>{ 'finance@example.com' });
+        List<String> noRecord = EmailSenderInvocable.coApplicantEmailsFor(null, null);
+        Test.stopTest();
+
+        System.assertEquals(new List<String>{ 'co.one@example.com' }, forApplicant,
+            'Only co-applicants not already listed, never the primary');
+        System.assert(notToApplicant.isEmpty(), 'Mails not to the applicant get no co-applicants');
+        System.assert(noRecord.isEmpty());
     }
 
     @isTest

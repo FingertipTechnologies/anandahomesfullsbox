@@ -315,6 +315,25 @@ private class DemandLetterPDFControllerTest {
         System.assertEquals(null, DemandLetterPDFController.resolveAccountType(''));
     }
 
+    /** "To," line: first applicant and co-applicants in capitals ("MR. A, B & C"). */
+    @IsTest
+    static void addresseeNames_listFirstApplicantAndCoApplicants() {
+        Demands__c demand = [SELECT Id, Booking__c FROM Demands__c LIMIT 1];
+        update new Booking__c(Id = demand.Booking__c, Salutation__c = 'Mr.', First_Applicant_Name__c = 'Ravi Kumar');
+        System.assertEquals('MR. RAVI KUMAR', DemandLetterPDFController.buildAddresseeNames(demand.Id));
+
+        insert new Co_Applicant__c(Booking__c = demand.Booking__c, Full_Name__c = 'Sita Devi');
+        System.assertEquals('MR. RAVI KUMAR & SITA DEVI', DemandLetterPDFController.buildAddresseeNames(demand.Id));
+
+        insert new Co_Applicant__c(Booking__c = demand.Booking__c, Full_Name__c = 'Gopal Rao');
+        String three = DemandLetterPDFController.buildAddresseeNames(demand.Id);
+        System.assert(three.startsWith('MR. RAVI KUMAR, ') && three.contains(' & '), three);
+
+        Test.setCurrentPage(new PageReference('/apex/DemandLetterGST?id=' + demand.Id));
+        DemandLetterPDFController ext = new DemandLetterPDFController(new ApexPages.StandardController(demand));
+        System.assertEquals(three, ext.addresseeNames);
+    }
+
     @IsTest
     static void extension_reportsDemandWithoutProject() {
         Demands__c demand = [

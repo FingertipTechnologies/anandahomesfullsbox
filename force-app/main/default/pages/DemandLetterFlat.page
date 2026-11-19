@@ -27,7 +27,7 @@
     <apex:outputPanel layout="block" rendered="{!ISBLANK(errorMessage)}">
         <p class="date">Date: <apex:outputField value="{!Demands__c.Demand_Date__c}" /></p>
         <p>To,</p>
-        <p><strong><apex:outputField value="{!Demands__c.Booking__r.Applicant_Name__c}" /></strong></p>
+        <p><strong><apex:outputText value="{!addresseeNames}" /> ,</strong></p>
         <p class="subject"><strong>Sub: Demand Letter for Flat Disbursement.</strong></p>
         <p>
             Ref: LAN No. <apex:outputField value="{!Demands__c.Booking__r.Loan_Account_Number__c}" />,

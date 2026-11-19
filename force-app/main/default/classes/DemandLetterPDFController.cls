@@ -27,6 +27,9 @@ public with sharing class DemandLetterPDFController {
     public List<Demand_Line__c> demandLines { get; private set; }
     public List<DemandLetterLineRow> demandLetterLineRows { get; private set; }
 
+    /** "To," line: first applicant and co-applicants, e.g. "MR. A, MRS. B & MR. C" (client's demand letters). */
+    public String addresseeNames { get; private set; }
+
     public DemandLetterPDFController(ApexPages.StandardController standardController) {
         accountType = resolveAccountType(ApexPages.currentPage().getUrl());
         if (String.isBlank(accountType)) {
@@ -50,6 +53,7 @@ public with sharing class DemandLetterPDFController {
                 errorMessage = 'The demand must be saved and linked to a project.';
                 return;
             }
+            addresseeNames = buildAddresseeNames(pageDemand.Id);
             loadAccount(demand.Project__c);
             loadDemandLines(pageDemand.Id);
         } catch (QueryException e) {
@@ -57,6 +61,38 @@ public with sharing class DemandLetterPDFController {
         } catch (Exception e) {
             errorMessage = 'Unable to load project account details: ' + e.getMessage();
         }
+    }
+
+    @TestVisible
+    private static String buildAddresseeNames(Id demandId) {
+        List<Demands__c> rows = [
+            SELECT Booking__c, Booking__r.Salutation__c, Booking__r.First_Applicant_Name__c
+            FROM Demands__c WHERE Id = :demandId LIMIT 1
+        ];
+        if (rows.isEmpty() || rows[0].Booking__c == null) return '';
+        List<String> names = new List<String>();
+        String first = joinName(rows[0].Booking__r.Salutation__c, rows[0].Booking__r.First_Applicant_Name__c);
+        if (String.isNotBlank(first)) names.add(first);
+        for (Co_Applicant__c c : [
+            SELECT Salutation__c, Full_Name__c FROM Co_Applicant__c
+            WHERE Booking__c = :rows[0].Booking__c ORDER BY CreatedDate ASC
+        ]) {
+            String name = joinName(c.Salutation__c, c.Full_Name__c);
+            if (String.isNotBlank(name)) names.add(name);
+        }
+        String joined = '';
+        for (Integer i = 0; i < names.size(); i++) {
+            joined += (i == 0 ? '' : (i == names.size() - 1 ? ' & ' : ', ')) + names[i];
+        }
+        return joined.toUpperCase();
+    }
+
+    /** "Mr" + "A" -> "Mr. A" (a salutation that already ends with a full stop is left alone). */
+    private static String joinName(String salutation, String name) {
+        if (String.isBlank(name)) return '';
+        if (String.isBlank(salutation)) return name.trim();
+        String s = salutation.trim();
+        return (s.endsWith('.') ? s : s + '.') + ' ' + name.trim();
     }
 
     private void loadDemandLines(Id demandId) {

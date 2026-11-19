@@ -78,7 +78,7 @@ public class MasterPaymentScheduleTriggerTest {
         ld.Date_of_Booking__c = System.today(); 
         ld.Mode_Of_Payment__c = 'Credit Card';
         ld.Funding_Type__c = 'Self-Funded';
-        ld.Plot__c = pl.Id;
+        // ld is not used by the assertions; a second active booking on the same unit is not allowed.
         insert ld;
         
         Master_payment_schedule__c mpy = new Master_payment_schedule__c ();
@@ -103,5 +103,9 @@ public class MasterPaymentScheduleTriggerTest {
         mpy.Status__c = 'Completed';
         update mpy;
         Test.stopTest();
+
+        Payment_schedule__c after = [SELECT Status__c, Payment_Due_Date__c FROM Payment_schedule__c WHERE Id = :pys.Id];
+        System.assertEquals('Completed', after.Status__c, 'Completing the master completes its payment schedules');
+        System.assertEquals(System.today() + 3, after.Payment_Due_Date__c, 'The master due date is not copied to the payment schedule');
     }
 }

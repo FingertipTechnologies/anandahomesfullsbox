@@ -23,7 +23,7 @@ trigger MasterPaymentScheduleTrigger on Master_Payment_Schedule__c (after update
 
         if (!completedMasterIds.isEmpty()) {
             List<Payment_Schedule__c> relatedSchedules = [
-                SELECT Id, Payment_Due_Date__c, Master_Payment_Schedule__c,
+                SELECT Id, Master_Payment_Schedule__c,
                     Booking__r.OwnerId, Booking__r.CRM_Executive__c
                 FROM Payment_Schedule__c
                 WHERE Master_Payment_Schedule__c IN :completedMasterIds
@@ -32,9 +32,7 @@ trigger MasterPaymentScheduleTrigger on Master_Payment_Schedule__c (after update
             Set<String> allRecipientIds = new Set<String>();
 
             for (Payment_Schedule__c schedule : relatedSchedules) {
-                schedule.Payment_Due_Date__c = Trigger.newMap.get(
-                    schedule.Master_Payment_Schedule__c
-                ).Due_Date__c;
+                // Payment Due Date is NOT copied from the master (user, 2026-11-19): it is set when the demand is raised.
                 schedule.Status__c = 'Completed';
 
                 Set<String> recipientIds = recipientsByMaster.get(

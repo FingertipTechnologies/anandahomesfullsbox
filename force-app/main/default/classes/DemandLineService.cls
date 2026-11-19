@@ -137,6 +137,48 @@ public with sharing class DemandLineService {
             }
         }
         insert demandLines;
+        fillDemandMilestoneNames(demandLines);
+    }
+
+    /**
+     * Demands__c.Milestone_Name__c was never filled by any path (prod 2026-11-19: blank on every
+     * demand). Set it from the demand's lines, in schedule order, joined with "; " when a demand
+     * covers several milestones (cut to the field's 255 characters). A name already on the
+     * demand is kept.
+     */
+    @TestVisible
+    private static void fillDemandMilestoneNames(List<Demand_Line__c> demandLines) {
+        Set<Id> demandIds = new Set<Id>();
+        for (Demand_Line__c demandLine : demandLines) {
+            if (demandLine.Demand__c != null) demandIds.add(demandLine.Demand__c);
+        }
+        if (demandIds.isEmpty()) return;
+
+        Map<Id, List<String>> namesByDemand = new Map<Id, List<String>>();
+        for (Demand_Line__c line : [
+            SELECT Demand__c, Milestone_Name__c
+            FROM Demand_Line__c
+            WHERE Demand__c IN :demandIds AND Milestone_Name__c != null
+            WITH SYSTEM_MODE
+            ORDER BY Sequence__c ASC NULLS LAST, CreatedDate ASC
+        ]) {
+            if (!namesByDemand.containsKey(line.Demand__c)) namesByDemand.put(line.Demand__c, new List<String>());
+            List<String> names = namesByDemand.get(line.Demand__c);
+            if (!names.contains(line.Milestone_Name__c)) names.add(line.Milestone_Name__c);
+        }
+
+        List<Demands__c> updates = new List<Demands__c>();
+        for (Demands__c demand : [
+            SELECT Id, Milestone_Name__c FROM Demands__c
+            WHERE Id IN :namesByDemand.keySet() AND Milestone_Name__c = null
+            WITH SYSTEM_MODE
+        ]) {
+            updates.add(new Demands__c(
+                Id = demand.Id,
+                Milestone_Name__c = String.join(namesByDemand.get(demand.Id), '; ').abbreviate(255)
+            ));
+        }
+        if (!updates.isEmpty()) update as system updates;
     }
 
     public static void applyAmountOverrides(

@@ -242,4 +242,31 @@ private class DemandLineServiceTest {
         System.assertEquals(70, flatOnly[0].Flat_Amount__c);
         System.assertEquals(18, flatOnly[0].GST_Amount__c, 'A flat demand keeps its GST amount.');
     }
+
+    /** Raising a demand fills its Milestone Name from its lines (prod DEM-00476 showed it blank). */
+    @IsTest
+    static void raisedDemand_getsMilestoneNamesFromItsLines() {
+        Booking__c b = booking();
+        List<Payment_Schedule__c> ps = schedules();
+        Demands__c both = newDemand(b, ps[0].Id, DemandComponentService.FLAT_AND_GST, 315001);
+        Demands__c single = newDemand(b, ps[0].Id, DemandComponentService.FLAT, 1004);
+        Demands__c named = newDemand(b, ps[0].Id, DemandComponentService.FLAT, 1005);
+        named.Milestone_Name__c = 'Typed by hand';
+
+        Test.startTest();
+        DemandLineService.stageForInsert(both, new List<Demand_Line__c>{
+            DemandLineService.createFromSchedule(ps[1], DemandComponentService.FLAT_AND_GST, 200000, 10000, 0, 0),
+            DemandLineService.createFromSchedule(ps[0], DemandComponentService.FLAT_AND_GST, 100000, 5000, 0, 0)
+        });
+        insert new List<Demands__c>{ both, single, named };
+        Test.stopTest();
+
+        Map<Id, Demands__c> byId = new Map<Id, Demands__c>([
+            SELECT Milestone_Name__c FROM Demands__c WHERE Id IN :new List<Id>{ both.Id, single.Id, named.Id }
+        ]);
+        System.assertEquals('Demand Line Slab One; ' + ps[1].Name, byId.get(both.Id).Milestone_Name__c,
+            'Every covered milestone, in schedule order');
+        System.assertEquals('Demand Line Slab One', byId.get(single.Id).Milestone_Name__c);
+        System.assertEquals('Typed by hand', byId.get(named.Id).Milestone_Name__c, 'An existing name is kept');
+    }
 }

@@ -82,7 +82,7 @@
                 <tr><td>BRANCH CITY</td><td><apex:outputText value="{!branchCity}" /></td></tr>
             </tbody>
         </table>
-        <p class="signature">Thanking you,<br/><strong>For M/S. <apex:outputField value="{!Demands__c.Booking__r.Project__r.Name}" /></strong><br/>AUTHORISED SIGNATORY</p>
+        <p class="signature">Thanking you,<br/><strong>For M/S. ANANDA HOMES</strong><br/>AUTHORISED SIGNATORY</p>
     </apex:outputPanel>
 </body>
 </html>

@@ -99,10 +99,10 @@
         <div class="notes">
             <p><strong>NOTE:</strong></p>
             <p>1) TDS @ 1% IS REQUIRED TO BE REMITTED THROUGH YOUR PERSONAL INCOME TAX PAN - LOGIN ID AS PER SEC 194IA OF INCOME TAX ACT, 1961.</p>
-            <p>2) THE TDS AMOUNT OF 1% ON EVERY INSTALLMENT TO BE REMITTED ON OUR PAN NO: ABFFA6591E</p>
+            <p>2) THE TDS AMOUNT OF 1% ON EVERY INSTALLMENT TO BE REMITTED ON OUR PAN NO:&#160;<apex:outputText value="{!UPPER(Demands__c.Booking__r.PAN_Number__c)}" /></p>
             <p>3) KINDLY CONFIRM THE TRANSACTION DETAILS, IF AMOUNT PAID BY WAY OF RTGS / NEFT / IMPS / VIRTUAL BANK ACCOUNT AND SHARE THE TDS CHALLAN REMITTED, IN ORDER TO CREDIT THE AMOUNT TO YOUR ACCOUNT.</p>
         </div>
-        <p class="signature">Thanking you,<br/><strong>For M/S. <apex:outputField value="{!Demands__c.Booking__r.Project__r.Name}" /></strong><br/>AUTHORISED SIGNATORY</p>
+        <p class="signature">Thanking you,<br/><strong>For M/S. ANANDA HOMES</strong><br/>AUTHORISED SIGNATORY</p>
     </apex:outputPanel>
 </body>
 </html>

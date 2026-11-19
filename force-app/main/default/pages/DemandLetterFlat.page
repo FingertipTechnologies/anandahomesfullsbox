@@ -6,7 +6,7 @@
         @page { size: A4 portrait; margin: 18mm 17mm; }
         body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #111; line-height: 1.35; }
         p { margin: 0 0 9px; }
-        .date { margin-bottom: 14px; }
+        .date { margin-bottom: 14px; text-align: right; font-weight: bold; }
         .subject { margin-top: 4px; }
         .installment-table, .account-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin: 10px 0 13px; }
         .installment-table th, .installment-table td, .account-table td { border: 1px solid #222; padding: 5px; vertical-align: middle; }
@@ -25,7 +25,7 @@
         <apex:outputText value="{!errorMessage}" />
     </apex:outputPanel>
     <apex:outputPanel layout="block" rendered="{!ISBLANK(errorMessage)}">
-        <p class="date">Date: <apex:outputField value="{!Demands__c.Demand_Date__c}" /></p>
+        <p class="date">Date:&#160;<apex:outputText value="{0,date,dd-MM-yyyy}"><apex:param value="{!Demands__c.Demand_Date__c}" /></apex:outputText></p>
         <p>To,</p>
         <p><strong><apex:outputText value="{!addresseeNames}" /> ,</strong></p>
         <p class="subject"><strong>Sub: Demand Letter for Flat Disbursement.</strong></p>

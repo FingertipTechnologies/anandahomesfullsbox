@@ -13,6 +13,21 @@ public with sharing class DemandLetterPDFController {
             this.flatInstallmentAmount = flatInstallmentAmount;
             this.gstInstallmentAmount = gstInstallmentAmount;
         }
+
+        // Amounts in Indian format (12,34,567) for the letters.
+        public String flatInstallmentText { get { return formatIndian(flatInstallmentAmount); } }
+        public String gstInstallmentText { get { return formatIndian(gstInstallmentAmount); } }
+        public String tdsText { get { return formatIndian(demandLine.TDS_Amount__c); } }
+        public String receivedText { get { return formatIndian(demandLine.Received_Amount__c); } }
+        public String flatText { get { return formatIndian(demandLine.Flat_Amount__c); } }
+        /** Full letter: the whole schedule amount including GST, before anything received. */
+        public String schedulePayableText {
+            get { return formatIndian(nz(demandLine.Flat_Amount__c) + nz(demandLine.GST_Amount__c) + nz(demandLine.Received_Amount__c)); }
+        }
+        /** Full letter: what is still to pay on the line (schedule amount less received). */
+        public String netPayableText {
+            get { return formatIndian(nz(demandLine.Flat_Amount__c) + nz(demandLine.GST_Amount__c)); }
+        }
     }
 
     public String errorMessage { get; private set; }
@@ -30,6 +45,13 @@ public with sharing class DemandLetterPDFController {
     /** "To," line: first applicant and co-applicants, e.g. "MR. A, MRS. B & MR. C" (client's demand letters). */
     public String addresseeNames { get; private set; }
 
+    /** Sign-off company: "THE DRIZZLE JV" for The Drizzle (client's Drizzle demand letter), else ANANDA HOMES. */
+    public String signatoryName { get; private set; }
+    /** Demand total in Indian format and in words, e.g. "11,06,206" / "Rupees Eleven Lakh ... Only". */
+    public String demandedAmountText { get; private set; }
+    public String demandedAmountWords { get; private set; }
+    public String gstAmountText { get; private set; }
+
     public DemandLetterPDFController(ApexPages.StandardController standardController) {
         accountType = resolveAccountType(ApexPages.currentPage().getUrl());
         if (String.isBlank(accountType)) {
@@ -44,7 +66,7 @@ public with sharing class DemandLetterPDFController {
                 return;
             }
             Demands__c demand = [
-                SELECT Project__c
+                SELECT Project__c, Project__r.Name, Demanded_Amount__c, GST_Amount__c
                 FROM Demands__c
                 WHERE Id = :pageDemand.Id
                 LIMIT 1
@@ -53,6 +75,10 @@ public with sharing class DemandLetterPDFController {
                 errorMessage = 'The demand must be saved and linked to a project.';
                 return;
             }
+            signatoryName = signatoryFor(demand.Project__r == null ? null : demand.Project__r.Name);
+            demandedAmountText = formatIndian(nz(demand.Demanded_Amount__c));
+            demandedAmountWords = amountInWords(demand.Demanded_Amount__c);
+            gstAmountText = formatIndian(nz(demand.GST_Amount__c));
             addresseeNames = buildAddresseeNames(pageDemand.Id);
             loadAccount(demand.Project__c);
             loadDemandLines(pageDemand.Id);
@@ -275,6 +301,55 @@ public with sharing class DemandLetterPDFController {
 
     private static Decimal nz(Decimal value) {
         return value == null ? 0 : value;
+    }
+
+    @TestVisible
+    private static String signatoryFor(String projectName) {
+        return projectName != null && projectName.containsIgnoreCase('Drizzle')
+            ? 'THE DRIZZLE JV'
+            : 'ANANDA HOMES';
+    }
+
+    /**
+     * Indian digit grouping: 1106206 -> "11,06,206", 188165.62 -> "1,88,165.62" (paise shown only
+     * when there are any). Blank for null.
+     */
+    @TestVisible
+    private static String formatIndian(Decimal value) {
+        if (value == null) return '';
+        Decimal rounded = value.setScale(2, RoundingMode.HALF_UP);
+        Boolean negative = rounded < 0;
+        Decimal absolute = rounded.abs();
+        Long rupees = absolute.round(System.RoundingMode.DOWN);
+        Integer paise = ((absolute - rupees) * 100).intValue();
+        String digits = String.valueOf(rupees);
+        String grouped = digits;
+        if (digits.length() > 3) {
+            String head = digits.substring(0, digits.length() - 3);
+            grouped = digits.substring(digits.length() - 3);
+            while (head.length() > 2) {
+                grouped = head.substring(head.length() - 2) + ',' + grouped;
+                head = head.substring(0, head.length() - 2);
+            }
+            grouped = head + ',' + grouped;
+        }
+        if (paise > 0) grouped += '.' + String.valueOf(paise).leftPad(2, '0');
+        return (negative ? '-' : '') + grouped;
+    }
+
+    /** "Rupees Eleven Lakh Six Thousand Two Hundred Six Only" (paise as "and Fifty Paise"). */
+    @TestVisible
+    private static String amountInWords(Decimal value) {
+        Decimal rounded = nz(value).abs().setScale(2, RoundingMode.HALF_UP);
+        Long rupees = rounded.round(System.RoundingMode.DOWN);
+        Integer paise = ((rounded - rupees) * 100).intValue();
+        NumberTOWordConvertion converter = new NumberTOWordConvertion();
+        String words = converter.getNumberTOWordConvertion(rupees);
+        if (paise > 0) {
+            words = (rupees > 0 ? words.removeEnd(' Only') + ' and ' : '')
+                + converter.getNumberTOWordConvertion(paise).removeEnd(' Only') + ' Paise Only';
+        }
+        return 'Rupees ' + words;
     }
 
     private void loadAccount(Id projectId) {

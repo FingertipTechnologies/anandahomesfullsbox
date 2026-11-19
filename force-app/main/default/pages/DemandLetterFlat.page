@@ -46,8 +46,8 @@
         </p>
         <p>
             Request your attention for clearing the instalment(s) due towards the said work(s)
-            completed, amounting to Rs. <strong>₹
-            <apex:outputText value="{!Demands__c.Demanded_Amount__c}" />/-</strong>, receivable within
+            completed, amounting to <strong>Rs.&#160;<apex:outputText value="{!demandedAmountText}" />/-
+            (<apex:outputText value="{!demandedAmountWords}" />)</strong>, receivable within
             7 days from the date of this demand letter.
         </p>
         <table class="installment-table">
@@ -71,19 +71,17 @@
                     <td><apex:outputText value="{!row.demandLine.Milestone_Name__c}" /></td>
                     <td><apex:outputText value="{!row.demandLine.Percentage__c}" /></td>
                     <td>
-                        <apex:outputText value="{0, number, #,##0.00}">
-                            <apex:param value="{!row.flatInstallmentAmount}" />
-                        </apex:outputText>
+                        <apex:outputText value="{!row.flatInstallmentText}" />
                     </td>
-                    <td><apex:outputText value="{!row.demandLine.TDS_Amount__c}" /></td>
-                    <td>₹ <apex:outputText value="{!row.demandLine.Received_Amount__c}" /></td>
-                    <td>₹ <apex:outputText value="{!row.demandLine.Flat_Amount__c}" /></td>
+                    <td><apex:outputText value="{!row.tdsText}" /></td>
+                    <td>₹ <apex:outputText value="{!row.receivedText}" /></td>
+                    <td>₹ <apex:outputText value="{!row.flatText}" /></td>
                 </tr>
                 </apex:repeat>
                 <tr>
                     <td colspan="4" class="total-label">TOTAL PAYABLE (Rs.)</td>
                     <td></td>
-                    <td><strong>₹ <apex:outputText value="{!Demands__c.Demanded_Amount__c}" />/-</strong></td>
+                    <td><strong>₹ <apex:outputText value="{!demandedAmountText}" />/-</strong></td>
                 </tr>
             </tbody>
         </table>
@@ -102,7 +100,7 @@
             <p>2) THE TDS AMOUNT OF 1% ON EVERY INSTALLMENT TO BE REMITTED ON OUR PAN NO:&#160;<apex:outputText value="{!UPPER(Demands__c.Booking__r.PAN_Number__c)}" /></p>
             <p>3) KINDLY CONFIRM THE TRANSACTION DETAILS, IF AMOUNT PAID BY WAY OF RTGS / NEFT / IMPS / VIRTUAL BANK ACCOUNT AND SHARE THE TDS CHALLAN REMITTED, IN ORDER TO CREDIT THE AMOUNT TO YOUR ACCOUNT.</p>
         </div>
-        <p class="signature">Thanking you,<br/><strong>For M/S. ANANDA HOMES</strong><br/>AUTHORISED SIGNATORY</p>
+        <p class="signature">Thanking you,<br/><strong>For M/S.&#160;<apex:outputText value="{!signatoryName}" /></strong><br/>AUTHORISED SIGNATORY</p>
     </apex:outputPanel>
 </body>
 </html>

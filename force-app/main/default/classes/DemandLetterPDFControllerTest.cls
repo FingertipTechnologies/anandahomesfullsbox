@@ -369,4 +369,26 @@ private class DemandLetterPDFControllerTest {
             'The extension should return a clear error when the demand no longer exists.'
         );
     }
+
+    @isTest
+    static void formatsAmountsInIndianStyleAndWords() {
+        System.assertEquals('11,06,206', DemandLetterPDFController.formatIndian(1106206));
+        System.assertEquals('1,88,165.62', DemandLetterPDFController.formatIndian(188165.62));
+        System.assertEquals('2,29,06,740.50', DemandLetterPDFController.formatIndian(22906740.5));
+        System.assertEquals('999', DemandLetterPDFController.formatIndian(999));
+        System.assertEquals('0', DemandLetterPDFController.formatIndian(0));
+        System.assertEquals('-1,000', DemandLetterPDFController.formatIndian(-1000));
+        System.assertEquals('', DemandLetterPDFController.formatIndian(null));
+        System.assertEquals('Rupees Eleven Lakh Six Thousand Two Hundred Six Only',
+            DemandLetterPDFController.amountInWords(1106206));
+        System.assertEquals('Rupees One Thousand and Fifty Paise Only',
+            DemandLetterPDFController.amountInWords(1000.50));
+    }
+
+    @isTest
+    static void drizzleLettersSignForTheJointVenture() {
+        System.assertEquals('THE DRIZZLE JV', DemandLetterPDFController.signatoryFor('The Drizzle'));
+        System.assertEquals('ANANDA HOMES', DemandLetterPDFController.signatoryFor('The Legacey'));
+        System.assertEquals('ANANDA HOMES', DemandLetterPDFController.signatoryFor(null));
+    }
 }

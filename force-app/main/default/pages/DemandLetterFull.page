@@ -45,29 +45,35 @@
         </p>
         <p>
             Request your attention for clearing the instalment(s) due towards the said work(s)
-            completed, amounting to Rs. <strong>₹
-            <apex:outputText value="{!Demands__c.Demanded_Amount__c}" />/-</strong> (INCLUDING GST).
+            completed, amounting to <strong>Rs.&#160;<apex:outputText value="{!demandedAmountText}" />/-
+            (<apex:outputText value="{!demandedAmountWords}" />)</strong> (INCLUDING GST).
             Receivable within 7 days from the date of this demand letter.
         </p>
         <table class="installment-table">
-            <colgroup><col style="width:34%" /><col style="width:16%" /><col style="width:29%" /><col style="width:21%" /></colgroup>
+            <colgroup><col style="width:28%" /><col style="width:12%" /><col style="width:21%" /><col style="width:19%" /><col style="width:20%" /></colgroup>
             <thead>
                 <tr>
                     <th>Instalment Description</th>
                     <th>Payable %age<br/>As per stage</th>
                     <th>Instalment Amount Payable<br/>(INCLUDING GST)</th>
                     <th>Received Amount</th>
+                    <th>Net Amount Payable</th>
                 </tr>
             </thead>
             <tbody>
-                <apex:repeat value="{!demandLines}" var="line">
+                <apex:repeat value="{!demandLetterLineRows}" var="row">
                 <tr>
-                    <td><apex:outputText value="{!line.Milestone_Name__c}" /></td>
-                    <td><apex:outputText value="{!line.Percentage__c}" /></td>
-                    <td>₹ <apex:outputText value="{!(line.Flat_Amount__c + line.GST_Amount__c)}" /></td>
-                    <td>₹ <apex:outputText value="{!line.Received_Amount__c}" /></td>
+                    <td><apex:outputText value="{!row.demandLine.Milestone_Name__c}" /></td>
+                    <td><apex:outputText value="{!row.demandLine.Percentage__c}" /></td>
+                    <td>₹ <apex:outputText value="{!row.schedulePayableText}" /></td>
+                    <td>₹ <apex:outputText value="{!row.receivedText}" /></td>
+                    <td>₹ <apex:outputText value="{!row.netPayableText}" /></td>
                 </tr>
                 </apex:repeat>
+                <tr>
+                    <td colspan="4" class="total-label">TOTAL NET AMOUNT PAYABLE (Rs.)</td>
+                    <td><strong>₹ <apex:outputText value="{!demandedAmountText}" />/-</strong></td>
+                </tr>
             </tbody>
         </table>
         <p>Payments shall be made through A/c Payee Cheques of CTS 2010 standard, Demand Draft (DD), RTGS, or NEFT to the account details stated hereunder:</p>
@@ -82,7 +88,7 @@
                 <tr><td>BRANCH CITY</td><td><apex:outputText value="{!branchCity}" /></td></tr>
             </tbody>
         </table>
-        <p class="signature">Thanking you,<br/><strong>For M/S. ANANDA HOMES</strong><br/>AUTHORISED SIGNATORY</p>
+        <p class="signature">Thanking you,<br/><strong>For M/S.&#160;<apex:outputText value="{!signatoryName}" /></strong><br/>AUTHORISED SIGNATORY</p>
     </apex:outputPanel>
 </body>
 </html>

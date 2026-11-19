@@ -44,8 +44,8 @@
             the below table.
         </p>
         <p>
-            Kindly request you to release the GST amount of Rs.
-            <strong><apex:outputField value="{!Demands__c.Demanded_Amount__c}" />/-</strong>,
+            Kindly request you to release the GST amount of
+            <strong>Rs.&#160;<apex:outputText value="{!demandedAmountText}" />/- (<apex:outputText value="{!demandedAmountWords}" />)</strong>,
             receivable within
             7 days from the date of this demand letter.
         </p>
@@ -69,17 +69,15 @@
                     <td><apex:outputText value="{!row.demandLine.Milestone_Name__c}" /></td>
                     <td><apex:outputText value="{!row.demandLine.Percentage__c}" /></td>
                     <td>
-                        <apex:outputText value="{0, number, #,##0.00}">
-                            <apex:param value="{!row.flatInstallmentAmount}" />
-                        </apex:outputText>
+                        <apex:outputText value="{!row.flatInstallmentText}" />
                     </td>
-                    <td><apex:outputText value="{!row.gstInstallmentAmount}" /></td>
-                    <td>₹ <apex:outputText value="{!row.demandLine.Received_Amount__c}" /></td>
+                    <td><apex:outputText value="{!row.gstInstallmentText}" /></td>
+                    <td>₹ <apex:outputText value="{!row.receivedText}" /></td>
                 </tr>
                 </apex:repeat>
                 <tr>
                     <td colspan="3" class="total-label">TOTAL GST PAYABLE (Rs.)</td>
-                    <td><strong><apex:outputField value="{!Demands__c.GST_Amount__c}" />/-</strong></td>
+                    <td><strong>₹ <apex:outputText value="{!gstAmountText}" />/-</strong></td>
                     <td></td>
                 </tr>
             </tbody>
@@ -93,7 +91,7 @@
                 <tr><td>IFSC Code:</td><td><apex:outputText value="{!ifscCode}" /></td></tr>
             </tbody>
         </table>
-        <p class="signature">Thanking you,<br/><strong>For M/S. ANANDA HOMES</strong><br/>AUTHORISED SIGNATORY</p>
+        <p class="signature">Thanking you,<br/><strong>For M/S.&#160;<apex:outputText value="{!signatoryName}" /></strong><br/>AUTHORISED SIGNATORY</p>
     </apex:outputPanel>
 </body>
 </html>

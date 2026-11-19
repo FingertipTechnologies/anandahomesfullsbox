@@ -46,6 +46,31 @@ private class CapriNocPdfControllerTest {
         System.assertEquals(null, controller.errorMessage);
     }
 
+    /** The amenities charges come from the cost sheet when there is one, blank otherwise. */
+    @isTest
+    static void readsAmenitiesFromTheCostSheet() {
+        Project__c project = new Project__c(Name = 'CAPRI Cost Sheet Project', Project_Type__c = 'Apartment', Interest_Rate__c = 18);
+        insert as system project;
+        Plot__c plot = new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Booked');
+        insert as system plot;
+        Booking__c booking = new Booking__c(Project__c = project.Id, Plot__c = plot.Id,
+            Booking_Date__c = Date.today(), Status__c = 'Booked', First_Applicant_Name__c = 'CAPRI Cost Sheet Buyer');
+        insert as system booking;
+
+        Test.startTest();
+        Decimal withoutSheet = CapriNocPdfController.amenitiesCharges(booking.Id);
+        Decimal noBooking = CapriNocPdfController.amenitiesCharges(null);
+        Cost_Sheet__c sheet = new Cost_Sheet__c(Project__c = project.Id, Amenities_Charges__c = 250000);
+        insert as system sheet;
+        update as system new Booking__c(Id = booking.Id, Cost_Sheet__c = sheet.Id);
+        Decimal withSheet = CapriNocPdfController.amenitiesCharges(booking.Id);
+        Test.stopTest();
+
+        System.assertEquals(null, withoutSheet);
+        System.assertEquals(null, noBooking);
+        System.assertEquals(250000, withSheet);
+    }
+
     @isTest
     static void listsApprovedReceiptsWithBlankStatus() {
         Project__c project = new Project__c(Name = 'CAPRI Receipt Project', Project_Type__c = 'Apartment', Interest_Rate__c = 18);

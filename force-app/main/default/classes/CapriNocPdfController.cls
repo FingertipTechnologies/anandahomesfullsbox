@@ -105,8 +105,7 @@ public with sharing class CapriNocPdfController {
                    Booking__r.Project__r.Name, Booking__r.Project__r.Project_Address__c,
                    Booking__r.Project__r.Project_description__c,
                    Booking__r.Plot__r.Name, Booking__r.Plot__r.Saleable_Area_Sft__c,
-                   Booking__r.Plot__r.Block1__r.Name, Booking__r.Plot__r.Tower_Block__c,
-                   Booking__r.Cost_Sheet__r.Amenities_Charges__c
+                   Booking__r.Plot__r.Block1__r.Name, Booking__r.Plot__r.Tower_Block__c
             FROM NOC__c
             WHERE Id = :nocId
             WITH SYSTEM_MODE
@@ -166,13 +165,34 @@ public with sharing class CapriNocPdfController {
         balanceReceivable = Math.max(0, consideration - totalReceived);
 
         rateText = formatIndian(booking.Rate_Per_Sqft__c);
-        amenitiesText = formatIndian(booking.Cost_Sheet__r == null ? null : booking.Cost_Sheet__r.Amenities_Charges__c);
+        amenitiesText = formatIndian(amenitiesCharges(booking.Id));
         if (String.isNotBlank(amenitiesText)) {
             amenitiesText += '/-';
         }
         considerationText = formatIndian(booking.Total_Flat_Cost__c);
         totalReceivedText = formatIndian(totalReceived);
         balanceText = formatIndian(balanceReceivable);
+    }
+
+    /**
+     * Amenities charges from the booking's cost sheet, or null. Read on its own and by dynamic
+     * SOQL: users on the Salesforce Platform licence (prod CRM users, 2026-11-19) cannot see
+     * Booking__c.Cost_Sheet__c even WITH SYSTEM_MODE, and a static query naming it failed the
+     * whole letter ("No such column 'Cost_Sheet__c'"), so no Capri mail went out.
+     */
+    @TestVisible
+    private static Decimal amenitiesCharges(Id bookingId) {
+        if (bookingId == null) return null;
+        try {
+            List<Booking__c> rows = Database.query(
+                'SELECT Cost_Sheet__r.Amenities_Charges__c FROM Booking__c WHERE Id = :bookingId WITH SYSTEM_MODE LIMIT 1'
+            );
+            return rows.isEmpty() || rows[0].Cost_Sheet__r == null
+                ? null
+                : rows[0].Cost_Sheet__r.Amenities_Charges__c;
+        } catch (QueryException e) {
+            return null;
+        }
     }
 
     private void loadCancellation(Id cancellationId) {

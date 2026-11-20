@@ -53,8 +53,12 @@ export default class DynamicFormModal extends NavigationMixin(LightningElement) 
 
         // Auto-populate lookup fields that reference the context record's object
         // The config JSON may have a contextLookupField to identify which field to populate
+        // A value taken from the parent (context) record is read-only, like the {!path}
+        // references below (user, 2026-11-20).
+        const locks = { ...this.contextLockedFields };
         if (this.formConfig.contextLookupField) {
             this.fieldValues[this.formConfig.contextLookupField] = this.contextRecordId;
+            locks[this.formConfig.contextLookupField] = true;
         }
 
         // Also check sections for fields with defaultValue = '{!contextRecordId}'
@@ -64,10 +68,12 @@ export default class DynamicFormModal extends NavigationMixin(LightningElement) 
                     if (field.defaultValue === '{!contextRecordId}') {
                         this.fieldValues[field.apiName] = this.contextRecordId;
                         field.defaultValue = this.contextRecordId;
+                        locks[field.apiName] = true;
                     }
                 });
             });
         }
+        this.contextLockedFields = locks;
     }
 
     /**

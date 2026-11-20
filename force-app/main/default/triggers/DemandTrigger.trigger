@@ -9,8 +9,6 @@
  */
 trigger DemandTrigger on Demands__c (before insert, after insert) {
     if (Trigger.isBefore && Trigger.isInsert) {
-        // On hold after a First Applicant Change until the new signed Booking Form is uploaded.
-        SignedBookingFormGate.blockChildRecords(Trigger.new, 'raising a demand');
         DemandReminderService.populateReminderDates(Trigger.new);
         DemandReminderService.markCalculateFlag(Trigger.new);   // <-- added
     }

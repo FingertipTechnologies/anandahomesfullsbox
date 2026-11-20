@@ -9,8 +9,6 @@
  */
 trigger ReceiptTrigger on Receipt__c (before insert, before update, after update) {
     if (Trigger.isBefore && Trigger.isInsert) {
-        // On hold after a First Applicant Change until the new signed Booking Form is uploaded.
-        SignedBookingFormGate.blockChildRecords(Trigger.new, 'recording a receipt');
         //ReceiptApprovalGateService.validateNewReceipts(Trigger.new);
         //ReceiptApprovalGateService.SubmitForApproval(Trigger.new);
     } else if (Trigger.isBefore && Trigger.isUpdate) {

@@ -177,8 +177,6 @@ private class FirstApplicantChangeServiceTest {
         );
         insert first;
         FirstApplicantChangeService.applyApproved(new Set<Id>{ first.Id });
-        // The first change's signed Booking Form is in (SignedBookingFormGate holds the booking until then).
-        update new First_Applicant_Change__c(Id = first.Id, New_Booking_Form_Uploaded__c = true);
 
         // Second change with new email/mobile applied via the Flow invocable.
         First_Applicant_Change__c second = new First_Applicant_Change__c(

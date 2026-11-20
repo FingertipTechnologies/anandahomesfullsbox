@@ -15,6 +15,9 @@ trigger BookingTrigger on Booking__c (before insert, before update, after insert
 
             //Stage-progression gates (BRD lifecycle prerequisites).
             if (Trigger.isUpdate) {
+                // After a First Applicant Change: no stage change until the new signed Booking Form
+                // is uploaded, and the "uploaded" checkbox only turns true with that new file.
+                SignedBookingFormGate.validateBookingUpdates(Trigger.new, Trigger.oldMap);
                 BookingStageValidationService.validateStageTransitions(Trigger.new, Trigger.oldMap);
             }
         }
@@ -26,6 +29,7 @@ trigger BookingTrigger on Booking__c (before insert, before update, after insert
                 BookingStageRemarkService.captureForStageChanges(Trigger.new, Trigger.oldMap);
                 // Swap request rejected -> reject its auto-created quote (frees the unit).
                 SwapQuoteService.handleBookingUpdate(Trigger.new, Trigger.oldMap);
+                SignedBookingFormGate.markNewFormUploaded(Trigger.new, Trigger.oldMap);
             }
         }
     }

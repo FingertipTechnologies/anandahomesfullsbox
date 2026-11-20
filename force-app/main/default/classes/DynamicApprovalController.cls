@@ -559,6 +559,8 @@ public with sharing class DynamicApprovalController {
         try {
             // NEW: block submission if related receipts are pending approval
             validateNoPendingReceipts(recordId);
+            // On hold after a First Applicant Change until the new signed Booking Form is uploaded.
+            SignedBookingFormGate.assertNotOnHold(recordId, 'submitting it for approval');
 
             // Validate required fields before submitting
             List<RequiredFieldStatus> fieldStatuses = validateRequiredFieldsInternal(recordId, configId);

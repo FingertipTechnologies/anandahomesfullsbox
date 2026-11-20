@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Status_Locked_Until_New_Signed_Form</fullName>
+    <active>true</active>
+    <description>BRD 12A: after an approved First Applicant Change the stage cannot change until the new applicant&apos;s signed Booking Form is uploaded (Signed Booking Form Uploaded true again).</description>
+    <errorConditionFormula>AND(
+  NOT(ISNEW()),
+  ISCHANGED(Status__c),
+  NOT(Signed_Booking_Form_Uploaded__c),
+  NOT(ISBLANK(Last_First_Applicant_Change_Id__c))
+)</errorConditionFormula>
+    <errorDisplayField>Status__c</errorDisplayField>
+    <errorMessage>The First Applicant has been changed. Upload the Booking Form signed by the new first applicant (Document Type &quot;Signed Booking Form&quot;) and mark &quot;Signed Booking Form Uploaded&quot; before changing the booking stage.</errorMessage>
+</ValidationRule>

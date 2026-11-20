@@ -445,7 +445,10 @@
                                             <tr>
                                                 <th scope="col">Instalment Description</th>
                                                 <th scope="col">% as per stage</th>
-                                                <th scope="col">Total Amount to Demand (Flat + GST + TDS)</th>
+                                                <th scope="col">Milestone Amount (Flat + GST + TDS)</th>
+                                                <th scope="col">Received Till Now</th>
+                                                <th scope="col">TDS</th>
+                                                <th scope="col">Amount to Demand (Flat + GST)</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -453,13 +456,19 @@
                                                 <tr key={line.id}>
                                                     <th scope="row">{line.milestoneName}</th>
                                                     <td>{line.percentage}%</td>
-                                                    <td>{line.formattedSelectedDemand}</td>
+                                                    <td>{line.formattedFullScheduleTotalAmount}</td>
+                                                    <td>{line.formattedReceivedTotalAmount}</td>
+                                                    <td>{line.formattedTds}</td>
+                                                    <td>{line.formattedDemandPayable}</td>
                                                 </tr>
                                             </template>
                                             <tr class="flat-demand-total-row">
                                                 <th scope="row">TOTAL</th>
                                                 <td></td>
-                                                <td>{selectedDemand.formattedComponentAmount}</td>
+                                                <td>{selectedDemand.formattedFullScheduleTotalAmount}</td>
+                                                <td>{selectedDemand.formattedReceivedTotalAmount}</td>
+                                                <td>{selectedDemand.formattedTdsAmount}</td>
+                                                <td>{selectedDemand.formattedInstallmentPayable}</td>
                                             </tr>
                                         </tbody>
                                     </table>

@@ -351,6 +351,8 @@ export default class PaymentScheduleViewer extends LightningElement {
         let receivedFlatAmount = 0;
         let receivedGstAmount = 0;
         let receivedTdsAmount = 0;
+        let fullScheduleTotalAmount = 0;
+        let receivedTotalAmount = 0;
         this.demandLines.forEach(line => {
             if (line.isBankDemand) bankAmount += line.selectedDemandAmount;
             else customerAmount += line.selectedDemandAmount;
@@ -360,6 +362,8 @@ export default class PaymentScheduleViewer extends LightningElement {
             receivedFlatAmount += line.receivedFlatAmount;
             receivedGstAmount += line.receivedGstAmount;
             receivedTdsAmount += line.receivedTdsAmount;
+            fullScheduleTotalAmount += line.fullScheduleTotalAmount;
+            receivedTotalAmount += line.receivedTotalAmount;
             if (this.demandComponent !== 'GST') interestAmount += line.interestPending || 0;
         });
         const includedInterest = this.demandComponent !== 'GST' && this.includeInterest
@@ -393,6 +397,8 @@ export default class PaymentScheduleViewer extends LightningElement {
             formattedReceivedFlatAmount: this.formatCurrency(receivedFlatAmount),
             formattedReceivedGstAmount: this.formatCurrency(receivedGstAmount),
             formattedReceivedTdsAmount: this.formatCurrency(receivedTdsAmount),
+            formattedFullScheduleTotalAmount: this.formatCurrency(fullScheduleTotalAmount),
+            formattedReceivedTotalAmount: this.formatCurrency(receivedTotalAmount),
             formattedGrossInterest: this.formatCurrency(interestAmount),
             formattedInterestWaivedOff: this.formatCurrency(waivedInterest),
             formattedInterest: this.formatCurrency(netInterest),
@@ -525,6 +531,10 @@ export default class PaymentScheduleViewer extends LightningElement {
                 const receivedFlatAmount = Number(schedule.basePaid) || 0;
                 const receivedGstAmount = Number(schedule.gstPaid) || 0;
                 const receivedTdsAmount = Number(schedule.tdsPaid) || 0;
+                // Full Demand (non-Legacey): whole milestone and everything received on it.
+                const fullScheduleTotalAmount =
+                    fullScheduleWithTdsAmount + fullScheduleGstAmount;
+                const receivedTotalAmount = receivedFlatAmount + receivedGstAmount + receivedTdsAmount;
                 const selectedDemandAmount = this.isCombinedDemand
                     ? (schedule.combinedDemandableAmount || 0)
                     : (this.isFlatOnlyDemand
@@ -553,6 +563,10 @@ export default class PaymentScheduleViewer extends LightningElement {
                     receivedFlatAmount,
                     receivedGstAmount,
                     receivedTdsAmount,
+                    fullScheduleTotalAmount,
+                    receivedTotalAmount,
+                    formattedFullScheduleTotalAmount: this.formatCurrency(fullScheduleTotalAmount),
+                    formattedReceivedTotalAmount: this.formatCurrency(receivedTotalAmount),
                     formattedAmountA: this.formatCurrency(selectedDemandAmount),
                     formattedTds: this.formatCurrency(selectedDemandTdsAmount),
                     formattedFlatAmount: this.formatCurrency(selectedFlatDemandAmount),

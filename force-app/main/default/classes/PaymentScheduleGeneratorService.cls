@@ -61,17 +61,32 @@ public with sharing class PaymentScheduleGeneratorService {
         List<Booking__c> bookings = Database.query(bookingQuery);
         if (bookings.isEmpty()) return;
 
+        Set<Id> existingScheduleBookingIds = new Set<Id>();
+        for (AggregateResult result : [
+            SELECT Booking__c bookingId
+            FROM Payment_Schedule__c
+            WHERE Booking__c IN :bookingIds
+            GROUP BY Booking__c
+        ]) {
+            existingScheduleBookingIds.add((Id) result.get('bookingId'));
+        }
+
         // Collect parent IDs from the configured field
         Set<Id> parentIds = new Set<Id>();
         Map<Id, Booking__c> bookingMap = new Map<Id, Booking__c>();
+        List<Booking__c> bookingsNeedingSchedules = new List<Booking__c>();
         for (Booking__c b : bookings) {
+            if (existingScheduleBookingIds.contains(b.Id)) continue;
+            bookingsNeedingSchedules.add(b);
             Id parentId = (Id) b.get(bookingParentField);
             if (parentId != null) {
                 parentIds.add(parentId);
             }
             bookingMap.put(b.Id, b);
         }
+        bookings = bookingsNeedingSchedules;
 
+        if (bookings.isEmpty()) return;
         if (parentIds.isEmpty()) return;
 
         // Build the set of source fields to query (defaults + mapped fields)

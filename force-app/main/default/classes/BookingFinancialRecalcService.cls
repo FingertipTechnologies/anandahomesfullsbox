@@ -110,9 +110,12 @@ public without sharing class BookingFinancialRecalcService {
             GROUP BY Payment_Schedule__c
         ]) {
             Id psId = (Id) ar.get('psId');
-            paidBySchedule.put(psId, (Decimal) ar.get('totalPaid'));
-            basePaidBySchedule.put(psId, (Decimal) ar.get('totalBase'));
-            gstPaidBySchedule.put(psId, (Decimal) ar.get('totalGst'));
+            Decimal totalPaid = (Decimal) ar.get('totalPaid');
+            Decimal totalBase = (Decimal) ar.get('totalBase');
+            Decimal totalGst = (Decimal) ar.get('totalGst');
+            paidBySchedule.put(psId, totalPaid == null ? 0 : totalPaid);
+            basePaidBySchedule.put(psId, totalBase == null ? 0 : totalBase);
+            gstPaidBySchedule.put(psId, totalGst == null ? 0 : totalGst);
         }
 
         List<Payment_Schedule__c> toUpdate = new List<Payment_Schedule__c>();
@@ -194,6 +197,7 @@ public without sharing class BookingFinancialRecalcService {
         ]) {
             Id demandId = (Id) ar.get('demandId');
             Decimal total = (Decimal) ar.get('totalPaid');
+            total = total == null ? 0 : total;
             paidByDemand.put(demandId, (paidByDemand.containsKey(demandId) ? paidByDemand.get(demandId) : 0) + total);
         }
 
@@ -209,6 +213,7 @@ public without sharing class BookingFinancialRecalcService {
         ]) {
             Id demandId = (Id) ar.get('demandId');
             Decimal total = (Decimal) ar.get('totalPaid');
+            total = total == null ? 0 : total;
             paidByDemand.put(demandId, (paidByDemand.containsKey(demandId) ? paidByDemand.get(demandId) : 0) + total);
         }
 
@@ -271,7 +276,11 @@ public without sharing class BookingFinancialRecalcService {
             AND Additional_Charge__c = null
             GROUP BY Booking__c
         ]) {
-            outstandingByBooking.put((Id) ar.get('bkId'), (Decimal) ar.get('totalPending'));
+            Decimal totalPending = (Decimal) ar.get('totalPending');
+            outstandingByBooking.put(
+                (Id) ar.get('bkId'),
+                totalPending == null ? 0 : totalPending
+            );
         }
 
         // Available advance amounts
@@ -283,7 +292,11 @@ public without sharing class BookingFinancialRecalcService {
             AND Available_Amount__c > 0
             GROUP BY Booking__c
         ]) {
-            advanceByBooking.put((Id) ar.get('bkId'), (Decimal) ar.get('totalAvailable'));
+            Decimal totalAvailable = (Decimal) ar.get('totalAvailable');
+            advanceByBooking.put(
+                (Id) ar.get('bkId'),
+                totalAvailable == null ? 0 : totalAvailable
+            );
         }
 
         // Total paid with base/GST breakdown from receipt line items
@@ -301,9 +314,12 @@ public without sharing class BookingFinancialRecalcService {
             GROUP BY Booking__c
         ]) {
             Id bkId = (Id) ar.get('bkId');
-            paidByBooking.put(bkId, (Decimal) ar.get('totalAllocated'));
-            basePaidByBooking.put(bkId, (Decimal) ar.get('totalBase'));
-            gstPaidByBooking.put(bkId, (Decimal) ar.get('totalGst'));
+            Decimal totalAllocated = (Decimal) ar.get('totalAllocated');
+            Decimal totalBase = (Decimal) ar.get('totalBase');
+            Decimal totalGst = (Decimal) ar.get('totalGst');
+            paidByBooking.put(bkId, totalAllocated == null ? 0 : totalAllocated);
+            basePaidByBooking.put(bkId, totalBase == null ? 0 : totalBase);
+            gstPaidByBooking.put(bkId, totalGst == null ? 0 : totalGst);
         }
 
         // Base/GST totals from payment schedules
@@ -320,9 +336,18 @@ public without sharing class BookingFinancialRecalcService {
             GROUP BY Booking__c
         ]) {
             Id bkId = (Id) ar.get('bkId');
-            baseAmountByBooking.put(bkId, (Decimal) ar.get('totalBase'));
-            basePendingByBooking.put(bkId, (Decimal) ar.get('totalBasePending'));
-            gstPendingByBooking.put(bkId, (Decimal) ar.get('totalGstPending'));
+            Decimal totalBase = (Decimal) ar.get('totalBase');
+            Decimal totalBasePending = (Decimal) ar.get('totalBasePending');
+            Decimal totalGstPending = (Decimal) ar.get('totalGstPending');
+            baseAmountByBooking.put(bkId, totalBase == null ? 0 : totalBase);
+            basePendingByBooking.put(
+                bkId,
+                totalBasePending == null ? 0 : totalBasePending
+            );
+            gstPendingByBooking.put(
+                bkId,
+                totalGstPending == null ? 0 : totalGstPending
+            );
         }
 
         List<Booking__c> toUpdate = new List<Booking__c>();

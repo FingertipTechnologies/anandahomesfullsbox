@@ -3,6 +3,8 @@
  *              and blocks forward stage transitions whose prerequisites are not met:
  *
  *                • → Booked                : signed Booking Form must be uploaded (BRD §5.17–18).
+ *                • → Agreement             : Agreement Amount schedule (Flat + GST, no TDS)
+ *                                            must be paid and cleared.
  *                • → Demands & Collections : Sale Agreement Status = Completed (BRD §38–39).
  *                • → Registration          : Sale Agreement Status = Completed AND, per funding
  *                                            type, payments collected with no receipt pending
@@ -39,14 +41,6 @@ public with sharing class BookingStageValidationService {
     /** Funding types where the bank disburses against milestones (BRD §8.1). */
     private static final Set<String> LOAN_FUNDING = new Set<String>{ 'Loan', 'Bank Loan', 'NBFC Loan' };
 
-    /**
-     * Largest outstanding balance still treated as fully paid. Per-milestone GST/TDS are rounded
-     * to whole rupees, so a receipt for the exact total (e.g. TDS 91,465.66 vs 91,466 across the
-     * milestones) can leave a few paise pending; only more than Rs 1 blocks the stage move.
-     */
-    @TestVisible
-    private static final Decimal PAYMENT_TOLERANCE = 1;
-
     /** Linear lifecycle order. Stages not listed (Cancellation/Swapping) are not gated. */
     private static final Map<String, Integer> STAGE_ORDER = new Map<String, Integer>{
         'New' => 0,
@@ -60,9 +54,10 @@ public with sharing class BookingStageValidationService {
     public static void validateStageTransitions(List<Booking__c> newList, Map<Id, Booking__c> oldMap) {
         if (bypass || newList == null || oldMap == null) return;
 
-        // Bookings transitioning into Registration / Handover need a financial (payment)
-        // check that requires querying related records — collect them for one bulk pass.
+        // Financial checks require querying related records, so collect stage transitions
+        // for one bulk pass per gate.
         Map<Id, Booking__c> needFinancialCheck = new Map<Id, Booking__c>();
+        Map<Id, Booking__c> needAgreementAmountCheck = new Map<Id, Booking__c>();
 
         for (Booking__c b : newList) {
             Booking__c old = oldMap.get(b.Id);
@@ -128,9 +123,17 @@ public with sharing class BookingStageValidationService {
                 continue; // field-level prerequisite already failed; no need for financial query
             }
 
+            if (b.Status__c == 'Agreement') {
+                needAgreementAmountCheck.put(b.Id, b);
+            }
+
             if (b.Status__c == 'Registration' || b.Status__c == 'Handover') {
                 needFinancialCheck.put(b.Id, b);
             }
+        }
+
+        if (!needAgreementAmountCheck.isEmpty()) {
+            applyAgreementAmountGate(needAgreementAmountCheck);
         }
 
         if (!needFinancialCheck.isEmpty()) {
@@ -170,6 +173,7 @@ public with sharing class BookingStageValidationService {
             }
         } else if (b.Status__c == 'Agreement') {
             // Booked -> Agreement: the Booking Welcome mail must have been sent.
+            // The Agreement Amount payment is validated in the bulk financial gate below.
             if (b.Welcome_Email_Sent__c != true
                 && b.Welcome_Mail_Sent_DateTime__c == null) {
                 return 'Cannot move to Agreement: the Booking Welcome mail must be sent first '
@@ -196,6 +200,58 @@ public with sharing class BookingStageValidationService {
             }
         }
         return null;
+    }
+
+    /**
+     * Agreement may begin only after every schedule marked Is_Agreement is paid.
+     * The amount is the schedule base plus GST; TDS is intentionally excluded.
+     * Paid amounts come from the payment schedule's Base/GST paid totals, matching the
+     * amounts displayed to users on the schedule.
+     */
+    private static void applyAgreementAmountGate(Map<Id, Booking__c> bookingsById) {
+        Set<Id> bookingIds = bookingsById.keySet();
+        Map<Id, Decimal> agreementDueByBooking = new Map<Id, Decimal>();
+        Map<Id, Decimal> agreementPaidByBooking = new Map<Id, Decimal>();
+        for (Payment_Schedule__c schedule : [
+            SELECT Booking__c,
+                   Payment_Schedule_Amount__c, GST_Amount__c,
+                   Payment_Schedule_Amount_Paid__c, GST_Amount_Paid__c
+            FROM Payment_Schedule__c
+            WHERE Booking__c IN :bookingIds AND Is_Agreement__c = TRUE
+        ]) {
+            Decimal due = (schedule.Payment_Schedule_Amount__c == null
+                ? 0 : schedule.Payment_Schedule_Amount__c)
+                + (schedule.GST_Amount__c == null ? 0 : schedule.GST_Amount__c);
+            Decimal runningDue = agreementDueByBooking.containsKey(schedule.Booking__c)
+                ? agreementDueByBooking.get(schedule.Booking__c) : 0;
+            agreementDueByBooking.put(schedule.Booking__c, runningDue + due);
+
+            Decimal paid = (schedule.Payment_Schedule_Amount_Paid__c == null
+                ? 0 : schedule.Payment_Schedule_Amount_Paid__c)
+                + (schedule.GST_Amount_Paid__c == null
+                    ? 0 : schedule.GST_Amount_Paid__c);
+            Decimal runningPaid = agreementPaidByBooking.containsKey(schedule.Booking__c)
+                ? agreementPaidByBooking.get(schedule.Booking__c) : 0;
+            agreementPaidByBooking.put(schedule.Booking__c, runningPaid + paid);
+        }
+
+        for (Id bookingId : bookingsById.keySet()) {
+            Decimal due = agreementDueByBooking.containsKey(bookingId)
+                ? agreementDueByBooking.get(bookingId) : 0;
+            Decimal paid = agreementPaidByBooking.containsKey(bookingId)
+                ? agreementPaidByBooking.get(bookingId) : 0;
+
+            if (!agreementDueByBooking.containsKey(bookingId)) {
+                bookingsById.get(bookingId).addError(
+                    'Cannot move to Agreement: no payment schedule is marked as the Agreement Amount.'
+                );
+            } else if (paid + 0.01 < due) {
+                bookingsById.get(bookingId).addError(
+                    'Cannot move to Agreement: the Agreement Amount (Flat + GST, excluding TDS) '
+                    + 'must be fully paid.'
+                );
+            }
+        }
     }
 
     // ==================== FINANCIAL (PAYMENT) GATES ====================
@@ -246,7 +302,7 @@ public with sharing class BookingStageValidationService {
         for (Id bookingId : bookingIds) {
             Booking__c b = bookingsById.get(bookingId);
             Decimal pending = pendingByBooking.containsKey(bookingId) ? pendingByBooking.get(bookingId) : 0;
-            Boolean fullyCollected = pending <= PAYMENT_TOLERANCE;
+            Boolean fullyCollected = pending <= 0;
             Boolean hasPendingReceipt = bookingsWithPendingReceipt.contains(bookingId);
             Boolean hasOpenCharges = bookingsWithOpenCharges.contains(bookingId);
             String funding = b.Funding_Type__c;

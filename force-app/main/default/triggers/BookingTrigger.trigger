@@ -12,6 +12,7 @@ trigger BookingTrigger on Booking__c (before insert, before update, after insert
         
         if (Trigger.isBefore && (Trigger.isInsert || Trigger.isUpdate)) {
             BookingUnitBookingValidationService.validateOneActiveBookingPerUnit(Trigger.new);
+            BookingSwapLockService.validateLockedBookingEdits(Trigger.new, Trigger.oldMap);
 
             //Stage-progression gates (BRD lifecycle prerequisites).
             if (Trigger.isUpdate) {

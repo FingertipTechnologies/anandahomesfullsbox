@@ -4,10 +4,6 @@ public with sharing class DemandComponentService {
   public static final String FLAT_AND_GST = 'Flat + GST';
   public static final String TIME_BASED_PAYMENT_TYPE = 'Time Based';
   private static final Set<String> SPLIT_FUNDING_TYPES = new Set<String>{
-    'Loan',
-    'Bank Loan',
-    'NBFC Loan',
-    'Mixed Funding',
     'Prorata',
     'Partial'
   };
@@ -245,9 +241,10 @@ public with sharing class DemandComponentService {
       false,
       receiptTotalsBySchedule
     );
-    Decimal bankTdsOutstanding = (bankFlatOutstanding * 0.01)
+    Decimal tdsRate = tdsRateForSchedule(schedule);
+    Decimal bankTdsOutstanding = (bankFlatOutstanding * tdsRate)
       .setScale(2, System.RoundingMode.HALF_UP);
-    Decimal customerTdsOutstanding = (customerFlatOutstanding * 0.01)
+    Decimal customerTdsOutstanding = (customerFlatOutstanding * tdsRate)
       .setScale(2, System.RoundingMode.HALF_UP);
     Decimal customerTdsPaid = getReceiptSourceTotals(
       receiptTotalsBySchedule,
@@ -263,6 +260,12 @@ public with sharing class DemandComponentService {
       return Math.max(0, bankTdsOutstanding - customerTdsExcess);
     }
     return Math.max(0, customerTdsOutstanding - customerTdsPaid);
+  }
+
+  private static Decimal tdsRateForSchedule(Payment_Schedule__c schedule) {
+    Decimal baseAmount = nz(schedule.Payment_Schedule_Amount__c);
+    Decimal tdsAmount = nz(schedule.TDS_Amount__c);
+    return baseAmount > 0 && tdsAmount > 0 ? tdsAmount / baseAmount : 0.01;
   }
 
   public static Decimal amount(
@@ -448,6 +451,12 @@ public with sharing class DemandComponentService {
         schedule.Booking__r.Project__r.Legacy_Split_Demand_Receipt__c == true &&
         SPLIT_FUNDING_TYPES.contains(schedule.Booking__r.Funding_Type__c) &&
         hasAudienceSplit(schedule);
+      if (!sourceSpecificSchedule) {
+        carryForwardByBooking.put(schedule.Booking__c, carryForward);
+        sourcesByBooking.put(schedule.Booking__c, sources);
+        continue;
+      }
+
       Boolean flatDemanded = isFlatDemandedOnEitherSide(schedule);
       if (!flatDemanded) {
         Decimal unpaidTds = undemandedTdsFromPaidFlatByAudience(

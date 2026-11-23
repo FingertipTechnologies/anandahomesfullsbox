@@ -15,7 +15,7 @@
                 <field>Name</field>
             </layoutItems>
             <layoutItems>
-                <behavior>Readonly</behavior>
+                <behavior>Required</behavior>
                 <field>New_First_Applicant_Name__c</field>
             </layoutItems>
             <layoutItems>
@@ -33,7 +33,7 @@
                 <field>Booking__c</field>
             </layoutItems>
             <layoutItems>
-                <behavior>Readonly</behavior>
+                <behavior>Required</behavior>
                 <field>Old_First_Applicant__c</field>
             </layoutItems>
             <layoutItems>

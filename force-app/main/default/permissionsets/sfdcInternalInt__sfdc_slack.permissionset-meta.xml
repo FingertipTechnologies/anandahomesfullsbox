@@ -1033,6 +1033,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Booking__c.Booking_Form_Mail_Allowed__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Booking__c.Booking_Form__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -1669,6 +1674,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Booking__c.Last_Calculated_Date__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Booking__c.Last_First_Applicant_Change_Id__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -4618,6 +4628,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Demands__c.Additional_Charge__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Demands__c.Base_Amount__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -4734,6 +4749,11 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Demands__c.Last_Reminder_Date__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Demands__c.Milestone_Name__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -5358,7 +5378,22 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>First_Applicant_Change__c.New_Aadhaar__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>First_Applicant_Change__c.New_Booking_Form_Uploaded__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>First_Applicant_Change__c.New_Correspondence_Address__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>First_Applicant_Change__c.New_Date_of_Birth__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -5369,6 +5404,61 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>First_Applicant_Change__c.New_First_Applicant_Mobile__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>First_Applicant_Change__c.New_Marital_Status__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>First_Applicant_Change__c.New_Nationality__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>First_Applicant_Change__c.New_Occupation__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>First_Applicant_Change__c.New_Office_Address__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>First_Applicant_Change__c.New_PAN_Number__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>First_Applicant_Change__c.New_Passport_PI_no__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>First_Applicant_Change__c.New_Permanent_Address__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>First_Applicant_Change__c.New_Residential_Status__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>First_Applicant_Change__c.New_S_o_D_o_W_o__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>First_Applicant_Change__c.New_Salutation__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>First_Applicant_Change__c.New_Son_Daughter_Wife_of__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -8433,6 +8523,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Payment_Schedule__c.Flat_Bank_Received__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Payment_Schedule__c.Flat_Cost__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -8723,6 +8818,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Payment_Schedule__c.Total_Flat_Pending__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Payment_Schedule__c.Total_Outstanding_Due_Amount__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -8759,6 +8859,16 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Payment_Schedule__c.With_GST__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Plot__c.AGPA_Date__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Plot__c.AGPA_Number__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>
@@ -10748,6 +10858,11 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>false</editable>
+        <field>Quote__c.Show_Create_Booking__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
         <field>Quote__c.Solar_Charges__c</field>
         <readable>true</readable>
     </fieldPermissions>
@@ -11399,6 +11514,16 @@
     <fieldPermissions>
         <editable>false</editable>
         <field>Receipt__c.Receipt_Approval__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Receipt__c.Receipt_Document_Title__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>Receipt__c.Receipt_GST_Note__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

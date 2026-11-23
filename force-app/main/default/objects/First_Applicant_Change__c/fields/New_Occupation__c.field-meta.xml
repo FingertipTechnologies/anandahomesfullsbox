@@ -4,10 +4,10 @@
     <description>Requested value for Booking Occupation__c; copied to the booking when the change is approved.</description>
     <externalId>false</externalId>
     <label>New Occupation</label>
+    <length>255</length>
     <required>false</required>
     <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Text</type>
     <unique>false</unique>
-    <length>255</length>
 </CustomField>

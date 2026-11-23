@@ -9,7 +9,7 @@
  * page parameter "relatedId" to say which one to print; without it they print the first
  * selection (the lookup on the NOC).
  */
-public with sharing class CapriNocPdfController {
+public without sharing class CapriNocPdfController {
     public static final String RELATED_ID_PARAM = 'relatedId';
 
     public NOC__c noc { get; private set; }
@@ -185,11 +185,9 @@ public with sharing class CapriNocPdfController {
         if (bookingId == null) return null;
         try {
             List<Booking__c> rows = Database.query(
-                'SELECT Cost_Sheet__r.Amenities_Charges__c FROM Booking__c WHERE Id = :bookingId WITH SYSTEM_MODE LIMIT 1'
+                'SELECT Cost_Sheet__r.Amenities_Charges__c,Total_Other_Charges__c FROM Booking__c WHERE Id = :bookingId WITH SYSTEM_MODE LIMIT 1'
             );
-            return rows.isEmpty() || rows[0].Cost_Sheet__r == null
-                ? null
-                : rows[0].Cost_Sheet__r.Amenities_Charges__c;
+            return rows[0].Total_Other_Charges__c;
         } catch (QueryException e) {
             return null;
         }

@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
     <fullName>Booking_Form_Mail_Allowed__c</fullName>
-    <description>Matching criteria for the Booking Form email templates: Legacey at New or Booked, Drizzle at New, or any booking whose First Applicant was changed and whose new signed Booking Form is not uploaded yet. The templates must not add their own stage condition.</description>
+    <description>Matching criteria for the Booking Form email templates: Legacey at New, Drizzle at Booked, or any booking whose First Applicant was changed and whose new signed Booking Form is not uploaded yet.</description>
     <formula>OR(
-  AND(
-    NOT(Signed_Booking_Form_Uploaded__c),
-    NOT(ISBLANK(Last_First_Applicant_Change_Id__c))
-  ),
-  AND(Project__r.Name = &quot;The Legacey&quot;, New_or_Booked_Stage__c),
-  AND(Project__r.Name = &quot;The Drizzle&quot;, ISPICKVAL(Status__c, &quot;New&quot;))
+    AND(
+        NOT(Signed_Booking_Form_Uploaded__c),
+        NOT(ISBLANK(Last_First_Applicant_Change_Id__c))
+    ),
+    AND(Project__r.Name = &quot;The Legacey&quot;, ISPICKVAL(Status__c, &quot;New&quot;)),
+    AND(Project__r.Name = &quot;The Drizzle&quot;, ISPICKVAL(Status__c, &quot;Booked&quot;))
 )</formula>
     <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
-    <inlineHelpText>Ticked when the Booking Form mail can be sent: The Legacey at New or Booked, The Drizzle at New, or after a First Applicant Change until the new signed Booking Form is uploaded.</inlineHelpText>
+    <inlineHelpText>Ticked when the Booking Form mail can be sent: The Legacey at New, The Drizzle at Booked, or after a First Applicant Change until the new signed Booking Form is uploaded.</inlineHelpText>
     <label>Booking Form Mail Allowed</label>
     <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>

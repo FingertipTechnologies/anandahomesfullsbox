@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Layout xmlns="http://soap.sforce.com/2006/04/metadata">
-    <excludeButtons>GenerateKnowledge</excludeButtons>
+    <excludeButtons>OpenSlackRecordChannel</excludeButtons>
     <layoutSections>
         <customLabel>false</customLabel>
         <detailHeading>false</detailHeading>
@@ -46,6 +46,10 @@
             <layoutItems>
                 <behavior>Readonly</behavior>
                 <field>Flat_Cost__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
+                <field>Flat_Bank_Received__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>
@@ -162,6 +166,10 @@
                 <behavior>Edit</behavior>
                 <field>TDS_Amount_Pending__c</field>
             </layoutItems>
+            <layoutItems>
+                <behavior>Readonly</behavior>
+                <field>Total_Flat_Pending__c</field>
+            </layoutItems>
         </layoutColumns>
         <style>TwoColumnsLeftToRight</style>
     </layoutSections>
@@ -174,14 +182,6 @@
             <layoutItems>
                 <behavior>Readonly</behavior>
                 <field>Demand_Raised__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Readonly</behavior>
-                <field>Days_Overdue__c</field>
-            </layoutItems>
-            <layoutItems>
-                <behavior>Readonly</behavior>
-                <field>Is_Overdue__c</field>
             </layoutItems>
         </layoutColumns>
         <layoutColumns>

@@ -1,11 +1,12 @@
 /**
- * @description Handles booking swap (unit change) - clones the old booking to a new unit,
- * transfers all child records and files, and updates unit statuses.
- * Called from Flow when Booking Status changes to 'Swapped'.
+ * @description Handles booking swap (unit change) - clones the booking and its transferable
+ * child records, generates schedules for the new unit, reallocates approved receipts, and
+ * updates unit statuses and files.
+ * Called from Flow when Booking Status changes to 'Swapping'.
  *
- * Cloning uses a global old->new Id registry so that every lookup between cloned
- * records (Receipt Line Item -> Payment Schedule / Demand / Advance / Receipt,
- * Demand -> Payment Schedule, etc.) is remapped to the NEW booking's records.
+ * Cloning uses a global old->new Id registry to remap lookups between cloned records.
+ * The new booking's schedules are generated from its project master schedule; approved receipts
+ * are cloned without old line items or advances, then processed by the standard allocator.
  * BookingFinancialRecalcService is bypassed during cloning and run once at the end
  * for both bookings, so financial totals are rebuilt on fully-linked data.
  */
@@ -57,23 +58,19 @@ public with sharing class BookingSwapHandler {
      * when a booking is swapped. ORDER MATTERS: it is the dependency order for lookup
      * remapping. An object must appear AFTER every object it looks up to, so the
      * registry already contains the new Ids when its records are cloned.
-     * (Payment Schedules before Demands, both before Receipts, Receipt Line Items last.)
+     * (Demands before Receipts. Payment schedules are generated before this cloning pass, and
+     * receipt line items are recreated by allocating the transferred receipts afterward.)
      */
     private static List<ChildCloneConfig> getChildCloneConfigs() {
         // Only APPROVED receipts are transferred to the new booking. Pending and Rejected
-        // receipts (and their line items) stay on the old booking.
-        ChildCloneConfig receiptConfig = new ChildCloneConfig(
-            'Receipt__c', 'Booking__c', 'Receipt_Line_Item__c', 'Booking__c');
+        // receipts stay on the old booking; approved receipts are reallocated after cloning.
+        ChildCloneConfig receiptConfig = new ChildCloneConfig('Receipt__c', 'Booking__c');
         receiptConfig.extraWhere =
             'Approval_Status__c = \'' + APPROVAL_STATUS_APPROVED + '\'';
-        receiptConfig.lineItemExtraWhere =
-            'Receipt__r.Approval_Status__c = \'' + APPROVAL_STATUS_APPROVED + '\'';
 
         return new List<ChildCloneConfig>{
             new ChildCloneConfig('Co_Applicant__c',       'Booking__c'),
             new ChildCloneConfig('KYC_Documents__c',      'Booking__c'),
-            new ChildCloneConfig('Payment_Schedule__c',   'Booking__c'),
-            new ChildCloneConfig('Advance_Payment__c',    'Booking__c'),
             new ChildCloneConfig('Demands__c',            'Booking__c'),
             receiptConfig,
             new ChildCloneConfig('Interest_Line_Item__c', 'Booking__c'),
@@ -141,6 +138,7 @@ public with sharing class BookingSwapHandler {
 
         Boolean priorReceiptGateBypass = ReceiptApprovalGateService.bypass;
         Boolean priorRecalcBypass = BookingFinancialRecalcService.bypass;
+        Boolean priorSwapLockBypass = BookingSwapLockService.bypass;
 
         // Step 1: Query old booking with all fields
         Booking__c oldBooking = queryBookingWithAllFields(request.oldBookingId);
@@ -154,13 +152,14 @@ public with sharing class BookingSwapHandler {
         }
 
         try {
-            // Cloning transfers existing receipts (which may be pending/rejected) to the new
-            // booking; suspend the receipt approval gate for this trusted server-side move.
+            // Transfer approved receipts to the new booking; suspend the receipt approval gate
+            // for this trusted server-side move.
             ReceiptApprovalGateService.bypass = true;
 
             // Suppress per-record financial recalculation while cloning; one full
             // recalculation runs at the end on completely linked data.
             BookingFinancialRecalcService.bypass = true;
+            BookingSwapLockService.bypass = true;
 
             // Step 2: Clone the booking for the new unit
             Booking__c newBooking = oldBooking.clone(false, true, false, false);
@@ -172,14 +171,15 @@ public with sharing class BookingSwapHandler {
             newBooking.Cancellation_Reason__c = null;
             newBooking.Swap_Date__c = null;
             newBooking.Swapped_To_Booking__c = null;
+            newBooking.Is_Swapped__c = false;
             // Clear approval statuses for fresh start
             newBooking.Booking_Verification_Approval_Status__c = 'Approved';
             newBooking.Assignment_Approval_Status__c = null;
             newBooking.Sale_Agreement_Approval_Status__c = null;
             newBooking.Cancellation_Approval_Before_Agreement__c = null;
             newBooking.Swapping_Approval_Before_Agreement__c = null;
-            // The payment schedules are cloned from the old booking below; stop the booking
-            // creation flow from generating a second set from the master schedules.
+            // The after-create Flow skips generation and automatic receipt creation for swap
+            // bookings; the swap handler generates schedules and reallocates copied receipts.
             newBooking.Payment_Schedules_Created__c = true;
             // The quote built for the Swap To Unit when the swap was requested becomes the new
             // booking's quote; the old booking keeps its original one.
@@ -190,7 +190,12 @@ public with sharing class BookingSwapHandler {
             }
             insert newBooking;
 
-            // Step 3: Update old booking - mark as Swapped
+            // The after-create Flow skips generation for swap bookings; generate the target
+            // booking's schedules now, before transferring and reallocating financial records.
+            PaymentScheduleGeneratorService.generateForBookings(new Set<Id>{ newBooking.Id });
+
+            // Step 3: Preserve the swap target while child transfer is still in progress.
+            // Is_Swapped__c and terminal Status__c are set only after the transfer succeeds.
             oldBooking.Swap_Date__c = Date.today();
             oldBooking.Swapped_To_Booking__c = newBooking.Id;
             update oldBooking;
@@ -220,16 +225,18 @@ public with sharing class BookingSwapHandler {
             // lookup between cloned records is remapped to the new booking's records.
             Map<Id, Id> idRegistry = new Map<Id, Id>();
             idRegistry.put(request.oldBookingId, newBooking.Id);
+            mapPaymentScheduleIds(request.oldBookingId, newBooking.Id, idRegistry);
 
             for (ChildCloneConfig config : getChildCloneConfigs()) {
                 cloneChildRecords(request.oldBookingId, newBooking.Id, config, idRegistry);
             }
 
-            // Step 5a: Fix backward/circular references (e.g. Advance_Payment__c.Source_Receipt__c
-            // points at a Receipt cloned AFTER the advance; Payment_Schedule__c.Last_Receipt__c
-            // likewise). Now that the registry is complete, patch any cloned record still
-            // holding an old Id in a lookup.
+            // Step 5a: Fix references to objects cloned later in the dependency order.
             fixupStaleReferences(newBooking.Id, idRegistry);
+
+            // Receipt line items and advances are rebuilt by the standard allocator, not copied
+            // from the old booking's schedule structure.
+            enqueueTransferredReceiptAllocation(newBooking.Id);
 
             // Step 6: Transfer files (ContentDocumentLinks)
             transferFiles(request.oldBookingId, newBooking.Id);
@@ -269,7 +276,12 @@ public with sharing class BookingSwapHandler {
                 new Set<Id>{ request.oldBookingId, newBooking.Id }
             );
 
-            // Step 9: Clean up the old booking (reject its Approved/Pending receipts with a note,
+            // Step 9: The transfer is complete. The booking entered Swapping through its
+            // approved status transition; activate the logical lock only after transfer.
+            oldBooking.Is_Swapped__c = true;
+            update oldBooking;
+
+            // Step 10: Clean up the old booking (reject its Approved/Pending receipts with a note,
             // zero its schedules' received amounts) in its own transaction. Rejecting receipts
             // fires the receipt flows (recalc + notifications) per receipt; inside the swap's
             // approval transaction that ran past the 100-SOQL limit and the rejection was lost.
@@ -282,6 +294,55 @@ public with sharing class BookingSwapHandler {
             // disabled for the remainder of the transaction.
             ReceiptApprovalGateService.bypass = priorReceiptGateBypass;
             BookingFinancialRecalcService.bypass = priorRecalcBypass;
+            BookingSwapLockService.bypass = priorSwapLockBypass;
+        }
+    }
+
+    private static void enqueueTransferredReceiptAllocation(Id newBookingId) {
+        List<Id> receiptIds = new List<Id>();
+        for (Receipt__c receipt : [
+            SELECT Id
+            FROM Receipt__c
+            WHERE Booking__c = :newBookingId
+            AND Approval_Status__c = :APPROVAL_STATUS_APPROVED
+            ORDER BY Receipt_Date__c ASC, CreatedDate ASC, Id ASC
+        ]) {
+            receiptIds.add(receipt.Id);
+        }
+        if (receiptIds.isEmpty()) return;
+
+        if (Limits.getQueueableJobs() >= Limits.getLimitQueueableJobs()) {
+            throw new BookingSwapException(
+                'Cannot complete the swap because receipt allocation could not be scheduled.'
+            );
+        }
+        System.enqueueJob(new TransferredReceiptAllocation(newBookingId, receiptIds));
+    }
+
+    public class TransferredReceiptAllocation implements Queueable {
+        private Id bookingId;
+        private List<Id> receiptIds;
+
+        public TransferredReceiptAllocation(Id bookingId, List<Id> receiptIds) {
+            this.bookingId = bookingId;
+            this.receiptIds = receiptIds;
+        }
+
+        public void execute(QueueableContext context) {
+            if (receiptIds == null || receiptIds.isEmpty()) return;
+
+            FinancialTransactionController.allocateReceipt(receiptIds[0]);
+            BookingFinancialRecalcService.recalculateForBookings(new Set<Id>{ bookingId });
+
+            if (receiptIds.size() > 1) {
+                List<Id> remainingReceiptIds = new List<Id>();
+                for (Integer i = 1; i < receiptIds.size(); i++) {
+                    remainingReceiptIds.add(receiptIds[i]);
+                }
+                System.enqueueJob(
+                    new TransferredReceiptAllocation(bookingId, remainingReceiptIds)
+                );
+            }
         }
     }
 
@@ -317,18 +378,22 @@ public with sharing class BookingSwapHandler {
     private static void runOldBookingCleanup(Id oldBookingId, Id newBookingId) {
         Boolean priorRecalcBypass = BookingFinancialRecalcService.bypass;
         Boolean priorReceiptGateBypass = ReceiptApprovalGateService.bypass;
+        Boolean priorSwapLockBypass = BookingSwapLockService.bypass;
         try {
             // One recalculation at the end instead of one per rejected receipt.
             BookingFinancialRecalcService.bypass = true;
             ReceiptApprovalGateService.bypass = true;
+            BookingSwapLockService.bypass = true;
             rejectOldBookingReceipts(oldBookingId, newBookingId);
+            BookingFinancialRecalcService.bypass = priorRecalcBypass;
+            BookingFinancialRecalcService.recalculateForBookings(new Set<Id>{ oldBookingId });
+            // Nothing is paid on the old booking any more - its schedules show 0 received.
+            zeroOldBookingSchedules(oldBookingId);
         } finally {
             BookingFinancialRecalcService.bypass = priorRecalcBypass;
             ReceiptApprovalGateService.bypass = priorReceiptGateBypass;
+            BookingSwapLockService.bypass = priorSwapLockBypass;
         }
-        BookingFinancialRecalcService.recalculateForBookings(new Set<Id>{ oldBookingId });
-        // Nothing is paid on the old booking any more - its schedules show 0 received.
-        zeroOldBookingSchedules(oldBookingId);
     }
 
     @TestVisible
@@ -475,6 +540,137 @@ public with sharing class BookingSwapHandler {
     }
 
     /**
+     * Maps old schedule IDs to schedules generated for the new booking. Linked child financial
+     * records can then be cloned with their schedule lookups remapped.
+     */
+    private static void mapPaymentScheduleIds(
+        Id oldBookingId,
+        Id newBookingId,
+        Map<Id, Id> idRegistry
+    ) {
+        List<Payment_Schedule__c> oldSchedules = [
+            SELECT Id, Master_Payment_Schedule__c, Sequence__c, Milestone_Name__c
+            FROM Payment_Schedule__c
+            WHERE Booking__c = :oldBookingId
+        ];
+        if (oldSchedules.isEmpty()) return;
+
+        List<Payment_Schedule__c> newSchedules = [
+            SELECT Id, Master_Payment_Schedule__c, Sequence__c, Milestone_Name__c
+            FROM Payment_Schedule__c
+            WHERE Booking__c = :newBookingId
+        ];
+
+        Map<Id, List<Payment_Schedule__c>> schedulesByMaster =
+            new Map<Id, List<Payment_Schedule__c>>();
+        Map<String, List<Payment_Schedule__c>> schedulesByIdentity =
+            new Map<String, List<Payment_Schedule__c>>();
+        for (Payment_Schedule__c schedule : newSchedules) {
+            if (schedule.Master_Payment_Schedule__c != null) {
+                if (!schedulesByMaster.containsKey(schedule.Master_Payment_Schedule__c)) {
+                    schedulesByMaster.put(
+                        schedule.Master_Payment_Schedule__c,
+                        new List<Payment_Schedule__c>()
+                    );
+                }
+                schedulesByMaster.get(schedule.Master_Payment_Schedule__c).add(schedule);
+            }
+            String identity = paymentScheduleIdentity(schedule);
+            if (identity != null) {
+                if (!schedulesByIdentity.containsKey(identity)) {
+                    schedulesByIdentity.put(identity, new List<Payment_Schedule__c>());
+                }
+                schedulesByIdentity.get(identity).add(schedule);
+            }
+        }
+
+        Set<Id> unmatchedScheduleIds = new Set<Id>();
+        for (Payment_Schedule__c oldSchedule : oldSchedules) {
+            List<Payment_Schedule__c> matches = oldSchedule.Master_Payment_Schedule__c == null
+                ? null
+                : schedulesByMaster.get(oldSchedule.Master_Payment_Schedule__c);
+            if (matches == null || matches.size() != 1) {
+                String identity = paymentScheduleIdentity(oldSchedule);
+                matches = identity == null ? null : schedulesByIdentity.get(identity);
+            }
+            if (matches != null && matches.size() == 1) {
+                idRegistry.put(oldSchedule.Id, matches[0].Id);
+            } else {
+                unmatchedScheduleIds.add(oldSchedule.Id);
+            }
+        }
+
+        if (unmatchedScheduleIds.isEmpty()) return;
+
+        Set<Id> referencedScheduleIds = new Set<Id>();
+        for (ChildCloneConfig config : getChildCloneConfigs()) {
+            collectReferencedSchedules(
+                config.objectApiName,
+                config.bookingLookupField,
+                oldBookingId,
+                config.extraWhere,
+                unmatchedScheduleIds,
+                referencedScheduleIds
+            );
+            if (config.lineItemObjectApiName != null) {
+                collectReferencedSchedules(
+                    config.lineItemObjectApiName,
+                    config.lineItemBookingLookupField,
+                    oldBookingId,
+                    config.lineItemExtraWhere,
+                    unmatchedScheduleIds,
+                    referencedScheduleIds
+                );
+            }
+        }
+        if (!referencedScheduleIds.isEmpty()) {
+            throw new BookingSwapException(
+                'Cannot complete the swap because a payment schedule with linked financial records '
+                + 'has no matching schedule generated for the new booking.'
+            );
+        }
+    }
+
+    private static String paymentScheduleIdentity(Payment_Schedule__c schedule) {
+        if (schedule.Sequence__c == null && String.isBlank(schedule.Milestone_Name__c)) {
+            return null;
+        }
+        String sequence = schedule.Sequence__c == null
+            ? ''
+            : String.valueOf(schedule.Sequence__c);
+        String milestone = String.isBlank(schedule.Milestone_Name__c)
+            ? ''
+            : schedule.Milestone_Name__c.trim().toLowerCase();
+        return sequence + '|' + milestone;
+    }
+
+    private static void collectReferencedSchedules(
+        String objectApiName,
+        String bookingField,
+        Id oldBookingId,
+        String extraWhere,
+        Set<Id> scheduleIds,
+        Set<Id> referencedScheduleIds
+    ) {
+        Schema.SObjectType sObjectType = Schema.getGlobalDescribe().get(objectApiName);
+        if (sObjectType == null
+            || !sObjectType.getDescribe().fields.getMap().containsKey('Payment_Schedule__c')) {
+            return;
+        }
+
+        String query = 'SELECT Payment_Schedule__c FROM ' + objectApiName
+            + ' WHERE ' + bookingField + ' = :oldBookingId'
+            + ' AND Payment_Schedule__c IN :scheduleIds';
+        if (String.isNotBlank(extraWhere)) {
+            query += ' AND (' + extraWhere + ')';
+        }
+        for (SObject record : Database.query(query)) {
+            Id scheduleId = (Id) record.get('Payment_Schedule__c');
+            if (scheduleId != null) referencedScheduleIds.add(scheduleId);
+        }
+    }
+
+    /**
      * @description Generic clone of all records of one object belonging to the old booking.
      * For every writable lookup field on the clone, if its value is a key in the registry
      * (i.e. points at a record cloned earlier in this swap), it is replaced with the new Id.
@@ -512,6 +708,26 @@ public with sharing class BookingSwapHandler {
         for (SObject rec : fullRecords) {
             SObject clone = rec.clone(false, true, false, false);
             clone.put(bookingField, newBookingId);
+            if (objectApiName == 'Demands__c') {
+                String demandStatus = (String) clone.get('Status__c');
+                Id additionalChargeId = (Id) clone.get('Additional_Charge__c');
+                if (demandStatus != 'Cancelled' && demandStatus != 'On Hold'
+                    && additionalChargeId == null) {
+                    Decimal demandAmount = (Decimal) clone.get('Demand_Amount__c');
+                    clone.put('Paid_Amount__c', 0);
+                    clone.put(
+                        'Pending_Amount__c',
+                        demandAmount == null ? 0 : demandAmount
+                    );
+                    if (demandStatus == 'Paid' || demandStatus == 'Partially Paid') {
+                        clone.put('Status__c', 'Raised');
+                    }
+                }
+            }
+            if (objectApiName == 'Receipt__c') {
+                clone.put('New_Advance_Created__c', null);
+                clone.put('Created_Advance__c', null);
+            }
             for (String rf : refFields) {
                 Id refVal = (Id) rec.get(rf);
                 if (refVal != null && idRegistry.containsKey(refVal)) {
@@ -529,10 +745,8 @@ public with sharing class BookingSwapHandler {
     }
 
     /**
-     * @description Second pass after all cloning: patch lookups on cloned records that still
-     * hold OLD Ids because their target object was cloned later (circular/backward references,
-     * e.g. Advance_Payment__c.Source_Receipt__c -> Receipt__c, or
-     * Payment_Schedule__c.Last_Receipt__c -> Receipt__c).
+     * @description Second pass after all cloning: patch lookups on cloned records whose targets
+     * were cloned later in the dependency order.
      */
     private static void fixupStaleReferences(Id newBookingId, Map<Id, Id> idRegistry) {
         List<SObject> toUpdate = new List<SObject>();

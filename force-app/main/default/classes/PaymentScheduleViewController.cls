@@ -9,10 +9,6 @@
  */
 public with sharing class PaymentScheduleViewController {
   private static final Set<String> SPLIT_FUNDING_TYPES = new Set<String>{
-    'Loan',
-    'Bank Loan',
-    'NBFC Loan',
-    'Mixed Funding',
     'Prorata',
     'Partial'
   };
@@ -376,8 +372,6 @@ public with sharing class PaymentScheduleViewController {
           sourceSpecificSchedule,
           receiptTotalsBySchedule
         );
-        wrapper.demandableAmount = demandable;
-        wrapper.formattedDemandable = formatCurrency(demandable);
         wrapper.flatDemandableAmount = DemandComponentService.isComponentRaised(
             schedule,
             DemandComponentService.FLAT,
@@ -428,8 +422,8 @@ public with sharing class PaymentScheduleViewController {
               )
               ? carryForwardAllocation.amountByDemandSchedule.get(schedule.Id)
               : 0;
-            wrapper.flatDemandableAmount += carryForward;
             wrapper.tdsDemandableAmount = currentTds + carryForward;
+            wrapper.flatDemandableAmount += wrapper.tdsDemandableAmount;
           } else if (!wrapper.isBankDemand) {
             wrapper.tdsDemandableAmount = DemandComponentService.tdsAmountByAudience(
               schedule,
@@ -446,6 +440,11 @@ public with sharing class PaymentScheduleViewController {
           )
           ? 0
           : wrapper.flatDemandableAmount + wrapper.gstDemandableAmount;
+        if (wrapper.isBankDemand) {
+          demandable += wrapper.tdsDemandableAmount;
+        }
+        wrapper.demandableAmount = demandable;
+        wrapper.formattedDemandable = formatCurrency(demandable);
 
         // Determine status color and icon
         wrapper.isPaid = (schedule.Status__c ==
@@ -583,10 +582,9 @@ public with sharing class PaymentScheduleViewController {
 
   /**
    * @description The amount a milestone contributes to the next demand: when a bank split has
-   *              been recorded (Bank_Flat_Amount__c is not null), only Bank Flat + Bank GST is
-   *              demandable here — Customer Flat, Customer GST, and TDS are excluded, since
-   *              those are billed to the customer separately. When no bank split exists, the
-   *              full schedule amount (Base + GST + TDS) is used.
+   *              been recorded, only Bank Flat + Bank GST are demandable, with Bank TDS added
+   *              separately when the Flat component is still outstanding. When no bank split
+   *              exists, the full schedule amount (Base + GST + TDS) is used.
    */
   private static Decimal demandableAmount(
     Payment_Schedule__c ps,
@@ -966,13 +964,15 @@ public with sharing class PaymentScheduleViewController {
             )
             ? carryForwardAllocation.amountByDemandSchedule.get(ps.Id)
             : 0;
-          p += carryForward;
           tds += carryForward;
           if (carryForward > 0)
             carryForwardDemandScheduleIds.add(ps.Id);
+          totalPending += p + tds;
+          lineFlatAmount = p;
+        } else {
+          totalPending += p;
+          lineFlatAmount = Math.max(0, p - tds);
         }
-        totalPending += p;
-        lineFlatAmount = Math.max(0, p - tds);
         lineTdsAmount = tds;
         totalFlatAmount += lineFlatAmount;
         totalTdsAmount += tds;

@@ -161,6 +161,12 @@
                                     <lightning-icon icon-name="utility:table" size="x-small"></lightning-icon>
                                     Select Bookings for Demand
                                 </h3>
+                                <template if:true={projectContext.legacySplitDemandReceipt}>
+                                    <div class="info-banner slds-m-bottom_medium">
+                                        <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+                                        <span>For Legacy Prorata/Partial bookings, Bulk Demand raises only the Bank split. The Customer portion is handled by Auto Demand.</span>
+                                    </div>
+                                </template>
 
                                 <!-- Summary Bar -->
                                 <div class="summary-bar">
@@ -169,20 +175,24 @@
                                         <span class="summary-value">{selectedCount} bookings</span>
                                     </div>
                                     <div class="summary-item">
-                                        <span class="summary-label">Selected Component Amount</span>
+                                        <span class="summary-label">Flat Amount</span>
+                                        <span class="summary-value pending-text">{formattedTotalFlatAmount}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">GST Amount</span>
+                                        <span class="summary-value pending-text">{formattedTotalGstAmount}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">TDS Amount</span>
+                                        <span class="summary-value">{formattedTotalTdsAmount}</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Selected Demand Total</span>
                                         <span class="summary-value pending-text">{formattedTotalDemand}</span>
                                     </div>
                                     <div class="summary-item">
                                         <span class="summary-label">Gross Interest</span>
-                                        <span class="summary-value interest-text">{formattedTotalGrossInterest}</span>
-                                    </div>
-                                    <div class="summary-item">
-                                        <span class="summary-label">Waiver Applied</span>
-                                        <span class="summary-value interest-text">{formattedTotalInterestWaivedOff}</span>
-                                    </div>
-                                    <div class="summary-item">
-                                        <span class="summary-label">Interest Charged</span>
-                                        <span class="summary-value interest-text">{formattedTotalInterest}</span>
+                                        <span class="summary-value">{formattedTotalGrossInterest}</span>
                                     </div>
                                     <div class="summary-item">
                                         <span class="summary-label">Bank Payable</span>
@@ -194,11 +204,12 @@
                                     </div>
                                     <div class="summary-item">
                                         <span class="summary-label">Net Amount</span>
-                                        <span class="summary-value amount-total">{formattedTotalNet}</span>
+                                        <span class="summary-value pending-text">{formattedTotalNetDemand}</span>
                                     </div>
                                 </div>
 
-                                <div class="custom-table-wrapper">
+                                <template if:true={hasBookings}>
+                                  <div class="custom-table-wrapper">
                                     <table class="slds-table slds-table_bordered custom-table">
                                         <thead>
                                             <tr>
@@ -211,15 +222,14 @@
                                                 <th class="custom-th">Unit</th>
                                                 <th class="custom-th">Applicant</th>
                                                 <th class="custom-th slds-text-align_right">Previous Dues</th>
-                                                <th class="custom-th slds-text-align_right">{demandComponent} at Milestone</th>
-                                                <th class="custom-th slds-text-align_right">{demandComponent} Amount</th>
+                                                <th class="custom-th slds-text-align_right">{currentMilestoneLabel}</th>
+                                                <th class="custom-th slds-text-align_right">Flat Amount</th>
+                                                <th class="custom-th slds-text-align_right">GST Amount</th>
                                                 <th class="custom-th slds-text-align_right">TDS Amount</th>
                                                 <th class="custom-th slds-text-align_right">Gross Interest</th>
-                                                <th class="custom-th slds-text-align_right">Waiver</th>
-                                                <th class="custom-th slds-text-align_right">Interest Charged</th>
                                                 <th class="custom-th slds-text-align_right">Bank Payable</th>
                                                 <th class="custom-th slds-text-align_right">Customer Payable</th>
-                                                <th class="custom-th slds-text-align_right">Net Demand</th>
+                                                <th class="custom-th slds-text-align_right">Net Amount</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -235,19 +245,26 @@
                                                     <td>{booking.applicantName}</td>
                                                     <td class="slds-text-align_right">{booking.formattedPreviousAmount}</td>
                                                     <td class="slds-text-align_right">{booking.formattedCurrentAmount}</td>
-                                                    <td class="slds-text-align_right pending-text">{booking.formattedPending}</td>
+                                                    <td class="slds-text-align_right">{booking.formattedFlatAmount}</td>
+                                                    <td class="slds-text-align_right">{booking.formattedGstAmount}</td>
                                                     <td class="slds-text-align_right">{booking.formattedTdsAmount}</td>
-                                                    <td class="slds-text-align_right interest-text">{booking.formattedGrossInterest}</td>
-                                                    <td class="slds-text-align_right interest-text">{booking.formattedInterestWaivedOff}</td>
-                                                    <td class="slds-text-align_right interest-text">{booking.formattedInterest}</td>
+                                                    <td class="slds-text-align_right">{booking.formattedGrossInterest}</td>
                                                     <td class="slds-text-align_right">{booking.formattedBankPayable}</td>
                                                     <td class="slds-text-align_right">{booking.formattedCustomerPayable}</td>
-                                                    <td class="slds-text-align_right amount-text"><strong>{booking.formattedNet}</strong></td>
+                                                    <td class="slds-text-align_right pending-text">{booking.formattedNet}</td>
                                                 </tr>
                                             </template>
                                         </tbody>
                                     </table>
-                                </div>
+                                  </div>
+                                </template>
+                                <template if:false={hasBookings}>
+                                    <div class="empty-state">
+                                        <lightning-icon icon-name="utility:info" size="large"></lightning-icon>
+                                        <h3>No Eligible Bookings</h3>
+                                        <p>No bookings with completed, undemanded payment schedules were found for this milestone.</p>
+                                    </div>
+                                </template>
                             </template>
 
                             <!-- STEP 4: Review & Configure -->
@@ -273,32 +290,20 @@
                                     </div>
                                     <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4">
                                         <div class="info-box">
-                                            <div class="info-label">TOTAL INTEREST</div>
-                                            <div class="info-value interest-text">{formattedTotalInterest}</div>
+                                            <div class="info-label">TOTAL FLAT</div>
+                                            <div class="info-value">{formattedTotalFlatAmount}</div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4">
+                                        <div class="info-box">
+                                            <div class="info-label">TOTAL GST</div>
+                                            <div class="info-value">{formattedTotalGstAmount}</div>
                                         </div>
                                     </div>
                                     <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4">
                                         <div class="info-box">
                                             <div class="info-label">TOTAL TDS</div>
                                             <div class="info-value">{formattedTotalTdsAmount}</div>
-                                        </div>
-                                    </div>
-                                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4">
-                                        <div class="info-box">
-                                            <div class="info-label">NET DEMAND</div>
-                                            <div class="info-value amount-total">{formattedTotalNet}</div>
-                                        </div>
-                                    </div>
-                                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4">
-                                        <div class="info-box">
-                                            <div class="info-label">BANK PAYABLE</div>
-                                            <div class="info-value">{formattedTotalBankPayable}</div>
-                                        </div>
-                                    </div>
-                                    <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-4">
-                                        <div class="info-box">
-                                            <div class="info-label">CUSTOMER PAYABLE</div>
-                                            <div class="info-value">{formattedTotalCustomerPayable}</div>
                                         </div>
                                     </div>
                                 </div>
@@ -378,7 +383,6 @@
                                                     <th class="custom-th">Booking</th>
                                                     <th class="custom-th">Demand #</th>
                                                     <th class="custom-th slds-text-align_center">Status</th>
-                                                    <th class="custom-th slds-text-align_center">Email</th>
                                                     <th class="custom-th">Error</th>
                                                 </tr>
                                             </thead>
@@ -393,11 +397,6 @@
                                                             </template>
                                                             <template if:false={item.success}>
                                                                 <span class="badge badge-error">Failed</span>
-                                                            </template>
-                                                        </td>
-                                                        <td class="slds-text-align_center">
-                                                            <template if:true={item.emailSent}>
-                                                                <lightning-icon icon-name="utility:email" size="x-small"></lightning-icon>
                                                             </template>
                                                         </td>
                                                         <td class="error-text">{item.errorMessage}</td>

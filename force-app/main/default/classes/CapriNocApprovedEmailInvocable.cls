@@ -1,7 +1,7 @@
 /**
  * Sends the approved CAPRI NOC letters to the Capri email stored on the Booking.
  */
-public with sharing class CapriNocApprovedEmailInvocable {
+public without sharing class CapriNocApprovedEmailInvocable {
     private static final Integer EMAIL_BATCH_SIZE = 10;
 
     public class Request {

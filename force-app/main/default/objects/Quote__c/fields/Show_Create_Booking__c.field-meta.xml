@@ -24,6 +24,7 @@
     <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
     <inlineHelpText>Ticked when a booking can be created from this quote. For The Legacey the unit needs Company Share and Landowner Share, plus AGPA Number and AGPA Date when the LL Share Name is not BUILDER.</inlineHelpText>
     <label>Show Create Booking</label>
+    <trackHistory>false</trackHistory>
     <trackTrending>false</trackTrending>
     <type>Checkbox</type>
 </CustomField>

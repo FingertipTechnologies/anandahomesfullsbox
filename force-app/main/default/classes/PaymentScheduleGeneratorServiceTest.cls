@@ -118,6 +118,38 @@ private class PaymentScheduleGeneratorServiceTest {
     }
 
     @IsTest
+    static void swapBookingGeneratesFromMasterSchedulesWithoutDuplicateReceipt() {
+        Project__c project = [SELECT Id FROM Project__c LIMIT 1];
+        Plot__c unit = [SELECT Id FROM Plot__c LIMIT 1];
+        Booking__c booking = new Booking__c(
+            Project__c = project.Id,
+            Plot__c = unit.Id,
+            Booking_Date__c = Date.today(),
+            Booking_Amount__c = 100000,
+            Total_Flat_Cost__c = 5000000,
+            GST_Amount__c = 250000,
+            Payment_Schedules_Created__c = true,
+            Status__c = 'New'
+        );
+
+        Test.startTest();
+        insert booking;
+        PaymentScheduleGeneratorService.generateForBookings(new Set<Id>{ booking.Id });
+        Test.stopTest();
+
+        System.assertEquals(
+            4,
+            [SELECT COUNT() FROM Payment_Schedule__c WHERE Booking__c = :booking.Id],
+            'A swap booking must receive one schedule set from the project master schedules.'
+        );
+        System.assertEquals(
+            0,
+            [SELECT COUNT() FROM Receipt__c WHERE Booking__c = :booking.Id],
+            'The copied booking amount must not create a duplicate advance receipt.'
+        );
+    }
+
+    @IsTest
     static void testProrataScheduleStartsUnsplitUntilApprovedRevision() {
         Project__c project = [SELECT Id FROM Project__c LIMIT 1];
         Plot__c unit = [SELECT Id FROM Plot__c LIMIT 1];

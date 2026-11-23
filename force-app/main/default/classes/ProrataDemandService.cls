@@ -20,9 +20,9 @@ public with sharing class ProrataDemandService {
     /** Escape hatch for trusted bulk / migration processes. */
     public static Boolean bypass = false;
 
-    // Bank-funded types that carry a per-milestone Bank/Customer split (BRD §8.1).
+    // Only Prorata and Partial bookings use split-specific demand raising.
     private static final Set<String> FUNDING_SPLIT = new Set<String>{
-        'Loan', 'Bank Loan', 'NBFC Loan', 'Mixed Funding', 'Prorata', 'Partial'
+        'Prorata', 'Partial'
     };
     private static final Set<String> CLOSED_STATUSES = new Set<String>{ 'Paid', 'Completed', 'Waived', 'Cancelled' };
     @TestVisible private static final String TYPE_BANK = 'Bank Demand';
@@ -108,7 +108,8 @@ public with sharing class ProrataDemandService {
 
         List<Payment_Schedule__c> rows = [
             SELECT Id, Booking__c, Sequence__c, Milestone_Name__c, Due_Date__c, Status__c,
-                   Bank_Flat_Amount__c, Bank_GST_Amount__c, Customer_Flat_Prorata__c,
+                   Payment_Schedule_Amount__c, Bank_Flat_Amount__c, Bank_GST_Amount__c,
+                   Customer_Flat_Prorata__c,
                    Customer_GST_Prorata__c, Payment_Schedule_Amount_Paid__c, GST_Amount_Paid__c,
                    TDS_Amount__c, TDS_Amount_Paid__c, TDS_Amount_Pending__c,
                    Bank_Demand_Raised__c, Customer_Demand_Raised__c,
@@ -120,6 +121,10 @@ public with sharing class ProrataDemandService {
             WHERE Id IN :scheduleIds
             AND Booking__r.Funding_Type__c IN :FUNDING_SPLIT
             AND Booking__r.Project__r.Legacy_Split_Demand_Receipt__c = true
+            AND (
+                Bank_Flat_Amount__c != null OR Bank_GST_Amount__c != null
+                OR Customer_Flat_Prorata__c != null OR Customer_GST_Prorata__c != null
+            )
         ];
         if (rows.isEmpty()) return 0;
 
@@ -203,7 +208,7 @@ public with sharing class ProrataDemandService {
                     tdsAmount = DemandComponentService.tdsAmountByAudience(
                         ps, true, sourceSpecificSchedule, receiptTotalsBySchedule
                     ) + carryForward;
-                    demandAmount += carryForward;
+                    demandAmount += tdsAmount;
                     if (carryForward > 0) carryForwardDemandScheduleIds.add(ps.Id);
                 } else if (component == DemandComponentService.FLAT) {
                     if (sourceSpecificSchedule) {

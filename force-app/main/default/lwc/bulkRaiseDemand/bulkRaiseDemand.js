@@ -120,6 +120,11 @@ export default class BulkRaiseDemand extends LightningElement {
     // Computed
     get hasMilestones() { return this.milestones && this.milestones.length > 0; }
     get hasBookings() { return this.bookings && this.bookings.length > 0; }
+    get currentMilestoneLabel() {
+        if (this.demandComponent === 'GST') return 'GST at Milestone';
+        if (this.demandComponent === 'Flat + GST') return 'Flat + GST at Milestone';
+        return 'Flat at Milestone';
+    }
     get isLoadBookingsDisabled() {
         return !this.selectedMilestoneId || (this.towerOptions.length > 0 && !this.selectedTowerId);
     }
@@ -134,54 +139,48 @@ export default class BulkRaiseDemand extends LightningElement {
     }
 
     get totalDemandAmount() {
-        return this.selectedBookings.reduce((sum, b) => sum + (b.totalPending || 0), 0);
+        return this.selectedBookings.reduce(
+            (sum, b) => sum + (Number(b.totalPending) || 0),
+            0
+        );
     }
 
-    get totalInterestAmount() {
-        if (!this.includeInterest || this.isGstDemand) return 0;
-        return this.selectedBookings.reduce((sum, b) => sum + (b.totalInterest || 0), 0);
+    get totalFlatAmount() {
+        return this.selectedBookings.reduce((sum, b) => sum + (b.totalFlatAmount || 0), 0);
     }
 
-    get totalGrossInterestAmount() {
-        if (!this.includeInterest || this.isGstDemand) return 0;
-        return this.selectedBookings.reduce((sum, b) => sum + (b.grossInterest || 0), 0);
-    }
-
-    get totalInterestWaivedOffAmount() {
-        if (!this.includeInterest || this.isGstDemand) return 0;
-        return this.selectedBookings.reduce((sum, b) => sum + (b.interestWaivedOff || 0), 0);
-    }
-
-    get totalNetAmount() {
-        return this.selectedBookings.reduce((sum, b) => {
-            const includedInterest = this.includeInterest && !this.isGstDemand
-                ? (b.totalInterest || 0)
-                : 0;
-            return sum + (b.totalPending || 0) + (b.previousMilestonesAmount || 0) + includedInterest;
-        }, 0);
-    }
-
-    // Bank vs Customer split of the demand that will actually be raised, across selected bookings.
-    get totalBankPayable() {
-        return this.selectedBookings.reduce((sum, b) => sum + (b.bankPayableAmount || 0), 0);
-    }
-
-    get totalCustomerPayable() {
-        return this.selectedBookings.reduce((sum, b) => sum + (b.customerPayableAmount || 0), 0);
+    get totalGstAmount() {
+        return this.selectedBookings.reduce((sum, b) => sum + (b.totalGstAmount || 0), 0);
     }
 
     get totalTdsAmount() {
         return this.selectedBookings.reduce((sum, b) => sum + (b.totalTdsAmount || 0), 0);
     }
 
+    get totalGrossInterest() {
+        return this.selectedBookings.reduce((sum, b) => sum + (Number(b.grossInterest) || 0), 0);
+    }
+
+    get totalBankPayable() {
+        return this.selectedBookings.reduce((sum, b) => sum + (Number(b.bankPayableAmount) || 0), 0);
+    }
+
+    get totalCustomerPayable() {
+        return this.selectedBookings.reduce((sum, b) => sum + (Number(b.customerPayableAmount) || 0), 0);
+    }
+
+    get totalNetDemand() {
+        return this.selectedBookings.reduce((sum, b) => sum + (Number(b.netDemandAmount) || 0), 0);
+    }
+
     get formattedTotalDemand() { return this.formatCurrency(this.totalDemandAmount); }
-    get formattedTotalInterest() { return this.formatCurrency(this.totalInterestAmount); }
-    get formattedTotalGrossInterest() { return this.formatCurrency(this.totalGrossInterestAmount); }
-    get formattedTotalInterestWaivedOff() { return this.formatCurrency(this.totalInterestWaivedOffAmount); }
-    get formattedTotalNet() { return this.formatCurrency(this.totalNetAmount); }
+    get formattedTotalFlatAmount() { return this.formatCurrency(this.totalFlatAmount); }
+    get formattedTotalGstAmount() { return this.formatCurrency(this.totalGstAmount); }
+    get formattedTotalTdsAmount() { return this.formatCurrency(this.totalTdsAmount); }
+    get formattedTotalGrossInterest() { return this.formatCurrency(this.totalGrossInterest); }
     get formattedTotalBankPayable() { return this.formatCurrency(this.totalBankPayable); }
     get formattedTotalCustomerPayable() { return this.formatCurrency(this.totalCustomerPayable); }
-    get formattedTotalTdsAmount() { return this.formatCurrency(this.totalTdsAmount); }
+    get formattedTotalNetDemand() { return this.formatCurrency(this.totalNetDemand); }
 
     get canProceedToReview() {
         return this.selectedCount > 0;
@@ -378,7 +377,10 @@ export default class BulkRaiseDemand extends LightningElement {
             demandComponent: this.demandComponent
         })
         .then(result => {
-            this.bookings = result.map(b => ({ ...b, isSelected: true }));
+            this.bookings = result.map(b => ({
+                ...b,
+                isSelected: true
+            }));
             this.currentStep = 3;
         })
         .catch(error => { this.showToast('Error', this.getErrorMessage(error), 'error'); })
@@ -440,6 +442,15 @@ export default class BulkRaiseDemand extends LightningElement {
     }
 
     handleRaiseDemands() {
+        const demandAmount = this.selectedBookings.reduce(
+            (total, booking) => total + (Number(booking.totalPending) || 0),
+            0
+        );
+        if (demandAmount <= 0) {
+            this.showToast('Cannot Raise Demand', 'Zero amount demand cannot be raised.', 'error');
+            return;
+        }
+
         this.currentStep = 5;
         this.isProcessing = true;
 
@@ -482,11 +493,6 @@ export default class BulkRaiseDemand extends LightningElement {
                         return sendBulkDemandEmails({
                             demandIds: demandIds,
                             templateId: this.selectedTemplateId
-                        }).then(() => {
-                            this.demandResult.results = this.demandResult.results.map(r => ({
-                                ...r,
-                                emailSent: r.success
-                            }));
                         });
                     }
                 }

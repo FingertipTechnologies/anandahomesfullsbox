@@ -149,7 +149,7 @@ public without sharing class CapriNocPdfController {
             return;
         }
 
-        buyerNames = joinNames(booking);
+        buyerNames = joinNames(booking, booking.Id);
         buyerMobile = booking.Mobile_Primary__c;
         buyerMobileSuffix = String.isBlank(buyerMobile) ? '' : ' (Mobile: ' + buyerMobile + ')';
         projectAddress = booking.Project__r == null || String.isBlank(booking.Project__r.Project_Address__c)
@@ -208,7 +208,7 @@ public without sharing class CapriNocPdfController {
             return;
         }
         cancellationBooking = cancellationBookings[0];
-        cancellationBuyerNames = joinNames(cancellationBooking);
+        cancellationBuyerNames = joinNames(cancellationBooking, cancellationBooking.Id);
         cancellationRequestDate = cancellationBooking.Cancellation_Request_Date_Time__c != null
             ? cancellationBooking.Cancellation_Request_Date_Time__c.date()
             : cancellationBooking.Cancellation_Date__c;
@@ -265,9 +265,9 @@ public without sharing class CapriNocPdfController {
         swapHistory = swapRecords[0];
 
         // The customer who swapped: their booking before the swap, else the one after it.
-        swapCustomerNames = joinNames(swapHistory.Old_Booking__r);
+        swapCustomerNames = joinNames(swapHistory.Old_Booking__r, swapHistory.Old_Booking__c);
         if (String.isBlank(swapCustomerNames)) {
-            swapCustomerNames = joinNames(swapHistory.New_Booking__r);
+            swapCustomerNames = joinNames(swapHistory.New_Booking__r, swapHistory.New_Booking__c);
         }
 
         // Money that customer has paid, on either side of the swap.
@@ -429,7 +429,8 @@ public without sharing class CapriNocPdfController {
 
     // ------------------------------------------------------------------ formatting
 
-    private static String joinNames(Booking__c source) {
+    /** First applicant, then every co-applicant on the booking (Co_Applicant__c records), joined with " & ". */
+    private static String joinNames(Booking__c source, Id bookingId) {
         if (source == null) {
             return '';
         }
@@ -437,6 +438,16 @@ public without sharing class CapriNocPdfController {
         addUnique(names, source.First_Applicant_Name__c);
         addUnique(names, String.isNotBlank(source.Second_Applicant_Name__c)
             ? source.Second_Applicant_Name__c : source.Co_Applicant_Name__c);
+        if (bookingId != null) {
+            for (Co_Applicant__c coApplicant : [
+                SELECT Full_Name__c FROM Co_Applicant__c
+                WHERE Booking__c = :bookingId
+                WITH SYSTEM_MODE
+                ORDER BY CreatedDate ASC, Name ASC
+            ]) {
+                addUnique(names, coApplicant.Full_Name__c);
+            }
+        }
         return String.join(names, ' & ');
     }
 

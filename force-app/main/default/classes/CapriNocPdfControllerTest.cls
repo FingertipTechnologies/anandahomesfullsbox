@@ -26,6 +26,8 @@ private class CapriNocPdfControllerTest {
         );
         insert as system booking;
 
+        insert as system new Co_Applicant__c(Booking__c = booking.Id, Full_Name__c = 'CAPRI Co Buyer');
+
         NOC__c noc = new NOC__c(
             Booking__c = booking.Id,
             NOC_Type__c = 'Capri NOC'
@@ -38,6 +40,7 @@ private class CapriNocPdfControllerTest {
         );
         Test.stopTest();
 
+        System.assertEquals('CAPRI Test Buyer & CAPRI Co Buyer', controller.buyerNames);
         System.assertEquals(noc.Id, controller.noc.Id);
         System.assertEquals(booking.Id, controller.booking.Id);
         System.assertEquals(0, controller.totalReceived);

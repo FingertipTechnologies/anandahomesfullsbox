@@ -20,7 +20,6 @@
         <apex:pageBlockSection columns="2">
             <apex:outputField value="{!revision.Booking__c}"/>
             <apex:outputField value="{!revision.Approval_Status__c}"/>
-            <apex:outputField value="{!revision.Revision_Reason__c}"/>
             <apex:outputField value="{!revision.Submitted_Date__c}"/>
             <apex:outputField value="{!revision.Approved_Date__c}"/>
             <apex:outputField value="{!revision.Applied__c}"/>

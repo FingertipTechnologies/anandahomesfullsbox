@@ -447,6 +447,35 @@ private class EmailSenderControllerTest {
         System.assertNotEquals(null, r, 'list');
     }
 
+    /** Mails sent before the latest First Applicant Change do not count as "Sent" any more. */
+    @isTest
+    static void lastFirstApplicantChange_usesLatestAppliedChange() {
+        Project__c project = new Project__c(Name = 'P', Project_Type__c = 'Apartment', Interest_Rate__c = 18);
+        insert as system project;
+        Plot__c unit = new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Booked');
+        insert as system unit;
+        Booking__c b = new Booking__c(Project__c = project.Id, Plot__c = unit.Id, Booking_Date__c = Date.today(),
+            Status__c = 'Booked', First_Applicant_Name__c = 'Old Name');
+        insert as system b;
+
+        Account a = [SELECT Id FROM Account LIMIT 1];
+        System.assertEquals(Datetime.newInstanceGmt(1900, 1, 1),
+            EmailSenderController.lastFirstApplicantChange(a.Id, 'Account'), 'not a booking');
+        System.assertEquals(Datetime.newInstanceGmt(1900, 1, 1),
+            EmailSenderController.lastFirstApplicantChange(b.Id, 'Booking__c'), 'no change yet');
+
+        Datetime first = Datetime.now().addDays(-2);
+        Datetime second = Datetime.now().addDays(-1);
+        insert as system new List<First_Applicant_Change__c>{
+            new First_Applicant_Change__c(Booking__c = b.Id, Old_First_Applicant__c = 'Old Name',
+                New_First_Applicant_Name__c = 'A', Approval_Status__c = 'Pending', Applied__c = true, Applied_Date__c = first),
+            new First_Applicant_Change__c(Booking__c = b.Id, Old_First_Applicant__c = 'A',
+                New_First_Applicant_Name__c = 'B', Approval_Status__c = 'Pending', Applied__c = true, Applied_Date__c = second)
+        };
+        System.assertEquals(second, EmailSenderController.lastFirstApplicantChange(b.Id, 'Booking__c'));
+        System.assertNotEquals(null, EmailSenderController.getTemplatesWithMatchStatus(b.Id, 'Booking__c'));
+    }
+
     @isTest
     static void getTemplatesWithMatchStatus_recordIdOnly() {
         Account a = [SELECT Id FROM Account LIMIT 1];

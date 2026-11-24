@@ -807,6 +807,27 @@ public with sharing class EmailSenderController {
         @AuraEnabled public String sentDate { get; set; }
     }
 
+    /**
+     * When the latest approved First Applicant Change was applied to this booking (only mails sent
+     * after it count as "already sent"); a date far in the past for other records / no change.
+     */
+    @TestVisible
+    private static Datetime lastFirstApplicantChange(String recordId, String objectApiName) {
+        Datetime none = Datetime.newInstanceGmt(1900, 1, 1);
+        try {
+            if (Id.valueOf(recordId).getSObjectType() != Booking__c.SObjectType) return none;
+            List<First_Applicant_Change__c> changes = [
+                SELECT Applied_Date__c FROM First_Applicant_Change__c
+                WHERE Booking__c = :recordId AND Applied__c = true AND Applied_Date__c != null
+                WITH SYSTEM_MODE
+                ORDER BY Applied_Date__c DESC LIMIT 1
+            ];
+            return changes.isEmpty() ? none : changes[0].Applied_Date__c;
+        } catch (Exception e) {
+            return none;
+        }
+    }
+
     @AuraEnabled
     public static List<TemplateWithMatchStatus> getTemplatesWithMatchStatus(String recordId, String objectApiName) {
         List<TemplateWithMatchStatus> results = new List<TemplateWithMatchStatus>();
@@ -830,10 +851,14 @@ public with sharing class EmailSenderController {
         // by looking at email activity (Task with email subtype or EmailMessage)
         Set<String> sentSubjects = new Set<String>();
         if (String.isNotBlank(recordId)) {
+            // After a First Applicant Change the new applicant has received nothing yet: mails sent
+            // before the latest applied change do not count as "Sent" (so e.g. the Booking Form can be
+            // sent again after a 2nd, 3rd ... change, not only after the first one).
+            Datetime sentSince = lastFirstApplicantChange(recordId, objectApiName);
             try {
                 for (EmailMessage em : [
                     SELECT Subject FROM EmailMessage
-                    WHERE RelatedToId = :recordId
+                    WHERE RelatedToId = :recordId AND CreatedDate >= :sentSince
                     ORDER BY MessageDate DESC LIMIT 100
                 ]) {
                     if (em.Subject != null) sentSubjects.add(em.Subject.toLowerCase());
@@ -843,7 +868,7 @@ public with sharing class EmailSenderController {
             try {
                 for (Task t : [
                     SELECT Subject FROM Task
-                    WHERE WhatId = :recordId AND TaskSubtype = 'Email'
+                    WHERE WhatId = :recordId AND TaskSubtype = 'Email' AND CreatedDate >= :sentSince
                     ORDER BY ActivityDate DESC LIMIT 100
                 ]) {
                     if (t.Subject != null) sentSubjects.add(t.Subject.toLowerCase());

@@ -13,7 +13,9 @@ private class RefundTriggerHandlerTest {
         insert b;
         // Booking automation maps project users on insert and can clear the Finance Approver; the
         // production flow "Send Refund Notification To Finance User" needs one.
+        BookingCancellationLockService.bypass = true; // test setup, not a user edit
         update new Booking__c(Id = b.Id, Finance_Approver__c = UserInfo.getUserId());
+        BookingCancellationLockService.bypass = false;
         return b;
     }
 

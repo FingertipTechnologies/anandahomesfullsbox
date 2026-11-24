@@ -564,7 +564,11 @@ public without sharing class ApprovalActionHandler {
         // be blocked by the manual stage-progression gates — otherwise the whole update fails and
         // the approval status is silently left as "Pending Approval". Bypass those gates here.
         Boolean priorBypass = BookingStageValidationService.bypass;
+        Boolean priorCancelBypass = BookingCancellationLockService.bypass;
         BookingStageValidationService.bypass = true;
+        // Approval field updates are configured by admins, not typed by users: the cancelled-booking
+        // lock does not apply to them.
+        BookingCancellationLockService.bypass = true;
         try {
             // The approver can approve/reject without being able to edit the record (e.g. a
             // CRM Manager on a sales-owned Booking with Private sharing). The configured field
@@ -572,6 +576,7 @@ public without sharing class ApprovalActionHandler {
             new SystemModeUpdater().updateRecord(record);
         } finally {
             BookingStageValidationService.bypass = priorBypass;
+            BookingCancellationLockService.bypass = priorCancelBypass;
         }
         System.debug('Field updates completed successfully');
     }

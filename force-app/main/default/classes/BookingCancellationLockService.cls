@@ -3,7 +3,8 @@
  *              can be changed. The refund process keeps working - creating / approving a Refund only
  *              touches the booking through the financial recalculation (totals below), and roll-up
  *              summaries and formulas are not editable fields, so they never trip the lock.
- *              Scheduled / batch / queueable / future jobs and code that sets {@code bypass} are let through.
+ *              System Administrators, scheduled / batch / queueable / future jobs and code that sets
+ *              {@code bypass} are let through.
  */
 public with sharing class BookingCancellationLockService {
 
@@ -31,6 +32,7 @@ public with sharing class BookingCancellationLockService {
     public static void validateCancelledBookingEdits(List<Booking__c> newList, Map<Id, Booking__c> oldMap) {
         if (bypass || newList == null || oldMap == null) return;
         if (System.isBatch() || System.isFuture() || System.isQueueable() || System.isScheduled()) return;
+        if (isSystemAdministrator()) return;
 
         Map<String, Schema.SObjectField> fieldMap = Schema.SObjectType.Booking__c.fields.getMap();
         List<Schema.DescribeFieldResult> editable;
@@ -56,6 +58,24 @@ public with sharing class BookingCancellationLockService {
                 }
             }
         }
+    }
+
+    public static final String ADMIN_PROFILE = 'System Administrator';
+
+    /** Set in tests to act as (true) / not as (false) a System Administrator. */
+    @TestVisible
+    private static Boolean adminOverride;
+    private static Boolean isAdminCache;
+
+    /** System Administrators keep the option to correct a cancelled booking. */
+    @TestVisible
+    private static Boolean isSystemAdministrator() {
+        if (adminOverride != null) return adminOverride;
+        if (isAdminCache == null) {
+            List<Profile> profiles = [SELECT Name FROM Profile WHERE Id = :UserInfo.getProfileId() WITH SYSTEM_MODE LIMIT 1];
+            isAdminCache = !profiles.isEmpty() && profiles[0].Name == ADMIN_PROFILE;
+        }
+        return isAdminCache;
     }
 
     private static Boolean valuesDiffer(Object oldValue, Object newValue) {

@@ -2,6 +2,7 @@
 private class BookingCancellationLockServiceTest {
 
     private static Booking__c cancelledBooking() {
+        BookingCancellationLockService.adminOverride = false; // act as a normal user
         return bookingAt('Cancellation');
     }
 
@@ -85,5 +86,19 @@ private class BookingCancellationLockServiceTest {
         Booking__c b = bookingAt('Booked');
         update as system new Booking__c(Id = b.Id, Cancellation_Reason__c = 'Editable');
         System.assertEquals('Editable', [SELECT Cancellation_Reason__c FROM Booking__c WHERE Id = :b.Id WITH SYSTEM_MODE].Cancellation_Reason__c);
+    }
+
+    @isTest
+    static void systemAdministratorCanStillEdit() {
+        Booking__c b = cancelledBooking();
+        BookingCancellationLockService.adminOverride = true;
+        update as system new Booking__c(Id = b.Id, Cancellation_Reason__c = 'Admin fix');
+        System.assertEquals('Admin fix', [SELECT Cancellation_Reason__c FROM Booking__c WHERE Id = :b.Id WITH SYSTEM_MODE].Cancellation_Reason__c);
+
+        // The real profile check (the test runs as the deploying admin or another profile).
+        BookingCancellationLockService.adminOverride = null;
+        String profileName = [SELECT Name FROM Profile WHERE Id = :UserInfo.getProfileId()].Name;
+        System.assertEquals(profileName == BookingCancellationLockService.ADMIN_PROFILE,
+            BookingCancellationLockService.isSystemAdministrator());
     }
 }

@@ -301,8 +301,70 @@ public with sharing class DynamicFormExecutionController {
             return parentId;
         } catch (Exception e) {
             Database.rollback(sp);
-            throw new AuraHandledException('Error saving record: ' + e.getMessage());
+            String message = friendlySaveMessage(e);
+            AuraHandledException ahe = new AuraHandledException(message);
+            ahe.setMessage(message);
+            throw ahe;
         }
+    }
+
+    /** Raised when a value typed on the form cannot be stored in its field (bad number/date). */
+    public class FieldValueException extends Exception {}
+
+    /**
+     * Turns a save failure into the text the user should read: the validation rule / trigger
+     * message itself (with the field label when Salesforce names one), not
+     * "Insert failed. First exception on row 0; first error: FIELD_CUSTOM_VALIDATION_EXCEPTION, ...".
+     */
+    @TestVisible
+    private static String friendlySaveMessage(Exception e) {
+        if (e instanceof FieldValueException) {
+            return e.getMessage();
+        }
+        if (e instanceof DmlException) {
+            DmlException dml = (DmlException) e;
+            List<String> messages = new List<String>();
+            for (Integer i = 0; i < dml.getNumDml(); i++) {
+                String text = cleanMessage(dml.getDmlMessage(i));
+                List<String> labels = new List<String>();
+                List<Schema.SObjectField> fields = dml.getDmlFields(i);
+                if (fields != null) {
+                    for (Schema.SObjectField f : fields) {
+                        labels.add(f.getDescribe().getLabel());
+                    }
+                }
+                if (!labels.isEmpty() && dml.getDmlType(i) != StatusCode.FIELD_CUSTOM_VALIDATION_EXCEPTION) {
+                    text = String.join(labels, ', ') + ': ' + text;
+                }
+                if (String.isNotBlank(text) && !messages.contains(text)) {
+                    messages.add(text);
+                }
+            }
+            if (!messages.isEmpty()) {
+                return String.join(messages, ' ');
+            }
+        }
+        return cleanMessage(e.getMessage());
+    }
+
+    /** Strips the "Insert failed. First exception on row 0; first error: CODE, " wrapper and the trailing ": []". */
+    private static String cleanMessage(String raw) {
+        if (String.isBlank(raw)) {
+            return 'The record could not be saved.';
+        }
+        String text = raw;
+        Integer firstError = text.indexOf('first error:');
+        if (firstError >= 0) {
+            text = text.substring(firstError + 'first error:'.length()).trim();
+            Integer comma = text.indexOf(', ');
+            // Drop the status code (e.g. FIELD_CUSTOM_VALIDATION_EXCEPTION) in front of the message.
+            if (comma > 0 && text.substring(0, comma).replace('_', '').isAlphanumeric()
+                && text.substring(0, comma).equals(text.substring(0, comma).toUpperCase())) {
+                text = text.substring(comma + 2);
+            }
+        }
+        text = text.replaceAll(':\\s*\\[[^\\]]*\\]\\s*$', '').trim();
+        return text;
     }
 
     // Cast field value to appropriate type based on schema
@@ -323,6 +385,17 @@ public with sharing class DynamicFormExecutionController {
         // not "Invalid decimal". Amounts may also arrive formatted, e.g. "5,00,000".
         if (isTyped && String.isBlank(strValue)) return null;
 
+        try {
+            return convertValue(fieldType, strValue, value);
+        } catch (Exception e) {
+            String kind = fieldType == Schema.DisplayType.DATE || fieldType == Schema.DisplayType.DATETIME
+                ? 'a valid date' : 'a valid number';
+            throw new FieldValueException(sField.getDescribe().getLabel() + ': "' + strValue
+                + '" is not ' + kind + '. Please correct it and save again.');
+        }
+    }
+
+    private static Object convertValue(Schema.DisplayType fieldType, String strValue, Object value) {
         if (fieldType == Schema.DisplayType.DOUBLE || fieldType == Schema.DisplayType.CURRENCY ||
             fieldType == Schema.DisplayType.PERCENT) {
             return Decimal.valueOf(strValue.replace(',', '').trim());

@@ -60,7 +60,34 @@ private class DynamicFormExecutionControllerTest {
         System.assertNotEquals(null, parentId, 'Should return parent Id');
     }
 
-    /** A cleared number field arrives as '' and a formatted one as "5,00,000" - neither may fail the save. */
+    /** A value that is not a number names the field instead of "Invalid decimal". */
+    @isTest
+    static void saveFormWithChildren_badNumberNamesTheField() {
+        String message;
+        try {
+            DynamicFormExecutionController.saveFormWithChildren(
+                'Account', new Map<String, Object>{ 'Name' => 'Bad', 'AnnualRevenue' => 'abc' }, null, null, null);
+        } catch (AuraHandledException e) {
+            message = e.getMessage();
+        }
+        System.assert(message != null && message.startsWith('Annual Revenue: "abc" is not a valid number'), message);
+    }
+
+    /** A DML failure shows only the message, without the "Insert failed. First exception..." wrapper. */
+    @isTest
+    static void friendlySaveMessage_stripsDmlWrapper() {
+        String message;
+        try {
+            insert new Contact(); // LastName is required
+        } catch (DmlException e) {
+            message = DynamicFormExecutionController.friendlySaveMessage(e);
+        }
+        System.assert(!message.contains('first error'), message);
+        System.assert(!message.contains('REQUIRED_FIELD_MISSING'), message);
+        System.assert(message.contains('Last Name'), message);
+    }
+
+    /** A cleared number field arrives as ''and a formatted one as "5,00,000" - neither may fail the save. */
     @isTest
     static void saveFormWithChildren_blankAndFormattedNumbers() {
         Map<String, Object> fieldValues = new Map<String, Object>{

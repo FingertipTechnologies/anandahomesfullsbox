@@ -60,6 +60,24 @@ private class DynamicFormExecutionControllerTest {
         System.assertNotEquals(null, parentId, 'Should return parent Id');
     }
 
+    /** A cleared number field arrives as '' and a formatted one as "5,00,000" - neither may fail the save. */
+    @isTest
+    static void saveFormWithChildren_blankAndFormattedNumbers() {
+        Map<String, Object> fieldValues = new Map<String, Object>{
+            'Name' => 'Blank Numbers',
+            'AnnualRevenue' => '',
+            'NumberOfEmployees' => '1,200'
+        };
+        Test.startTest();
+        String parentId = DynamicFormExecutionController.saveFormWithChildren(
+            'Account', fieldValues, null, null, null
+        );
+        Test.stopTest();
+        Account saved = [SELECT AnnualRevenue, NumberOfEmployees FROM Account WHERE Id = :parentId];
+        System.assertEquals(null, saved.AnnualRevenue);
+        System.assertEquals(1200, saved.NumberOfEmployees);
+    }
+
     @isTest
     static void saveFormWithChildren_invalid_throws() {
         Boolean threw = false;

@@ -315,11 +315,19 @@ public with sharing class DynamicFormExecutionController {
         Schema.DisplayType fieldType = sField.getDescribe().getType();
         String strValue = String.valueOf(value);
 
+        Boolean isTyped = fieldType == Schema.DisplayType.DOUBLE || fieldType == Schema.DisplayType.CURRENCY ||
+            fieldType == Schema.DisplayType.PERCENT || fieldType == Schema.DisplayType.INTEGER ||
+            fieldType == Schema.DisplayType.DATE || fieldType == Schema.DisplayType.DATETIME ||
+            fieldType == Schema.DisplayType.BOOLEAN;
+        // A field the user cleared (or a hidden/defaulted one) arrives as '' - that means "no value",
+        // not "Invalid decimal". Amounts may also arrive formatted, e.g. "5,00,000".
+        if (isTyped && String.isBlank(strValue)) return null;
+
         if (fieldType == Schema.DisplayType.DOUBLE || fieldType == Schema.DisplayType.CURRENCY ||
             fieldType == Schema.DisplayType.PERCENT) {
-            return Decimal.valueOf(strValue);
+            return Decimal.valueOf(strValue.replace(',', '').trim());
         } else if (fieldType == Schema.DisplayType.INTEGER) {
-            return Integer.valueOf(strValue);
+            return Integer.valueOf(strValue.replace(',', '').trim());
         } else if (fieldType == Schema.DisplayType.DATE) {
             return Date.valueOf(strValue);
         } else if (fieldType == Schema.DisplayType.DATETIME) {

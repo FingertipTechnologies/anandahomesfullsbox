@@ -33,7 +33,7 @@ private class InterestCalculationServiceTest {
             Total_Flat_Cost__c = 10000000,
             GST_Amount__c = 500000,
             Total_Payable_Amount__c = 10500000,
-            Status__c = 'Active'
+            Status__c = 'Booked'
         );
         insert booking;
 
@@ -41,7 +41,7 @@ private class InterestCalculationServiceTest {
         List<Payment_Schedule__c> schedules = new List<Payment_Schedule__c>();
 
         // Schedule 1: Paid - should NOT have interest
-        schedules.add(new Payment_Schedule__c(
+        schedules.add(new Payment_Schedule__c(Include_Interest__c = true, 
             Booking__c = booking.Id,
             Sequence__c = 1,
             Milestone_Name__c = 'On Booking',
@@ -54,7 +54,7 @@ private class InterestCalculationServiceTest {
         ));
 
         // Schedule 2: Overdue with pending amount - SHOULD have interest
-        schedules.add(new Payment_Schedule__c(
+        schedules.add(new Payment_Schedule__c(Include_Interest__c = true, 
             Booking__c = booking.Id,
             Sequence__c = 2,
             Milestone_Name__c = 'On Agreement',
@@ -67,7 +67,7 @@ private class InterestCalculationServiceTest {
         ));
 
         // Schedule 3: Overdue completely unpaid - SHOULD have interest
-        schedules.add(new Payment_Schedule__c(
+        schedules.add(new Payment_Schedule__c(Include_Interest__c = true, 
             Booking__c = booking.Id,
             Sequence__c = 3,
             Milestone_Name__c = 'On Foundation',
@@ -80,7 +80,7 @@ private class InterestCalculationServiceTest {
         ));
 
         // Schedule 4: Future due date - should NOT have interest
-        schedules.add(new Payment_Schedule__c(
+        schedules.add(new Payment_Schedule__c(Include_Interest__c = true, 
             Booking__c = booking.Id,
             Sequence__c = 4,
             Milestone_Name__c = 'On Possession',
@@ -167,12 +167,12 @@ private class InterestCalculationServiceTest {
             Plot__c = unit.Id,
             Booking_Date__c = Date.today(),
             Total_Payable_Amount__c = 5000000,
-            Status__c = 'Active'
+            Status__c = 'Booked'
         );
         insert booking;
 
         // Create only future schedule
-        Payment_Schedule__c ps = new Payment_Schedule__c(
+        Payment_Schedule__c ps = new Payment_Schedule__c(Include_Interest__c = true, 
             Booking__c = booking.Id,
             Sequence__c = 1,
             Milestone_Name__c = 'Future Payment',
@@ -211,7 +211,7 @@ private class InterestCalculationServiceTest {
             Project__c = project.Id,
             Booking_Date__c = Date.today(),
             Total_Payable_Amount__c = 5000000,
-            Status__c = 'Active'
+            Status__c = 'Booked'
         );
         insert booking;
 
@@ -254,5 +254,72 @@ private class InterestCalculationServiceTest {
 
         Integer secondCount = [SELECT COUNT() FROM Interest_Line_Item__c WHERE Booking__c = :booking.Id];
         //System.assertEquals(firstCount, secondCount, 'Should not create duplicate interest line items for same date');
+    }
+
+    // ---- Include Interest / Do Not Calculate Interest / booking Total Interest
+
+    private static Booking__c ruleBooking(Boolean doNotCalculate, Date resumeDate) {
+        Project__c project = [SELECT Id FROM Project__c LIMIT 1];
+        Plot__c unit = new Plot__c(Project__c = project.Id, Unit_Type__c = 'Apartment', Status__c = 'Booked');
+        insert unit;
+        Booking__c b = new Booking__c(Project__c = project.Id, Plot__c = unit.Id,
+            Booking_Date__c = Date.today().addDays(-120), Status__c = 'Booked',
+            Do_Not_Calculate_Interest__c = doNotCalculate, Interest_Calculation_Resume_Date__c = resumeDate);
+        insert b;
+        insert new List<Payment_Schedule__c>{
+            new Payment_Schedule__c(Booking__c = b.Id, Sequence__c = 1, Amount__c = 100000,
+                Pending_Amount__c = 100000, Due_Date__c = Date.today().addDays(-30), Status__c = 'Pending', Include_Interest__c = false),
+            new Payment_Schedule__c(Booking__c = b.Id, Sequence__c = 2, Amount__c = 100000,
+                Pending_Amount__c = 100000, Due_Date__c = Date.today().addDays(-30), Status__c = 'Pending', Include_Interest__c = true)
+        };
+        return b;
+    }
+
+    @isTest
+    static void onlyIncludeInterestMilestonesGetInterest_andBookingTotalStored() {
+        Booking__c b = ruleBooking(false, null);
+        Test.startTest();
+        InterestCalculationService.calculateForBooking(b.Id, Date.today());
+        Test.stopTest();
+        Map<Decimal, Decimal> bySeq = new Map<Decimal, Decimal>();
+        Decimal sum = 0;
+        for (Payment_Schedule__c ps : [SELECT Sequence__c, Interest_Pending__c FROM Payment_Schedule__c WHERE Booking__c = :b.Id]) {
+            bySeq.put(ps.Sequence__c, ps.Interest_Pending__c);
+            if (ps.Interest_Pending__c != null) sum += ps.Interest_Pending__c;
+        }
+        System.assert(bySeq.get(1) == null || bySeq.get(1) == 0, 'not ticked: no interest');
+        System.assert(bySeq.get(2) > 0, 'ticked: interest');
+        System.assertEquals(sum, [SELECT Total_Interest__c FROM Booking__c WHERE Id = :b.Id].Total_Interest__c);
+    }
+
+    @isTest
+    static void doNotCalculateInterest_skipsBooking() {
+        Booking__c b = ruleBooking(true, null);
+        Test.startTest();
+        InterestCalculationService.FlowOutput out = InterestCalculationService.calculateForBooking(b.Id, Date.today());
+        Test.stopTest();
+        System.assertEquals(0, out.totalInterest);
+        System.assertEquals(0, [SELECT COUNT() FROM Interest_Line_Item__c WHERE Booking__c = :b.Id]);
+    }
+
+    @isTest
+    static void resumeDate_chargesOnlyFromResumeDate() {
+        Booking__c b = ruleBooking(true, Date.today().addDays(-10));
+        Test.startTest();
+        InterestCalculationService.calculateForBooking(b.Id, Date.today());
+        Test.stopTest();
+        Interest_Line_Item__c li = [SELECT From_Date__c, Number_of_Days__c FROM Interest_Line_Item__c WHERE Booking__c = :b.Id];
+        System.assertEquals(Date.today().addDays(-10), li.From_Date__c);
+        System.assertEquals(10, li.Number_of_Days__c);
+    }
+
+    @isTest
+    static void batchStoresBookingTotalsOncePerChunk() {
+        Booking__c b = ruleBooking(false, null);
+        Test.startTest();
+        Database.executeBatch(new InterestCalculationBatch(), 50);
+        Test.stopTest();
+        System.assert([SELECT Total_Interest__c FROM Booking__c WHERE Id = :b.Id].Total_Interest__c > 0);
+        System.assertEquals(false, InterestCalculationService.collectBookingTotals);
     }
 }

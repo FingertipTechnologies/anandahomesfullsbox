@@ -73,7 +73,8 @@ public with sharing class InterestCalculationService {
 
         // Step 1: Get Booking and Project Interest Rate
         List<Booking__c> bookings = [
-            SELECT Id, Name, Project__c, Project__r.Interest_Rate__c
+            SELECT Id, Name, Project__c, Project__r.Interest_Rate__c, Total_Interest__c,
+                   Do_Not_Calculate_Interest__c, Interest_Calculation_Resume_Date__c
             FROM Booking__c
             WHERE Id = :bookingId
             AND Status__c != 'Cancellation' and Status__c != 'Swapping'
@@ -87,20 +88,43 @@ public with sharing class InterestCalculationService {
 
         if (annualRate == null || annualRate <= 0) return output;
 
-        // Step 2: Get overdue Payment Schedules with pending amounts
-        List<Payment_Schedule__c> overdueSchedules = [
+        // "Do Not Calculate Interest" on the booking: no interest at all, unless an Interest
+        // Calculation Resume Date is set and reached - then interest restarts from that date
+        // (the paused days are never charged).
+        Date resumeDate = null;
+        if (booking.Do_Not_Calculate_Interest__c == true) {
+            if (booking.Interest_Calculation_Resume_Date__c == null
+                || booking.Interest_Calculation_Resume_Date__c > calcDate) {
+                return output;
+            }
+            resumeDate = booking.Interest_Calculation_Resume_Date__c;
+        }
+
+        // Step 2: All the booking's schedules (for the booking total); interest is calculated only
+        // on overdue ones with a pending amount that are ticked Include Interest (the milestones
+        // below the Agreement milestone - see PaymentScheduleMasterDefaults).
+        List<Payment_Schedule__c> allSchedules = [
             SELECT Id, Name, Booking__c, Due_Date__c, Pending_Amount__c,
-                   Amount__c, Amount_Paid__c, Interest_Pending__c,
-                   Milestone_Name__c, Sequence__c
+                   Amount__c, Amount_Paid__c, Interest_Pending__c, Include_Interest__c,
+                   Milestone_Name__c, Sequence__c, Status__c
             FROM Payment_Schedule__c
             WHERE Booking__c = :bookingId
-            AND Due_Date__c < :calcDate
-            AND Pending_Amount__c > 0
-            AND Status__c NOT IN :PostSalesConstants.SCHEDULE_CLOSED_STATUSES
             ORDER BY Sequence__c ASC
         ];
+        List<Payment_Schedule__c> overdueSchedules = new List<Payment_Schedule__c>();
+        for (Payment_Schedule__c ps : allSchedules) {
+            if (ps.Include_Interest__c == true
+                && ps.Due_Date__c != null && ps.Due_Date__c < calcDate
+                && ps.Pending_Amount__c != null && ps.Pending_Amount__c > 0
+                && !PostSalesConstants.SCHEDULE_CLOSED_STATUSES.contains(ps.Status__c)) {
+                overdueSchedules.add(ps);
+            }
+        }
 
-        if (overdueSchedules.isEmpty()) return output;
+        if (overdueSchedules.isEmpty()) {
+            storeBookingTotal(booking, allSchedules);
+            return output;
+        }
 
         // Step 3: Get existing interest line items to avoid duplicate calculations
         Set<Id> scheduleIds = new Set<Id>();
@@ -137,6 +161,10 @@ public with sharing class InterestCalculationService {
                 if (lastCalc != null && lastCalc >= fromDate) {
                     fromDate = lastCalc.addDays(1);
                 }
+            }
+            // Paused booking that has resumed: nothing is charged for the paused days.
+            if (resumeDate != null && fromDate < resumeDate) {
+                fromDate = resumeDate;
             }
 
             // Skip if already calculated up to today
@@ -189,6 +217,53 @@ public with sharing class InterestCalculationService {
             update schedulesToUpdate;
         }
 
+        storeBookingTotal(booking, allSchedules);
         return output;
+    }
+
+    /**
+     * When true (set by InterestCalculationBatch) booking totals are collected in
+     * {@code pendingBookingTotals} and saved once per batch chunk instead of one update per booking.
+     */
+    public static Boolean collectBookingTotals = false;
+    public static Map<Id, Booking__c> pendingBookingTotals = new Map<Id, Booking__c>();
+
+    /** Booking.Total_Interest__c = sum of Interest Pending on all the booking's payment schedules. */
+    @TestVisible
+    private static void storeBookingTotal(Booking__c booking, List<Payment_Schedule__c> schedules) {
+        Decimal total = 0;
+        for (Payment_Schedule__c ps : schedules) {
+            if (ps.Interest_Pending__c != null) total += ps.Interest_Pending__c;
+        }
+        total = total.setScale(2, System.RoundingMode.HALF_UP);
+        if (booking.Total_Interest__c == total) return;
+        Booking__c upd = new Booking__c(Id = booking.Id, Total_Interest__c = total);
+        if (collectBookingTotals) {
+            pendingBookingTotals.put(upd.Id, upd);
+        } else {
+            saveBookingTotals(new List<Booking__c>{ upd });
+        }
+    }
+
+    /**
+     * Saves booking totals as a system update: a booking lock (swapped / cancelled) or a booking
+     * validation rule must not stop the interest job. Failures are logged, never thrown.
+     */
+    public static void saveBookingTotals(List<Booking__c> totals) {
+        if (totals == null || totals.isEmpty()) return;
+        Boolean priorSwap = BookingSwapLockService.bypass;
+        Boolean priorCancel = BookingCancellationLockService.bypass;
+        BookingSwapLockService.bypass = true;
+        BookingCancellationLockService.bypass = true;
+        try {
+            for (Database.SaveResult sr : Database.update(totals, false)) {
+                if (!sr.isSuccess()) {
+                    System.debug(LoggingLevel.WARN, 'Total Interest not saved on ' + sr.getId() + ': ' + sr.getErrors());
+                }
+            }
+        } finally {
+            BookingSwapLockService.bypass = priorSwap;
+            BookingCancellationLockService.bypass = priorCancel;
+        }
     }
 }

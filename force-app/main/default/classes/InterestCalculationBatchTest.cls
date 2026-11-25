@@ -33,14 +33,14 @@ private class InterestCalculationBatchTest {
             Total_Flat_Cost__c = 10000000,
             GST_Amount__c = 500000,
             Total_Payable_Amount__c = 10500000,
-            Status__c = 'Active'
+            Status__c = 'Booked'
         );
         insert booking;
 
         List<Payment_Schedule__c> schedules = new List<Payment_Schedule__c>();
 
         // Paid schedule - no interest
-        schedules.add(new Payment_Schedule__c(
+        schedules.add(new Payment_Schedule__c(Include_Interest__c = true, 
             Booking__c = booking.Id,
             Sequence__c = 1,
             Milestone_Name__c = 'On Booking',
@@ -53,7 +53,7 @@ private class InterestCalculationBatchTest {
         ));
 
         // Overdue with pending - should get interest
-        schedules.add(new Payment_Schedule__c(
+        schedules.add(new Payment_Schedule__c(Include_Interest__c = true, 
             Booking__c = booking.Id,
             Sequence__c = 2,
             Milestone_Name__c = 'On Agreement',
@@ -66,7 +66,7 @@ private class InterestCalculationBatchTest {
         ));
 
         // Overdue fully unpaid - should get interest
-        schedules.add(new Payment_Schedule__c(
+        schedules.add(new Payment_Schedule__c(Include_Interest__c = true, 
             Booking__c = booking.Id,
             Sequence__c = 3,
             Milestone_Name__c = 'On Foundation',
@@ -79,7 +79,7 @@ private class InterestCalculationBatchTest {
         ));
 
         // Future - no interest
-        schedules.add(new Payment_Schedule__c(
+        schedules.add(new Payment_Schedule__c(Include_Interest__c = true, 
             Booking__c = booking.Id,
             Sequence__c = 4,
             Milestone_Name__c = 'On Possession',
@@ -146,11 +146,11 @@ private class InterestCalculationBatchTest {
             Project__c = zeroProject.Id,
             Booking_Date__c = Date.today().addDays(-30),
             Total_Payable_Amount__c = 5000000,
-            Status__c = 'Active'
+            Status__c = 'Booked'
         );
         insert booking;
 
-        Payment_Schedule__c ps = new Payment_Schedule__c(
+        Payment_Schedule__c ps = new Payment_Schedule__c(Include_Interest__c = true, 
             Booking__c = booking.Id,
             Sequence__c = 1,
             Milestone_Name__c = 'Overdue Payment',

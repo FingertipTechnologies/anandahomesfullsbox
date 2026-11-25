@@ -51,6 +51,7 @@ public with sharing class InterestCalculationBatch implements Database.Batchable
                 FROM Payment_Schedule__c
                 WHERE Due_Date__c < :calculationDate
                 AND Pending_Amount__c > 0
+                AND Include_Interest__c = true
                 AND Status__c NOT IN :PostSalesConstants.SCHEDULE_CLOSED_STATUSES
             )
         ]);
@@ -61,6 +62,9 @@ public with sharing class InterestCalculationBatch implements Database.Batchable
      *              on their overdue Payment Schedules.
      */
     public void execute(Database.BatchableContext bc, List<Booking__c> scope) {
+        // Booking Total Interest is saved once for the whole chunk (DML limits).
+        InterestCalculationService.collectBookingTotals = true;
+        InterestCalculationService.pendingBookingTotals.clear();
         for (Booking__c booking : scope) {
             try {
                 InterestCalculationService.FlowOutput result =
@@ -73,6 +77,9 @@ public with sharing class InterestCalculationBatch implements Database.Batchable
                 errors.add('Booking ' + booking.Id + ': ' + e.getMessage());
             }
         }
+        InterestCalculationService.saveBookingTotals(InterestCalculationService.pendingBookingTotals.values());
+        InterestCalculationService.pendingBookingTotals.clear();
+        InterestCalculationService.collectBookingTotals = false;
     }
 
     /**

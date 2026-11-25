@@ -57,7 +57,8 @@ private class PaymentScheduleGeneratorServiceTest {
             Is_Active__c = true,
             Days_After_Previous__c = 60,
             Applicable_For__c = 'Apartment',
-            Description__c = '10% on foundation'
+            Description__c = '10% on foundation',
+            Include_Interest__c = true
         ));
         masters.add(new Master_Payment_Schedule__c(
             Name = 'On Possession',
@@ -70,7 +71,8 @@ private class PaymentScheduleGeneratorServiceTest {
             Is_Active__c = true,
             Days_After_Previous__c = 90,
             Applicable_For__c = 'Apartment',
-            Description__c = '65% on possession'
+            Description__c = '65% on possession',
+            Include_Interest__c = true
         ));
         insert masters;
 
@@ -114,7 +116,18 @@ private class PaymentScheduleGeneratorServiceTest {
         PaymentScheduleGeneratorService.generateSchedules(new List<PaymentScheduleGeneratorService.FlowInput>{ input });
         Test.stopTest();
 
-       
+        // Include Interest flows from each master milestone.
+        List<Payment_Schedule__c> generated = [
+            SELECT Include_Interest__c, Master_Payment_Schedule__r.Include_Interest__c
+            FROM Payment_Schedule__c WHERE Booking__c = :booking.Id AND Master_Payment_Schedule__c != null
+        ];
+        System.assert(!generated.isEmpty(), 'schedules generated');
+        Boolean anyTicked = false;
+        for (Payment_Schedule__c ps : generated) {
+            System.assertEquals(ps.Master_Payment_Schedule__r.Include_Interest__c, ps.Include_Interest__c);
+            anyTicked = anyTicked || ps.Include_Interest__c;
+        }
+        System.assert(anyTicked, 'masters ticked Include Interest give ticked schedules');
     }
 
     @IsTest

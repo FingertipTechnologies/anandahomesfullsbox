@@ -134,11 +134,11 @@ public without sharing class FinancialTransactionController {
             AND Approval_Status__c IN :PENDING_RECEIPT_APPROVAL_STATUSES
             LIMIT 1
         ];
-        if (!pendingReceipts.isEmpty()) {
+        /*if (!pendingReceipts.isEmpty()) {
             throw new AuraHandledException(
                 'A receipt for this booking is already pending approval. Wait for it to be approved or rejected before creating another.'
             );
-        }
+        }*/
 
         List<ProjectAccountOption> allowedAccounts = getProjectAccountOptions(wrapper.bookingId);
         Set<Id> allowedAccountIds = new Set<Id>();
@@ -887,8 +887,10 @@ public without sharing class FinancialTransactionController {
                 Decimal basePending = ps.Payment_Schedule_Amount_Pending__c
                     ?? (ps.Payment_Schedule_Amount__c ?? 0);
                 Decimal gstPending = ps.GST_Amount_Pending__c ?? (ps.GST_Amount__c ?? 0);
+                Decimal scheduleGstPending = gstPending;
                 Decimal tdsPending = ps.TDS_Amount_Pending__c ?? (ps.TDS_Amount__c ?? 0);
                 Boolean audienceSplit = sourceSpecificSplitReceipt && hasAudienceSplit(ps);
+                Boolean fallbackToScheduleGst = false;
                 Decimal customerTdsPending = 0;
                 Decimal bankTdsPending = 0;
                 if (audienceSplit) {
@@ -907,6 +909,12 @@ public without sharing class FinancialTransactionController {
                         : (ps.Customer_GST_Prorata__c ?? 0);
                     basePending = Math.max(0, sourceFlatAmount - sourceTotals.flatAmount);
                     gstPending = Math.max(0, sourceGstAmount - sourceTotals.gstAmount);
+                    if (isLegacyGstReceipt && sourceGstAmount <= 0) {
+                        // If this milestone has no payer GST split, continue against its
+                        // full schedule GST balance rather than turning the receipt into advance.
+                        gstPending = scheduleGstPending;
+                        fallbackToScheduleGst = true;
+                    }
                     customerTdsPending = DemandComponentService.tdsAmountByAudience(
                         ps, false, true, sourceTotalsBySchedule
                     );
@@ -963,7 +971,7 @@ public without sharing class FinancialTransactionController {
                     for (Demands__c demand : demandsForSchedule) {
                         if (remainingAmount <= 0 || psRemaining <= 0) break;
                         if (demand.Pending_Amount__c <= 0) continue;
-                        if (audienceSplit && !isTdsPayment
+                        if (audienceSplit && !fallbackToScheduleGst && !isTdsPayment
                             && demand.Demand_Audience__c != receipt.Payment_From__c) {
                             continue;
                         }

@@ -50,7 +50,7 @@ private class InterestCalculationBatchTest {
             Payment_Schedule_Amount_Pending__c = 0,
             Amount_Paid__c = 1050000,
             Due_Date__c = Date.today().addDays(-90),
-            Status__c = 'Paid'
+            Status__c = 'Completed'
         ));
 
         // Overdue with pending - should get interest
@@ -64,7 +64,7 @@ private class InterestCalculationBatchTest {
             Payment_Schedule_Amount_Pending__c = 1100000,
             Amount_Paid__c = 1000000,
             Due_Date__c = Date.today().addDays(-45),
-            Status__c = 'Partially Paid'
+            Status__c = 'Completed'
         ));
 
         // Overdue fully unpaid - should get interest

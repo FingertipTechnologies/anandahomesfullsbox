@@ -51,7 +51,7 @@ private class InterestCalculationServiceTest {
             Payment_Schedule_Amount_Pending__c = 0,
             Amount_Paid__c = 1050000,
             Due_Date__c = Date.today().addDays(-120),
-            Status__c = 'Paid'
+            Status__c = 'Completed'
         ));
 
         // Schedule 2: Overdue with pending amount - SHOULD have interest
@@ -65,7 +65,7 @@ private class InterestCalculationServiceTest {
             Payment_Schedule_Amount_Pending__c = 575000,
             Amount_Paid__c = 1000000,
             Due_Date__c = Date.today().addDays(-60),
-            Status__c = 'Partially Paid'
+            Status__c = 'Completed'
         ));
 
         // Schedule 3: Overdue completely unpaid - SHOULD have interest
@@ -347,9 +347,11 @@ private class InterestCalculationServiceTest {
     }
 
     @isTest
-    static void paidStatusStopsInterest() {
+    static void fullyPaidStopsInterest() {
         Booking__c b = ruleBooking(false, null);
-        update new Payment_Schedule__c(Id = ticked(b.Id).Id, Status__c = 'Paid');
+        // Production milestones are only Pending / Completed: "paid" = nothing left pending.
+        update new Payment_Schedule__c(Id = ticked(b.Id).Id, Payment_Schedule_Amount_Pending__c = 0,
+            GST_Amount_Pending__c = 0);
         Test.startTest();
         InterestCalculationService.FlowOutput out = InterestCalculationService.calculateForBooking(b.Id, Date.today());
         Test.stopTest();

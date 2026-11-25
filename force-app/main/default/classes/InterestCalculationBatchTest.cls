@@ -47,6 +47,7 @@ private class InterestCalculationBatchTest {
             Percentage__c = 10,
             Amount__c = 1050000,
             Pending_Amount__c = 0,
+            Payment_Schedule_Amount_Pending__c = 0,
             Amount_Paid__c = 1050000,
             Due_Date__c = Date.today().addDays(-90),
             Status__c = 'Paid'
@@ -60,6 +61,7 @@ private class InterestCalculationBatchTest {
             Percentage__c = 20,
             Amount__c = 2100000,
             Pending_Amount__c = 1100000,
+            Payment_Schedule_Amount_Pending__c = 1100000,
             Amount_Paid__c = 1000000,
             Due_Date__c = Date.today().addDays(-45),
             Status__c = 'Partially Paid'
@@ -73,6 +75,7 @@ private class InterestCalculationBatchTest {
             Percentage__c = 15,
             Amount__c = 1575000,
             Pending_Amount__c = 1575000,
+            Payment_Schedule_Amount_Pending__c = 1575000,
             Amount_Paid__c = 0,
             Due_Date__c = Date.today().addDays(-20),
             Status__c = 'Pending'
@@ -86,12 +89,25 @@ private class InterestCalculationBatchTest {
             Percentage__c = 55,
             Amount__c = 5775000,
             Pending_Amount__c = 5775000,
+            Payment_Schedule_Amount_Pending__c = 5775000,
             Amount_Paid__c = 0,
             Due_Date__c = Date.today().addDays(180),
             Status__c = 'Pending'
         ));
 
         insert schedules;
+
+        // A demand raised for every overdue milestone with a pending amount: interest starts from
+        // the demand's due date (no demand = no interest).
+        List<Demands__c> demands = new List<Demands__c>();
+        for (Payment_Schedule__c s : schedules) {
+            if (s.Due_Date__c < Date.today() && s.Pending_Amount__c > 0) {
+                demands.add(new Demands__c(Demand_Type__c = 'Individual Demand', Booking__c = s.Booking__c, Payment_Schedule__c = s.Id,
+                    Demand_Component__c = 'Flat + GST', Due_Date__c = s.Due_Date__c,
+                    Demand_Date__c = s.Due_Date__c, Status__c = 'Raised'));
+            }
+        }
+        insert demands;
     }
 
     @IsTest
@@ -156,10 +172,13 @@ private class InterestCalculationBatchTest {
             Milestone_Name__c = 'Overdue Payment',
             Amount__c = 5000000,
             Pending_Amount__c = 5000000,
+            Payment_Schedule_Amount_Pending__c = 5000000,
             Due_Date__c = Date.today().addDays(-15),
             Status__c = 'Pending'
         );
         insert ps;
+        insert new Demands__c(Demand_Type__c = 'Individual Demand', Booking__c = booking.Id, Payment_Schedule__c = ps.Id,
+            Demand_Component__c = 'Flat + GST', Due_Date__c = ps.Due_Date__c, Status__c = 'Raised');
 
         Test.startTest();
         Database.executeBatch(new InterestCalculationBatch(), 200);

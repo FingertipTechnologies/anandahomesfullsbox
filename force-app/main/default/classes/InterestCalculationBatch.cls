@@ -49,10 +49,9 @@ public with sharing class InterestCalculationBatch implements Database.Batchable
             AND Id IN (
                 SELECT Booking__c
                 FROM Payment_Schedule__c
-                WHERE Due_Date__c < :calculationDate
-                AND Pending_Amount__c > 0
-                AND Include_Interest__c = true
-                AND Status__c NOT IN :PostSalesConstants.SCHEDULE_CLOSED_STATUSES
+                WHERE Include_Interest__c = true
+                AND Status__c NOT IN :InterestCalculationService.INTEREST_STOP_STATUSES
+                AND (Payment_Schedule_Amount_Pending__c > 0 OR GST_Amount_Pending__c > 0)
             )
         ]);
     }
@@ -62,24 +61,19 @@ public with sharing class InterestCalculationBatch implements Database.Batchable
      *              on their overdue Payment Schedules.
      */
     public void execute(Database.BatchableContext bc, List<Booking__c> scope) {
-        // Booking Total Interest is saved once for the whole chunk (DML limits).
-        InterestCalculationService.collectBookingTotals = true;
-        InterestCalculationService.pendingBookingTotals.clear();
-        for (Booking__c booking : scope) {
-            try {
-                InterestCalculationService.FlowOutput result =
-                    InterestCalculationService.calculateForBooking(booking.Id, calculationDate);
-
+        // The whole chunk in one go: a fixed number of queries and saves, whatever the chunk size.
+        Set<Id> ids = new Map<Id, Booking__c>(scope).keySet();
+        try {
+            Map<Id, InterestCalculationService.FlowOutput> results =
+                InterestCalculationService.calculateForBookings(ids, calculationDate);
+            for (InterestCalculationService.FlowOutput result : results.values()) {
                 totalBookingsProcessed++;
                 totalSchedulesWithInterest += result.schedulesWithInterest;
                 totalInterestAmount += result.totalInterest;
-            } catch (Exception e) {
-                errors.add('Booking ' + booking.Id + ': ' + e.getMessage());
             }
+        } catch (Exception e) {
+            errors.add('Bookings ' + ids + ': ' + e.getMessage());
         }
-        InterestCalculationService.saveBookingTotals(InterestCalculationService.pendingBookingTotals.values());
-        InterestCalculationService.pendingBookingTotals.clear();
-        InterestCalculationService.collectBookingTotals = false;
     }
 
     /**

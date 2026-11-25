@@ -299,6 +299,30 @@ private class DemandReminderServiceTest {
     // processDueReminders
     // ===================================================================
 
+    /** Many demands due on the same day must not run one query per demand (prod 2026-11-25: SOQL 101). */
+    @isTest
+    static void processReminders_manyDemands_queriesDoNotGrowPerDemand() {
+        BookingStageValidationService.bypass = true;
+        Booking__c b = getBooking();
+        List<Demands__c> demands = new List<Demands__c>();
+        for (Integer i = 0; i < 40; i++) {
+            Demands__c d = newDemand(b.Id, b.Project__c);
+            d.Reminder_3_Date__c = Date.today().addDays(-1);
+            d.Reminder_3_Sent__c = false;
+            demands.add(d);
+        }
+        insert demands;
+
+        Test.startTest();
+        Integer before = Limits.getQueries();
+        DemandReminderService.ProcessingResult r = DemandReminderService.processDueReminders();
+        Integer used = Limits.getQueries() - before;
+        Test.stopTest();
+
+        System.assertEquals(40, r.reminder3Count, 'all 40 third reminders processed');
+        System.assert(used < 40, 'queries must not grow with the number of demands: ' + used);
+    }
+
     @isTest
     static void processReminders1to4_fallbackEmail() {
         BookingStageValidationService.bypass = true; // unit unblocking auto-cancels without a Cancellation approval (BUG-0514 gate)

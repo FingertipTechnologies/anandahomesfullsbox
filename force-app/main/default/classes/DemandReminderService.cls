@@ -278,6 +278,7 @@ public without sharing class DemandReminderService {
         ];
 
         if (demands.isEmpty()) return 0;
+        pendingOwnerDemands = demands; // owners for the letters load in one query
 
         List<Demands__c> toUpdate = new List<Demands__c>();
         List<Messaging.SingleEmailMessage> emails = new List<Messaging.SingleEmailMessage>();
@@ -328,6 +329,7 @@ public without sharing class DemandReminderService {
         ];
 
         if (demands.isEmpty()) return 0;
+        pendingOwnerDemands = demands; // owners for the letters load in one query
 
         List<Demands__c> toUpdate = new List<Demands__c>();
         List<Messaging.SingleEmailMessage> emails = new List<Messaging.SingleEmailMessage>();
@@ -375,6 +377,7 @@ public without sharing class DemandReminderService {
         ];
 
         if (demands.isEmpty()) return 0;
+        pendingOwnerDemands = demands; // owners for the letters load in one query
 
         List<Demands__c> toUpdate = new List<Demands__c>();
         List<Messaging.SingleEmailMessage> emails = new List<Messaging.SingleEmailMessage>();
@@ -424,6 +427,7 @@ public without sharing class DemandReminderService {
         ];
 
         if (demands.isEmpty()) return 0;
+        pendingOwnerDemands = demands; // owners for the letters load in one query
 
         List<Demands__c> toUpdate = new List<Demands__c>();
         List<Messaging.SingleEmailMessage> emails = new List<Messaging.SingleEmailMessage>();
@@ -473,6 +477,7 @@ public without sharing class DemandReminderService {
         liveInterestByDemand.putAll(loadLiveInterest(demands));
 
         if (demands.isEmpty()) return 0;
+        pendingOwnerDemands = demands; // owners for the letters load in one query
 
         List<Demands__c> toUpdate = new List<Demands__c>();
         List<Messaging.SingleEmailMessage> emails = new List<Messaging.SingleEmailMessage>();
@@ -517,6 +522,7 @@ public without sharing class DemandReminderService {
         ];
 
         if (demands.isEmpty()) return 0;
+        pendingOwnerDemands = demands; // owners for the letters load in one query
 
         List<Demands__c> demandsToUpdate = new List<Demands__c>();
         List<Booking__c> bookingsToUpdate = new List<Booking__c>();
@@ -663,6 +669,28 @@ public without sharing class DemandReminderService {
         return result;
     }
 
+    /**
+     * Booking owners for the letter signature, read once per run. One query per demand broke the
+     * daily job in production (2026-11-25: 159 demands due -> "Too many SOQL queries: 101").
+     */
+    private static Map<Id, User> ownerCache = new Map<Id, User>();
+
+    private static User bookingOwner(Id ownerId) {
+        if (ownerId == null) return null;
+        if (!ownerCache.containsKey(ownerId)) {
+            Set<Id> ids = new Set<Id>{ ownerId };
+            for (Demands__c d : pendingOwnerDemands) {
+                if (d.Booking__r != null && d.Booking__r.OwnerId != null) ids.add(d.Booking__r.OwnerId);
+            }
+            for (Id id : ids) ownerCache.put(id, null);
+            for (User u : [SELECT Id, Name, Email, Phone FROM User WHERE Id IN :ids]) ownerCache.put(u.Id, u);
+        }
+        return ownerCache.get(ownerId);
+    }
+
+    /** The demands of the reminder level being processed, so their owners load in one query. */
+    private static List<Demands__c> pendingOwnerDemands = new List<Demands__c>();
+
     private static Decimal nzInterest(Decimal value) {
         return value == null ? 0 : value;
     }
@@ -733,11 +761,7 @@ public without sharing class DemandReminderService {
                 // No admin template: the reminder letters (demand 1-4 / AOS margin 1-2), 2026-11-16/17
                 Boolean isMargin = DEMAND_TYPE_AGREEMENT_AMOUNT.equalsIgnoreCase(demand.Demand_Type__c)
                     || (demand.Payment_Schedule__r != null && demand.Payment_Schedule__r.Is_Agreement__c == true);
-                User owner = null;
-                if (demand.Booking__r.OwnerId != null) {
-                    List<User> owners = [SELECT Name, Email, Phone FROM User WHERE Id = :demand.Booking__r.OwnerId LIMIT 1];
-                    owner = owners.isEmpty() ? null : owners[0];
-                }
+                User owner = bookingOwner(demand.Booking__r.OwnerId);
                 DemandReminderLetters.Letter letter = DemandReminderLetters.build(
                     demand, REMINDER_LEVELS.get(reminderType), isMargin, owner, liveInterestByDemand.get(demand.Id));
                 email.setSubject(letter.subject);
@@ -918,10 +942,11 @@ public without sharing class DemandReminderService {
         }
     }
 
+    /** Owner's email for the CC - from the per-run owner cache (one query per reminder level). */
     private static String getUserEmail(Id userId) {
         try {
-            List<User> users = [SELECT Email FROM User WHERE Id = :userId LIMIT 1];
-            return users.isEmpty() ? null : users[0].Email;
+            User u = bookingOwner(userId);
+            return u == null ? null : u.Email;
         } catch (Exception e) {
             return null;
         }

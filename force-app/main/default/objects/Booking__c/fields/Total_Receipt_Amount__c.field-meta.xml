@@ -8,6 +8,11 @@
         <operation>notEqual</operation>
         <value>Rejected</value>
     </summaryFilterItems>
+    <summaryFilterItems>
+        <field>Receipt__c.Receipt_Type__c</field>
+        <operation>notEqual</operation>
+        <value>Interest Payment</value>
+    </summaryFilterItems>
     <summaryForeignKey>Receipt__c.Booking__c</summaryForeignKey>
     <summaryOperation>sum</summaryOperation>
     <trackHistory>false</trackHistory>

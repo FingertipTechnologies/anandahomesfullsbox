@@ -297,6 +297,12 @@
                     variant="label-hidden"
                   >
                   </lightning-combobox>
+                  <template if:true={isInterestReceipt}>
+                    <div class="slds-text-color_weak slds-m-top_xx-small">
+                      Interest still unpaid on this booking: <strong>{formattedUnpaidInterest}</strong>.
+                      This receipt pays interest only (oldest first); any extra becomes an advance.
+                    </div>
+                  </template>
                 </div>
               </div>
               <template if:true={hasProjectAccountOptions}>

@@ -107,6 +107,7 @@ public without sharing class BookingFinancialRecalcService {
             WHERE Payment_Schedule__c IN :scheduleIds
             AND Payment_Schedule__c != null
             AND Receipt__r.Approval_Status__c != :STATUS_REJECTED
+            AND Allocation_Type__c != 'Interest'
             GROUP BY Payment_Schedule__c
         ]) {
             Id psId = (Id) ar.get('psId');
@@ -193,6 +194,7 @@ public without sharing class BookingFinancialRecalcService {
             WHERE Demand__c IN :demandIds
             AND Demand__c != null
             AND Receipt__r.Approval_Status__c != :STATUS_REJECTED
+            AND Allocation_Type__c != 'Interest'
             GROUP BY Demand__c
         ]) {
             Id demandId = (Id) ar.get('demandId');
@@ -209,6 +211,7 @@ public without sharing class BookingFinancialRecalcService {
             AND Demands__c != null
             AND Demand__c = null
             AND Receipt__r.Approval_Status__c != :STATUS_REJECTED
+            AND Allocation_Type__c != 'Interest'
             GROUP BY Demands__c
         ]) {
             Id demandId = (Id) ar.get('demandId');
@@ -311,6 +314,7 @@ public without sharing class BookingFinancialRecalcService {
             FROM Receipt_Line_Item__c
             WHERE Booking__c IN :bookingIds
             AND Receipt__r.Approval_Status__c != :STATUS_REJECTED
+            AND Allocation_Type__c != 'Interest'
             GROUP BY Booking__c
         ]) {
             Id bkId = (Id) ar.get('bkId');

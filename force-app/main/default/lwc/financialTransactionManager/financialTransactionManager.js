@@ -26,6 +26,7 @@ import resolveConfigurationForRecord from "@salesforce/apex/PostSalesAdminContro
 import resolveEmailTemplateForAction from "@salesforce/apex/ConfigMatchingService.resolveEmailTemplateForAction";
 import sendEmail from "@salesforce/apex/EmailSenderController.sendEmail";
 import prepareEmailFromTemplate from "@salesforce/apex/EmailSenderController.prepareEmailFromTemplate";
+import getUnpaidInterest from "@salesforce/apex/FinancialTransactionController.getUnpaidInterest";
 
 export default class FinancialTransactionManager extends NavigationMixin(
   LightningElement
@@ -166,6 +167,7 @@ export default class FinancialTransactionManager extends NavigationMixin(
       "Installment Payment",
       "TDS Payment",
       "Additional Charge",
+      "Interest Payment",
       ...(isLegacySplit ? ["GST Amount"] : [])
     ]);
     this.receiptTypeOptions = [
@@ -786,8 +788,25 @@ export default class FinancialTransactionManager extends NavigationMixin(
     return this.receiptType === "TDS Payment";
   }
 
+  // Interest Payment receipts pay only the delay interest (never Flat / GST / TDS).
+  get isInterestReceipt() {
+    return this.receiptType === "Interest Payment";
+  }
+
+  // TDS and interest are always paid by the customer.
+  get isCustomerOnlyReceipt() {
+    return this.isTdsReceipt || this.isInterestReceipt;
+  }
+
+  @track unpaidInterest = null;
+
+  get formattedUnpaidInterest() {
+    const value = Number(this.unpaidInterest || 0);
+    return "\u20B9" + value.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
   get availablePaymentFromOptions() {
-    return this.isTdsReceipt
+    return this.isCustomerOnlyReceipt
       ? this.paymentFromOptions.filter((option) => option.value === "Customer")
       : this.paymentFromOptions;
   }
@@ -797,11 +816,11 @@ export default class FinancialTransactionManager extends NavigationMixin(
   }
 
   get showScheduleAllocationPreview() {
-    return this.hasPendingPaymentSchedules && !this.isAdditionalChargeReceipt;
+    return this.hasPendingPaymentSchedules && !this.isAdditionalChargeReceipt && !this.isInterestReceipt;
   }
 
   get showDemandAllocationPreview() {
-    return this.hasOpenDemands && !this.isAdditionalChargeReceipt;
+    return this.hasOpenDemands && !this.isAdditionalChargeReceipt && !this.isInterestReceipt;
   }
 
   get additionalChargeOptions() {
@@ -912,8 +931,18 @@ export default class FinancialTransactionManager extends NavigationMixin(
 
   handleReceiptTypeChange(event) {
     this.receiptType = event.detail.value;
-    if (this.isTdsReceipt) {
+    if (this.isCustomerOnlyReceipt) {
       this.paymentFrom = "Customer";
+    }
+    this.unpaidInterest = null;
+    if (this.isInterestReceipt) {
+      getUnpaidInterest({ bookingId: this.recordId })
+        .then((value) => {
+          this.unpaidInterest = value;
+        })
+        .catch(() => {
+          this.unpaidInterest = 0;
+        });
     }
     // Switching away from Additional Charge must drop the selection, otherwise a stale
     // charge id would ride along on an installment receipt.
@@ -954,7 +983,7 @@ export default class FinancialTransactionManager extends NavigationMixin(
   }
 
   handlePaymentFromChange(event) {
-    this.paymentFrom = this.isTdsReceipt ? "Customer" : event.detail.value;
+    this.paymentFrom = this.isCustomerOnlyReceipt ? "Customer" : event.detail.value;
   }
 
   handleRemarksChange(event) {

@@ -642,7 +642,7 @@ public without sharing class DemandReminderService {
         for (AggregateResult ar : [
             SELECT Payment_Schedule__c psId, Component__c comp, SUM(Amount__c) total
             FROM Interest_Line_Item__c
-            WHERE Payment_Schedule__c IN :allSchedules AND Status__c != 'Waived'
+            WHERE Payment_Schedule__c IN :allSchedules AND Status__c NOT IN ('Waived', 'Paid')
             GROUP BY Payment_Schedule__c, Component__c
         ]) {
             String comp = (String) ar.get('comp');

@@ -10,8 +10,6 @@ trigger PaymentScheduleTrigger on Payment_Schedule__c (before insert, before upd
         PaymentScheduleMasterDefaults.applyAgreementFlag(Trigger.new);
     }
     if (Trigger.isBefore && (Trigger.isInsert || Trigger.isUpdate)) {
-        // Include Interest = milestones below the Agreement milestone.
-        PaymentScheduleMasterDefaults.applyInterestFlag(Trigger.new, Trigger.oldMap);
         ProrataInvariantService.validate(Trigger.new, Trigger.oldMap);
     }
     }

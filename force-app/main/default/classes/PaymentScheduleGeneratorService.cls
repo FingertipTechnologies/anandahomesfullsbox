@@ -94,7 +94,7 @@ public with sharing class PaymentScheduleGeneratorService {
             'Id', 'Name', sourceParentField, 'Sequence__c', 'Percentage__c',
             'Payment_Type__c', 'Status__c', 'Is_Active__c',
             'Days_After_Booking__c', 'Days_After_Previous__c',
-            'Applicable_For__c', 'Description__c', 'Milestone_Description__c', 'Is_Agreement__c'
+            'Applicable_For__c', 'Description__c', 'Milestone_Description__c', 'Is_Agreement__c', 'Include_Interest__c'
         };
         // Add any additional source fields from field mappings
         for (Object mObj : fieldMappings) {
@@ -177,6 +177,8 @@ public with sharing class PaymentScheduleGeneratorService {
                 ps.Demand_Raised__c = false;
                 // Flow the Agreement flag from the master milestone (BRD pointer 5).
                 ps.Is_Agreement__c = ms.Is_Agreement__c == true;
+                // Interest is charged only on milestones whose master is ticked Include Interest.
+                ps.Include_Interest__c = ms.Include_Interest__c == true;
 
                 // Apply field mappings from config
                 if (!fieldMappings.isEmpty()) {

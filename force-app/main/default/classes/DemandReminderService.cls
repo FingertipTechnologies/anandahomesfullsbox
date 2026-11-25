@@ -458,6 +458,7 @@ public without sharing class DemandReminderService {
                    Booking__r.Project__r.Include_Interest_In_Termination__c,
                    Booking__r.Project__r.Interest_Rate__c,
                    Demand_Amount__c, Pending_Amount__c, Interest_Amount__c,
+                   Interest_Waived_Off_Amount__c, Demand_Component__c, Payment_Schedule__c,
                    Due_Date__c, Termination_Mail_Date__c, Project__c
             FROM Demands__c
             WHERE Termination_Mail_Date__c <= :today
@@ -468,6 +469,8 @@ public without sharing class DemandReminderService {
             AND Pending_Amount__c > 0
             LIMIT 200
         ];
+        // Termination notice shows the interest calculated so far (not the raise-time snapshot).
+        liveInterestByDemand.putAll(loadLiveInterest(demands));
 
         if (demands.isEmpty()) return 0;
 
@@ -596,15 +599,17 @@ public without sharing class DemandReminderService {
 
     // ==================== EMAIL BUILDING ====================
 
-    /** Reminders 3/4: demand Id -> live interest (filled by loadLiveInterest). */
+    /** Reminders 3/4 and termination: demand Id -> live interest (filled by loadLiveInterest). */
     private static Map<Id, Decimal> liveInterestByDemand = new Map<Id, Decimal>();
 
     /**
-     * Live interest of each demand for the reminder 3/4 letters (2026-11-17): the CURRENT
-     * Interest_Pending__c of the demand's payment schedules (its Demand_Line__c schedules, else its
-     * Payment_Schedule__c) less the waiver applied on the demand. Interest_Amount__c is only a snapshot
-     * taken when the demand was raised (normally 0, as demands are raised before they fall due).
-     * Only flat demands (Flat / Flat + GST, or no component) carry interest - as when demands are raised.
+     * Live interest of each demand for the reminder 3/4 letters and the termination notice: the
+     * interest calculated so far on the demand's payment schedules (its Demand_Line__c schedules,
+     * else its Payment_Schedule__c) FOR THE PART THE DEMAND RAISED, less the waiver applied on the
+     * demand. Interest is calculated separately on Flat and GST (Interest_Line_Item__c.Component__c),
+     * so a Flat demand shows Flat interest, a GST demand (Legacey) GST interest, and a "Flat + GST"
+     * or component-less demand both. Lines from before the split (no Component) go with the Flat part.
+     * Interest_Amount__c is only a snapshot taken when the demand was raised.
      */
     @TestVisible
     private static Map<Id, Decimal> loadLiveInterest(List<Demands__c> demands) {
@@ -613,6 +618,7 @@ public without sharing class DemandReminderService {
         for (Demands__c d : demands) {
             schedulesByDemand.put(d.Id, new Set<Id>());
         }
+        if (schedulesByDemand.isEmpty()) return result;
         for (Demand_Line__c line : [
             SELECT Demand__c, Payment_Schedule__c FROM Demand_Line__c
             WHERE Demand__c IN :schedulesByDemand.keySet() AND Payment_Schedule__c != null
@@ -625,22 +631,40 @@ public without sharing class DemandReminderService {
             if (ids.isEmpty() && d.Payment_Schedule__c != null) ids.add(d.Payment_Schedule__c);
             allSchedules.addAll(ids);
         }
-        Map<Id, Payment_Schedule__c> schedules = new Map<Id, Payment_Schedule__c>(
-            [SELECT Id, Interest_Pending__c FROM Payment_Schedule__c WHERE Id IN :allSchedules]);
+        // schedule Id + '|Flat' / '|GST' -> interest calculated (waived lines excluded)
+        Map<String, Decimal> interestByPart = new Map<String, Decimal>();
+        for (AggregateResult ar : [
+            SELECT Payment_Schedule__c psId, Component__c comp, SUM(Amount__c) total
+            FROM Interest_Line_Item__c
+            WHERE Payment_Schedule__c IN :allSchedules AND Status__c != 'Waived'
+            GROUP BY Payment_Schedule__c, Component__c
+        ]) {
+            String comp = (String) ar.get('comp');
+            String key = (Id) ar.get('psId') + '|' + (comp == InterestCalculationService.PART_GST
+                ? InterestCalculationService.PART_GST : InterestCalculationService.PART_FLAT);
+            Decimal total = (Decimal) ar.get('total');
+            interestByPart.put(key, (interestByPart.containsKey(key) ? interestByPart.get(key) : 0)
+                + (total == null ? 0 : total));
+        }
         for (Demands__c d : demands) {
-            Boolean flat = String.isBlank(d.Demand_Component__c)
-                || DemandComponentService.includesFlat(d.Demand_Component__c);
+            String comp = d.Demand_Component__c;
+            Boolean flat = String.isBlank(comp) || comp == DemandComponentService.FLAT
+                || comp == DemandComponentService.FLAT_AND_GST;
+            Boolean gst = String.isBlank(comp) || comp == DemandComponentService.GST
+                || comp == DemandComponentService.FLAT_AND_GST;
             Decimal gross = 0;
-            if (flat) {
-                for (Id psId : schedulesByDemand.get(d.Id)) {
-                    Payment_Schedule__c ps = schedules.get(psId);
-                    if (ps != null && ps.Interest_Pending__c != null) gross += ps.Interest_Pending__c;
-                }
+            for (Id psId : schedulesByDemand.get(d.Id)) {
+                if (flat) gross += nzInterest(interestByPart.get(psId + '|' + InterestCalculationService.PART_FLAT));
+                if (gst) gross += nzInterest(interestByPart.get(psId + '|' + InterestCalculationService.PART_GST));
             }
             Decimal waived = d.Interest_Waived_Off_Amount__c == null ? 0 : d.Interest_Waived_Off_Amount__c;
             result.put(d.Id, Math.max(0, gross - waived));
         }
         return result;
+    }
+
+    private static Decimal nzInterest(Decimal value) {
+        return value == null ? 0 : value;
     }
 
     private static Messaging.SingleEmailMessage buildReminderEmail(
@@ -743,8 +767,10 @@ public without sharing class DemandReminderService {
                     body += '<p>Due Date: ' + demand.Due_Date__c.format() + '</p>';
                 }
 
-                if (reminderType == 'Termination Notice' && demand.Interest_Amount__c != null && demand.Interest_Amount__c > 0) {
-                    body += '<p>Interest Amount: ' + PostSalesConstants.formatCurrency(demand.Interest_Amount__c) + '</p>';
+                Decimal terminationInterest = liveInterestByDemand.containsKey(demand.Id)
+                    ? liveInterestByDemand.get(demand.Id) : demand.Interest_Amount__c;
+                if (reminderType == 'Termination Notice' && terminationInterest != null && terminationInterest > 0) {
+                    body += '<p>Interest Amount: ' + PostSalesConstants.formatCurrency(terminationInterest) + '</p>';
                 }
 
                 if (reminderType == 'Unit Unblocking') {

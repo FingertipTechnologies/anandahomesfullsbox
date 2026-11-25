@@ -469,25 +469,38 @@ private class DemandReminderServiceTest {
     // ===================================================================
 
     @isTest
-    static void loadLiveInterest_usesCurrentScheduleInterestLessWaiver() {
+    static void loadLiveInterest_perPartLessWaiver() {
         Booking__c b = [SELECT Id FROM Booking__c LIMIT 1];
         Payment_Schedule__c ps = [SELECT Id FROM Payment_Schedule__c WHERE Booking__c = :b.Id AND Sequence__c = 1];
-        ps.Interest_Pending__c = 5000;
-        update ps;
+        // Flat interest 5000 (3000 split + 2000 from before the split, no Component), GST interest 800,
+        // and a waived GST line that must not count.
+        insert new List<Interest_Line_Item__c>{
+            new Interest_Line_Item__c(Booking__c = b.Id, Payment_Schedule__c = ps.Id, Component__c = 'Flat',
+                Amount__c = 3000, Status__c = 'Calculated', Allocation_Type__c = 'Interest', Allocation_Date__c = Date.today()),
+            new Interest_Line_Item__c(Booking__c = b.Id, Payment_Schedule__c = ps.Id,
+                Amount__c = 2000, Status__c = 'Calculated', Allocation_Type__c = 'Interest', Allocation_Date__c = Date.today()),
+            new Interest_Line_Item__c(Booking__c = b.Id, Payment_Schedule__c = ps.Id, Component__c = 'GST',
+                Amount__c = 800, Status__c = 'Calculated', Allocation_Type__c = 'Interest', Allocation_Date__c = Date.today()),
+            new Interest_Line_Item__c(Booking__c = b.Id, Payment_Schedule__c = ps.Id, Component__c = 'GST',
+                Amount__c = 999, Status__c = 'Waived', Allocation_Type__c = 'Interest', Allocation_Date__c = Date.today())
+        };
 
         Demands__c flat = new Demands__c(Id = fakeDemandId(1), Payment_Schedule__c = ps.Id,
             Demand_Component__c = 'Flat', Interest_Waived_Off_Amount__c = 1000);
         Demands__c gst = new Demands__c(Id = fakeDemandId(2), Payment_Schedule__c = ps.Id,
             Demand_Component__c = 'GST');
+        Demands__c both = new Demands__c(Id = fakeDemandId(4), Payment_Schedule__c = ps.Id,
+            Demand_Component__c = 'Flat + GST');
         Demands__c noSchedule = new Demands__c(Id = fakeDemandId(3));
 
         Test.startTest();
         Map<Id, Decimal> live = DemandReminderService.loadLiveInterest(
-            new List<Demands__c>{ flat, gst, noSchedule });
+            new List<Demands__c>{ flat, gst, both, noSchedule });
         Test.stopTest();
 
-        System.assertEquals(4000, live.get(flat.Id), 'schedule interest less the demand waiver');
-        System.assertEquals(0, live.get(gst.Id), 'GST demands carry no interest');
+        System.assertEquals(4000, live.get(flat.Id), 'Flat interest less the demand waiver');
+        System.assertEquals(800, live.get(gst.Id), 'GST demand: GST interest only');
+        System.assertEquals(5800, live.get(both.Id), 'Flat + GST demand: both parts');
         System.assertEquals(0, live.get(noSchedule.Id));
     }
 

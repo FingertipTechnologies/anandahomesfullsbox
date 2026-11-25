@@ -464,6 +464,18 @@ public without sharing class FinancialTransactionController {
             || schedule.Customer_GST_Prorata__c != null;
     }
 
+    /** Adds a line's base / GST / TDS to what the receipt has put on the schedule. */
+    private static void addUsed(
+        Map<Id, List<Decimal>> usedBySchedule, Id scheduleId, ReceiptComponentAllocation components
+    ) {
+        List<Decimal> used = usedBySchedule.containsKey(scheduleId)
+            ? usedBySchedule.get(scheduleId) : new List<Decimal>{ 0, 0, 0 };
+        used[0] += components.baseAmount ?? 0;
+        used[1] += components.gstAmount ?? 0;
+        used[2] += components.tdsAmount ?? 0;
+        usedBySchedule.put(scheduleId, used);
+    }
+
     private static ReceiptComponentAllocation splitReceiptAllocation(
         Decimal amount,
         Decimal basePending,
@@ -862,6 +874,10 @@ public without sharing class FinancialTransactionController {
                 }
             }
 
+            // What this receipt has put on each schedule so far: [base, GST, TDS]. Used by the
+            // Prorata / Partial spill-over pass below.
+            Map<Id, List<Decimal>> usedBySchedule = new Map<Id, List<Decimal>>();
+
             // Allocate in Payment Schedule sequence order. For each schedule, pay its
             // linked demands first, then allocate any remaining schedule balance directly
             // to that schedule before moving to the next one.
@@ -1008,6 +1024,7 @@ public without sharing class FinancialTransactionController {
                             demand.Id, ps.Id, null, null, allocated,
                             components.baseAmount, components.gstAmount, components.tdsAmount
                         ));
+                        addUsed(usedBySchedule, ps.Id, components);
 
                         basePending -= components.baseAmount;
                         gstPending -= components.gstAmount;
@@ -1043,6 +1060,7 @@ public without sharing class FinancialTransactionController {
                         null, ps.Id, null, null, allocated,
                         components.baseAmount, components.gstAmount, components.tdsAmount
                     ));
+                    addUsed(usedBySchedule, ps.Id, components);
 
                     basePending -= components.baseAmount;
                     gstPending -= components.gstAmount;
@@ -1079,6 +1097,90 @@ public without sharing class FinancialTransactionController {
                 allocatedToDemands += allocated;
             }
             
+            // Step 3b (Prorata / Partial): a Customer receipt pays the customer share first and a
+            // Bank receipt the bank share, on every milestone in sequence. Only then does whatever
+            // is left pay the OTHER side's Flat / GST pending, again in milestone sequence (its open
+            // demands first), instead of becoming an advance - e.g. a customer who also pays the
+            // bank's share (user, 2026-11-25). Not for TDS: TDS is always the customer's and the TDS
+            // receipt already covers the customer and bank TDS.
+            if (sourceSpecificSplitReceipt && remainingAmount > 0 && !isTdsPayment) {
+                for (Payment_Schedule__c ps : pendingSchedules) {
+                    if (remainingAmount <= 0) break;
+                    if (!hasAudienceSplit(ps)) continue;
+
+                    List<Decimal> used = usedBySchedule.containsKey(ps.Id)
+                        ? usedBySchedule.get(ps.Id) : new List<Decimal>{ 0, 0, 0 };
+                    Decimal basePending = Math.max(0, (ps.Payment_Schedule_Amount_Pending__c ?? 0) - used[0]);
+                    Decimal gstPending = Math.max(0, (ps.GST_Amount_Pending__c ?? 0) - used[1]);
+                    Decimal tdsPending = Math.max(0, (ps.TDS_Amount_Pending__c ?? 0) - used[2]);
+                    tdsPending = 0; // Flat and GST only
+                    if (isLegacyInstallment) { gstPending = 0; }
+                    else if (isLegacyGstReceipt) { basePending = 0; }
+                    Decimal psRemaining = Math.min(
+                        Math.max(0, (ps.Pending_Amount__c ?? 0) - used[0] - used[1] - used[2]),
+                        basePending + gstPending + tdsPending
+                    );
+                    if (psRemaining <= 0) continue;
+
+                    // The other side's open demands on this milestone first.
+                    if (demandsBySchedule.containsKey(ps.Id)) {
+                        for (Demands__c demand : demandsBySchedule.get(ps.Id)) {
+                            if (remainingAmount <= 0 || psRemaining <= 0) break;
+                            if (demand.Pending_Amount__c <= 0) continue;
+                            if (demand.Demand_Audience__c == receipt.Payment_From__c) continue;
+                            if ((isLegacyInstallment && demand.Demand_Component__c != 'Flat')
+                                || (isLegacyGstReceipt && demand.Demand_Component__c != 'GST')) {
+                                continue;
+                            }
+                            Decimal capacity = demand.Demand_Component__c == 'Flat' ? basePending
+                                : (demand.Demand_Component__c == 'GST' ? gstPending
+                                    : basePending + gstPending);
+                            Decimal allocated = Math.min(
+                                Math.min(Math.min(demand.Pending_Amount__c, remainingAmount), psRemaining),
+                                capacity
+                            );
+                            if (allocated <= 0) continue;
+                            ReceiptComponentAllocation components = splitReceiptAllocation(
+                                allocated, basePending, gstPending, tdsPending,
+                                isLegacyInstallment, isLegacyGstReceipt, isTdsPayment,
+                                isCombinedModeReceipt, demand.Demand_Component__c
+                            );
+                            lineItems.add(createLineItem(
+                                receipt.Id, wrapper.bookingId, sequence++,
+                                PostSalesConstants.ALLOCATION_DEMAND_PAYMENT, PostSalesConstants.LINE_ITEM_TYPE_PRINCIPAL,
+                                demand.Id, ps.Id, null, null, allocated,
+                                components.baseAmount, components.gstAmount, components.tdsAmount
+                            ));
+                            basePending -= components.baseAmount;
+                            gstPending -= components.gstAmount;
+                            tdsPending -= components.tdsAmount;
+                            remainingAmount -= allocated;
+                            psRemaining -= allocated;
+                            allocatedToDemands += allocated;
+                            demand.Pending_Amount__c -= allocated;
+                        }
+                    }
+
+                    // Then straight to the milestone.
+                    if (remainingAmount > 0 && psRemaining > 0) {
+                        Decimal allocated = Math.min(psRemaining, remainingAmount);
+                        ReceiptComponentAllocation components = splitReceiptAllocation(
+                            allocated, basePending, gstPending, tdsPending,
+                            isLegacyInstallment, isLegacyGstReceipt, isTdsPayment,
+                            isCombinedModeReceipt, null
+                        );
+                        lineItems.add(createLineItem(
+                            receipt.Id, wrapper.bookingId, sequence++,
+                            PostSalesConstants.ALLOCATION_PAYMENT_SCHEDULE, PostSalesConstants.LINE_ITEM_TYPE_PRINCIPAL,
+                            null, ps.Id, null, null, allocated,
+                            components.baseAmount, components.gstAmount, components.tdsAmount
+                        ));
+                        remainingAmount -= allocated;
+                        allocatedToDemands += allocated;
+                    }
+                }
+            }
+
             // Step 4: Create Advance if Excess
             Decimal excessAmount = remainingAmount;
             Advance_Payment__c newAdvance;

@@ -1808,6 +1808,122 @@ private class FinancialTransactionControllerTest {
             'Any remaining Customer-paid TDS applies to the Bank audience second.');
     }
 
+    /** One Prorata milestone: flat 100000 = customer 25000 + bank 75000, GST 5000 (customer), TDS 1000. */
+    private static Payment_Schedule__c spillSchedule(Id bookingId, Id projectId) {
+        update new Project__c(Id = projectId, Legacy_Split_Demand_Receipt__c = true);
+        Payment_Schedule__c ps = fx_schedule(bookingId, 'SPILL', 106000, 100000, 5000, 1);
+        ps.TDS_Amount__c = 1000;
+        ps.TDS_Amount_Pending__c = 1000;
+        ps.Customer_Flat_Prorata__c = 25000;
+        ps.Bank_Flat_Amount__c = 75000;
+        ps.Customer_GST_Prorata__c = 5000;
+        ps.Bank_GST_Amount__c = 0;
+        insert ps;
+        return ps;
+    }
+
+    private static Decimal allocated(Id receiptId, String part) {
+        Decimal total = 0;
+        for (Receipt_Line_Item__c li : [SELECT Base_Amount__c, TDS_Amount__c FROM Receipt_Line_Item__c WHERE Receipt__c = :receiptId]) {
+            total += (part == 'TDS' ? li.TDS_Amount__c : li.Base_Amount__c) ?? 0;
+        }
+        return total;
+    }
+
+    private static Decimal advanceOf(Id receiptId) {
+        Decimal adv = [SELECT New_Advance_Created__c FROM Receipt__c WHERE Id = :receiptId].New_Advance_Created__c;
+        return adv == null ? 0 : adv;
+    }
+
+    /**
+     * Prorata / Partial (user 2026-11-25, B-1419): a Customer receipt that also covers the bank's
+     * share pays the bank share too - no advance. Flat / GST only; TDS is never spilled.
+     */
+    @isTest
+    static void allocateReceipt_prorataCustomerExcessPaysBankShare() {
+        Booking__c booking = [SELECT Id, Project__c FROM Booking__c LIMIT 1];
+        spillSchedule(booking.Id, booking.Project__c);
+        Receipt__c flat = fx_source_receipt(booking.Id, 100000, 'TXN-SPILL-C', 'Installment Payment', 'Customer');
+
+        Test.startTest();
+        FinancialTransactionController.allocateReceipt(flat.Id);
+        Test.stopTest();
+
+        System.assertEquals(100000, allocated(flat.Id, 'Flat'), 'customer 25000 + bank share 75000');
+        System.assertEquals(0, allocated(flat.Id, 'TDS'), 'no TDS from an installment');
+        System.assertEquals(0, advanceOf(flat.Id));
+    }
+
+    /** Own side on every milestone first, in sequence; then the other side, in sequence. */
+    @isTest
+    static void allocateReceipt_prorataOwnSideOnAllMilestonesFirst() {
+        Booking__c booking = [SELECT Id, Project__c FROM Booking__c LIMIT 1];
+        Payment_Schedule__c first = spillSchedule(booking.Id, booking.Project__c);
+        Payment_Schedule__c second = first.clone(false, true);
+        second.Milestone_Name__c = 'SPILL-2';
+        second.Sequence__c = 2;
+        insert second;
+        // 25000 + 25000 customer shares, then 30000 of milestone 1's bank share.
+        Receipt__c flat = fx_source_receipt(booking.Id, 80000, 'TXN-SPILL-O', 'Installment Payment', 'Customer');
+
+        Test.startTest();
+        FinancialTransactionController.allocateReceipt(flat.Id);
+        Test.stopTest();
+
+        Decimal onFirst = 0, onSecond = 0;
+        for (Receipt_Line_Item__c li : [SELECT Payment_Schedule__c, Base_Amount__c FROM Receipt_Line_Item__c WHERE Receipt__c = :flat.Id]) {
+            if (li.Payment_Schedule__c == first.Id) onFirst += li.Base_Amount__c ?? 0;
+            if (li.Payment_Schedule__c == second.Id) onSecond += li.Base_Amount__c ?? 0;
+        }
+        System.assertEquals(55000, onFirst, 'customer 25000 + 30000 of the bank share');
+        System.assertEquals(25000, onSecond, 'customer share only');
+        System.assertEquals(0, advanceOf(flat.Id));
+    }
+
+    /** The other side's open demand on the milestone is paid first by the spill-over. */
+    @isTest
+    static void allocateReceipt_prorataCustomerExcessPaysBankDemand() {
+        Booking__c booking = [SELECT Id, Project__c FROM Booking__c LIMIT 1];
+        Payment_Schedule__c ps = spillSchedule(booking.Id, booking.Project__c);
+        Demands__c bankDemand = new Demands__c(
+            Booking__c = booking.Id, Payment_Schedule__c = ps.Id,
+            Demand_Component__c = 'Flat', Demand_Audience__c = 'Bank',
+            Demand_Type__c = 'Bank Demand', Demand_Amount__c = 75000,
+            Pending_Amount__c = 75000, Status__c = 'Raised',
+            Demand_Date__c = Date.today(), Due_Date__c = Date.today()
+        );
+        insert bankDemand;
+        Receipt__c flat = fx_source_receipt(booking.Id, 100000, 'TXN-SPILL-D', 'Installment Payment', 'Customer');
+
+        Test.startTest();
+        FinancialTransactionController.allocateReceipt(flat.Id);
+        Test.stopTest();
+
+        Decimal onBankDemand = 0;
+        for (Receipt_Line_Item__c li : [SELECT Allocated_Amount__c FROM Receipt_Line_Item__c
+                                        WHERE Receipt__c = :flat.Id AND Demand__c = :bankDemand.Id]) {
+            onBankDemand += li.Allocated_Amount__c;
+        }
+        System.assertEquals(75000, onBankDemand, 'bank demand paid by the customer receipt excess');
+        System.assertEquals(100000, allocated(flat.Id, 'Flat'));
+        System.assertEquals(0, advanceOf(flat.Id));
+    }
+
+    /** A Bank receipt larger than the bank's share pays the customer's share with the rest. */
+    @isTest
+    static void allocateReceipt_prorataBankExcessPaysCustomerShare() {
+        Booking__c booking = [SELECT Id, Project__c FROM Booking__c LIMIT 1];
+        spillSchedule(booking.Id, booking.Project__c);
+        Receipt__c bank = fx_source_receipt(booking.Id, 85000, 'TXN-SPILL-B', 'Installment Payment', 'Bank');
+
+        Test.startTest();
+        FinancialTransactionController.allocateReceipt(bank.Id);
+        Test.stopTest();
+
+        System.assertEquals(85000, allocated(bank.Id, 'Flat'), 'bank 75000 + 10000 of the customer share');
+        System.assertEquals(0, advanceOf(bank.Id));
+    }
+
     @isTest
     static void allocateReceipt_excessCreatesAdvance() {
         // Amount far exceeds any pending -> Step 4 creates an Advance_Payment__c.

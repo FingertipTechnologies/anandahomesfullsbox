@@ -11,6 +11,7 @@ import resolveConfigurationForRecord from '@salesforce/apex/PostSalesAdminContro
 import getEmailTemplateOptions from '@salesforce/apex/PostSalesAdminController.getEmailTemplateOptions';
 import getProjects from '@salesforce/apex/BulkDemandController.getProjects';
 import getProjectTowers from '@salesforce/apex/BulkDemandController.getProjectTowers';
+import getMilestoneImageCount from '@salesforce/apex/ProjectStatusReportController.getMilestoneImageCount';
 
 export default class BulkRaiseDemand extends LightningElement {
     @api recordId;
@@ -344,9 +345,52 @@ export default class BulkRaiseDemand extends LightningElement {
         this.loadMilestones(this.selectedTowerId);
     }
 
+    // Site photos of the selected milestone (Files on its Master Payment Schedule). They go on the
+    // Project Status Report attached to the demand email; when there is none, the user is asked
+    // to upload one here (user 2026-11-25).
+    @track milestoneImageCount = null;
+
+    get showMilestonePhotoPanel() {
+        return !!this.selectedMilestoneId && this.milestoneImageCount !== null;
+    }
+
+    get milestoneHasNoPhoto() {
+        return this.milestoneImageCount === 0;
+    }
+
+    get milestonePhotoMessage() {
+        return this.milestoneImageCount === 1
+            ? '1 site photo is on file for this milestone. It will appear on the Project Status Report sent with the demand.'
+            : this.milestoneImageCount + ' site photos are on file for this milestone. The latest 3 will appear on the Project Status Report sent with the demand.';
+    }
+
+    get photoAcceptedFormats() {
+        return ['.png', '.jpg', '.jpeg', '.gif'];
+    }
+
+    loadMilestoneImageCount() {
+        const msId = this.selectedMilestoneId;
+        this.milestoneImageCount = null;
+        if (!msId) return;
+        getMilestoneImageCount({ masterId: msId })
+            .then(count => {
+                if (this.selectedMilestoneId === msId) this.milestoneImageCount = count || 0;
+            })
+            .catch(() => {
+                this.milestoneImageCount = null;
+            });
+    }
+
+    handleMilestonePhotoUploaded(event) {
+        const files = (event.detail && event.detail.files) || [];
+        this.showToast('Success', files.length + ' photo(s) saved to the milestone.', 'success');
+        this.loadMilestoneImageCount();
+    }
+
     handleMilestoneSelect(event) {
         const msId = event.currentTarget.dataset.id;
         this.selectedMilestoneId = msId;
+        this.loadMilestoneImageCount();
         // Update card styling
         this.milestones = this.milestones.map(ms => ({
             ...ms,

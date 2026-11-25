@@ -138,6 +138,28 @@
                                             </div>
                                         </template>
                                     </div>
+                                    <template if:true={showMilestonePhotoPanel}>
+                                        <div class="slds-box slds-m-top_medium">
+                                            <template if:true={milestoneHasNoPhoto}>
+                                                <div class="info-banner slds-m-bottom_small">
+                                                    <lightning-icon icon-name="utility:warning" size="small" variant="warning"></lightning-icon>
+                                                    <span>No site photo is on file for this milestone. Upload one so it shows on the
+                                                        Project Status Report attached to the demand email (otherwise the report shows "No image").</span>
+                                                </div>
+                                            </template>
+                                            <template if:false={milestoneHasNoPhoto}>
+                                                <p class="slds-m-bottom_small">{milestonePhotoMessage}</p>
+                                            </template>
+                                            <lightning-file-upload
+                                                label="Upload site photo for this milestone"
+                                                name="milestonePhoto"
+                                                accept={photoAcceptedFormats}
+                                                record-id={selectedMilestoneId}
+                                                onuploadfinished={handleMilestonePhotoUploaded}
+                                                multiple>
+                                            </lightning-file-upload>
+                                        </div>
+                                    </template>
                                 </template>
                                 <template if:false={hasMilestones}>
                                     <div class="empty-state">

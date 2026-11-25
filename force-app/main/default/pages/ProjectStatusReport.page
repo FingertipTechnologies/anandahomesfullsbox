@@ -1,0 +1,93 @@
+<apex:page controller="ProjectStatusReportController" renderAs="pdf" applyHtmlTag="false" applyBodyTag="false"
+           showHeader="false" sidebar="false" standardStylesheets="false">
+<html>
+<head>
+    <style type="text/css">
+        @page { size: A4; margin: 14mm 12mm 16mm 12mm; }
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #222; }
+        h1 { font-size: 15pt; margin: 0 0 2px 0; text-align: center; }
+        .sub { text-align: center; font-size: 10pt; color: #555; margin-bottom: 10px; }
+        .meta { width: 100%; margin-bottom: 10px; font-size: 9.5pt; }
+        .meta td { padding: 2px 0; }
+        table.report { width: 100%; border-collapse: collapse; }
+        table.report th { background: #e8edf3; border: 1px solid #9aa5b1; padding: 5px; font-size: 9.5pt; text-align: left; }
+        table.report td { border: 1px solid #9aa5b1; padding: 5px; vertical-align: top; font-size: 9.5pt; }
+        table.report tr { page-break-inside: avoid; }
+        .status-completed { color: #1b7a3a; font-weight: bold; }
+        .status-other { color: #8a5a00; font-weight: bold; }
+        .noimg { color: #888; font-style: italic; }
+        .photo { width: 150px; max-height: 110px; margin: 0 4px 4px 0; border: 1px solid #ccc; }
+        .remarks { color: #555; font-size: 8.5pt; margin-top: 3px; }
+        .error { color: #b00020; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>Project Status Report</h1>
+    <div class="sub">
+        <apex:outputText value="{!projectName}"/>
+        <apex:outputText value=" - {!towerName}" rendered="{!NOT(ISBLANK(towerName))}"/>
+    </div>
+
+    <apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(errorMessage))}">
+        <p class="error"><apex:outputText value="{!errorMessage}"/></p>
+    </apex:outputPanel>
+
+    <apex:outputPanel layout="none" rendered="{!ISBLANK(errorMessage)}">
+        <table class="meta">
+            <tr>
+                <td><b>Report Date:</b> <apex:outputText value="{!reportDate}"/></td>
+                <td style="text-align:right;">
+                    <apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(unitName))}">
+                        <b>Unit:</b> <apex:outputText value="{!unitName}"/>
+                    </apex:outputPanel>
+                </td>
+            </tr>
+            <apex:outputPanel layout="none" rendered="{!NOT(ISBLANK(customerName))}">
+                <tr><td colspan="2"><b>Customer:</b> <apex:outputText value="{!customerName}"/></td></tr>
+            </apex:outputPanel>
+        </table>
+
+        <apex:outputPanel layout="none" rendered="{!NOT(hasRows)}">
+            <p>No milestones are set up for this tower yet.</p>
+        </apex:outputPanel>
+
+        <apex:outputPanel layout="none" rendered="{!hasRows}">
+            <table class="report">
+                <tr>
+                    <th style="width:6%;">S.No</th>
+                    <th style="width:30%;">Milestone</th>
+                    <th style="width:16%;">Status</th>
+                    <th style="width:12%;">Completed On</th>
+                    <th style="width:36%;">Site Photos</th>
+                </tr>
+                <apex:repeat value="{!rows}" var="r">
+                    <tr>
+                        <td><apex:outputText value="{!r.serialNo}"/></td>
+                        <td>
+                            <apex:outputText value="{!r.milestone}"/>
+                            <apex:outputPanel layout="block" styleClass="remarks" rendered="{!NOT(ISBLANK(r.remarks))}">
+                                <apex:outputText value="{!r.remarks}"/>
+                            </apex:outputPanel>
+                        </td>
+                        <td>
+                            <span class="{!IF(r.isCompleted, 'status-completed', 'status-other')}"><apex:outputText value="{!r.status}"/></span>
+                        </td>
+                        <td><apex:outputText value="{!r.statusDate}"/></td>
+                        <td>
+                            <apex:outputPanel layout="none" rendered="{!r.hasImage}">
+                                <apex:repeat value="{!r.imageUrls}" var="img">
+                                    <img class="photo" src="{!img}"/>
+                                </apex:repeat>
+                            </apex:outputPanel>
+                            <apex:outputPanel layout="none" rendered="{!NOT(r.hasImage)}">
+                                <span class="noimg">No image</span>
+                            </apex:outputPanel>
+                        </td>
+                    </tr>
+                </apex:repeat>
+            </table>
+        </apex:outputPanel>
+    </apex:outputPanel>
+</body>
+</html>
+</apex:page>

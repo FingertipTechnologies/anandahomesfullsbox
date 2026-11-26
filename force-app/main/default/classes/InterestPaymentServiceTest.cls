@@ -46,7 +46,7 @@ private class InterestPaymentServiceTest {
             Amount_Received__c = amount, Total_Amount__c = amount, TDS_Deducted__c = 0,
             Transaction_Reference__c = 'INT-' + amount + '-' + interest,
             Receipt_Type__c = 'Installment Payment', Payment_From__c = 'Customer',
-            Interest_Paid_Amount__c = interest,
+            Interest_Amount__c = interest,
             Approval_Status__c = PostSalesConstants.APPROVAL_STATUS_PENDING_APPROVAL);
         insert r;
         return r;

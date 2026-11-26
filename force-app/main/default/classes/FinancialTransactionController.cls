@@ -601,7 +601,7 @@ public without sharing class FinancialTransactionController {
             receipt.Remarks__c = wrapper.remarks;
             receipt.Total_Amount__c = wrapper.amountReceived;
             receipt.Receipt_Type__c = wrapper.receiptType;
-            receipt.Interest_Paid_Amount__c = interestPart > 0 ? interestPart : null;
+            receipt.Interest_Amount__c = interestPart > 0 ? interestPart : null;
             // Persist the allocation inputs so the SAME allocation can be run later, on approval.
             receipt.Use_Advances__c = wrapper.useAdvances == true;
             receipt.Use_Credits__c = wrapper.useCredits == true;
@@ -646,7 +646,7 @@ public without sharing class FinancialTransactionController {
     public static ReceiptResult allocateReceipt(Id receiptId) {
             Receipt__c receipt = [
                 SELECT Id, Name, Booking__c, Total_Amount__c, Receipt_Date__c,
-                       Receipt_Type__c, Payment_From__c, Interest_Paid_Amount__c
+                       Receipt_Type__c, Payment_From__c, Interest_Amount__c
                        , Additional_Charge__c, Use_Advances__c, Use_Credits__c,
                        New_Advance_Created__c, Created_Advance__c,
                        Booking__r.Project__r.Legacy_Split_Demand_Receipt__c
@@ -712,7 +712,7 @@ public without sharing class FinancialTransactionController {
             // Interest part of the receipt first (user 2026-11-26): it pays the booking's unpaid delay
             // interest, oldest first (InterestPaymentService). The rest of the receipt is allocated
             // exactly as before. Interest above what is unpaid stays unallocated on the receipt.
-            Decimal interestPart = receipt.Interest_Paid_Amount__c == null ? 0 : receipt.Interest_Paid_Amount__c;
+            Decimal interestPart = receipt.Interest_Amount__c == null ? 0 : receipt.Interest_Amount__c;
             if (interestPart > 0 && !isAdditionalCharge) {
                 interestPart = Math.min(interestPart, remainingAmount);
                 InterestPaymentService.Result interestResult = InterestPaymentService.allocate(

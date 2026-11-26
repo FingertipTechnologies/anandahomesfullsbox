@@ -1,5 +1,5 @@
 /**
- * @description Allocates the Interest Amount entered on a receipt (Receipt.Interest_Paid_Amount__c, part
+ * @description Allocates the Interest Amount entered on a receipt (Receipt.Interest_Amount__c, part
  *              of its Amount Received) to the booking's unpaid delay interest (user 2026-11-26). The
  *              rest of the receipt is allocated exactly as before. Interest is paid oldest first:
  *              milestones in sequence, and on each

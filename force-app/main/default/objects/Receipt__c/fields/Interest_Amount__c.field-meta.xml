@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Interest_Amount__c</fullName>
+    <description>Optional part of the Amount Received that is delay interest (Installment Payment from the Customer only). On approval it pays the booking&apos;s unpaid interest oldest first; the rest of the receipt is allocated as usual.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Part of the Amount Received that is delay interest. It pays interest first; the rest of the receipt is allocated as usual.</inlineHelpText>
+    <label>Interest Amount</label>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>2</scale>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Currency</type>
+</CustomField>

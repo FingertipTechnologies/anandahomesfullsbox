@@ -947,16 +947,8 @@ export default class FinancialTransactionManager extends NavigationMixin(
     return this.receiptType === "Installment Payment" && this.paymentFrom === "Customer";
   }
 
-  // Enabled by default; disabled only once another receipt type or a non-Customer payer is chosen.
-  get interestAmountDisabled() {
-    return (
-      (!!this.receiptType && this.receiptType !== "Installment Payment") ||
-      (!!this.paymentFrom && this.paymentFrom !== "Customer")
-    );
-  }
-
   get hasInterestPart() {
-    return this.showInterestAmount && Number(this.interestAmount || 0) > 0;
+    return Number(this.interestAmount || 0) > 0;
   }
 
   get formattedInterestPart() {
@@ -1143,7 +1135,7 @@ export default class FinancialTransactionManager extends NavigationMixin(
         remarks: this.remarks,
         useAdvances: this.useAdvances,
         useCredits: this.useCredits,
-        interestAmount: this.showInterestAmount ? this.interestAmount : null
+        interestAmount: this.interestAmount
       };
 
       receiptData.accountNameId = this.accountNameId || null;

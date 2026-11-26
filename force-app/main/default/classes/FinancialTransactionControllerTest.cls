@@ -1935,7 +1935,20 @@ private class FinancialTransactionControllerTest {
 
         w.receiptType = 'Installment Payment';
         w.amountReceived = 1;
-        FinancialTransactionController.validateAgainstCategoryPending(w); // within the pending: no error
+        FinancialTransactionController.validateAgainstCategoryPending(w); // within the total: no error
+
+        // Receipts already on the booking count: TDS received = the booking's whole TDS, so even
+        // Rs. 1 more is over the total.
+        Decimal totalTds = 0;
+        for (Payment_Schedule__c s : [SELECT TDS_Amount__c FROM Payment_Schedule__c WHERE Booking__c = :booking.Id]) {
+            totalTds += s.TDS_Amount__c == null ? 0 : s.TDS_Amount__c;
+        }
+        fx_source_receipt(booking.Id, totalTds, 'TXN-TDS-ALL', 'TDS Payment', 'Customer');
+        w.receiptType = 'TDS Payment';
+        w.amountReceived = 1;
+        error = null;
+        try { FinancialTransactionController.validateAgainstCategoryPending(w); } catch (Exception e) { error = e.getMessage(); }
+        System.assert(error != null && error.contains('total TDS'), error);
     }
 
     /** The other side's open demand on the milestone is paid first by the spill-over. */

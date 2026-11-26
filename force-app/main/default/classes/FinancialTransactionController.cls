@@ -612,23 +612,26 @@ public without sharing class FinancialTransactionController {
         }
     }
 
-    /**
-     * @description Refuses a receipt larger than what is still pending in its category on the
-     *              booking (less receipts of the same type already awaiting approval):
-     *              Installment = flat (flat + GST on combined projects), GST Amount = GST,
-     *              TDS Payment = TDS, Additional Charge = that charge's pending. Other receipt types
-     *              are not checked.
-     */
-    /** Marks the "amount above pending" message so the receipt screen can ask to proceed. */
+    /** Marks the "amount above the total" message so the receipt screen can ask to proceed. */
     public static final String EXCEEDS_PENDING_PREFIX = 'EXCEEDS_PENDING|';
 
     /** Set while the booking-amount receipt is created with the booking (no schedules yet). */
     @TestVisible
     private static Boolean skipCategoryCheck = false;
-    /** Older tests build receipts without realistic pending amounts; tests of the check switch it on. */
+    /** Older tests build receipts without realistic amounts; tests of the check switch it on. */
     @TestVisible
     private static Boolean categoryCheckInTests = false;
 
+    /**
+     * @description Warns (the receipt screen asks "Do you still want to proceed?") when the TOTAL
+     *              received in the receipt's category - all non-rejected receipts of that category
+     *              on the booking plus this one - would go past the booking's total for it
+     *              (user 2026-11-26):
+     *              - Legacey (split projects): Flat (Installment), GST and TDS, each on its own;
+     *              - other projects: Flat + GST together (Installment / GST receipts), and TDS;
+     *              - Additional Charge: the selected charge's pending.
+     *              Other receipt types are not checked.
+     */
     @TestVisible
     private static void validateAgainstCategoryPending(ReceiptWrapper wrapper) {
         if (wrapper == null || wrapper.bookingId == null || wrapper.amountReceived == null
@@ -636,8 +639,7 @@ public without sharing class FinancialTransactionController {
             return;
         }
         String type = wrapper.receiptType;
-        Decimal pending;
-        String category;
+
         if (type == PostSalesConstants.RECEIPT_TYPE_ADDITIONAL_CHARGE) {
             if (wrapper.additionalChargeId == null) return;
             List<Additional_Charge__c> charges = [
@@ -645,62 +647,85 @@ public without sharing class FinancialTransactionController {
                 WHERE Id = :wrapper.additionalChargeId LIMIT 1
             ];
             if (charges.isEmpty()) return;
-            pending = additionalChargePending(charges[0]);
-            category = 'amount of the selected additional charge';
-        } else if (type == 'Installment Payment' || type == 'GST Amount' || type == 'TDS Payment') {
-            Booking__c b = [
-                SELECT Project__r.Legacy_Split_Demand_Receipt__c FROM Booking__c
-                WHERE Id = :wrapper.bookingId LIMIT 1
-            ];
-            Boolean legacySplit = b.Project__r != null && b.Project__r.Legacy_Split_Demand_Receipt__c == true;
-            Decimal flat = 0, gst = 0, tds = 0;
-            for (Payment_Schedule__c ps : [
-                SELECT Payment_Schedule_Amount__c, Payment_Schedule_Amount_Pending__c,
-                       GST_Amount__c, GST_Amount_Pending__c, TDS_Amount__c, TDS_Amount_Pending__c
-                FROM Payment_Schedule__c
-                WHERE Booking__c = :wrapper.bookingId AND Pending_Amount__c > 0
-            ]) {
-                flat += ps.Payment_Schedule_Amount_Pending__c ?? (ps.Payment_Schedule_Amount__c ?? 0);
-                gst += ps.GST_Amount_Pending__c ?? (ps.GST_Amount__c ?? 0);
-                tds += ps.TDS_Amount_Pending__c ?? (ps.TDS_Amount__c ?? 0);
+            Decimal chargePending = additionalChargePending(charges[0]);
+            if (wrapper.amountReceived > chargePending) {
+                throwExceeds('You have exceeded the pending amount: the receipt amount Rs. '
+                    + wrapper.amountReceived.setScale(2).format()
+                    + ' is more than the selected additional charge still pending (Rs. '
+                    + chargePending.setScale(2).format() + '). The extra Rs. '
+                    + (wrapper.amountReceived - chargePending).setScale(2).format()
+                    + ' will stay unallocated on the receipt.');
             }
-            if (type == 'TDS Payment') {
-                pending = tds;
-                category = 'TDS';
-            } else if (type == 'GST Amount') {
-                pending = gst;
-                category = 'GST';
-            } else {
-                pending = legacySplit ? flat : flat + gst;
-                category = legacySplit ? 'flat amount' : 'flat + GST amount';
-            }
-        } else {
             return;
         }
+        if (type != 'Installment Payment' && type != 'GST Amount' && type != 'TDS Payment') return;
 
-        Decimal awaiting = 0;
+        Booking__c b = [
+            SELECT Project__r.Legacy_Split_Demand_Receipt__c FROM Booking__c
+            WHERE Id = :wrapper.bookingId LIMIT 1
+        ];
+        Boolean legacySplit = b.Project__r != null && b.Project__r.Legacy_Split_Demand_Receipt__c == true;
+
+        Decimal flat = 0, gst = 0, tds = 0;
+        for (Payment_Schedule__c ps : [
+            SELECT Payment_Schedule_Amount__c, GST_Amount__c, TDS_Amount__c
+            FROM Payment_Schedule__c WHERE Booking__c = :wrapper.bookingId
+        ]) {
+            flat += ps.Payment_Schedule_Amount__c ?? 0;
+            gst += ps.GST_Amount__c ?? 0;
+            tds += ps.TDS_Amount__c ?? 0;
+        }
+
+        Set<String> types;
+        Decimal total;
+        String category;
+        if (type == 'TDS Payment') {
+            types = new Set<String>{ 'TDS Payment' };
+            total = tds;
+            category = 'TDS';
+        } else if (legacySplit && type == 'GST Amount') {
+            types = new Set<String>{ 'GST Amount' };
+            total = gst;
+            category = 'GST';
+        } else if (legacySplit) {
+            types = new Set<String>{ 'Installment Payment' };
+            total = flat;
+            category = 'Flat';
+        } else {
+            types = new Set<String>{ 'Installment Payment', 'GST Amount' };
+            total = flat + gst;
+            category = 'Flat + GST';
+        }
+
+        Decimal received = 0;
         for (AggregateResult ar : [
             SELECT SUM(Total_Amount__c) total FROM Receipt__c
-            WHERE Booking__c = :wrapper.bookingId AND Receipt_Type__c = :type
-            AND Approval_Status__c IN :PENDING_RECEIPT_APPROVAL_STATUSES
+            WHERE Booking__c = :wrapper.bookingId AND Receipt_Type__c IN :types
+            AND Approval_Status__c != :PostSalesConstants.APPROVAL_STATUS_REJECTED
         ]) {
-            Decimal total = (Decimal) ar.get('total');
-            awaiting += total == null ? 0 : total;
+            Decimal sum = (Decimal) ar.get('total');
+            received += sum == null ? 0 : sum;
         }
-        Decimal available = Math.max(0, (pending == null ? 0 : pending) - awaiting).setScale(2);
-        if (wrapper.amountReceived > available) {
-            // The receipt screen recognises EXCEEDS_PENDING_PREFIX and asks the user whether to go
-            // ahead; on yes it resends with confirmExcess = true and the extra stays unallocated.
-            String msg = EXCEEDS_PENDING_PREFIX + 'You have exceeded the pending amount: the receipt amount Rs. '
-                + wrapper.amountReceived.setScale(2).format()
-                + ' is more than the ' + category + ' still pending on this booking (Rs. '
-                + available.format() + (awaiting > 0 ? ', after receipts already awaiting approval' : '')
-                + '). The extra Rs. ' + (wrapper.amountReceived - available).setScale(2).format()
-                + ' will stay unallocated on the receipt.';
-            AuraHandledException ex = new AuraHandledException(msg);
-            ex.setMessage(msg);
-            throw ex;
+
+        Decimal afterThis = received + wrapper.amountReceived;
+        if (afterThis > total) {
+            Decimal extra = afterThis - total;
+            throwExceeds('You have exceeded the total ' + category + ' amount: with this receipt of Rs. '
+                + wrapper.amountReceived.setScale(2).format() + ' the total ' + category
+                + ' received on this booking would be Rs. ' + afterThis.setScale(2).format()
+                + ' (already received Rs. ' + received.setScale(2).format() + ') against its total '
+                + category + ' of Rs. ' + total.setScale(2).format() + '. The extra Rs. '
+                + extra.setScale(2).format() + ' will stay unallocated on the receipt.');
         }
+    }
+
+    /** The receipt screen recognises EXCEEDS_PENDING_PREFIX and asks the user whether to go ahead;
+     *  on yes it resends with confirmExcess = true. */
+    private static void throwExceeds(String message) {
+        String msg = EXCEEDS_PENDING_PREFIX + message;
+        AuraHandledException ex = new AuraHandledException(msg);
+        ex.setMessage(msg);
+        throw ex;
     }
 
     // ==================== ALLOCATE RECEIPT (runs on approval) ====================

@@ -367,7 +367,7 @@
                   </lightning-combobox>
                 </div>
               </div>
-              <template if:true={showInterestAmount}>
+              <template if:false={isAdditionalChargeReceipt}>
                 <div class="form-row">
                   <div class="form-field">
                     <label class="field-label">Interest Amount (optional)</label>
@@ -375,7 +375,7 @@
                       type="number"
                       value={interestAmount}
                       onchange={handleInterestAmountChange}
-                      onfocus={loadUnpaidInterest}
+                      disabled={interestAmountDisabled}
                       variant="label-hidden"
                       step="0.01"
                       min="0"
@@ -383,9 +383,14 @@
                     >
                     </lightning-input>
                     <div class="slds-text-color_weak slds-text-body_small slds-m-top_xx-small">
-                      Part of the Amount Received that is delay interest. It pays interest first (oldest
-                      first); the rest of the receipt is allocated as usual.
-                      <template if:true={unpaidInterest}> Unpaid interest: <strong>{formattedUnpaidInterest}</strong>.</template>
+                      Unpaid interest on this booking: <strong>{formattedUnpaidInterest}</strong>.
+                      <template if:true={showInterestAmount}>
+                        Part of the Amount Received that is delay interest. It pays interest first (oldest
+                        first); the rest of the receipt is allocated as usual.
+                      </template>
+                      <template if:false={showInterestAmount}>
+                        Can be entered only on an Installment Payment from the Customer.
+                      </template>
                     </div>
                   </div>
                 </div>
@@ -624,6 +629,16 @@
                       >+ {formattedAmountToApply}</span
                     >
                   </div>
+                  <template if:true={hasInterestPart}>
+                    <div class="impact-item">
+                      <span class="impact-label">Interest Paid (from the above)</span>
+                      <span class="impact-value positive">{formattedInterestPart}</span>
+                    </div>
+                    <div class="impact-item">
+                      <span class="impact-label">Interest Pending After</span>
+                      <span class="impact-value">{formattedInterestPendingAfter}</span>
+                    </div>
+                  </template>
                   <template if:true={hasCreditsToUse}>
                     <div class="impact-item">
                       <span class="impact-label">Credits Utilized</span>
@@ -830,6 +845,11 @@
                         <span class="history-date">{txn.formattedDate}</span>
                         <span class={txn.statusClass}>{txn.status}</span>
                       </div>
+                      <template if:true={txn.hasInterest}>
+                        <div class="history-secondary">
+                          <span class="history-date">Interest: {txn.formattedInterest}</span>
+                        </div>
+                      </template>
                     </div>
                     <lightning-icon
                       icon-name="utility:chevronright"

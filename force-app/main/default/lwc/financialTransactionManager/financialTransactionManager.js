@@ -197,6 +197,7 @@ export default class FinancialTransactionManager extends NavigationMixin(
     try {
       await Promise.all([
         this.loadBookingSummary(),
+        this.loadUnpaidInterest(),
         this.loadProjectAccountOptions(),
         this.loadOpenDemands(),
         this.loadAvailableCredits(),
@@ -346,7 +347,9 @@ export default class FinancialTransactionManager extends NavigationMixin(
         iconClass: iconClassMap[this.activeTab] || "history-icon",
         statusClass: statusClassMap[txn.status] || "status-badge",
         formattedAmount: this.formatCurrency(txn.amount),
-        formattedDate: this.formatDate(txn.transactionDate)
+        formattedDate: this.formatDate(txn.transactionDate),
+        hasInterest: Number(txn.interestAmount || 0) > 0,
+        formattedInterest: this.formatCurrency(txn.interestAmount)
       };
     });
   }
@@ -944,6 +947,23 @@ export default class FinancialTransactionManager extends NavigationMixin(
     return this.receiptType === "Installment Payment" && this.paymentFrom === "Customer";
   }
 
+  get interestAmountDisabled() {
+    return !this.showInterestAmount;
+  }
+
+  get hasInterestPart() {
+    return this.showInterestAmount && Number(this.interestAmount || 0) > 0;
+  }
+
+  get formattedInterestPart() {
+    return this.formatCurrency(Number(this.interestAmount || 0));
+  }
+
+  get formattedInterestPendingAfter() {
+    const after = Math.max(0, Number(this.unpaidInterest || 0) - Number(this.interestAmount || 0));
+    return this.formatCurrency(after);
+  }
+
   get formattedUnpaidInterest() {
     const value = Number(this.unpaidInterest || 0);
     return "\u20B9" + value.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -955,8 +975,8 @@ export default class FinancialTransactionManager extends NavigationMixin(
   }
 
   loadUnpaidInterest() {
-    if (!this.recordId) return;
-    getUnpaidInterest({ bookingId: this.recordId })
+    if (!this.recordId) return Promise.resolve();
+    return getUnpaidInterest({ bookingId: this.recordId })
       .then((value) => {
         this.unpaidInterest = value || 0;
       })

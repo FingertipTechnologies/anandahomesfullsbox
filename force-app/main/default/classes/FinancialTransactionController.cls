@@ -1738,7 +1738,7 @@ public without sharing class FinancialTransactionController {
             
             if (transactionType == PostSalesConstants.TRANSACTION_TYPE_RECEIPT) {
                 List<Receipt__c> receipts = [
-                    SELECT Id, Name, Receipt_Date__c, Amount_Received__c, Approval_Status__c
+                    SELECT Id, Name, Receipt_Date__c, Amount_Received__c, Approval_Status__c, Interest_Amount__c
                     FROM Receipt__c
                     WHERE Booking__c = :bookingId
                     ORDER BY Receipt_Date__c DESC
@@ -1751,6 +1751,7 @@ public without sharing class FinancialTransactionController {
                     item.number_x = r.Name;
                     item.transactionDate = r.Receipt_Date__c;
                     item.amount = r.Amount_Received__c;
+                    item.interestAmount = r.Interest_Amount__c;
                     item.status = mapApprovalStatus(r.Approval_Status__c);
                     historyItems.add(item);
                 }
@@ -1835,6 +1836,8 @@ public without sharing class FinancialTransactionController {
         @AuraEnabled public String number_x { get; set; }
         @AuraEnabled public Date transactionDate;
         @AuraEnabled public Decimal amount;
+        /** Interest part of a receipt (Receipt Interest Amount), shown under the amount. */
+        @AuraEnabled public Decimal interestAmount;
         @AuraEnabled public String status;
     }
     

@@ -509,6 +509,26 @@
                 <identifier>RecordFacing__cField</identifier>
             </fieldInstance>
         </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.AGPA_Date__c</fieldItem>
+                <identifier>RecordAGPA_Date_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
+        <itemInstances>
+            <fieldInstance>
+                <fieldInstanceProperties>
+                    <name>uiBehavior</name>
+                    <value>none</value>
+                </fieldInstanceProperties>
+                <fieldItem>Record.AGPA_Number__c</fieldItem>
+                <identifier>RecordAGPA_Number_cField</identifier>
+            </fieldInstance>
+        </itemInstances>
         <name>Facet-7fbb5486-99c3-4e73-963a-ff1c60c8d5e7</name>
         <type>Facet</type>
     </flexiPageRegions>

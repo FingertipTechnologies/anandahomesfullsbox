@@ -350,12 +350,6 @@ public without sharing class FinancialTransactionController {
         return PostSalesConstants.getPicklistValues('refundReason');
     }
 
-    /** Delay interest still unpaid on the booking (shown when Receipt Type = Interest Payment). */
-    @AuraEnabled
-    public static Decimal getUnpaidInterest(Id bookingId) {
-        return bookingId == null ? 0 : InterestPaymentService.unpaidInterest(bookingId);
-    }
-
     @AuraEnabled(cacheable=true)
     public static List<PostSalesConstants.PicklistOption> getReceiptTypeOptions() {
         return PostSalesConstants.getPicklistValues('receiptType');
@@ -621,8 +615,8 @@ public without sharing class FinancialTransactionController {
      * @description Refuses a receipt larger than what is still pending in its category on the
      *              booking (less receipts of the same type already awaiting approval):
      *              Installment = flat (flat + GST on combined projects), GST Amount = GST,
-     *              TDS Payment = TDS, Interest Payment = unpaid interest, Additional Charge = that
-     *              charge's pending. Other receipt types are not checked.
+     *              TDS Payment = TDS, Additional Charge = that charge's pending. Other receipt types
+     *              are not checked.
      */
     /** Set while the booking-amount receipt is created with the booking (no schedules yet). */
     @TestVisible
@@ -649,9 +643,6 @@ public without sharing class FinancialTransactionController {
             if (charges.isEmpty()) return;
             pending = additionalChargePending(charges[0]);
             category = 'amount of the selected additional charge';
-        } else if (type == InterestPaymentService.RECEIPT_TYPE) {
-            pending = InterestPaymentService.unpaidInterest(wrapper.bookingId);
-            category = 'interest';
         } else if (type == 'Installment Payment' || type == 'GST Amount' || type == 'TDS Payment') {
             Booking__c b = [
                 SELECT Project__r.Legacy_Split_Demand_Receipt__c FROM Booking__c
@@ -778,23 +769,6 @@ public without sharing class FinancialTransactionController {
             Boolean isAdditionalCharge =
                 PostSalesConstants.RECEIPT_TYPE_ADDITIONAL_CHARGE.equals(wrapper.receiptType);
             Additional_Charge__c chargeToUpdate;
-            // Interest Payment receipts pay only the delay interest (InterestPaymentService); they skip
-            // advances / payment schedules / demands entirely (Steps 1-3 below are no-ops for them).
-            Boolean isInterestPayment = InterestPaymentService.RECEIPT_TYPE.equals(wrapper.receiptType);
-            if (isInterestPayment) {
-                if (receipt.Payment_From__c == 'Bank') {
-                    String msg = 'Interest receipts must be paid by the Customer.';
-                    AuraHandledException bankInterest = new AuraHandledException(msg);
-                    bankInterest.setMessage(msg);
-                    throw bankInterest;
-                }
-                InterestPaymentService.Result interestResult = InterestPaymentService.allocate(
-                    receipt.Id, wrapper.bookingId, remainingAmount, sequence);
-                lineItems.addAll(interestResult.lines);
-                sequence += interestResult.lines.size();
-                remainingAmount = interestResult.remaining;
-                allocatedToDemands += interestResult.allocated;
-            }
 
             if (isAdditionalCharge) {
                 if (wrapper.additionalChargeId == null) {
@@ -844,7 +818,7 @@ public without sharing class FinancialTransactionController {
             }
 
             // Step 1: Utilize Advances (if enabled)
-            if (wrapper.useAdvances == true && !isAdditionalCharge && !isInterestPayment) {
+            if (wrapper.useAdvances == true && !isAdditionalCharge) {
                 List<Advance_Payment__c> advances = [
                     SELECT Id, Available_Amount__c
                     FROM Advance_Payment__c
@@ -916,7 +890,7 @@ public without sharing class FinancialTransactionController {
             List<Payment_Schedule__c> pendingSchedules = new List<Payment_Schedule__c>();
             List<Demands__c> allOpenDemands = new List<Demands__c>();
 
-            if (!isAdditionalCharge && !isInterestPayment) {
+            if (!isAdditionalCharge) {
                 pendingSchedules = [
                     SELECT Id, Name, Pending_Amount__c, Sequence__c,
                            Payment_Schedule_Amount__c, GST_Amount__c,

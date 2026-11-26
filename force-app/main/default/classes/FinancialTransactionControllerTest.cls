@@ -1934,11 +1934,6 @@ private class FinancialTransactionControllerTest {
         w.receiptType = 'Installment Payment';
         w.amountReceived = 1;
         FinancialTransactionController.validateAgainstCategoryPending(w); // within the pending: no error
-
-        w.receiptType = 'Interest Payment';
-        error = null;
-        try { FinancialTransactionController.validateAgainstCategoryPending(w); } catch (Exception e) { error = e.getMessage(); }
-        System.assert(error != null && error.contains('interest'), 'no interest owed: ' + error);
     }
 
     /** The other side's open demand on the milestone is paid first by the spill-over. */

@@ -98,8 +98,8 @@ public without sharing class ProjectStatusReportController {
         for (Master_Payment_Schedule__c ms : masters) {
             MilestoneRow row = new MilestoneRow();
             row.serialNo = n++;
-            row.milestone = String.isNotBlank(ms.Milestone_Name__c) ? ms.Milestone_Name__c
-                : (String.isNotBlank(ms.Payment_Type__c) ? ms.Payment_Type__c : ms.Name);
+            // Master Payment Schedule name (user 2026-11-26) - Milestone_Name__c is not used.
+            row.milestone = ms.Name;
             row.status = String.isBlank(ms.Status__c) ? 'Not Started' : ms.Status__c;
             Date done = ms.Completed_Date__c != null ? ms.Completed_Date__c : ms.Completion_Date__c;
             row.statusDate = formatDate(done);

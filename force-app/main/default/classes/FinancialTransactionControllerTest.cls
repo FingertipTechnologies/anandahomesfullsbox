@@ -1905,52 +1905,6 @@ private class FinancialTransactionControllerTest {
         System.assertEquals(0, advanceOf(tds.Id), 'no advance');
     }
 
-    /** 2026-11-26: a receipt may not be more than what is pending in its own category. */
-    @isTest
-    static void createReceipt_refusesMoreThanCategoryPending() {
-        Booking__c booking = [SELECT Id, Project__c FROM Booking__c LIMIT 1];
-        spillSchedule(booking.Id, booking.Project__c); // flat 100000, GST 5000, TDS 1000 pending
-        FinancialTransactionController.categoryCheckInTests = true;
-        delete [SELECT Id FROM Receipt__c WHERE Booking__c = :booking.Id]; // the booking-amount receipt awaiting approval
-
-        FinancialTransactionController.ReceiptWrapper w = new FinancialTransactionController.ReceiptWrapper();
-        w.bookingId = booking.Id;
-        w.receiptType = 'TDS Payment';
-        w.paymentFrom = 'Customer';
-        w.amountReceived = 999999999;
-        String error;
-        try {
-            FinancialTransactionController.validateAgainstCategoryPending(w);
-        } catch (Exception e) {
-            error = e.getMessage();
-        }
-        System.assert(error != null && error.contains('TDS'), error);
-
-        w.receiptType = 'GST Amount';
-        error = null;
-        try { FinancialTransactionController.validateAgainstCategoryPending(w); } catch (Exception e) { error = e.getMessage(); }
-        System.assert(error != null && error.contains('GST'), error);
-
-        System.assert(error.startsWith(FinancialTransactionController.EXCEEDS_PENDING_PREFIX), 'screen marker');
-
-        w.receiptType = 'Installment Payment';
-        w.amountReceived = 1;
-        FinancialTransactionController.validateAgainstCategoryPending(w); // within the total: no error
-
-        // Receipts already on the booking count: TDS received = the booking's whole TDS, so even
-        // Rs. 1 more is over the total.
-        Decimal totalTds = 0;
-        for (Payment_Schedule__c s : [SELECT TDS_Amount__c FROM Payment_Schedule__c WHERE Booking__c = :booking.Id]) {
-            totalTds += s.TDS_Amount__c == null ? 0 : s.TDS_Amount__c;
-        }
-        fx_source_receipt(booking.Id, totalTds, 'TXN-TDS-ALL', 'TDS Payment', 'Customer');
-        w.receiptType = 'TDS Payment';
-        w.amountReceived = 1;
-        error = null;
-        try { FinancialTransactionController.validateAgainstCategoryPending(w); } catch (Exception e) { error = e.getMessage(); }
-        System.assert(error != null && error.contains('total TDS'), error);
-    }
-
     /** The other side's open demand on the milestone is paid first by the spill-over. */
     @isTest
     static void allocateReceipt_prorataCustomerExcessPaysBankDemand() {

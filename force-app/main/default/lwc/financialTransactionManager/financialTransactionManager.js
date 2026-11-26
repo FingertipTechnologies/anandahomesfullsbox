@@ -10,7 +10,6 @@ import getAvailableCredits from "@salesforce/apex/FinancialTransactionController
 import getAvailableAdvances from "@salesforce/apex/FinancialTransactionController.getAvailableAdvances";
 import getTransactionHistory from "@salesforce/apex/FinancialTransactionController.getTransactionHistory";
 import createReceiptFromBooking from "@salesforce/apex/FinancialTransactionController.createReceiptFromBooking";
-import LightningConfirm from "lightning/confirm";
 import getProjectAccountOptions from "@salesforce/apex/FinancialTransactionController.getProjectAccountOptions";
 import createCreditNote from "@salesforce/apex/FinancialTransactionController.createCreditNote";
 import createDebitNote from "@salesforce/apex/FinancialTransactionController.createDebitNote";
@@ -1087,34 +1086,9 @@ export default class FinancialTransactionManager extends NavigationMixin(
       };
 
       receiptData.accountNameId = this.accountNameId || null;
-      let result;
-      try {
-        result = await createReceiptFromBooking({
-          receiptData: JSON.stringify(receiptData)
-        });
-      } catch (error) {
-        // Amount above what is pending in the receipt's category: ask before going ahead.
-        const message = this.getErrorMessage(error) || "";
-        const marker = "EXCEEDS_PENDING|";
-        if (!message.includes(marker)) {
-          throw error;
-        }
-        const proceed = await LightningConfirm.open({
-          message:
-            message.substring(message.indexOf(marker) + marker.length) +
-            " Do you still want to proceed?",
-          variant: "header",
-          theme: "warning",
-          label: "Amount exceeds pending"
-        });
-        if (!proceed) {
-          return;
-        }
-        receiptData.confirmExcess = true;
-        result = await createReceiptFromBooking({
-          receiptData: JSON.stringify(receiptData)
-        });
-      }
+      const result = await createReceiptFromBooking({
+        receiptData: JSON.stringify(receiptData)
+      });
 
       if (result.success) {
         this.showToast(

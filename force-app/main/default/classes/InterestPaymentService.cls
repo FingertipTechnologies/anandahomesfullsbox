@@ -8,7 +8,8 @@
  *              - the milestone's Interest_Pending__c goes down, the paid Interest Line Items become
  *                Status "Paid" (a partly paid line is split into a Paid part and the unpaid rest), and
  *                Booking.Total_Interest__c is recalculated.
- *              Anything above the unpaid interest is returned to the caller (it becomes an advance).
+ *              Anything above the unpaid interest is returned to the caller (left unallocated; receipt
+ *              creation already refuses more than the unpaid interest).
  */
 public without sharing class InterestPaymentService {
 

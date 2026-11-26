@@ -559,6 +559,12 @@ public without sharing class FinancialTransactionController {
             if (duplicateCount > 0) {
                 throw new AuraHandledException('Duplicate transaction number exists');
             }
+
+            // No advances (user 2026-11-26): a receipt may not be more than what is still pending in
+            // its own category, less receipts of the same category already awaiting approval.
+            if (!skipCategoryCheck && (!Test.isRunningTest() || categoryCheckInTests)) {
+                validateAgainstCategoryPending(wrapper);
+            }
             
             // Create Receipt
             Receipt__c receipt = new Receipt__c();
@@ -608,6 +614,93 @@ public without sharing class FinancialTransactionController {
                 throw e;
             }
             throw new AuraHandledException('Unable to create receipt: ' + e.getMessage());
+        }
+    }
+
+    /**
+     * @description Refuses a receipt larger than what is still pending in its category on the
+     *              booking (less receipts of the same type already awaiting approval):
+     *              Installment = flat (flat + GST on combined projects), GST Amount = GST,
+     *              TDS Payment = TDS, Interest Payment = unpaid interest, Additional Charge = that
+     *              charge's pending. Other receipt types are not checked.
+     */
+    /** Set while the booking-amount receipt is created with the booking (no schedules yet). */
+    @TestVisible
+    private static Boolean skipCategoryCheck = false;
+    /** Older tests build receipts without realistic pending amounts; tests of the check switch it on. */
+    @TestVisible
+    private static Boolean categoryCheckInTests = false;
+
+    @TestVisible
+    private static void validateAgainstCategoryPending(ReceiptWrapper wrapper) {
+        if (wrapper == null || wrapper.bookingId == null || wrapper.amountReceived == null
+            || String.isBlank(wrapper.receiptType)) {
+            return;
+        }
+        String type = wrapper.receiptType;
+        Decimal pending;
+        String category;
+        if (type == PostSalesConstants.RECEIPT_TYPE_ADDITIONAL_CHARGE) {
+            if (wrapper.additionalChargeId == null) return;
+            List<Additional_Charge__c> charges = [
+                SELECT Amount__c, GST_Amount__c, Amount_Paid__c FROM Additional_Charge__c
+                WHERE Id = :wrapper.additionalChargeId LIMIT 1
+            ];
+            if (charges.isEmpty()) return;
+            pending = additionalChargePending(charges[0]);
+            category = 'amount of the selected additional charge';
+        } else if (type == InterestPaymentService.RECEIPT_TYPE) {
+            pending = InterestPaymentService.unpaidInterest(wrapper.bookingId);
+            category = 'interest';
+        } else if (type == 'Installment Payment' || type == 'GST Amount' || type == 'TDS Payment') {
+            Booking__c b = [
+                SELECT Project__r.Legacy_Split_Demand_Receipt__c FROM Booking__c
+                WHERE Id = :wrapper.bookingId LIMIT 1
+            ];
+            Boolean legacySplit = b.Project__r != null && b.Project__r.Legacy_Split_Demand_Receipt__c == true;
+            Decimal flat = 0, gst = 0, tds = 0;
+            for (Payment_Schedule__c ps : [
+                SELECT Payment_Schedule_Amount__c, Payment_Schedule_Amount_Pending__c,
+                       GST_Amount__c, GST_Amount_Pending__c, TDS_Amount__c, TDS_Amount_Pending__c
+                FROM Payment_Schedule__c
+                WHERE Booking__c = :wrapper.bookingId AND Pending_Amount__c > 0
+            ]) {
+                flat += ps.Payment_Schedule_Amount_Pending__c ?? (ps.Payment_Schedule_Amount__c ?? 0);
+                gst += ps.GST_Amount_Pending__c ?? (ps.GST_Amount__c ?? 0);
+                tds += ps.TDS_Amount_Pending__c ?? (ps.TDS_Amount__c ?? 0);
+            }
+            if (type == 'TDS Payment') {
+                pending = tds;
+                category = 'TDS';
+            } else if (type == 'GST Amount') {
+                pending = gst;
+                category = 'GST';
+            } else {
+                pending = legacySplit ? flat : flat + gst;
+                category = legacySplit ? 'flat amount' : 'flat + GST amount';
+            }
+        } else {
+            return;
+        }
+
+        Decimal awaiting = 0;
+        for (AggregateResult ar : [
+            SELECT SUM(Total_Amount__c) total FROM Receipt__c
+            WHERE Booking__c = :wrapper.bookingId AND Receipt_Type__c = :type
+            AND Approval_Status__c IN :PENDING_RECEIPT_APPROVAL_STATUSES
+        ]) {
+            Decimal total = (Decimal) ar.get('total');
+            awaiting += total == null ? 0 : total;
+        }
+        Decimal available = Math.max(0, (pending == null ? 0 : pending) - awaiting).setScale(2);
+        if (wrapper.amountReceived > available) {
+            String msg = 'The receipt amount Rs. ' + wrapper.amountReceived.setScale(2).format()
+                + ' is more than the ' + category + ' still pending on this booking (Rs. '
+                + available.format() + (awaiting > 0 ? ', after receipts already awaiting approval' : '')
+                + '). Enter at most Rs. ' + available.format() + '.';
+            AuraHandledException ex = new AuraHandledException(msg);
+            ex.setMessage(msg);
+            throw ex;
         }
     }
 
@@ -1223,25 +1316,13 @@ public without sharing class FinancialTransactionController {
                 }
             }
 
-            // Step 4: Create Advance if Excess
+            // Step 4: no advances any more (user 2026-11-26) - a receipt pays only its own category.
+            // Receipt creation already refuses amounts above the category's pending, so normally
+            // nothing is left; anything that still is stays visible as the receipt's unallocated
+            // amount instead of becoming an advance.
             Decimal excessAmount = remainingAmount;
             Advance_Payment__c newAdvance;
-            
-            if (excessAmount > 0) {
-                newAdvance = new Advance_Payment__c();
-                newAdvance.Booking__c = wrapper.bookingId;
-                newAdvance.Advance_Amount__c = excessAmount;
-                newAdvance.Advance_Date__c = wrapper.receiptDate;
-                newAdvance.Source_Receipt__c = receipt.Id;
-                newAdvance.Auto_Utilize__c = true;
-                newAdvance.Remarks__c = System.Label.Excess_Payment_Remark != null ? System.Label.Excess_Payment_Remark : 'Excess payment from Receipt';
-                
-                insert newAdvance;
-                
-                receipt.New_Advance_Created__c = excessAmount;
-                receipt.Created_Advance__c = newAdvance.Id;
-            }
-            
+
             // Insert all line items
             if (!lineItems.isEmpty()) {
                 insert lineItems;
@@ -1439,7 +1520,15 @@ public without sharing class FinancialTransactionController {
                 w.useCredits        = (req.useCredits  != null) ? req.useCredits  : true;
 
                 // Reuse the existing logic exactly as-is
-                ReceiptResult rr = createReceipt(JSON.serialize(w));
+                // The booking-amount receipt is raised with the booking, before its payment schedules
+                // exist - it is not checked against the category pending.
+                skipCategoryCheck = true;
+                ReceiptResult rr;
+                try {
+                    rr = createReceipt(JSON.serialize(w));
+                } finally {
+                    skipCategoryCheck = false;
+                }
 
                 res.success            = rr.success;
                 res.message            = rr.message;

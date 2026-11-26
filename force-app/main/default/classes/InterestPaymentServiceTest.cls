@@ -93,17 +93,18 @@ private class InterestPaymentServiceTest {
     }
 
     @isTest
-    static void excessOverUnpaidInterestBecomesAdvance() {
+    static void excessOverUnpaidInterestStaysUnallocated() {
         Booking__c b = booking();
         schedulesWithInterest(b.Id);
         Receipt__c r = interestReceipt(b.Id, 2000, 'Customer');
 
         Test.startTest();
-        FinancialTransactionController.allocateReceipt(r.Id);
+        FinancialTransactionController.ReceiptResult res = FinancialTransactionController.allocateReceipt(r.Id);
         Test.stopTest();
 
-        System.assertEquals(500, [SELECT New_Advance_Created__c FROM Receipt__c WHERE Id = :r.Id].New_Advance_Created__c,
-            '1500 unpaid interest, 500 extra');
+        // 1500 unpaid interest, 500 extra - no advance (2026-11-26).
+        System.assertEquals(500, res.excessAmount);
+        System.assertEquals(null, [SELECT Created_Advance__c FROM Receipt__c WHERE Id = :r.Id].Created_Advance__c);
         System.assertEquals(0, InterestPaymentService.unpaidInterest(b.Id));
     }
 

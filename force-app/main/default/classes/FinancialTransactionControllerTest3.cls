@@ -107,12 +107,12 @@ private class FinancialTransactionControllerTest3 {
         return ac;
     }
 
+    /** An advance from before 2026-11-26 (receipts no longer create advances; old ones can still be used). */
     private static Advance_Payment__c makeAdvance(Id bId, Decimal amt) {
-        Receipt__c sourceReceipt = makeReceipt(bId, amt, null, null, false);
-        FinancialTransactionController.ReceiptResult result =
-            FinancialTransactionController.allocateReceipt(sourceReceipt.Id);
-        return [SELECT Id FROM Advance_Payment__c
-                WHERE Id = :result.newAdvanceId];
+        Advance_Payment__c adv = new Advance_Payment__c(Booking__c = bId, Advance_Amount__c = amt,
+            Advance_Date__c = Date.today(), Auto_Utilize__c = true);
+        insert as system adv;
+        return adv;
     }
 
     private static Integer lineCount(Id receiptId) {
@@ -231,11 +231,11 @@ private class FinancialTransactionControllerTest3 {
         System.assertEquals(0, afterSchedule.Pending_Amount__c);
         System.assertEquals(1000, afterDemand.Paid_Amount__c);
         System.assertEquals(400, afterDemand.Pending_Amount__c);
-        System.assertEquals(1,
+        System.assertEquals(0,
             [SELECT COUNT()
              FROM Advance_Payment__c
              WHERE Booking__c = :bId],
-            'Receipt value beyond schedule pending should remain as an advance');
+            'No advances (2026-11-26): value beyond schedule pending stays unallocated on the receipt');
     }
 
     @isTest
@@ -540,7 +540,7 @@ private class FinancialTransactionControllerTest3 {
     // ============================================================
 
     @isTest
-    static void allocate_excessAmount_createsAdvance() {
+    static void allocate_excessAmount_noAdvance() {
         Id bId = bookingId();
         makeSchedule(bId, 1, 80, 20);
         Receipt__c r = makeReceipt(bId, 99999999, null, null, false);
@@ -550,10 +550,12 @@ private class FinancialTransactionControllerTest3 {
             FinancialTransactionController.allocateReceipt(r.Id);
         Test.stopTest();
 
+        // No advances (2026-11-26): the excess stays unallocated on the receipt.
         System.assert(res.excessAmount > 0);
-        System.assertNotEquals(null, res.newAdvanceId);
+        System.assertEquals(null, res.newAdvanceId);
         Receipt__c after = [SELECT New_Advance_Created__c, Created_Advance__c FROM Receipt__c WHERE Id = :r.Id];
-        System.assertEquals(res.newAdvanceId, after.Created_Advance__c);
+        System.assertEquals(null, after.Created_Advance__c);
+        System.assertEquals(0, [SELECT COUNT() FROM Advance_Payment__c WHERE Booking__c = :bId]);
     }
 
     // ============================================================
@@ -657,7 +659,7 @@ private class FinancialTransactionControllerTest3 {
     }
 
     @isTest
-    static void allocate_additionalCharge_excessBecomesAdvance() {
+    static void allocate_additionalCharge_excessStaysUnallocated() {
         Id bId = bookingId();
         Additional_Charge__c ac = makeCharge(bId, 400, 100, 200); // pending 300
         Receipt__c r = makeReceipt(bId, 500,
@@ -669,7 +671,7 @@ private class FinancialTransactionControllerTest3 {
         Test.stopTest();
 
         System.assertEquals(200, res.excessAmount);
-        System.assertNotEquals(null, res.newAdvanceId);
+        System.assertEquals(null, res.newAdvanceId, 'no advances (2026-11-26)');
     }
 
     @isTest

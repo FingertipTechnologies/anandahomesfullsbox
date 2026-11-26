@@ -1931,6 +1931,8 @@ private class FinancialTransactionControllerTest {
         try { FinancialTransactionController.validateAgainstCategoryPending(w); } catch (Exception e) { error = e.getMessage(); }
         System.assert(error != null && error.contains('GST'), error);
 
+        System.assert(error.startsWith(FinancialTransactionController.EXCEEDS_PENDING_PREFIX), 'screen marker');
+
         w.receiptType = 'Installment Payment';
         w.amountReceived = 1;
         FinancialTransactionController.validateAgainstCategoryPending(w); // within the pending: no error

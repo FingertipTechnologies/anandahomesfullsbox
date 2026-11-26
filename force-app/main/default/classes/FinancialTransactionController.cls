@@ -556,7 +556,8 @@ public without sharing class FinancialTransactionController {
 
             // No advances (user 2026-11-26): a receipt may not be more than what is still pending in
             // its own category, less receipts of the same category already awaiting approval.
-            if (!skipCategoryCheck && (!Test.isRunningTest() || categoryCheckInTests)) {
+            if (!skipCategoryCheck && wrapper.confirmExcess != true
+                && (!Test.isRunningTest() || categoryCheckInTests)) {
                 validateAgainstCategoryPending(wrapper);
             }
             
@@ -618,6 +619,9 @@ public without sharing class FinancialTransactionController {
      *              TDS Payment = TDS, Additional Charge = that charge's pending. Other receipt types
      *              are not checked.
      */
+    /** Marks the "amount above pending" message so the receipt screen can ask to proceed. */
+    public static final String EXCEEDS_PENDING_PREFIX = 'EXCEEDS_PENDING|';
+
     /** Set while the booking-amount receipt is created with the booking (no schedules yet). */
     @TestVisible
     private static Boolean skipCategoryCheck = false;
@@ -685,10 +689,14 @@ public without sharing class FinancialTransactionController {
         }
         Decimal available = Math.max(0, (pending == null ? 0 : pending) - awaiting).setScale(2);
         if (wrapper.amountReceived > available) {
-            String msg = 'The receipt amount Rs. ' + wrapper.amountReceived.setScale(2).format()
+            // The receipt screen recognises EXCEEDS_PENDING_PREFIX and asks the user whether to go
+            // ahead; on yes it resends with confirmExcess = true and the extra stays unallocated.
+            String msg = EXCEEDS_PENDING_PREFIX + 'You have exceeded the pending amount: the receipt amount Rs. '
+                + wrapper.amountReceived.setScale(2).format()
                 + ' is more than the ' + category + ' still pending on this booking (Rs. '
                 + available.format() + (awaiting > 0 ? ', after receipts already awaiting approval' : '')
-                + '). Enter at most Rs. ' + available.format() + '.';
+                + '). The extra Rs. ' + (wrapper.amountReceived - available).setScale(2).format()
+                + ' will stay unallocated on the receipt.';
             AuraHandledException ex = new AuraHandledException(msg);
             ex.setMessage(msg);
             throw ex;
@@ -1963,6 +1971,8 @@ public without sharing class FinancialTransactionController {
     // PicklistOption is now defined in PostSalesConstants
     
     public class ReceiptWrapper {
+        /** User confirmed a receipt above its category's pending (the extra stays unallocated). */
+        public Boolean confirmExcess;
         public Id bookingId;
         public Id accountNameId;
         public Date receiptDate;

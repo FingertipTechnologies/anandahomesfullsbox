@@ -384,11 +384,11 @@
                     </lightning-input>
                     <div class="slds-text-color_weak slds-text-body_small slds-m-top_xx-small">
                       Unpaid interest on this booking: <strong>{formattedUnpaidInterest}</strong>.
-                      <template if:true={showInterestAmount}>
+                      <template if:false={interestAmountDisabled}>
                         Part of the Amount Received that is delay interest. It pays interest first (oldest
                         first); the rest of the receipt is allocated as usual.
                       </template>
-                      <template if:false={showInterestAmount}>
+                      <template if:true={interestAmountDisabled}>
                         Can be entered only on an Installment Payment from the Customer.
                       </template>
                     </div>

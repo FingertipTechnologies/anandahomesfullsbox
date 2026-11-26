@@ -947,8 +947,12 @@ export default class FinancialTransactionManager extends NavigationMixin(
     return this.receiptType === "Installment Payment" && this.paymentFrom === "Customer";
   }
 
+  // Enabled by default; disabled only once another receipt type or a non-Customer payer is chosen.
   get interestAmountDisabled() {
-    return !this.showInterestAmount;
+    return (
+      (!!this.receiptType && this.receiptType !== "Installment Payment") ||
+      (!!this.paymentFrom && this.paymentFrom !== "Customer")
+    );
   }
 
   get hasInterestPart() {
@@ -972,6 +976,11 @@ export default class FinancialTransactionManager extends NavigationMixin(
   handleInterestAmountChange(event) {
     const value = parseFloat(event.target.value);
     this.interestAmount = isNaN(value) ? null : value;
+    // Interest is paid only on an Installment Payment from the Customer - fill those in if still blank.
+    if (this.interestAmount > 0) {
+      if (!this.receiptType) this.receiptType = "Installment Payment";
+      if (!this.paymentFrom) this.paymentFrom = "Customer";
+    }
   }
 
   loadUnpaidInterest() {

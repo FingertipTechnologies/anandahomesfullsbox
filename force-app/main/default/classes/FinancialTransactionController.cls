@@ -949,6 +949,17 @@ public without sharing class FinancialTransactionController {
                         : (receipt.Payment_From__c == 'Bank'
                             ? bankTdsPending
                             : customerTdsPending);
+                    if (isTdsPayment) {
+                        // TDS is always the customer's and stays due after the flat it was deducted
+                        // from has been paid (by the customer or the bank). The per-side figures above
+                        // fall to 0 once a side's flat is paid, which turned TDS paid after the flat
+                        // into an advance (B-1423, 2026-11-26). A TDS receipt pays the milestone's
+                        // whole TDS pending, whatever order the receipts came in.
+                        Decimal scheduleTdsPending = ps.TDS_Amount_Pending__c ?? (ps.TDS_Amount__c ?? 0);
+                        tdsPending = Math.max(tdsPending, scheduleTdsPending);
+                        customerTdsPending = tdsPending;
+                        bankTdsPending = tdsPending;
+                    }
                 }
                 Decimal eligibleScheduleAmount = basePending + gstPending + tdsPending;
                 if (isLegacyInstallment) {

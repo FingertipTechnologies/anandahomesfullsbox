@@ -1802,9 +1802,11 @@ private class FinancialTransactionControllerTest {
         ]) {
             tdsByDemand.put(tdsLine.Demand__c, tdsLine.TDS_Amount__c);
         }
-        System.assertEquals(400, tdsByDemand.get(customerFlatDemand.Id),
+        // Customer TDS demand first, up to its own TDS (600) - TDS stays due after the flat it was
+        // deducted from is paid (2026-11-26, B-1423) - then the rest on the Bank demand.
+        System.assertEquals(600, tdsByDemand.get(customerFlatDemand.Id),
             'Customer-paid TDS must cover the Customer audience first.');
-        System.assertEquals(300, tdsByDemand.get(bankFlatDemand.Id),
+        System.assertEquals(100, tdsByDemand.get(bankFlatDemand.Id),
             'Any remaining Customer-paid TDS applies to the Bank audience second.');
     }
 
@@ -1878,6 +1880,29 @@ private class FinancialTransactionControllerTest {
         System.assertEquals(55000, onFirst, 'customer 25000 + 30000 of the bank share');
         System.assertEquals(25000, onSecond, 'customer share only');
         System.assertEquals(0, advanceOf(flat.Id));
+    }
+
+    /**
+     * B-1423 (2026-11-26): TDS paid after the bank and the customer have already paid their flat must
+     * still pay the milestone's whole TDS - it used to become an advance.
+     */
+    @isTest
+    static void allocateReceipt_prorataTdsAfterFlatPaidPaysFullTds() {
+        Booking__c booking = [SELECT Id, Project__c FROM Booking__c LIMIT 1];
+        Payment_Schedule__c ps = spillSchedule(booking.Id, booking.Project__c);
+        Receipt__c bank = fx_source_receipt(booking.Id, 75000, 'TXN-TDS-B', 'Installment Payment', 'Bank');
+        Receipt__c customer = fx_source_receipt(booking.Id, 25000, 'TXN-TDS-C', 'Installment Payment', 'Customer');
+        Receipt__c tds = fx_source_receipt(booking.Id, 1000, 'TXN-TDS-T', 'TDS Payment', 'Customer');
+
+        Test.startTest();
+        FinancialTransactionController.allocateReceipt(bank.Id);
+        FinancialTransactionController.allocateReceipt(customer.Id);
+        BookingFinancialRecalcService.recalculateForBookings(new Set<Id>{ booking.Id });
+        FinancialTransactionController.allocateReceipt(tds.Id);
+        Test.stopTest();
+
+        System.assertEquals(1000, allocated(tds.Id, 'TDS'), 'whole TDS of the milestone');
+        System.assertEquals(0, advanceOf(tds.Id), 'no advance');
     }
 
     /** The other side's open demand on the milestone is paid first by the spill-over. */

@@ -10,6 +10,7 @@ import getAvailableCredits from "@salesforce/apex/FinancialTransactionController
 import getAvailableAdvances from "@salesforce/apex/FinancialTransactionController.getAvailableAdvances";
 import getTransactionHistory from "@salesforce/apex/FinancialTransactionController.getTransactionHistory";
 import createReceiptFromBooking from "@salesforce/apex/FinancialTransactionController.createReceiptFromBooking";
+import getUnpaidInterest from "@salesforce/apex/FinancialTransactionController.getUnpaidInterest";
 import getProjectAccountOptions from "@salesforce/apex/FinancialTransactionController.getProjectAccountOptions";
 import createCreditNote from "@salesforce/apex/FinancialTransactionController.createCreditNote";
 import createDebitNote from "@salesforce/apex/FinancialTransactionController.createDebitNote";
@@ -68,6 +69,9 @@ export default class FinancialTransactionManager extends NavigationMixin(
   @track accountNameId = "";
   @track additionalChargeId = "";
   @track amountReceived = 0;
+  // Optional interest part of an Installment receipt from the Customer (user 2026-11-26).
+  @track interestAmount = null;
+  @track unpaidInterest = null;
   @track tdsAmount = 0;
   @track paymentMode = "";
   @track paymentFrom = "";
@@ -867,6 +871,7 @@ export default class FinancialTransactionManager extends NavigationMixin(
     this.receiptType = "";
     this.additionalChargeId = "";
     this.amountReceived = 0;
+    this.interestAmount = null;
     this.tdsAmount = 0;
     this.paymentMode = "";
     this.transactionNumber = "";
@@ -932,6 +937,32 @@ export default class FinancialTransactionManager extends NavigationMixin(
 
   handleAmountChange(event) {
     this.amountReceived = parseFloat(event.target.value) || 0;
+  }
+
+  // Interest Amount is offered only on an Installment Payment from the Customer.
+  get showInterestAmount() {
+    return this.receiptType === "Installment Payment" && this.paymentFrom === "Customer";
+  }
+
+  get formattedUnpaidInterest() {
+    const value = Number(this.unpaidInterest || 0);
+    return "\u20B9" + value.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  handleInterestAmountChange(event) {
+    const value = parseFloat(event.target.value);
+    this.interestAmount = isNaN(value) ? null : value;
+  }
+
+  loadUnpaidInterest() {
+    if (!this.recordId) return;
+    getUnpaidInterest({ bookingId: this.recordId })
+      .then((value) => {
+        this.unpaidInterest = value || 0;
+      })
+      .catch(() => {
+        this.unpaidInterest = null;
+      });
   }
 
   handlePaymentModeChange(event) {
@@ -1082,7 +1113,8 @@ export default class FinancialTransactionManager extends NavigationMixin(
         chequeDate: this.chequeDate,
         remarks: this.remarks,
         useAdvances: this.useAdvances,
-        useCredits: this.useCredits
+        useCredits: this.useCredits,
+        interestAmount: this.showInterestAmount ? this.interestAmount : null
       };
 
       receiptData.accountNameId = this.accountNameId || null;

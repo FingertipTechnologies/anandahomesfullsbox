@@ -3,7 +3,7 @@
     <fullName>Total_Interest__c</fullName>
     <description>Total delay interest on the booking: sum of Interest Pending on all its payment schedules. Kept up to date by the daily interest job (InterestCalculationService).</description>
     <inlineHelpText>Total delay interest calculated on this booking so far (sum of Interest Pending on all its payment schedules). Updated by the daily interest job.</inlineHelpText>
-    <label>Total Interest</label>
+    <label>Total Interest Pending</label>
     <precision>18</precision>
     <required>false</required>
     <scale>2</scale>

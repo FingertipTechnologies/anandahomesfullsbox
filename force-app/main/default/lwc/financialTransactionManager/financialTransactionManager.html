@@ -367,6 +367,29 @@
                   </lightning-combobox>
                 </div>
               </div>
+              <template if:true={showInterestAmount}>
+                <div class="form-row">
+                  <div class="form-field">
+                    <label class="field-label">Interest Amount (optional)</label>
+                    <lightning-input
+                      type="number"
+                      value={interestAmount}
+                      onchange={handleInterestAmountChange}
+                      onfocus={loadUnpaidInterest}
+                      variant="label-hidden"
+                      step="0.01"
+                      min="0"
+                      message-when-range-underflow="Interest must be a positive value"
+                    >
+                    </lightning-input>
+                    <div class="slds-text-color_weak slds-text-body_small slds-m-top_xx-small">
+                      Part of the Amount Received that is delay interest. It pays interest first (oldest
+                      first); the rest of the receipt is allocated as usual.
+                      <template if:true={unpaidInterest}> Unpaid interest: <strong>{formattedUnpaidInterest}</strong>.</template>
+                    </div>
+                  </div>
+                </div>
+              </template>
               <template if:true={isChequePayment}>
                 <div class="form-row">
                   <div class="form-field">

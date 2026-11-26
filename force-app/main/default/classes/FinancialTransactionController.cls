@@ -350,6 +350,19 @@ public without sharing class FinancialTransactionController {
         return PostSalesConstants.getPicklistValues('refundReason');
     }
 
+    /** Readable error for the receipt's Interest Amount rules (also outside the Lightning screen). */
+    private static AuraHandledException interestError(String message) {
+        AuraHandledException ex = new AuraHandledException(message);
+        ex.setMessage(message);
+        return ex;
+    }
+
+    /** Delay interest still unpaid on the booking (shown next to the receipt's Interest Amount). */
+    @AuraEnabled
+    public static Decimal getUnpaidInterest(Id bookingId) {
+        return bookingId == null ? 0 : InterestPaymentService.unpaidInterest(bookingId);
+    }
+
     @AuraEnabled(cacheable=true)
     public static List<PostSalesConstants.PicklistOption> getReceiptTypeOptions() {
         return PostSalesConstants.getPicklistValues('receiptType');
@@ -554,6 +567,21 @@ public without sharing class FinancialTransactionController {
                 throw new AuraHandledException('Duplicate transaction number exists');
             }
             
+            // Optional interest part of the receipt (user 2026-11-26): only on a customer instalment,
+            // never more than the amount received.
+            Decimal interestPart = wrapper.interestAmount == null ? 0 : wrapper.interestAmount;
+            if (interestPart < 0) {
+                throw interestError('Interest Amount cannot be negative.');
+            }
+            if (interestPart > 0) {
+                if (wrapper.receiptType != 'Installment Payment' || wrapper.paymentFrom != 'Customer') {
+                    throw interestError('Interest Amount can only be entered on an Installment Payment from the Customer.');
+                }
+                if (wrapper.amountReceived == null || interestPart > wrapper.amountReceived) {
+                    throw interestError('Interest Amount cannot be more than the Amount Received.');
+                }
+            }
+
             // Create Receipt
             Receipt__c receipt = new Receipt__c();
             receipt.Booking__c = wrapper.bookingId;
@@ -573,6 +601,7 @@ public without sharing class FinancialTransactionController {
             receipt.Remarks__c = wrapper.remarks;
             receipt.Total_Amount__c = wrapper.amountReceived;
             receipt.Receipt_Type__c = wrapper.receiptType;
+            receipt.Interest_Paid_Amount__c = interestPart > 0 ? interestPart : null;
             // Persist the allocation inputs so the SAME allocation can be run later, on approval.
             receipt.Use_Advances__c = wrapper.useAdvances == true;
             receipt.Use_Credits__c = wrapper.useCredits == true;
@@ -617,7 +646,7 @@ public without sharing class FinancialTransactionController {
     public static ReceiptResult allocateReceipt(Id receiptId) {
             Receipt__c receipt = [
                 SELECT Id, Name, Booking__c, Total_Amount__c, Receipt_Date__c,
-                       Receipt_Type__c, Payment_From__c
+                       Receipt_Type__c, Payment_From__c, Interest_Paid_Amount__c
                        , Additional_Charge__c, Use_Advances__c, Use_Credits__c,
                        New_Advance_Created__c, Created_Advance__c,
                        Booking__r.Project__r.Legacy_Split_Demand_Receipt__c
@@ -679,6 +708,20 @@ public without sharing class FinancialTransactionController {
             Boolean isAdditionalCharge =
                 PostSalesConstants.RECEIPT_TYPE_ADDITIONAL_CHARGE.equals(wrapper.receiptType);
             Additional_Charge__c chargeToUpdate;
+
+            // Interest part of the receipt first (user 2026-11-26): it pays the booking's unpaid delay
+            // interest, oldest first (InterestPaymentService). The rest of the receipt is allocated
+            // exactly as before. Interest above what is unpaid stays unallocated on the receipt.
+            Decimal interestPart = receipt.Interest_Paid_Amount__c == null ? 0 : receipt.Interest_Paid_Amount__c;
+            if (interestPart > 0 && !isAdditionalCharge) {
+                interestPart = Math.min(interestPart, remainingAmount);
+                InterestPaymentService.Result interestResult = InterestPaymentService.allocate(
+                    receipt.Id, wrapper.bookingId, interestPart, sequence);
+                lineItems.addAll(interestResult.lines);
+                sequence += interestResult.lines.size();
+                allocatedToDemands += interestResult.allocated;
+                remainingAmount -= interestPart;
+            }
 
             if (isAdditionalCharge) {
                 if (wrapper.additionalChargeId == null) {
@@ -1863,6 +1906,8 @@ public without sharing class FinancialTransactionController {
     // PicklistOption is now defined in PostSalesConstants
     
     public class ReceiptWrapper {
+        /** Optional: part of Amount Received that is delay interest (Installment, Customer only). */
+        public Decimal interestAmount;
         public Id bookingId;
         public Id accountNameId;
         public Date receiptDate;

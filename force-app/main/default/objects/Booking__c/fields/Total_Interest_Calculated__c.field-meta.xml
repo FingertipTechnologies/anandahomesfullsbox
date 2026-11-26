@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Total_Interest_Calculated__c</fullName>
+    <description>All delay interest calculated on the booking = Total Interest (still pending) + Total Interest Paid.</description>
+    <formula>BLANKVALUE(Total_Interest__c, 0) + BLANKVALUE(Total_Interest_Paid__c, 0)</formula>
+    <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
+    <inlineHelpText>Interest calculated so far (paid + pending).</inlineHelpText>
+    <label>Total Interest Calculated</label>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>2</scale>
+    <trackTrending>false</trackTrending>
+    <type>Currency</type>
+</CustomField>
